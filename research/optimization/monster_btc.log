@@ -1,0 +1,2 @@
+[monster:btc] 400 trials -> /Users/tokyotechies/Workspace/KEM/dquants/research/optimization/optuna_monster_btc.csv
+[monster:btc] BEST score=7.18 full_net=5015 full_pf=1.277 test_net=846 test_pf=1.159
