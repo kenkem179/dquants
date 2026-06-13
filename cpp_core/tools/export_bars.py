@@ -13,16 +13,20 @@ rounding at emit time): ts_ms,open,high,low,close,tick_count
   - tick_count per-bar tick count (== MT5 tick_volume, the Stage-A VP weight)
 
 Usage:
-  python cpp_core/tools/export_bars.py [clean|raw] [end_date] [out_csv]
-Defaults: clean ticks, end < 2026-04-10, out = cpp_core/tools/bars_btcusd_2026_m3.csv
+  python cpp_core/tools/export_bars.py [year] [clean|raw] [end_date] [out_csv] [symbol]
+Defaults: year 2026, clean ticks, end < 2026-04-10, out = cpp_core/tools/bars_<sym>_<year>_m3.csv
+Example (the 1-year MT5 run spans 2025-08..11):
+  python cpp_core/tools/export_bars.py 2025 clean 2025-12-01 cpp_core/tools/bars_btcusd_2025_m3.csv
 """
 import sys
 import duckdb
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else "clean"
-END = sys.argv[2] if len(sys.argv) > 2 else "2026-04-10"
-OUT = sys.argv[3] if len(sys.argv) > 3 else "cpp_core/tools/bars_btcusd_2026_m3.csv"
-TICKS = f"data/processed/ticks_btcusd_2026{'_clean' if SRC == 'clean' else ''}.parquet"
+YEAR = sys.argv[1] if len(sys.argv) > 1 else "2026"
+SRC = sys.argv[2] if len(sys.argv) > 2 else "clean"
+END = sys.argv[3] if len(sys.argv) > 3 else "2026-04-10"
+SYM = sys.argv[5] if len(sys.argv) > 5 else "btcusd"
+OUT = sys.argv[4] if len(sys.argv) > 4 else f"cpp_core/tools/bars_{SYM}_{YEAR}_m3.csv"
+TICKS = f"data/processed/ticks_{SYM}_{YEAR}{'_clean' if SRC == 'clean' else ''}.parquet"
 
 
 def main():

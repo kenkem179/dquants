@@ -127,6 +127,19 @@ struct Params {
     double commission_per_lot = 0.0;     // round-turn USD commission per lot
     double start_balance      = 10000.0; // tester starting balance
 
+    // ---- broker spec presets (confirmed by the user from the Exness contract table) ----
+    // Initial tester balance 10,000 USD, leverage 1:200, commission $0 on both symbols.
+    void apply_xauusd_specs() {
+        pip_size = 0.01; mintick = 0.01; contract_size = 100.0;   // 100 oz
+        tick_value = 1.00; tick_size = 0.01;                      // vppl = 100
+        lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
+    }
+    void apply_btcusd_specs() {
+        pip_size = 0.01; mintick = 0.01; contract_size = 1.0;     // 1 BTC
+        tick_value = 0.01; tick_size = 0.01;                      // vppl = 1
+        lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
+    }
+
     int master_len() const { return vp_lookback * master_mult; }
     // USD change per 1.0 price unit per 1.0 lot.
     double value_per_price_per_lot() const {

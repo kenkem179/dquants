@@ -32,8 +32,7 @@ int main(int argc, char** argv) {
     }
 
     kk::Params p;
-    // BTCUSD: 2 digits, pip/mintick 0.01 (matches the parity reference instrument).
-    p.pip_size = 0.01; p.mintick = 0.01; p.contract_size = 1.0;
+    p.apply_btcusd_specs();   // parity reference instrument; XAU via a future --symbol-xau
     if (!set_path.empty()) {
         const int n = kk::load_set(p, set_path, mimic);
         if (n < 0) { std::fprintf(stderr, "could not read .set: %s\n", set_path.c_str()); return 1; }
