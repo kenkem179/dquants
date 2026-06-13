@@ -50,7 +50,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       ever tightens, anti-churn step). Tracks mfeR/maeR (broker-spec-free) + realized USD (via broker specs).
       4 unit tests cover SL-loss / TP1→trail→SL-win / backstop-TP / trail-tightens-only. `Params` gained broker
       spec fields (tick_value/tick_size/lot_step/min_lot/commission/start_balance) — **awaiting real Exness numbers**.
-- [ ] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — RiskManager.mqh
+- [x] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — `include/kk/risk_manager.hpp`, port of
+      RiskManager.mqh. Owns balance/peak/day-start/streak/cooldown; budget=balance·riskAccPct%,
+      lot=budget/(stop·vppl)·peakDDmult, predictive daily-DD breaker, 22% halt / 15%→×0.55 soft-block,
+      3-loss→4h + daily-DD→12h cooldowns (extend-only). 7 unit tests pass.
 - [ ] Filters (sessions, news calendar, ATR% band, spread, blocked hours)
 - [ ] ExecutionSimulator (spread/slippage/commission, tick fills)
 - [ ] TickEngine (replay ticks → bars → drive modules → trades) + `backtester` main
