@@ -55,4 +55,25 @@ struct RegimeState {
     double atr1    = 0.0;
 };
 
+// Entry signal from DetectSignal (GlobalState.mqh Signal). reason = L/S-BRK or L/S-REV.
+struct Signal {
+    bool   valid   = false;
+    bool   is_long = false;
+    bool   is_rev  = false;       // reversion vs breakout economics
+    double entry   = 0.0;         // anchor = shift-1 close
+    double sl      = 0.0;
+    double tp1     = 0.0;
+    double tp2     = 0.0;
+    double risk    = 0.0;         // |entry - sl|
+    double lot     = 0.0;
+    const char* reason = "";
+    // diagnostic features (selectivity study; no trading effect)
+    double f_brk_dist_atr = 0.0;
+    double f_body_pct     = 0.0;
+    double f_adx          = 0.0;
+    double f_di_spread    = 0.0;
+    double f_runway_atr   = 0.0;
+    double f_node_net     = 0.0;
+};
+
 }  // namespace kk

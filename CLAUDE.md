@@ -84,6 +84,24 @@ prior phase's output:
 Use `/codex` for heavy C++/Python implementation and `/gemini` for independent review of plans and
 risky logic.
 
+## KenKem strategy port & parity (the current main thrust)
+
+The real goal is optimizing the user's **existing MQL5 strategies** (sibling repo
+`/Users/tokyotechies/Workspace/KEM/kenkem`), not inventing new ones. First target: **KK-MasterVP**
+(volume-profile breakout, XAUUSD/BTCUSD **M1/M3** — never M5).
+
+- **MQL5 is the sole source of truth** for every strategy — do NOT read/cite Pine unless the user names
+  a specific Pine file. Port from `kenkem/MQL5/Experts/KK-MasterVP/*.mqh`.
+- Implementation spec: `research/hypotheses/KK-MasterVP-SPEC.md`. Authoritative params:
+  `kenkem/MQL5/Experts/KK-MasterVP/KK-MasterVP-baseline.set` (differs from code defaults).
+- C++ engine: `cpp_core/` (dependency-free `Makefile`, `make test`). Replays the imported tick Parquet
+  headlessly — **never calls MT5**. Python is harness-only (Optuna, parity diff, charts).
+- **Parity validation:** the engine emits byte-compatible `parity_*.csv` (per-bar) + `trades_*.csv`
+  (per-trade) to diff against MT5 (see SPEC §9 — three levels, bar-level first, tolerance compare).
+  **MT5 tester reference data lives at `kenkem/Tester/Agent-127.0.0.1-3000/`**: `logs/` for run logs,
+  `MQL5/Files/<strategy name>/` for the parity/trade CSVs. (Only master VP cols are valid in the parity
+  CSV; `sigValid` is raw pre-gate DetectSignal.)
+
 ## Conventions
 
 - Layer 1 outputs are **Parquet**, queried via DuckDB. Keep the raw→processed→features→labels flow
