@@ -1,0 +1,120 @@
+{
+  "symbol": "btcusd",
+  "year": 2025,
+  "src": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2025.parquet",
+  "clean_dst": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2025_clean.parquet",
+  "total_in": 148657447,
+  "total_kept": 148534200,
+  "dropped": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 123247,
+    "spike": 0
+  },
+  "flagged": {
+    "ts_collision": 14285,
+    "zero_spread": 0,
+    "wide_spread": 7625
+  },
+  "spread": {
+    "mean": 17.3831,
+    "median": 20.16,
+    "p95": 20.31,
+    "p99": 20.31,
+    "min": 7.85,
+    "max": 306.41
+  },
+  "gaps": {
+    "gt_1s": 3024239,
+    "gt_10s": 57861,
+    "gt_60s": 155,
+    "gt_300s": 14,
+    "gt_3600s": 4,
+    "max_gap_s": 172801.5,
+    "top": [
+      {
+        "start": "2025-03-29 23:59:58.603",
+        "end": "2025-04-01 00:00:00.118",
+        "gap_s": 172801.5
+      },
+      {
+        "start": "2025-04-26 23:59:58.948",
+        "end": "2025-04-28 00:00:00.118",
+        "gap_s": 86401.2
+      },
+      {
+        "start": "2025-11-30 18:29:04.65",
+        "end": "2025-12-01 00:00:01.017",
+        "gap_s": 19856.4
+      },
+      {
+        "start": "2025-05-17 03:15:55.356",
+        "end": "2025-05-17 04:37:40.774",
+        "gap_s": 4905.4
+      },
+      {
+        "start": "2025-12-13 07:19:24.534",
+        "end": "2025-12-13 08:01:17.831",
+        "gap_s": 2513.3
+      }
+    ]
+  },
+  "coverage": {
+    "n_days": 362,
+    "min_day": 29618,
+    "med_day": 508762.0,
+    "max_day": 677423,
+    "first_day": "2025-01-01",
+    "last_day": "2025-12-31",
+    "low_days": [
+      {
+        "day": "2025-12-27",
+        "ticks": 29618
+      },
+      {
+        "day": "2025-12-13",
+        "ticks": 29642
+      },
+      {
+        "day": "2025-10-25",
+        "ticks": 31576
+      },
+      {
+        "day": "2025-12-28",
+        "ticks": 32138
+      },
+      {
+        "day": "2025-11-30",
+        "ticks": 32535
+      },
+      {
+        "day": "2025-11-01",
+        "ticks": 34088
+      },
+      {
+        "day": "2025-12-20",
+        "ticks": 36102
+      },
+      {
+        "day": "2025-11-29",
+        "ticks": 40236
+      },
+      {
+        "day": "2025-10-18",
+        "ticks": 41884
+      },
+      {
+        "day": "2025-12-06",
+        "ticks": 45686
+      }
+    ],
+    "missing_hours": []
+  },
+  "residual": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 0
+  },
+  "passed": true,
+  "elapsed_s": 57.5
+}

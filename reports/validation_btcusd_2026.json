@@ -1,0 +1,79 @@
+{
+  "symbol": "btcusd",
+  "year": 2026,
+  "src": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2026.parquet",
+  "clean_dst": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2026_clean.parquet",
+  "total_in": 14951271,
+  "total_kept": 14926943,
+  "dropped": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 24328,
+    "spike": 0
+  },
+  "flagged": {
+    "ts_collision": 534,
+    "zero_spread": 0,
+    "wide_spread": 0
+  },
+  "spread": {
+    "mean": 11.2201,
+    "median": 12.6,
+    "p95": 12.6,
+    "p99": 12.6,
+    "min": 7.0,
+    "max": 18.9
+  },
+  "gaps": {
+    "gt_1s": 4259902,
+    "gt_10s": 100031,
+    "gt_60s": 46,
+    "gt_300s": 0,
+    "gt_3600s": 0,
+    "max_gap_s": 228.3,
+    "top": [
+      {
+        "start": "2026-01-25 07:00:54.038",
+        "end": "2026-01-25 07:04:42.346",
+        "gap_s": 228.3
+      },
+      {
+        "start": "2026-01-18 06:00:58.228",
+        "end": "2026-01-18 06:04:05.815",
+        "gap_s": 187.6
+      },
+      {
+        "start": "2026-05-17 06:00:54.992",
+        "end": "2026-05-17 06:04:00.916",
+        "gap_s": 185.9
+      },
+      {
+        "start": "2026-03-01 06:00:57.658",
+        "end": "2026-03-01 06:04:03.526",
+        "gap_s": 185.9
+      },
+      {
+        "start": "2026-03-29 06:00:59.43",
+        "end": "2026-03-29 06:04:05.29",
+        "gap_s": 185.9
+      }
+    ]
+  },
+  "coverage": {
+    "n_days": 160,
+    "min_day": 23557,
+    "med_day": 83698.0,
+    "max_day": 412336,
+    "first_day": "2026-01-01",
+    "last_day": "2026-06-09",
+    "low_days": [],
+    "missing_hours": []
+  },
+  "residual": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 0
+  },
+  "passed": true,
+  "elapsed_s": 6.0
+}

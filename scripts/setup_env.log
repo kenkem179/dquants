@@ -1,0 +1,5626 @@
+==> Architecture: arm64
+==> Downloading native Miniforge (arm64)...
+==> Installing Miniforge to /Users/tokyotechies/miniforge3...
+PREFIX=/Users/tokyotechies/miniforge3
+Unpacking bootstrapper...
+Unpacking payload...
+Extracting bzip2-1.0.8-hd037594_9.conda
+Extracting c-ares-1.34.6-hc919400_0.conda
+Extracting ca-certificates-2026.5.20-hbd8a1cb_0.conda
+Extracting libcxx-22.1.6-h55c6f16_0.conda
+Extracting libev-4.33-h93a5062_2.conda
+Extracting libexpat-2.8.1-hf6b4638_0.conda
+Extracting libffi-3.5.2-hcf2aa1b_0.conda
+Extracting libiconv-1.18-h23cfdf5_2.conda
+Extracting liblzma-5.8.3-h8088a28_0.conda
+Extracting libmpdec-4.0.0-h84a0fba_1.conda
+Extracting libzlib-1.3.2-h8088a28_2.conda
+Extracting lzo-2.10-h925e9cb_1002.conda
+Extracting ncurses-6.6-h1d4f5a5_0.conda
+Extracting nlohmann_json-abi-3.12.0-h0f90c79_1.conda
+Extracting pybind11-abi-11-hc364b38_1.conda
+Extracting python_abi-3.13-8_cp313.conda
+Extracting reproc-14.2.7.post0-h84a0fba_1.conda
+Extracting tzdata-2025c-hc9c84f9_1.conda
+Extracting cpp-expected-1.3.1-h4f10f1e_0.conda
+Extracting fmt-12.1.0-h403dcb5_0.conda
+Extracting libedit-3.1.20250104-pl5321hafb1f1b_0.conda
+Extracting libsolv-0.7.39-h7d962ec_0.conda
+Extracting libsqlite-3.53.1-h1b79a29_0.conda
+Extracting libxml2-16-2.15.3-h6967ea9_0.conda
+Extracting lz4-c-1.10.0-h286801f_1.conda
+Extracting openssl-3.6.2-hd24854e_0.conda
+Extracting readline-8.3-h46df422_0.conda
+Extracting reproc-cpp-14.2.7.post0-hf6b4638_1.conda
+Extracting simdjson-4.2.4-ha7d2532_0.conda
+Extracting tk-8.6.13-h010d191_3.conda
+Extracting yaml-cpp-0.8.0-ha1acc90_0.conda
+Extracting zstd-1.5.7-hbf9d68e_6.conda
+Extracting krb5-1.22.2-h385eeb1_0.conda
+Extracting libnghttp2-1.68.1-h8f3e76b_0.conda
+Extracting libssh2-1.11.1-h1590b86_0.conda
+Extracting libxml2-2.15.3-heed7d32_0.conda
+Extracting python-3.13.13-h20e6be0_100_cp313.conda
+Extracting spdlog-1.17.0-ha0f8610_1.conda
+Extracting libarchive-3.8.7-gpl_h6fbacd7_101.conda
+Extracting libcurl-8.20.0-hd5a2499_0.conda
+Extracting menuinst-2.4.2-py313h8f79df9_0.conda
+Extracting archspec-0.2.5-pyhd8ed1ab_0.conda
+Extracting backports.zstd-1.5.0-py313h7208f8c_0.conda
+Extracting boltons-25.0.0-pyhd8ed1ab_0.conda
+Extracting brotli-python-1.2.0-py313hde1f3bb_1.conda
+Extracting certifi-2026.5.20-pyhd8ed1ab_0.conda
+Extracting charset-normalizer-3.4.7-pyhd8ed1ab_0.conda
+Extracting distro-1.9.0-pyhd8ed1ab_1.conda
+Extracting frozendict-2.4.7-py313h6535dbc_0.conda
+Extracting hpack-4.1.0-pyhd8ed1ab_0.conda
+Extracting hyperframe-6.1.0-pyhd8ed1ab_0.conda
+Extracting idna-3.17-pyhcf101f3_0.conda
+Extracting jsonpointer-3.1.1-pyhcf101f3_0.conda
+Extracting libmamba-2.5.0-h7950639_0.conda
+Extracting msgpack-python-1.1.2-py313ha61f8ec_1.conda
+Extracting packaging-26.2-pyhc364b38_0.conda
+Extracting pip-26.1.2-pyh145f28c_0.conda
+Extracting platformdirs-4.10.0-pyhcf101f3_0.conda
+Extracting pluggy-1.6.0-pyhf9edf01_1.conda
+Extracting pycosat-0.6.6-py313hcdf3177_3.conda
+Extracting pycparser-3.0-pyhcf101f3_0.conda
+Extracting pysocks-1.7.1-pyha55dd90_7.conda
+Extracting ruamel.yaml.clib-0.2.15-py313h6688731_1.conda
+Extracting setuptools-82.0.1-pyh332efcf_0.conda
+Extracting tqdm-4.67.3-pyh8f84b5b_0.conda
+Extracting truststore-0.10.4-pyhcf101f3_0.conda
+Extracting cffi-2.0.0-py313h224173a_1.conda
+Extracting h2-4.3.0-pyhcf101f3_0.conda
+Extracting jsonpatch-1.33-pyhd8ed1ab_1.conda
+Extracting libmamba-spdlog-2.5.0-h85b9800_0.conda
+Extracting mamba-2.5.0-h74094d2_0.conda
+Extracting ruamel.yaml-0.18.17-py313h6688731_2.conda
+Extracting libmambapy-2.5.0-py313hac152a8_0.conda
+Extracting urllib3-2.7.0-pyhd8ed1ab_0.conda
+Extracting zstandard-0.25.0-py313h9734d34_1.conda
+Extracting conda-package-streaming-0.12.0-pyhd8ed1ab_0.conda
+Extracting requests-2.34.2-pyhcf101f3_0.conda
+Extracting conda-libmamba-solver-26.4.2-pyhd8ed1ab_0.conda
+Extracting conda-package-handling-2.4.0-pyh7900ff3_2.conda
+Extracting conda-26.3.2-py313h8f79df9_1.conda
+
+Installing base environment...
+
+Transaction
+
+  Prefix: /Users/tokyotechies/miniforge3
+
+  Updating specs:
+
+   - bzip2==1.0.8=hd037594_9
+   - c-ares==1.34.6=hc919400_0
+   - ca-certificates==2026.5.20=hbd8a1cb_0
+   - libcxx==22.1.6=h55c6f16_0
+   - libev==4.33=h93a5062_2
+   - libexpat==2.8.1=hf6b4638_0
+   - libffi==3.5.2=hcf2aa1b_0
+   - libiconv==1.18=h23cfdf5_2
+   - liblzma==5.8.3=h8088a28_0
+   - libmpdec==4.0.0=h84a0fba_1
+   - libzlib==1.3.2=h8088a28_2
+   - lzo==2.10=h925e9cb_1002
+   - ncurses==6.6=h1d4f5a5_0
+   - nlohmann_json-abi==3.12.0=h0f90c79_1
+   - pybind11-abi==11=hc364b38_1
+   - python_abi==3.13=8_cp313
+   - reproc==14.2.7.post0=h84a0fba_1
+   - tzdata==2025c=hc9c84f9_1
+   - cpp-expected==1.3.1=h4f10f1e_0
+   - fmt==12.1.0=h403dcb5_0
+   - libedit==3.1.20250104=pl5321hafb1f1b_0
+   - libsolv==0.7.39=h7d962ec_0
+   - libsqlite==3.53.1=h1b79a29_0
+   - libxml2-16==2.15.3=h6967ea9_0
+   - lz4-c==1.10.0=h286801f_1
+   - openssl==3.6.2=hd24854e_0
+   - readline==8.3=h46df422_0
+   - reproc-cpp==14.2.7.post0=hf6b4638_1
+   - simdjson==4.2.4=ha7d2532_0
+   - tk==8.6.13=h010d191_3
+   - yaml-cpp==0.8.0=ha1acc90_0
+   - zstd==1.5.7=hbf9d68e_6
+   - krb5==1.22.2=h385eeb1_0
+   - libnghttp2==1.68.1=h8f3e76b_0
+   - libssh2==1.11.1=h1590b86_0
+   - libxml2==2.15.3=heed7d32_0
+   - python==3.13.13=h20e6be0_100_cp313
+   - spdlog==1.17.0=ha0f8610_1
+   - libarchive==3.8.7=gpl_h6fbacd7_101
+   - libcurl==8.20.0=hd5a2499_0
+   - menuinst==2.4.2=py313h8f79df9_0
+   - archspec==0.2.5=pyhd8ed1ab_0
+   - backports.zstd==1.5.0=py313h7208f8c_0
+   - boltons==25.0.0=pyhd8ed1ab_0
+   - brotli-python==1.2.0=py313hde1f3bb_1
+   - certifi==2026.5.20=pyhd8ed1ab_0
+   - charset-normalizer==3.4.7=pyhd8ed1ab_0
+   - distro==1.9.0=pyhd8ed1ab_1
+   - frozendict==2.4.7=py313h6535dbc_0
+   - hpack==4.1.0=pyhd8ed1ab_0
+   - hyperframe==6.1.0=pyhd8ed1ab_0
+   - idna==3.17=pyhcf101f3_0
+   - jsonpointer==3.1.1=pyhcf101f3_0
+   - libmamba==2.5.0=h7950639_0
+   - msgpack-python==1.1.2=py313ha61f8ec_1
+   - packaging==26.2=pyhc364b38_0
+   - pip==26.1.2=pyh145f28c_0
+   - platformdirs==4.10.0=pyhcf101f3_0
+   - pluggy==1.6.0=pyhf9edf01_1
+   - pycosat==0.6.6=py313hcdf3177_3
+   - pycparser==3.0=pyhcf101f3_0
+   - pysocks==1.7.1=pyha55dd90_7
+   - ruamel.yaml.clib==0.2.15=py313h6688731_1
+   - setuptools==82.0.1=pyh332efcf_0
+   - tqdm==4.67.3=pyh8f84b5b_0
+   - truststore==0.10.4=pyhcf101f3_0
+   - cffi==2.0.0=py313h224173a_1
+   - h2==4.3.0=pyhcf101f3_0
+   - jsonpatch==1.33=pyhd8ed1ab_1
+   - libmamba-spdlog==2.5.0=h85b9800_0
+   - mamba==2.5.0=h74094d2_0
+   - ruamel.yaml==0.18.17=py313h6688731_2
+   - libmambapy==2.5.0=py313hac152a8_0
+   - urllib3==2.7.0=pyhd8ed1ab_0
+   - zstandard==0.25.0=py313h9734d34_1
+   - conda-package-streaming==0.12.0=pyhd8ed1ab_0
+   - requests==2.34.2=pyhcf101f3_0
+   - conda-libmamba-solver==26.4.2=pyhd8ed1ab_0
+   - conda-package-handling==2.4.0=pyh7900ff3_2
+   - conda==26.3.2=py313h8f79df9_1
+
+
+  Package                         Version  Build               Channel         Size
+─────────────────────────────────────────────────────────────────────────────────────
+  Install:
+─────────────────────────────────────────────────────────────────────────────────────
+
+  + archspec                        0.2.5  pyhd8ed1ab_0        conda-forge         
+  + backports.zstd                  1.5.0  py313h7208f8c_0     conda-forge         
+  + boltons                        25.0.0  pyhd8ed1ab_0        conda-forge         
+  + brotli-python                   1.2.0  py313hde1f3bb_1     conda-forge         
+  + bzip2                           1.0.8  hd037594_9          conda-forge         
+  + c-ares                         1.34.6  hc919400_0          conda-forge         
+  + ca-certificates             2026.5.20  hbd8a1cb_0          conda-forge         
+  + certifi                     2026.5.20  pyhd8ed1ab_0        conda-forge         
+  + cffi                            2.0.0  py313h224173a_1     conda-forge         
+  + charset-normalizer              3.4.7  pyhd8ed1ab_0        conda-forge         
+  + conda                          26.3.2  py313h8f79df9_1     conda-forge         
+  + conda-libmamba-solver          26.4.2  pyhd8ed1ab_0        conda-forge         
+  + conda-package-handling          2.4.0  pyh7900ff3_2        conda-forge         
+  + conda-package-streaming        0.12.0  pyhd8ed1ab_0        conda-forge         
+  + cpp-expected                    1.3.1  h4f10f1e_0          conda-forge         
+  + distro                          1.9.0  pyhd8ed1ab_1        conda-forge         
+  + fmt                            12.1.0  h403dcb5_0          conda-forge         
+  + frozendict                      2.4.7  py313h6535dbc_0     conda-forge         
+  + h2                              4.3.0  pyhcf101f3_0        conda-forge         
+  + hpack                           4.1.0  pyhd8ed1ab_0        conda-forge         
+  + hyperframe                      6.1.0  pyhd8ed1ab_0        conda-forge         
+  + idna                             3.17  pyhcf101f3_0        conda-forge         
+  + jsonpatch                        1.33  pyhd8ed1ab_1        conda-forge         
+  + jsonpointer                     3.1.1  pyhcf101f3_0        conda-forge         
+  + krb5                           1.22.2  h385eeb1_0          conda-forge         
+  + libarchive                      3.8.7  gpl_h6fbacd7_101    conda-forge         
+  + libcurl                        8.20.0  hd5a2499_0          conda-forge         
+  + libcxx                         22.1.6  h55c6f16_0          conda-forge         
+  + libedit                  3.1.20250104  pl5321hafb1f1b_0    conda-forge         
+  + libev                            4.33  h93a5062_2          conda-forge         
+  + libexpat                        2.8.1  hf6b4638_0          conda-forge         
+  + libffi                          3.5.2  hcf2aa1b_0          conda-forge         
+  + libiconv                         1.18  h23cfdf5_2          conda-forge         
+  + liblzma                         5.8.3  h8088a28_0          conda-forge         
+  + libmamba                        2.5.0  h7950639_0          conda-forge         
+  + libmamba-spdlog                 2.5.0  h85b9800_0          conda-forge         
+  + libmambapy                      2.5.0  py313hac152a8_0     conda-forge         
+  + libmpdec                        4.0.0  h84a0fba_1          conda-forge         
+  + libnghttp2                     1.68.1  h8f3e76b_0          conda-forge         
+  + libsolv                        0.7.39  h7d962ec_0          conda-forge         
+  + libsqlite                      3.53.1  h1b79a29_0          conda-forge         
+  + libssh2                        1.11.1  h1590b86_0          conda-forge         
+  + libxml2                        2.15.3  heed7d32_0          conda-forge         
+  + libxml2-16                     2.15.3  h6967ea9_0          conda-forge         
+  + libzlib                         1.3.2  h8088a28_2          conda-forge         
+  + lz4-c                          1.10.0  h286801f_1          conda-forge         
+  + lzo                              2.10  h925e9cb_1002       conda-forge         
+  + mamba                           2.5.0  h74094d2_0          conda-forge         
+  + menuinst                        2.4.2  py313h8f79df9_0     conda-forge         
+  + msgpack-python                  1.1.2  py313ha61f8ec_1     conda-forge         
+  + ncurses                           6.6  h1d4f5a5_0          conda-forge         
+  + nlohmann_json-abi              3.12.0  h0f90c79_1          conda-forge         
+  + openssl                         3.6.2  hd24854e_0          conda-forge         
+  + packaging                        26.2  pyhc364b38_0        conda-forge         
+  + pip                            26.1.2  pyh145f28c_0        conda-forge         
+  + platformdirs                   4.10.0  pyhcf101f3_0        conda-forge         
+  + pluggy                          1.6.0  pyhf9edf01_1        conda-forge         
+  + pybind11-abi                       11  hc364b38_1          conda-forge         
+  + pycosat                         0.6.6  py313hcdf3177_3     conda-forge         
+  + pycparser                         3.0  pyhcf101f3_0        conda-forge         
+  + pysocks                         1.7.1  pyha55dd90_7        conda-forge         
+  + python                        3.13.13  h20e6be0_100_cp313  conda-forge         
+  + python_abi                       3.13  8_cp313             conda-forge         
+  + readline                          8.3  h46df422_0          conda-forge         
+  + reproc                   14.2.7.post0  h84a0fba_1          conda-forge         
+  + reproc-cpp               14.2.7.post0  hf6b4638_1          conda-forge         
+  + requests                       2.34.2  pyhcf101f3_0        conda-forge         
+  + ruamel.yaml                   0.18.17  py313h6688731_2     conda-forge         
+  + ruamel.yaml.clib               0.2.15  py313h6688731_1     conda-forge         
+  + setuptools                     82.0.1  pyh332efcf_0        conda-forge         
+  + simdjson                        4.2.4  ha7d2532_0          conda-forge         
+  + spdlog                         1.17.0  ha0f8610_1          conda-forge         
+  + tk                             8.6.13  h010d191_3          conda-forge         
+  + tqdm                           4.67.3  pyh8f84b5b_0        conda-forge         
+  + truststore                     0.10.4  pyhcf101f3_0        conda-forge         
+  + tzdata                          2025c  hc9c84f9_1          conda-forge         
+  + urllib3                         2.7.0  pyhd8ed1ab_0        conda-forge         
+  + yaml-cpp                        0.8.0  ha1acc90_0          conda-forge         
+  + zstandard                      0.25.0  py313h9734d34_1     conda-forge         
+  + zstd                            1.5.7  hbf9d68e_6          conda-forge         
+
+  Summary:
+
+  Install: 80 packages
+
+  Total download: 0 B
+
+─────────────────────────────────────────────────────────────────────────────────────
+
+
+
+Transaction starting
+Linking bzip2-1.0.8-hd037594_9
+Linking c-ares-1.34.6-hc919400_0
+Linking ca-certificates-2026.5.20-hbd8a1cb_0
+Linking libcxx-22.1.6-h55c6f16_0
+Linking libev-4.33-h93a5062_2
+Linking libexpat-2.8.1-hf6b4638_0
+Linking libffi-3.5.2-hcf2aa1b_0
+Linking libiconv-1.18-h23cfdf5_2
+Linking liblzma-5.8.3-h8088a28_0
+Linking libmpdec-4.0.0-h84a0fba_1
+Linking libzlib-1.3.2-h8088a28_2
+Linking lzo-2.10-h925e9cb_1002
+Linking ncurses-6.6-h1d4f5a5_0
+Linking nlohmann_json-abi-3.12.0-h0f90c79_1
+Linking pybind11-abi-11-hc364b38_1
+Linking python_abi-3.13-8_cp313
+Linking reproc-14.2.7.post0-h84a0fba_1
+Linking tzdata-2025c-hc9c84f9_1
+Linking cpp-expected-1.3.1-h4f10f1e_0
+Linking fmt-12.1.0-h403dcb5_0
+Linking libedit-3.1.20250104-pl5321hafb1f1b_0
+Linking libsolv-0.7.39-h7d962ec_0
+Linking libsqlite-3.53.1-h1b79a29_0
+Linking libxml2-16-2.15.3-h6967ea9_0
+Linking lz4-c-1.10.0-h286801f_1
+Linking openssl-3.6.2-hd24854e_0
+Linking readline-8.3-h46df422_0
+Linking reproc-cpp-14.2.7.post0-hf6b4638_1
+Linking simdjson-4.2.4-ha7d2532_0
+Linking tk-8.6.13-h010d191_3
+Linking yaml-cpp-0.8.0-ha1acc90_0
+Linking zstd-1.5.7-hbf9d68e_6
+Linking krb5-1.22.2-h385eeb1_0
+Linking libnghttp2-1.68.1-h8f3e76b_0
+Linking libssh2-1.11.1-h1590b86_0
+Linking libxml2-2.15.3-heed7d32_0
+Linking python-3.13.13-h20e6be0_100_cp313
+Linking spdlog-1.17.0-ha0f8610_1
+Linking libarchive-3.8.7-gpl_h6fbacd7_101
+Linking libcurl-8.20.0-hd5a2499_0
+Linking menuinst-2.4.2-py313h8f79df9_0
+Linking archspec-0.2.5-pyhd8ed1ab_0
+Linking backports.zstd-1.5.0-py313h7208f8c_0
+Linking boltons-25.0.0-pyhd8ed1ab_0
+Linking brotli-python-1.2.0-py313hde1f3bb_1
+Linking certifi-2026.5.20-pyhd8ed1ab_0
+Linking charset-normalizer-3.4.7-pyhd8ed1ab_0
+Linking distro-1.9.0-pyhd8ed1ab_1
+Linking frozendict-2.4.7-py313h6535dbc_0
+Linking hpack-4.1.0-pyhd8ed1ab_0
+Linking hyperframe-6.1.0-pyhd8ed1ab_0
+Linking idna-3.17-pyhcf101f3_0
+Linking jsonpointer-3.1.1-pyhcf101f3_0
+Linking libmamba-2.5.0-h7950639_0
+Linking msgpack-python-1.1.2-py313ha61f8ec_1
+Linking packaging-26.2-pyhc364b38_0
+Linking pip-26.1.2-pyh145f28c_0
+Linking platformdirs-4.10.0-pyhcf101f3_0
+Linking pluggy-1.6.0-pyhf9edf01_1
+Linking pycosat-0.6.6-py313hcdf3177_3
+Linking pycparser-3.0-pyhcf101f3_0
+Linking pysocks-1.7.1-pyha55dd90_7
+Linking ruamel.yaml.clib-0.2.15-py313h6688731_1
+Linking setuptools-82.0.1-pyh332efcf_0
+Linking tqdm-4.67.3-pyh8f84b5b_0
+Linking truststore-0.10.4-pyhcf101f3_0
+Linking cffi-2.0.0-py313h224173a_1
+Linking h2-4.3.0-pyhcf101f3_0
+Linking jsonpatch-1.33-pyhd8ed1ab_1
+Linking libmamba-spdlog-2.5.0-h85b9800_0
+Linking mamba-2.5.0-h74094d2_0
+Linking ruamel.yaml-0.18.17-py313h6688731_2
+Linking libmambapy-2.5.0-py313hac152a8_0
+Linking urllib3-2.7.0-pyhd8ed1ab_0
+Linking zstandard-0.25.0-py313h9734d34_1
+Linking conda-package-streaming-0.12.0-pyhd8ed1ab_0
+Linking requests-2.34.2-pyhcf101f3_0
+Linking conda-libmamba-solver-26.4.2-pyhd8ed1ab_0
+Linking conda-package-handling-2.4.0-pyh7900ff3_2
+Linking conda-26.3.2-py313h8f79df9_1
+
+Transaction finished
+
+
+==> conda: conda 26.3.2 @ /Users/tokyotechies/miniforge3
+==> Creating env 'kenkem' (python 3.11)...
+Channels:
+ - defaults
+ - conda-forge
+Platform: osx-arm64
+Collecting package metadata (repodata.json): - \ | / - \ | / - \ done
+Solving environment: / done
+
+## Package Plan ##
+
+  environment location: /Users/tokyotechies/miniforge3/envs/kenkem
+
+  added / updated specs:
+    - python=3.11
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    bzip2-1.0.8                |       h80987f9_6         129 KB
+    ca-certificates-2026.5.14  |       hca03da5_0         108 KB
+    libcxx-22.1.2              |       hf894667_0         309 KB
+    libexpat-2.8.1             |       h50f4ffc_0         110 KB
+    libffi-3.4.8               |       hcfc0b96_2         116 KB
+    libzlib-1.3.2              |       hb4cf58c_0          45 KB
+    ncurses-6.5                |       hee39554_0         886 KB
+    openssl-3.5.7              |       ha0b305a_0         4.7 MB
+    packaging-26.0             |  py311hca03da5_0         196 KB
+    pip-26.1.1                 |     pyhc872135_1         1.1 MB
+    python-3.11.15             |       h478e877_1        14.8 MB
+    readline-8.3               |       h0b18652_0         464 KB
+    setuptools-82.0.1          |  py311hca03da5_0         1.6 MB
+    sqlite-3.53.2              |       h1cce5ff_0         1.2 MB
+    tk-8.6.15                  |       hcd8a7d5_0         3.3 MB
+    tzdata-2026b               |       he532380_0         118 KB
+    wheel-0.46.3               |  py311hca03da5_0          71 KB
+    xz-5.8.2                   |       h8bbcb1d_0         263 KB
+    zlib-1.3.2                 |       hb4cf58c_0          77 KB
+    ------------------------------------------------------------
+                                           Total:        29.5 MB
+
+The following NEW packages will be INSTALLED:
+
+  bzip2              pkgs/main/osx-arm64::bzip2-1.0.8-h80987f9_6 
+  ca-certificates    pkgs/main/osx-arm64::ca-certificates-2026.5.14-hca03da5_0 
+  libcxx             pkgs/main/osx-arm64::libcxx-22.1.2-hf894667_0 
+  libexpat           pkgs/main/osx-arm64::libexpat-2.8.1-h50f4ffc_0 
+  libffi             pkgs/main/osx-arm64::libffi-3.4.8-hcfc0b96_2 
+  libzlib            pkgs/main/osx-arm64::libzlib-1.3.2-hb4cf58c_0 
+  ncurses            pkgs/main/osx-arm64::ncurses-6.5-hee39554_0 
+  openssl            pkgs/main/osx-arm64::openssl-3.5.7-ha0b305a_0 
+  packaging          pkgs/main/osx-arm64::packaging-26.0-py311hca03da5_0 
+  pip                pkgs/main/noarch::pip-26.1.1-pyhc872135_1 
+  python             pkgs/main/osx-arm64::python-3.11.15-h478e877_1 
+  readline           pkgs/main/osx-arm64::readline-8.3-h0b18652_0 
+  setuptools         pkgs/main/osx-arm64::setuptools-82.0.1-py311hca03da5_0 
+  sqlite             pkgs/main/osx-arm64::sqlite-3.53.2-h1cce5ff_0 
+  tk                 pkgs/main/osx-arm64::tk-8.6.15-hcd8a7d5_0 
+  tzdata             pkgs/main/noarch::tzdata-2026b-he532380_0 
+  wheel              pkgs/main/osx-arm64::wheel-0.46.3-py311hca03da5_0 
+  xz                 pkgs/main/osx-arm64::xz-5.8.2-h8bbcb1d_0 
+  zlib               pkgs/main/osx-arm64::zlib-1.3.2-hb4cf58c_0 
+
+
+
+Downloading and Extracting Packages: ...working...python-3.11.15       | 14.8 MB   |            |   0% 
+openssl-3.5.7        | 4.7 MB    |            |   0% [A
+
+tk-8.6.15            | 3.3 MB    |            |   0% [A[A
+
+
+setuptools-82.0.1    | 1.6 MB    |            |   0% [A[A[A
+
+
+
+sqlite-3.53.2        | 1.2 MB    |            |   0% [A[A[A[A
+
+
+
+
+pip-26.1.1           | 1.1 MB    |            |   0% [A[A[A[A[A
+
+
+
+
+
+ncurses-6.5          | 886 KB    |            |   0% [A[A[A[A[A[A
+
+
+
+
+
+
+readline-8.3         | 464 KB    |            |   0% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+libcxx-22.1.2        | 309 KB    |            |   0% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+xz-5.8.2             | 263 KB    |            |   0% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+packaging-26.0       | 196 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+bzip2-1.0.8          | 129 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+tzdata-2026b         | 118 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+libffi-3.4.8         | 116 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libexpat-2.8.1       | 110 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ca-certificates-2026 | 108 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zlib-1.3.2           | 77 KB     |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+wheel-0.46.3         | 71 KB     |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libzlib-1.3.2        | 45 KB     |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+tk-8.6.15            | 3.3 MB    |            |   0% [A[Apython-3.11.15       | 14.8 MB   |            |   0% 
+
+
+setuptools-82.0.1    | 1.6 MB    |            |   1% [A[A[A
+
+
+
+sqlite-3.53.2        | 1.2 MB    | 1          |   1% [A[A[A[A
+openssl-3.5.7        | 4.7 MB    |            |   0% [A
+
+tk-8.6.15            | 3.3 MB    | #4         |  14% [A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | #5         |  16% [A[A[Apython-3.11.15       | 14.8 MB   | 2          |   2% 
+
+
+
+sqlite-3.53.2        | 1.2 MB    | #####3     |  54% [A[A[A[A
+openssl-3.5.7        | 4.7 MB    | 7          |   8% [A
+
+
+
+sqlite-3.53.2        | 1.2 MB    | ########## | 100% [A[A[A[A
+
+
+
+sqlite-3.53.2        | 1.2 MB    | ########## | 100% [A[A[A[A
+
+tk-8.6.15            | 3.3 MB    | ###6       |  37% [A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | ###4       |  34% [A[A[Apython-3.11.15       | 14.8 MB   | 9          |   9% 
+
+
+
+
+pip-26.1.1           | 1.1 MB    | 1          |   1% [A[A[A[A[Apython-3.11.15       | 14.8 MB   | #3         |  14% 
+
+
+setuptools-82.0.1    | 1.6 MB    | ####8      |  48% [A[A[A
+openssl-3.5.7        | 4.7 MB    | #8         |  18% [A
+
+
+
+
+pip-26.1.1           | 1.1 MB    | ###9       |  40% [A[A[A[A[A
+
+tk-8.6.15            | 3.3 MB    | #####1     |  51% [A[A
+
+
+
+
+pip-26.1.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A
+
+
+
+
+
+ncurses-6.5          | 886 KB    | 1          |   2% [A[A[A[A[A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | ######6    |  67% [A[A[A
+
+
+
+
+pip-26.1.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A
+
+
+
+
+pip-26.1.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | ###        |  31% [Apython-3.11.15       | 14.8 MB   | #9         |  19% 
+
+
+
+
+
+ncurses-6.5          | 886 KB    | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+
+readline-8.3         | 464 KB    | 3          |   3% [A[A[A[A[A[A[A
+
+
+
+
+
+
+readline-8.3         | 464 KB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | #########3 |  93% [A[A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | ########## | 100% [A[A[Apython-3.11.15       | 14.8 MB   | ###2       |  32% 
+
+
+
+
+
+
+readline-8.3         | 464 KB    | ########## | 100% [A[A[A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | ####6      |  46% [A
+
+
+
+
+
+
+
+libcxx-22.1.2        | 309 KB    | 5          |   5% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+xz-5.8.2             | 263 KB    | 6          |   6% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+libcxx-22.1.2        | 309 KB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+libcxx-22.1.2        | 309 KB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+xz-5.8.2             | 263 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | ######3    |  63% [A
+
+
+
+
+
+
+
+
+
+packaging-26.0       | 196 KB    | 8          |   8% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+packaging-26.0       | 196 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[Apython-3.11.15       | 14.8 MB   | ####5      |  46% 
+
+
+
+
+
+
+
+
+xz-5.8.2             | 263 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+tk-8.6.15            | 3.3 MB    | ########8  |  89% [A[A
+
+tk-8.6.15            | 3.3 MB    | ########## | 100% [A[A
+
+
+
+
+
+
+
+
+
+
+bzip2-1.0.8          | 129 KB    | #2         |  12% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+packaging-26.0       | 196 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+tzdata-2026b         | 118 KB    | #3         |  14% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+tzdata-2026b         | 118 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+bzip2-1.0.8          | 129 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+setuptools-82.0.1    | 1.6 MB    | ########## | 100% [A[A[Apython-3.11.15       | 14.8 MB   | #####7     |  57% 
+openssl-3.5.7        | 4.7 MB    | #######5   |  75% [A
+
+
+
+
+
+
+
+
+
+
+
+
+libffi-3.4.8         | 116 KB    | #3         |  14% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+libffi-3.4.8         | 116 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ca-certificates-2026 | 108 KB    | #4         |  15% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zlib-1.3.2           | 77 KB     | ##         |  21% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zlib-1.3.2           | 77 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libexpat-2.8.1       | 110 KB    | #4         |  15% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | ########7  |  88% [Apython-3.11.15       | 14.8 MB   | ######5    |  66% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+wheel-0.46.3         | 71 KB     | ##2        |  22% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+wheel-0.46.3         | 71 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ca-certificates-2026 | 108 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+tk-8.6.15            | 3.3 MB    | ########## | 100% [A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libexpat-2.8.1       | 110 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+bzip2-1.0.8          | 129 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+bzip2-1.0.8          | 129 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libzlib-1.3.2        | 45 KB     | ###5       |  36% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libzlib-1.3.2        | 45 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+tzdata-2026b         | 118 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+tzdata-2026b         | 118 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zlib-1.3.2           | 77 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+zlib-1.3.2           | 77 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | #########8 |  99% [Apython-3.11.15       | 14.8 MB   | #######6   |  77% 
+openssl-3.5.7        | 4.7 MB    | ########## | 100% [A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+wheel-0.46.3         | 71 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+wheel-0.46.3         | 71 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ca-certificates-2026 | 108 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ca-certificates-2026 | 108 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+libffi-3.4.8         | 116 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+libffi-3.4.8         | 116 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libzlib-1.3.2        | 45 KB     | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libexpat-2.8.1       | 110 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libexpat-2.8.1       | 110 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+ncurses-6.5          | 886 KB    | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+ncurses-6.5          | 886 KB    | ########## | 100% [A[A[A[A[A[A
+openssl-3.5.7        | 4.7 MB    | ########## | 100% [Apython-3.11.15       | 14.8 MB   | #########  |  91% python-3.11.15       | 14.8 MB   | ########## | 100% python-3.11.15       | 14.8 MB   | ########## | 100%                                                      
+                                                     [A
+
+                                                     [A[A
+
+
+                                                     [A[A[A
+
+
+
+                                                     [A[A[A[A
+
+
+
+
+                                                     [A[A[A[A[A
+
+
+
+
+
+                                                     [A[A[A[A[A[A
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A done
+Preparing transaction: \ | done
+Verifying transaction: - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - done
+Executing transaction: | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ done
+#
+# To activate this environment, use
+#
+#     $ conda activate kenkem
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+==> Installing compiled libs via conda-forge...
+Channels:
+ - conda-forge
+ - defaults
+Platform: osx-arm64
+Collecting package metadata (repodata.json): - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / done
+Solving environment: \ | done
+
+## Package Plan ##
+
+  environment location: /Users/tokyotechies/miniforge3/envs/kenkem
+
+  added / updated specs:
+    - duckdb
+    - ipykernel
+    - jupyterlab
+    - lightgbm
+    - matplotlib
+    - numpy
+    - optuna
+    - pandas
+    - plotly
+    - polars
+    - pyarrow
+    - pytest
+    - pyyaml
+    - scikit-learn
+    - scipy
+    - shap
+    - statsmodels
+    - tqdm
+    - xgboost
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    _openmp_mutex-4.5          |       7_kmp_llvm           8 KB  conda-forge
+    _python_abi3_support-1.0   |       hd8ed1ab_2           8 KB  conda-forge
+    alembic-1.18.4             |     pyhcf101f3_0         180 KB  conda-forge
+    anyio-4.13.0               |     pyhcf101f3_0         143 KB  conda-forge
+    appnope-0.1.4              |     pyhd8ed1ab_1          10 KB  conda-forge
+    argon2-cffi-25.1.0         |     pyhd8ed1ab_0          18 KB  conda-forge
+    argon2-cffi-bindings-25.1.0|  py311h9408147_2          34 KB  conda-forge
+    arrow-1.4.0                |     pyhcf101f3_0         111 KB  conda-forge
+    asttokens-3.0.1            |     pyhd8ed1ab_0          28 KB  conda-forge
+    async-lru-2.3.0            |     pyhcf101f3_0          22 KB  conda-forge
+    attrs-26.1.0               |     pyhcf101f3_0          63 KB  conda-forge
+    aws-c-auth-0.10.3          |       hceed5df_2         114 KB  conda-forge
+    aws-c-cal-0.9.14           |       h81c6212_2          45 KB  conda-forge
+    aws-c-common-0.14.0        |       h84a0fba_0         221 KB  conda-forge
+    aws-c-compression-0.3.2    |       h61d3404_2          21 KB  conda-forge
+    aws-c-event-stream-0.7.1   |       h7e6a3cf_2          52 KB  conda-forge
+    aws-c-http-0.11.0          |       h0a63974_2         173 KB  conda-forge
+    aws-c-io-0.26.3            |       h58c0f83_4         173 KB  conda-forge
+    aws-c-mqtt-0.15.2          |       ha70999f_4         153 KB  conda-forge
+    aws-c-s3-0.12.5            |       h43def2a_1         129 KB  conda-forge
+    aws-c-sdkutils-0.2.4       |       h61d3404_6          52 KB  conda-forge
+    aws-checksums-0.2.10       |       h61d3404_2          90 KB  conda-forge
+    aws-crt-cpp-0.40.0         |       hd6eb0f7_1         269 KB  conda-forge
+    aws-sdk-cpp-1.11.747       |       h55dad5a_6         3.1 MB  conda-forge
+    azure-core-cpp-1.16.2      |       he5ae378_0         284 KB  conda-forge
+    azure-identity-cpp-1.13.3  |       h810541e_1         164 KB  conda-forge
+    azure-storage-blobs-cpp-12.17.0|       h5446563_1         424 KB  conda-forge
+    azure-storage-common-cpp-12.13.0|       he467506_0         126 KB  conda-forge
+    azure-storage-files-datalake-cpp-12.15.0|       hfea7fb9_0         197 KB  conda-forge
+    babel-2.18.0               |     pyhcf101f3_1         7.3 MB  conda-forge
+    backports.zstd-1.5.0       |  py311h36d4fbb_0         241 KB  conda-forge
+    beautifulsoup4-4.15.0      |     pyha770c72_0          91 KB  conda-forge
+    bleach-6.4.0               |     pyhcf101f3_0         139 KB  conda-forge
+    bleach-with-css-6.4.0      |       hac0b51c_0           4 KB  conda-forge
+    brotli-1.2.0               |       h7d5ae5b_1          20 KB  conda-forge
+    brotli-bin-1.2.0           |       hc919400_1          18 KB  conda-forge
+    brotli-python-1.2.0        |  py311hdc60ec4_1         351 KB  conda-forge
+    cached-property-1.5.2      |       hd8ed1ab_1           4 KB  conda-forge
+    cached_property-1.5.2      |     pyha770c72_1          11 KB  conda-forge
+    cffi-2.0.0                 |  py311hcfc1310_0         287 KB  conda-forge
+    cloudpickle-3.1.2          |     pyhcf101f3_1          27 KB  conda-forge
+    colorama-0.4.6             |     pyhd8ed1ab_1          26 KB  conda-forge
+    colorlog-6.10.1            |     pyh707e725_0          16 KB  conda-forge
+    comm-0.2.3                 |     pyhe01879c_0          14 KB  conda-forge
+    contourpy-1.3.3            |  py311h7d85929_4         279 KB  conda-forge
+    cpython-3.11.15            |  py311hd8ed1ab_1          47 KB  conda-forge
+    cycler-0.12.1              |     pyhcf101f3_2          14 KB  conda-forge
+    debugpy-1.8.21             |  py311h8948835_0         2.6 MB  conda-forge
+    decorator-5.3.1            |     pyhd8ed1ab_0          16 KB  conda-forge
+    defusedxml-0.7.1           |     pyhd8ed1ab_0          23 KB  conda-forge
+    duckdb-1.5.3               |       he730653_0           8 KB  conda-forge
+    exceptiongroup-1.3.1       |     pyhd8ed1ab_0          21 KB  conda-forge
+    executing-2.2.1            |     pyhd8ed1ab_0          30 KB  conda-forge
+    fonttools-4.63.0           |  py311hc290fe0_0         2.8 MB  conda-forge
+    fqdn-1.5.1                 |     pyhd8ed1ab_1          16 KB  conda-forge
+    freetype-2.14.3            |       hce30654_1         169 KB  conda-forge
+    gflags-2.2.2               |    hf9b8971_1005          80 KB  conda-forge
+    glog-0.7.1                 |       heb240a5_0         110 KB  conda-forge
+    greenlet-3.5.1             |  py311h8948835_0         256 KB  conda-forge
+    h11-0.16.0                 |     pyhcf101f3_1          38 KB  conda-forge
+    httpcore-1.0.9             |     pyh29332c3_0          48 KB  conda-forge
+    httpx-0.28.1               |     pyhd8ed1ab_0          62 KB  conda-forge
+    icu-78.3                   |       hef89b57_0        11.8 MB  conda-forge
+    importlib-metadata-9.0.0   |     pyhcf101f3_0          34 KB  conda-forge
+    iniconfig-2.3.0            |     pyhd8ed1ab_0          13 KB  conda-forge
+    ipykernel-7.3.0            |     pyh01cf8df_0         134 KB  conda-forge
+    ipython-9.14.1             |     pyh53cf698_0         638 KB  conda-forge
+    ipython_pygments_lexers-1.1.1|     pyhd8ed1ab_0          14 KB  conda-forge
+    isoduration-20.11.0        |     pyhd8ed1ab_1          19 KB  conda-forge
+    jedi-0.19.2                |     pyhd8ed1ab_1         824 KB  conda-forge
+    jinja2-3.1.6               |     pyhcf101f3_1         118 KB  conda-forge
+    joblib-1.5.3               |     pyhd8ed1ab_0         221 KB  conda-forge
+    json5-0.14.0               |     pyhd8ed1ab_0          34 KB  conda-forge
+    jsonschema-4.26.0          |     pyhcf101f3_0          80 KB  conda-forge
+    jsonschema-specifications-2025.9.1|     pyhcf101f3_0          19 KB  conda-forge
+    jsonschema-with-format-nongpl-4.26.0|       hcf101f3_0           5 KB  conda-forge
+    jupyter-lsp-2.3.1          |     pyhcf101f3_0          60 KB  conda-forge
+    jupyter_client-8.9.1       |     pyhcf101f3_0         115 KB  conda-forge
+    jupyter_core-5.9.1         |     pyhc90fa1f_0          64 KB  conda-forge
+    jupyter_events-0.12.1      |     pyhcf101f3_0          23 KB  conda-forge
+    jupyter_server-2.19.0      |     pyhcf101f3_0         353 KB  conda-forge
+    jupyter_server_terminals-0.5.4|     pyhcf101f3_0          22 KB  conda-forge
+    jupyterlab-4.5.8           |     pyhd8ed1ab_0         8.2 MB  conda-forge
+    jupyterlab_pygments-0.3.0  |     pyhd8ed1ab_2          18 KB  conda-forge
+    jupyterlab_server-2.28.0   |     pyhcf101f3_0          50 KB  conda-forge
+    khronos-opencl-icd-loader-2024.10.24|       h5505292_1          34 KB  conda-forge
+    kiwisolver-1.5.0           |  py311h7d85929_0          65 KB  conda-forge
+    lark-1.3.1                 |     pyhd8ed1ab_0          92 KB  conda-forge
+    lcms2-2.19.1               |       hdfa7624_1         209 KB  conda-forge
+    lerc-4.1.0                 |       h1eee2c3_0         160 KB  conda-forge
+    libabseil-20260107.1       | cxx17_h2062a1b_0         1.2 MB  conda-forge
+    libarrow-24.0.0            |   h91214ac_5_cpu         4.0 MB  conda-forge
+    libarrow-acero-24.0.0      |   ha4f4840_5_cpu         508 KB  conda-forge
+    libarrow-compute-24.0.0    |   h8d10c55_5_cpu         2.1 MB  conda-forge
+    libarrow-dataset-24.0.0    |   ha4f4840_5_cpu         507 KB  conda-forge
+    libarrow-substrait-24.0.0  |   h05be00f_5_cpu         444 KB  conda-forge
+    libblas-3.11.0             |8_h51639a9_openblas          19 KB  conda-forge
+    libboost-1.90.0            |       h0419b56_1         2.1 MB  conda-forge
+    libbrotlicommon-1.2.0      |       hc919400_1          78 KB  conda-forge
+    libbrotlidec-1.2.0         |       hc919400_1          29 KB  conda-forge
+    libbrotlienc-1.2.0         |       hc919400_1         284 KB  conda-forge
+    libcblas-3.11.0            |8_hb0561ab_openblas          18 KB  conda-forge
+    libcrc32c-1.1.2            |       hbdafb3b_0          18 KB  conda-forge
+    libdeflate-1.25            |       hc11a715_0          54 KB  conda-forge
+    libevent-2.1.12            |       h2757513_1         360 KB  conda-forge
+    libfreetype-2.14.3         |       hce30654_1           8 KB  conda-forge
+    libfreetype6-2.14.3        |       hdfa99f5_1         331 KB  conda-forge
+    libgcc-15.2.0              |      hcbb3090_19         395 KB  conda-forge
+    libgfortran-15.2.0         |      h07b0088_19         136 KB  conda-forge
+    libgfortran5-15.2.0        |      hdae7583_19         586 KB  conda-forge
+    libgoogle-cloud-3.5.0      |       h688a705_1         1.7 MB  conda-forge
+    libgoogle-cloud-storage-3.5.0|       ha114238_1         515 KB  conda-forge
+    libgrpc-1.78.1             |       h3e3f78d_0         4.6 MB  conda-forge
+    libjpeg-turbo-3.1.4.1      |       h84a0fba_0         543 KB  conda-forge
+    liblapack-3.11.0           |8_hd9741b5_openblas          18 KB  conda-forge
+    liblightgbm-4.6.0          |   cpu_h52df330_8         1.5 MB  conda-forge
+    liblzma-5.8.2              |       h8088a28_0          90 KB  conda-forge
+    libopenblas-0.3.33         |openmp_he657e61_0         4.1 MB  conda-forge
+    libopentelemetry-cpp-1.27.0|       h08d5cc3_0         569 KB  conda-forge
+    libopentelemetry-cpp-headers-1.27.0|       hce30654_0         385 KB  conda-forge
+    libparquet-24.0.0          |   h840b369_5_cpu         1.0 MB  conda-forge
+    libpng-1.6.58              |       h132b30e_0         283 KB  conda-forge
+    libprotobuf-6.33.5         |       h2d4b707_1         2.6 MB  conda-forge
+    libre2-11-2025.11.05       |       h4c27e2a_1         162 KB  conda-forge
+    libsodium-1.0.22           |       h1a92334_1         242 KB  conda-forge
+    libsqlite-3.53.2           |       h1ae2325_0         906 KB  conda-forge
+    libthrift-0.22.0           |       h1fb9c8a_2         315 KB  conda-forge
+    libtiff-4.7.1              |       h4030677_1         365 KB  conda-forge
+    libutf8proc-2.11.3         |       h2431656_0          86 KB  conda-forge
+    libwebp-base-1.6.0         |       h07db88b_0         288 KB  conda-forge
+    libxcb-1.17.0              |       hdb1d25a_0         316 KB  conda-forge
+    libxgboost-3.2.0           |   cpu_h77aee5e_3         1.5 MB  conda-forge
+    libxml2-2.15.2             |       h8d039ee_0          40 KB  conda-forge
+    libxml2-16-2.15.2          |       h5ef1a60_0         455 KB  conda-forge
+    lightgbm-4.6.0             |cpu_py_hb6b7976_8          90 KB  conda-forge
+    llvm-openmp-22.1.7         |       hc7d1edf_0         278 KB  conda-forge
+    llvmlite-0.47.0            |  py311h5d75059_1        23.2 MB  conda-forge
+    mako-1.3.12                |     pyhcf101f3_0          70 KB  conda-forge
+    markupsafe-3.0.3           |  py311hc290fe0_1          26 KB  conda-forge
+    matplotlib-3.10.9          |  py311ha1ab1f8_0          17 KB  conda-forge
+    matplotlib-base-3.10.9     |  py311h68bafec_0         8.0 MB  conda-forge
+    matplotlib-inline-0.2.2    |     pyhd8ed1ab_0          15 KB  conda-forge
+    mistune-3.2.1              |     pyhcf101f3_0          73 KB  conda-forge
+    munkres-1.1.4              |     pyhd8ed1ab_1          15 KB  conda-forge
+    narwhals-2.22.1            |     pyhcf101f3_0         279 KB  conda-forge
+    nbclient-0.11.0            |     pyhd8ed1ab_0          28 KB  conda-forge
+    nbconvert-core-7.17.1      |     pyhcf101f3_0         197 KB  conda-forge
+    nbformat-5.10.4            |     pyhd8ed1ab_1          99 KB  conda-forge
+    nest-asyncio2-1.7.2        |     pyhcf101f3_0          16 KB  conda-forge
+    nlohmann_json-3.12.0       |       h784d473_1         134 KB  conda-forge
+    notebook-shim-0.2.4        |     pyhd8ed1ab_1          16 KB  conda-forge
+    numba-0.65.1               |  py311h7b83a5e_1         5.6 MB  conda-forge
+    numpy-2.4.6                |  py311hbd1492f_0         7.1 MB  conda-forge
+    opencl-headers-2025.06.13  |       hf6b4638_0          55 KB  conda-forge
+    openjpeg-2.5.4             |       hd9e9057_0         312 KB  conda-forge
+    openssl-3.6.3              |       hd24854e_0         3.0 MB  conda-forge
+    optuna-4.9.0               |     pyhd8ed1ab_0         258 KB  conda-forge
+    orc-2.3.0                  |       hd11884d_0         535 KB  conda-forge
+    overrides-7.7.0            |     pyhd8ed1ab_1          29 KB  conda-forge
+    pandas-3.0.3               |  py311h8948835_0        13.7 MB  conda-forge
+    pandocfilters-1.5.0        |     pyhd8ed1ab_0          11 KB  conda-forge
+    parso-0.8.7                |     pyhcf101f3_0          81 KB  conda-forge
+    patsy-1.0.2                |     pyhcf101f3_0         189 KB  conda-forge
+    pexpect-4.9.0              |     pyhd8ed1ab_1          52 KB  conda-forge
+    pillow-12.2.0              |  py311hd37aea2_0         957 KB  conda-forge
+    plotly-6.8.0               |     pyhd8ed1ab_0         3.9 MB  conda-forge
+    polars-1.41.2              |     pyh58ad624_0         527 KB  conda-forge
+    polars-runtime-32-1.41.2   |  py310hb2fc7d1_0        34.6 MB  conda-forge
+    prometheus-cpp-1.3.0       |       h0967b3e_0         169 KB  conda-forge
+    prometheus_client-0.25.0   |     pyhd8ed1ab_0          56 KB  conda-forge
+    prompt-toolkit-3.0.52      |     pyha770c72_0         268 KB  conda-forge
+    psutil-7.2.2               |  py311he363849_0         239 KB  conda-forge
+    pthread-stubs-0.4          |    hd74edd7_1002           8 KB  conda-forge
+    ptyprocess-0.7.0           |     pyhd8ed1ab_1          19 KB  conda-forge
+    pure_eval-0.2.3            |     pyhd8ed1ab_1          16 KB  conda-forge
+    py-xgboost-3.2.0           | cpu_pyh053a271_3         175 KB  conda-forge
+    pyarrow-24.0.0             |  py311ha1ab1f8_0          26 KB  conda-forge
+    pyarrow-core-24.0.0        |py311h6915ae7_0_cpu         3.8 MB  conda-forge
+    pygments-2.20.0            |     pyhd8ed1ab_0         872 KB  conda-forge
+    pyobjc-core-12.0           |  py311h0cf0eac_0         469 KB  conda-forge
+    pyobjc-framework-cocoa-12.0|  py311h71564db_0         373 KB  conda-forge
+    pyparsing-3.3.2            |     pyhcf101f3_0         108 KB  conda-forge
+    pytest-9.0.3               |     pyhc364b38_1         293 KB  conda-forge
+    python-3.11.14             |hec0b533_1_cpython        14.1 MB  conda-forge
+    python-dateutil-2.9.0.post0|     pyhe01879c_2         228 KB  conda-forge
+    python-duckdb-1.5.3        |  py311h8325047_0        11.4 MB  conda-forge
+    python-fastjsonschema-2.21.2|     pyhe01879c_0         239 KB  conda-forge
+    python-gil-3.11.15         |       hd8ed1ab_1          47 KB  conda-forge
+    python-json-logger-4.1.0   |     pyhd8ed1ab_0          19 KB  conda-forge
+    python-tzdata-2026.2       |     pyhd8ed1ab_0         143 KB  conda-forge
+    python_abi-3.11            |          8_cp311           7 KB  conda-forge
+    pyyaml-6.0.3               |  py311hc290fe0_1         188 KB  conda-forge
+    pyzmq-27.1.0               |  py311h8463d66_3         352 KB  conda-forge
+    qhull-2020.2               |       h420ef59_5         504 KB  conda-forge
+    re2-2025.11.05             |       ha480c28_1          27 KB  conda-forge
+    referencing-0.37.0         |     pyhcf101f3_0          51 KB  conda-forge
+    rfc3339-validator-0.1.4    |     pyhd8ed1ab_1          10 KB  conda-forge
+    rfc3986-validator-0.1.1    |     pyh9f0ad1d_0           8 KB  conda-forge
+    rfc3987-syntax-1.1.0       |     pyhe01879c_1          22 KB  conda-forge
+    rpds-py-2026.5.1           |  py311haff49d3_0         286 KB  conda-forge
+    scikit-learn-1.9.0         |np2py311hf1dd2ad_0         9.2 MB  conda-forge
+    scipy-1.17.1               |  py311h9a58382_1        13.3 MB  conda-forge
+    send2trash-2.1.0           |     pyh5552912_1          22 KB  conda-forge
+    shap-0.51.0                |cpu_py311hd17a98c_0         4.0 MB  conda-forge
+    six-1.17.0                 |     pyhe01879c_1          18 KB  conda-forge
+    slicer-0.0.8               |     pyhd8ed1ab_0          19 KB  conda-forge
+    snappy-1.2.2               |       hada39a4_1          38 KB  conda-forge
+    sniffio-1.3.1              |     pyhd8ed1ab_2          15 KB  conda-forge
+    soupsieve-2.8.4            |     pyhd8ed1ab_0          38 KB  conda-forge
+    sqlalchemy-2.0.50          |  py311he363849_0         3.6 MB  conda-forge
+    stack_data-0.6.3           |     pyhd8ed1ab_1          26 KB  conda-forge
+    statsmodels-0.14.6         |  py311h09efe57_0        11.2 MB  conda-forge
+    terminado-0.18.1           |     pyhc90fa1f_1          24 KB  conda-forge
+    threadpoolctl-3.6.0        |     pyhecae5ae_0          23 KB  conda-forge
+    tinycss2-1.4.0             |     pyhd8ed1ab_0          28 KB  conda-forge
+    tomli-2.4.1                |     pyhcf101f3_0          21 KB  conda-forge
+    tornado-6.5.7              |  py311hc949640_0         861 KB  conda-forge
+    tqdm-4.68.2                |     pyh8f84b5b_1          93 KB  conda-forge
+    traitlets-5.15.1           |     pyhcf101f3_0         112 KB  conda-forge
+    typing-extensions-4.15.0   |       h396c80c_0          89 KB  conda-forge
+    typing_extensions-4.15.0   |     pyhcf101f3_0          50 KB  conda-forge
+    typing_utils-0.1.0         |     pyhd8ed1ab_1          15 KB  conda-forge
+    unicodedata2-17.0.1        |  py311hc949640_0         406 KB  conda-forge
+    uri-template-1.3.0         |     pyhd8ed1ab_1          23 KB  conda-forge
+    wcwidth-0.8.1              |     pyhd8ed1ab_0         131 KB  conda-forge
+    webcolors-25.10.0          |     pyhd8ed1ab_0          19 KB  conda-forge
+    webencodings-0.5.1         |     pyhd8ed1ab_3          15 KB  conda-forge
+    websocket-client-1.9.0     |     pyhd8ed1ab_0          60 KB  conda-forge
+    xgboost-3.2.0              | cpu_pyhb39878e_3          22 KB  conda-forge
+    xorg-libxau-1.0.12         |       hc919400_1          14 KB  conda-forge
+    xorg-libxdmcp-1.1.5        |       hc919400_1          19 KB  conda-forge
+    yaml-0.2.5                 |       h925e9cb_3          81 KB  conda-forge
+    zeromq-4.3.5               |      h10816f8_11         240 KB  conda-forge
+    zipp-4.1.0                 |     pyhcf101f3_0          24 KB  conda-forge
+    zlib-ng-2.3.3              |       hed4e4f5_1          92 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:       262.1 MB
+
+The following NEW packages will be INSTALLED:
+
+  _openmp_mutex      conda-forge/osx-arm64::_openmp_mutex-4.5-7_kmp_llvm 
+  _python_abi3_supp~ conda-forge/noarch::_python_abi3_support-1.0-hd8ed1ab_2 
+  alembic            conda-forge/noarch::alembic-1.18.4-pyhcf101f3_0 
+  anyio              conda-forge/noarch::anyio-4.13.0-pyhcf101f3_0 
+  appnope            conda-forge/noarch::appnope-0.1.4-pyhd8ed1ab_1 
+  argon2-cffi        conda-forge/noarch::argon2-cffi-25.1.0-pyhd8ed1ab_0 
+  argon2-cffi-bindi~ conda-forge/osx-arm64::argon2-cffi-bindings-25.1.0-py311h9408147_2 
+  arrow              conda-forge/noarch::arrow-1.4.0-pyhcf101f3_0 
+  asttokens          conda-forge/noarch::asttokens-3.0.1-pyhd8ed1ab_0 
+  async-lru          conda-forge/noarch::async-lru-2.3.0-pyhcf101f3_0 
+  attrs              conda-forge/noarch::attrs-26.1.0-pyhcf101f3_0 
+  aws-c-auth         conda-forge/osx-arm64::aws-c-auth-0.10.3-hceed5df_2 
+  aws-c-cal          conda-forge/osx-arm64::aws-c-cal-0.9.14-h81c6212_2 
+  aws-c-common       conda-forge/osx-arm64::aws-c-common-0.14.0-h84a0fba_0 
+  aws-c-compression  conda-forge/osx-arm64::aws-c-compression-0.3.2-h61d3404_2 
+  aws-c-event-stream conda-forge/osx-arm64::aws-c-event-stream-0.7.1-h7e6a3cf_2 
+  aws-c-http         conda-forge/osx-arm64::aws-c-http-0.11.0-h0a63974_2 
+  aws-c-io           conda-forge/osx-arm64::aws-c-io-0.26.3-h58c0f83_4 
+  aws-c-mqtt         conda-forge/osx-arm64::aws-c-mqtt-0.15.2-ha70999f_4 
+  aws-c-s3           conda-forge/osx-arm64::aws-c-s3-0.12.5-h43def2a_1 
+  aws-c-sdkutils     conda-forge/osx-arm64::aws-c-sdkutils-0.2.4-h61d3404_6 
+  aws-checksums      conda-forge/osx-arm64::aws-checksums-0.2.10-h61d3404_2 
+  aws-crt-cpp        conda-forge/osx-arm64::aws-crt-cpp-0.40.0-hd6eb0f7_1 
+  aws-sdk-cpp        conda-forge/osx-arm64::aws-sdk-cpp-1.11.747-h55dad5a_6 
+  azure-core-cpp     conda-forge/osx-arm64::azure-core-cpp-1.16.2-he5ae378_0 
+  azure-identity-cpp conda-forge/osx-arm64::azure-identity-cpp-1.13.3-h810541e_1 
+  azure-storage-blo~ conda-forge/osx-arm64::azure-storage-blobs-cpp-12.17.0-h5446563_1 
+  azure-storage-com~ conda-forge/osx-arm64::azure-storage-common-cpp-12.13.0-he467506_0 
+  azure-storage-fil~ conda-forge/osx-arm64::azure-storage-files-datalake-cpp-12.15.0-hfea7fb9_0 
+  babel              conda-forge/noarch::babel-2.18.0-pyhcf101f3_1 
+  backports.zstd     conda-forge/osx-arm64::backports.zstd-1.5.0-py311h36d4fbb_0 
+  beautifulsoup4     conda-forge/noarch::beautifulsoup4-4.15.0-pyha770c72_0 
+  bleach             conda-forge/noarch::bleach-6.4.0-pyhcf101f3_0 
+  bleach-with-css    conda-forge/noarch::bleach-with-css-6.4.0-hac0b51c_0 
+  brotli             conda-forge/osx-arm64::brotli-1.2.0-h7d5ae5b_1 
+  brotli-bin         conda-forge/osx-arm64::brotli-bin-1.2.0-hc919400_1 
+  brotli-python      conda-forge/osx-arm64::brotli-python-1.2.0-py311hdc60ec4_1 
+  c-ares             conda-forge/osx-arm64::c-ares-1.34.6-hc919400_0 
+  cached-property    conda-forge/noarch::cached-property-1.5.2-hd8ed1ab_1 
+  cached_property    conda-forge/noarch::cached_property-1.5.2-pyha770c72_1 
+  certifi            conda-forge/noarch::certifi-2026.5.20-pyhd8ed1ab_0 
+  cffi               conda-forge/osx-arm64::cffi-2.0.0-py311hcfc1310_0 
+  charset-normalizer conda-forge/noarch::charset-normalizer-3.4.7-pyhd8ed1ab_0 
+  cloudpickle        conda-forge/noarch::cloudpickle-3.1.2-pyhcf101f3_1 
+  colorama           conda-forge/noarch::colorama-0.4.6-pyhd8ed1ab_1 
+  colorlog           conda-forge/noarch::colorlog-6.10.1-pyh707e725_0 
+  comm               conda-forge/noarch::comm-0.2.3-pyhe01879c_0 
+  contourpy          conda-forge/osx-arm64::contourpy-1.3.3-py311h7d85929_4 
+  cpython            conda-forge/noarch::cpython-3.11.15-py311hd8ed1ab_1 
+  cycler             conda-forge/noarch::cycler-0.12.1-pyhcf101f3_2 
+  debugpy            conda-forge/osx-arm64::debugpy-1.8.21-py311h8948835_0 
+  decorator          conda-forge/noarch::decorator-5.3.1-pyhd8ed1ab_0 
+  defusedxml         conda-forge/noarch::defusedxml-0.7.1-pyhd8ed1ab_0 
+  duckdb             conda-forge/noarch::duckdb-1.5.3-he730653_0 
+  exceptiongroup     conda-forge/noarch::exceptiongroup-1.3.1-pyhd8ed1ab_0 
+  executing          conda-forge/noarch::executing-2.2.1-pyhd8ed1ab_0 
+  fonttools          conda-forge/osx-arm64::fonttools-4.63.0-py311hc290fe0_0 
+  fqdn               conda-forge/noarch::fqdn-1.5.1-pyhd8ed1ab_1 
+  freetype           conda-forge/osx-arm64::freetype-2.14.3-hce30654_1 
+  gflags             conda-forge/osx-arm64::gflags-2.2.2-hf9b8971_1005 
+  glog               conda-forge/osx-arm64::glog-0.7.1-heb240a5_0 
+  greenlet           conda-forge/osx-arm64::greenlet-3.5.1-py311h8948835_0 
+  h11                conda-forge/noarch::h11-0.16.0-pyhcf101f3_1 
+  h2                 conda-forge/noarch::h2-4.3.0-pyhcf101f3_0 
+  hpack              conda-forge/noarch::hpack-4.1.0-pyhd8ed1ab_0 
+  httpcore           conda-forge/noarch::httpcore-1.0.9-pyh29332c3_0 
+  httpx              conda-forge/noarch::httpx-0.28.1-pyhd8ed1ab_0 
+  hyperframe         conda-forge/noarch::hyperframe-6.1.0-pyhd8ed1ab_0 
+  icu                conda-forge/osx-arm64::icu-78.3-hef89b57_0 
+  idna               conda-forge/noarch::idna-3.17-pyhcf101f3_0 
+  importlib-metadata conda-forge/noarch::importlib-metadata-9.0.0-pyhcf101f3_0 
+  iniconfig          conda-forge/noarch::iniconfig-2.3.0-pyhd8ed1ab_0 
+  ipykernel          conda-forge/noarch::ipykernel-7.3.0-pyh01cf8df_0 
+  ipython            conda-forge/noarch::ipython-9.14.1-pyh53cf698_0 
+  ipython_pygments_~ conda-forge/noarch::ipython_pygments_lexers-1.1.1-pyhd8ed1ab_0 
+  isoduration        conda-forge/noarch::isoduration-20.11.0-pyhd8ed1ab_1 
+  jedi               conda-forge/noarch::jedi-0.19.2-pyhd8ed1ab_1 
+  jinja2             conda-forge/noarch::jinja2-3.1.6-pyhcf101f3_1 
+  joblib             conda-forge/noarch::joblib-1.5.3-pyhd8ed1ab_0 
+  json5              conda-forge/noarch::json5-0.14.0-pyhd8ed1ab_0 
+  jsonpointer        conda-forge/noarch::jsonpointer-3.1.1-pyhcf101f3_0 
+  jsonschema         conda-forge/noarch::jsonschema-4.26.0-pyhcf101f3_0 
+  jsonschema-specif~ conda-forge/noarch::jsonschema-specifications-2025.9.1-pyhcf101f3_0 
+  jsonschema-with-f~ conda-forge/noarch::jsonschema-with-format-nongpl-4.26.0-hcf101f3_0 
+  jupyter-lsp        conda-forge/noarch::jupyter-lsp-2.3.1-pyhcf101f3_0 
+  jupyter_client     conda-forge/noarch::jupyter_client-8.9.1-pyhcf101f3_0 
+  jupyter_core       conda-forge/noarch::jupyter_core-5.9.1-pyhc90fa1f_0 
+  jupyter_events     conda-forge/noarch::jupyter_events-0.12.1-pyhcf101f3_0 
+  jupyter_server     conda-forge/noarch::jupyter_server-2.19.0-pyhcf101f3_0 
+  jupyter_server_te~ conda-forge/noarch::jupyter_server_terminals-0.5.4-pyhcf101f3_0 
+  jupyterlab         conda-forge/noarch::jupyterlab-4.5.8-pyhd8ed1ab_0 
+  jupyterlab_pygmen~ conda-forge/noarch::jupyterlab_pygments-0.3.0-pyhd8ed1ab_2 
+  jupyterlab_server  conda-forge/noarch::jupyterlab_server-2.28.0-pyhcf101f3_0 
+  khronos-opencl-ic~ conda-forge/osx-arm64::khronos-opencl-icd-loader-2024.10.24-h5505292_1 
+  kiwisolver         conda-forge/osx-arm64::kiwisolver-1.5.0-py311h7d85929_0 
+  krb5               conda-forge/osx-arm64::krb5-1.22.2-h385eeb1_0 
+  lark               conda-forge/noarch::lark-1.3.1-pyhd8ed1ab_0 
+  lcms2              conda-forge/osx-arm64::lcms2-2.19.1-hdfa7624_1 
+  lerc               conda-forge/osx-arm64::lerc-4.1.0-h1eee2c3_0 
+  libabseil          conda-forge/osx-arm64::libabseil-20260107.1-cxx17_h2062a1b_0 
+  libarrow           conda-forge/osx-arm64::libarrow-24.0.0-h91214ac_5_cpu 
+  libarrow-acero     conda-forge/osx-arm64::libarrow-acero-24.0.0-ha4f4840_5_cpu 
+  libarrow-compute   conda-forge/osx-arm64::libarrow-compute-24.0.0-h8d10c55_5_cpu 
+  libarrow-dataset   conda-forge/osx-arm64::libarrow-dataset-24.0.0-ha4f4840_5_cpu 
+  libarrow-substrait conda-forge/osx-arm64::libarrow-substrait-24.0.0-h05be00f_5_cpu 
+  libblas            conda-forge/osx-arm64::libblas-3.11.0-8_h51639a9_openblas 
+  libboost           conda-forge/osx-arm64::libboost-1.90.0-h0419b56_1 
+  libbrotlicommon    conda-forge/osx-arm64::libbrotlicommon-1.2.0-hc919400_1 
+  libbrotlidec       conda-forge/osx-arm64::libbrotlidec-1.2.0-hc919400_1 
+  libbrotlienc       conda-forge/osx-arm64::libbrotlienc-1.2.0-hc919400_1 
+  libcblas           conda-forge/osx-arm64::libcblas-3.11.0-8_hb0561ab_openblas 
+  libcrc32c          conda-forge/osx-arm64::libcrc32c-1.1.2-hbdafb3b_0 
+  libcurl            conda-forge/osx-arm64::libcurl-8.20.0-hd5a2499_0 
+  libdeflate         conda-forge/osx-arm64::libdeflate-1.25-hc11a715_0 
+  libedit            conda-forge/osx-arm64::libedit-3.1.20250104-pl5321hafb1f1b_0 
+  libev              conda-forge/osx-arm64::libev-4.33-h93a5062_2 
+  libevent           conda-forge/osx-arm64::libevent-2.1.12-h2757513_1 
+  libfreetype        conda-forge/osx-arm64::libfreetype-2.14.3-hce30654_1 
+  libfreetype6       conda-forge/osx-arm64::libfreetype6-2.14.3-hdfa99f5_1 
+  libgcc             conda-forge/osx-arm64::libgcc-15.2.0-hcbb3090_19 
+  libgfortran        conda-forge/osx-arm64::libgfortran-15.2.0-h07b0088_19 
+  libgfortran5       conda-forge/osx-arm64::libgfortran5-15.2.0-hdae7583_19 
+  libgoogle-cloud    conda-forge/osx-arm64::libgoogle-cloud-3.5.0-h688a705_1 
+  libgoogle-cloud-s~ conda-forge/osx-arm64::libgoogle-cloud-storage-3.5.0-ha114238_1 
+  libgrpc            conda-forge/osx-arm64::libgrpc-1.78.1-h3e3f78d_0 
+  libiconv           conda-forge/osx-arm64::libiconv-1.18-h23cfdf5_2 
+  libjpeg-turbo      conda-forge/osx-arm64::libjpeg-turbo-3.1.4.1-h84a0fba_0 
+  liblapack          conda-forge/osx-arm64::liblapack-3.11.0-8_hd9741b5_openblas 
+  liblightgbm        conda-forge/osx-arm64::liblightgbm-4.6.0-cpu_h52df330_8 
+  liblzma            conda-forge/osx-arm64::liblzma-5.8.2-h8088a28_0 
+  libnghttp2         conda-forge/osx-arm64::libnghttp2-1.68.1-h8f3e76b_0 
+  libopenblas        conda-forge/osx-arm64::libopenblas-0.3.33-openmp_he657e61_0 
+  libopentelemetry-~ conda-forge/osx-arm64::libopentelemetry-cpp-1.27.0-h08d5cc3_0 
+  libopentelemetry-~ conda-forge/osx-arm64::libopentelemetry-cpp-headers-1.27.0-hce30654_0 
+  libparquet         conda-forge/osx-arm64::libparquet-24.0.0-h840b369_5_cpu 
+  libpng             conda-forge/osx-arm64::libpng-1.6.58-h132b30e_0 
+  libprotobuf        conda-forge/osx-arm64::libprotobuf-6.33.5-h2d4b707_1 
+  libre2-11          conda-forge/osx-arm64::libre2-11-2025.11.05-h4c27e2a_1 
+  libsodium          conda-forge/osx-arm64::libsodium-1.0.22-h1a92334_1 
+  libsqlite          conda-forge/osx-arm64::libsqlite-3.53.2-h1ae2325_0 
+  libssh2            conda-forge/osx-arm64::libssh2-1.11.1-h1590b86_0 
+  libthrift          conda-forge/osx-arm64::libthrift-0.22.0-h1fb9c8a_2 
+  libtiff            conda-forge/osx-arm64::libtiff-4.7.1-h4030677_1 
+  libutf8proc        conda-forge/osx-arm64::libutf8proc-2.11.3-h2431656_0 
+  libwebp-base       conda-forge/osx-arm64::libwebp-base-1.6.0-h07db88b_0 
+  libxcb             conda-forge/osx-arm64::libxcb-1.17.0-hdb1d25a_0 
+  libxgboost         conda-forge/osx-arm64::libxgboost-3.2.0-cpu_h77aee5e_3 
+  libxml2            conda-forge/osx-arm64::libxml2-2.15.2-h8d039ee_0 
+  libxml2-16         conda-forge/osx-arm64::libxml2-16-2.15.2-h5ef1a60_0 
+  lightgbm           conda-forge/noarch::lightgbm-4.6.0-cpu_py_hb6b7976_8 
+  llvm-openmp        conda-forge/osx-arm64::llvm-openmp-22.1.7-hc7d1edf_0 
+  llvmlite           conda-forge/osx-arm64::llvmlite-0.47.0-py311h5d75059_1 
+  lz4-c              conda-forge/osx-arm64::lz4-c-1.10.0-h286801f_1 
+  mako               conda-forge/noarch::mako-1.3.12-pyhcf101f3_0 
+  markupsafe         conda-forge/osx-arm64::markupsafe-3.0.3-py311hc290fe0_1 
+  matplotlib         conda-forge/osx-arm64::matplotlib-3.10.9-py311ha1ab1f8_0 
+  matplotlib-base    conda-forge/osx-arm64::matplotlib-base-3.10.9-py311h68bafec_0 
+  matplotlib-inline  conda-forge/noarch::matplotlib-inline-0.2.2-pyhd8ed1ab_0 
+  mistune            conda-forge/noarch::mistune-3.2.1-pyhcf101f3_0 
+  munkres            conda-forge/noarch::munkres-1.1.4-pyhd8ed1ab_1 
+  narwhals           conda-forge/noarch::narwhals-2.22.1-pyhcf101f3_0 
+  nbclient           conda-forge/noarch::nbclient-0.11.0-pyhd8ed1ab_0 
+  nbconvert-core     conda-forge/noarch::nbconvert-core-7.17.1-pyhcf101f3_0 
+  nbformat           conda-forge/noarch::nbformat-5.10.4-pyhd8ed1ab_1 
+  nest-asyncio2      conda-forge/noarch::nest-asyncio2-1.7.2-pyhcf101f3_0 
+  nlohmann_json      conda-forge/osx-arm64::nlohmann_json-3.12.0-h784d473_1 
+  notebook-shim      conda-forge/noarch::notebook-shim-0.2.4-pyhd8ed1ab_1 
+  numba              conda-forge/osx-arm64::numba-0.65.1-py311h7b83a5e_1 
+  numpy              conda-forge/osx-arm64::numpy-2.4.6-py311hbd1492f_0 
+  opencl-headers     conda-forge/osx-arm64::opencl-headers-2025.06.13-hf6b4638_0 
+  openjpeg           conda-forge/osx-arm64::openjpeg-2.5.4-hd9e9057_0 
+  optuna             conda-forge/noarch::optuna-4.9.0-pyhd8ed1ab_0 
+  orc                conda-forge/osx-arm64::orc-2.3.0-hd11884d_0 
+  overrides          conda-forge/noarch::overrides-7.7.0-pyhd8ed1ab_1 
+  pandas             conda-forge/osx-arm64::pandas-3.0.3-py311h8948835_0 
+  pandocfilters      conda-forge/noarch::pandocfilters-1.5.0-pyhd8ed1ab_0 
+  parso              conda-forge/noarch::parso-0.8.7-pyhcf101f3_0 
+  patsy              conda-forge/noarch::patsy-1.0.2-pyhcf101f3_0 
+  pexpect            conda-forge/noarch::pexpect-4.9.0-pyhd8ed1ab_1 
+  pillow             conda-forge/osx-arm64::pillow-12.2.0-py311hd37aea2_0 
+  platformdirs       conda-forge/noarch::platformdirs-4.10.0-pyhcf101f3_0 
+  plotly             conda-forge/noarch::plotly-6.8.0-pyhd8ed1ab_0 
+  pluggy             conda-forge/noarch::pluggy-1.6.0-pyhf9edf01_1 
+  polars             conda-forge/noarch::polars-1.41.2-pyh58ad624_0 
+  polars-runtime-32  conda-forge/osx-arm64::polars-runtime-32-1.41.2-py310hb2fc7d1_0 
+  prometheus-cpp     conda-forge/osx-arm64::prometheus-cpp-1.3.0-h0967b3e_0 
+  prometheus_client  conda-forge/noarch::prometheus_client-0.25.0-pyhd8ed1ab_0 
+  prompt-toolkit     conda-forge/noarch::prompt-toolkit-3.0.52-pyha770c72_0 
+  psutil             conda-forge/osx-arm64::psutil-7.2.2-py311he363849_0 
+  pthread-stubs      conda-forge/osx-arm64::pthread-stubs-0.4-hd74edd7_1002 
+  ptyprocess         conda-forge/noarch::ptyprocess-0.7.0-pyhd8ed1ab_1 
+  pure_eval          conda-forge/noarch::pure_eval-0.2.3-pyhd8ed1ab_1 
+  py-xgboost         conda-forge/noarch::py-xgboost-3.2.0-cpu_pyh053a271_3 
+  pyarrow            conda-forge/osx-arm64::pyarrow-24.0.0-py311ha1ab1f8_0 
+  pyarrow-core       conda-forge/osx-arm64::pyarrow-core-24.0.0-py311h6915ae7_0_cpu 
+  pycparser          conda-forge/noarch::pycparser-3.0-pyhcf101f3_0 
+  pygments           conda-forge/noarch::pygments-2.20.0-pyhd8ed1ab_0 
+  pyobjc-core        conda-forge/osx-arm64::pyobjc-core-12.0-py311h0cf0eac_0 
+  pyobjc-framework-~ conda-forge/osx-arm64::pyobjc-framework-cocoa-12.0-py311h71564db_0 
+  pyparsing          conda-forge/noarch::pyparsing-3.3.2-pyhcf101f3_0 
+  pysocks            conda-forge/noarch::pysocks-1.7.1-pyha55dd90_7 
+  pytest             conda-forge/noarch::pytest-9.0.3-pyhc364b38_1 
+  python-dateutil    conda-forge/noarch::python-dateutil-2.9.0.post0-pyhe01879c_2 
+  python-duckdb      conda-forge/osx-arm64::python-duckdb-1.5.3-py311h8325047_0 
+  python-fastjsonsc~ conda-forge/noarch::python-fastjsonschema-2.21.2-pyhe01879c_0 
+  python-gil         conda-forge/noarch::python-gil-3.11.15-hd8ed1ab_1 
+  python-json-logger conda-forge/noarch::python-json-logger-4.1.0-pyhd8ed1ab_0 
+  python-tzdata      conda-forge/noarch::python-tzdata-2026.2-pyhd8ed1ab_0 
+  python_abi         conda-forge/noarch::python_abi-3.11-8_cp311 
+  pyyaml             conda-forge/osx-arm64::pyyaml-6.0.3-py311hc290fe0_1 
+  pyzmq              conda-forge/osx-arm64::pyzmq-27.1.0-py311h8463d66_3 
+  qhull              conda-forge/osx-arm64::qhull-2020.2-h420ef59_5 
+  re2                conda-forge/osx-arm64::re2-2025.11.05-ha480c28_1 
+  referencing        conda-forge/noarch::referencing-0.37.0-pyhcf101f3_0 
+  requests           conda-forge/noarch::requests-2.34.2-pyhcf101f3_0 
+  rfc3339-validator  conda-forge/noarch::rfc3339-validator-0.1.4-pyhd8ed1ab_1 
+  rfc3986-validator  conda-forge/noarch::rfc3986-validator-0.1.1-pyh9f0ad1d_0 
+  rfc3987-syntax     conda-forge/noarch::rfc3987-syntax-1.1.0-pyhe01879c_1 
+  rpds-py            conda-forge/osx-arm64::rpds-py-2026.5.1-py311haff49d3_0 
+  scikit-learn       conda-forge/osx-arm64::scikit-learn-1.9.0-np2py311hf1dd2ad_0 
+  scipy              conda-forge/osx-arm64::scipy-1.17.1-py311h9a58382_1 
+  send2trash         conda-forge/noarch::send2trash-2.1.0-pyh5552912_1 
+  shap               conda-forge/osx-arm64::shap-0.51.0-cpu_py311hd17a98c_0 
+  six                conda-forge/noarch::six-1.17.0-pyhe01879c_1 
+  slicer             conda-forge/noarch::slicer-0.0.8-pyhd8ed1ab_0 
+  snappy             conda-forge/osx-arm64::snappy-1.2.2-hada39a4_1 
+  sniffio            conda-forge/noarch::sniffio-1.3.1-pyhd8ed1ab_2 
+  soupsieve          conda-forge/noarch::soupsieve-2.8.4-pyhd8ed1ab_0 
+  sqlalchemy         conda-forge/osx-arm64::sqlalchemy-2.0.50-py311he363849_0 
+  stack_data         conda-forge/noarch::stack_data-0.6.3-pyhd8ed1ab_1 
+  statsmodels        conda-forge/osx-arm64::statsmodels-0.14.6-py311h09efe57_0 
+  terminado          conda-forge/noarch::terminado-0.18.1-pyhc90fa1f_1 
+  threadpoolctl      conda-forge/noarch::threadpoolctl-3.6.0-pyhecae5ae_0 
+  tinycss2           conda-forge/noarch::tinycss2-1.4.0-pyhd8ed1ab_0 
+  tomli              conda-forge/noarch::tomli-2.4.1-pyhcf101f3_0 
+  tornado            conda-forge/osx-arm64::tornado-6.5.7-py311hc949640_0 
+  tqdm               conda-forge/noarch::tqdm-4.68.2-pyh8f84b5b_1 
+  traitlets          conda-forge/noarch::traitlets-5.15.1-pyhcf101f3_0 
+  typing-extensions  conda-forge/noarch::typing-extensions-4.15.0-h396c80c_0 
+  typing_extensions  conda-forge/noarch::typing_extensions-4.15.0-pyhcf101f3_0 
+  typing_utils       conda-forge/noarch::typing_utils-0.1.0-pyhd8ed1ab_1 
+  unicodedata2       conda-forge/osx-arm64::unicodedata2-17.0.1-py311hc949640_0 
+  uri-template       conda-forge/noarch::uri-template-1.3.0-pyhd8ed1ab_1 
+  urllib3            conda-forge/noarch::urllib3-2.7.0-pyhd8ed1ab_0 
+  wcwidth            conda-forge/noarch::wcwidth-0.8.1-pyhd8ed1ab_0 
+  webcolors          conda-forge/noarch::webcolors-25.10.0-pyhd8ed1ab_0 
+  webencodings       conda-forge/noarch::webencodings-0.5.1-pyhd8ed1ab_3 
+  websocket-client   conda-forge/noarch::websocket-client-1.9.0-pyhd8ed1ab_0 
+  xgboost            conda-forge/noarch::xgboost-3.2.0-cpu_pyhb39878e_3 
+  xorg-libxau        conda-forge/osx-arm64::xorg-libxau-1.0.12-hc919400_1 
+  xorg-libxdmcp      conda-forge/osx-arm64::xorg-libxdmcp-1.1.5-hc919400_1 
+  yaml               conda-forge/osx-arm64::yaml-0.2.5-h925e9cb_3 
+  zeromq             conda-forge/osx-arm64::zeromq-4.3.5-h10816f8_11 
+  zipp               conda-forge/noarch::zipp-4.1.0-pyhcf101f3_0 
+  zlib-ng            conda-forge/osx-arm64::zlib-ng-2.3.3-hed4e4f5_1 
+  zstd               conda-forge/osx-arm64::zstd-1.5.7-hbf9d68e_6 
+
+The following packages will be UPDATED:
+
+  ca-certificates    pkgs/main/osx-arm64::ca-certificates-~ --> conda-forge/noarch::ca-certificates-2026.5.20-hbd8a1cb_0 
+  openssl               pkgs/main::openssl-3.5.7-ha0b305a_0 --> conda-forge::openssl-3.6.3-hd24854e_0 
+
+The following packages will be SUPERSEDED by a higher-priority channel:
+
+  python               pkgs/main::python-3.11.15-h478e877_1 --> conda-forge::python-3.11.14-hec0b533_1_cpython 
+
+
+
+Downloading and Extracting Packages: ...working...polars-runtime-32-1. | 34.6 MB   |            |   0% 
+llvmlite-0.47.0      | 23.2 MB   |            |   0% [A
+
+python-3.11.14       | 14.1 MB   |            |   0% [A[A
+
+
+pandas-3.0.3         | 13.7 MB   |            |   0% [A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   |            |   0% [A[A[A[A
+
+
+
+
+icu-78.3             | 11.8 MB   |            |   0% [A[A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   |            |   0% [A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   |            |   0% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    |            |   0% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    |            |   0% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libarrow-24.0.0      | 4.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | 3          |   4% [A
+
+
+pandas-3.0.3         | 13.7 MB   | 1          |   1% [A[A[A
+
+python-3.11.14       | 14.1 MB   | 7          |   7% [A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | 1          |   2% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   |            |   1% 
+llvmlite-0.47.0      | 23.2 MB   | 9          |  10% [A
+
+
+
+scipy-1.17.1         | 13.3 MB   | 6          |   7% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   | 2          |   3% 
+
+
+pandas-3.0.3         | 13.7 MB   | 5          |   5% [A[A[A
+
+python-3.11.14       | 14.1 MB   | #5         |  16% [A[A
+llvmlite-0.47.0      | 23.2 MB   | #8         |  19% [A
+
+
+
+scipy-1.17.1         | 13.3 MB   | #6         |  16% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   | 5          |   5% 
+
+
+pandas-3.0.3         | 13.7 MB   | #2         |  12% [A[A[A
+
+python-3.11.14       | 14.1 MB   | ###7       |  37% [A[A
+llvmlite-0.47.0      | 23.2 MB   | ##8        |  28% [Apolars-runtime-32-1. | 34.6 MB   | 8          |   8% 
+
+
+pandas-3.0.3         | 13.7 MB   | #9         |  19% [A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ##4        |  25% [A[A[A[A
+
+python-3.11.14       | 14.1 MB   | #####6     |  56% [A[A
+llvmlite-0.47.0      | 23.2 MB   | ###6       |  36% [A
+
+
+pandas-3.0.3         | 13.7 MB   | ##5        |  26% [A[A[Apolars-runtime-32-1. | 34.6 MB   | #          |  11% 
+
+python-3.11.14       | 14.1 MB   | #######2   |  73% [A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ###2       |  32% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #2         |  13% 
+
+
+
+scipy-1.17.1         | 13.3 MB   | ###9       |  39% [A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | ####3      |  44% [A
+
+python-3.11.14       | 14.1 MB   | ########8  |  89% [A[A
+
+
+pandas-3.0.3         | 13.7 MB   | ###1       |  32% [A[A[Apolars-runtime-32-1. | 34.6 MB   | #5         |  15% 
+
+python-3.11.14       | 14.1 MB   | ########## | 100% [A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ####9      |  49% [A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | #####4     |  55% [A
+
+
+pandas-3.0.3         | 13.7 MB   | ####2      |  42% [A[A[Apolars-runtime-32-1. | 34.6 MB   | #8         |  19% 
+
+
+
+
+icu-78.3             | 11.8 MB   |            |   0% [A[A[A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | #####8     |  59% [A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | ######6    |  67% [A
+
+
+pandas-3.0.3         | 13.7 MB   | #####1     |  51% [A[A[Apolars-runtime-32-1. | 34.6 MB   | ##1        |  22% 
+
+
+
+
+icu-78.3             | 11.8 MB   | ##1        |  21% [A[A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | #######8   |  78% [A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ######8    |  68% [A[A[A[A
+
+
+pandas-3.0.3         | 13.7 MB   | ######1    |  62% [A[A[Apolars-runtime-32-1. | 34.6 MB   | ##5        |  26% 
+
+
+
+
+icu-78.3             | 11.8 MB   | ###9       |  39% [A[A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | ########8  |  88% [A
+
+
+
+scipy-1.17.1         | 13.3 MB   | #######8   |  79% [A[A[A[A
+
+
+pandas-3.0.3         | 13.7 MB   | #######    |  71% [A[A[Apolars-runtime-32-1. | 34.6 MB   | ##8        |  29% 
+
+
+
+
+icu-78.3             | 11.8 MB   | #####8     |  59% [A[A[A[A[A
+
+python-3.11.14       | 14.1 MB   | ########## | 100% [A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ########7  |  88% [A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | #########8 |  98% [Apolars-runtime-32-1. | 34.6 MB   | ###1       |  32% 
+
+
+pandas-3.0.3         | 13.7 MB   | #######9   |  79% [A[A[A
+
+
+
+
+icu-78.3             | 11.8 MB   | #######5   |  76% [A[A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | ########## | 100% [A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   |            |   0% [A[A[A[A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | #########8 |  98% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ###5       |  35% 
+
+
+
+
+icu-78.3             | 11.8 MB   | #########5 |  96% [A[A[A[A[A
+
+
+pandas-3.0.3         | 13.7 MB   | ########8  |  88% [A[A[A
+
+
+
+
+icu-78.3             | 11.8 MB   | ########## | 100% [A[A[A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ########## | 100% [A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | #5         |  16% [A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   |            |   0% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    |            |   0% [A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ###9       |  39% 
+
+
+pandas-3.0.3         | 13.7 MB   | ########## | 100% [A[A[A
+
+
+pandas-3.0.3         | 13.7 MB   | ########## | 100% [A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | ####8      |  48% [A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | ##5        |  25% [A[A[A[A[A[A[A
+llvmlite-0.47.0      | 23.2 MB   | ########## | 100% [A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | #6         |  16% [A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ####3      |  43% 
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    |            |   0% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | ######8    |  68% [A[A[A[A[A[A
+
+
+
+
+icu-78.3             | 11.8 MB   | ########## | 100% [A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | ##8        |  28% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | ####8      |  49% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | 8          |   8% [A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ####6      |  46% 
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | ####5      |  45% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | ##3        |  24% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | ########7  |  88% [A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | ######4    |  65% [A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ####9      |  49% 
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | ###8       |  38% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | #####7     |  57% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | #########3 |  94% [A[A[A[A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | ########## | 100% [A[A[A[A[A[A
+
+
+
+scipy-1.17.1         | 13.3 MB   | ########## | 100% [A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #####4     |  55% 
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | #####8     |  58% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | #######4   |  75% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    | ###3       |  34% [A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #####8     |  59% 
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    | ###9       |  39% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | ########9  |  90% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | #######6   |  77% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+python-duckdb-1.5.3  | 11.4 MB   | ########## | 100% [A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    | #####3     |  53% [A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ######2    |  62% 
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    | ######1    |  62% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | #########2 |  92% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    | ########8  |  89% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ######8    |  69% 
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #######3   |  73% 
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | ##7        |  27% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    | ######     |  60% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+pandas-3.0.3         | 13.7 MB   | ########## | 100% [A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    | #####9     |  59% [A[A[A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #######7   |  78% 
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | ####8      |  49% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | #######2   |  73% [A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ########2  |  83% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    | #          |  11% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libarrow-24.0.0      | 4.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+jupyterlab-4.5.8     | 8.2 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | #########6 |  96% [A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ########8  |  88% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libarrow-24.0.0      | 4.0 MB    | ########1  |  82% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    | #######9   |  79% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libarrow-24.0.0      | 4.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | #########4 |  95% 
+
+
+
+
+
+
+statsmodels-0.14.6   | 11.2 MB   | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    | ###        |  31% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    | ####5      |  45% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+babel-2.18.0         | 7.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    | ######2    |  63% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ########## | 100% polars-runtime-32-1. | 34.6 MB   | ########## | 100% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgrpc-1.78.1       | 4.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+matplotlib-base-3.10 | 8.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+numba-0.65.1         | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libarrow-24.0.0      | 4.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+scikit-learn-1.9.0   | 9.2 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+numpy-2.4.6          | 7.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libopenblas-0.3.33   | 4.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shap-0.51.0          | 4.0 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plotly-6.8.0         | 3.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Apolars-runtime-32-1. | 34.6 MB   | ########## | 100% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A                                                     
+                                                     [A
+
+                                                     [A[A
+
+
+                                                     [A[A[A
+
+
+
+                                                     [A[A[A[A
+
+
+
+
+                                                     [A[A[A[A[A
+
+
+
+
+
+                                                     [A[A[A[A[A[A
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A done
+Preparing transaction: - \ | / - \ | done
+Verifying transaction: - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | done
+Executing transaction: - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - \ | / - done
+==> Installing pip-only libs...
+Requirement already satisfied: pip in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (26.1.1)
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting pip
+  Using cached pip-26.1.2-py3-none-any.whl.metadata (4.6 kB)
+Using cached pip-26.1.2-py3-none-any.whl (1.8 MB)
+Installing collected packages: pip
+  Attempting uninstall: pip
+    Found existing installation: pip 26.1.1
+    Uninstalling pip-26.1.1:
+      Successfully uninstalled pip-26.1.1
+Successfully installed pip-26.1.2
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting vectorbt
+  Using cached vectorbt-1.0.0-py3-none-any.whl.metadata (14 kB)
+Collecting ta
+  Using cached ta-0.11.0-py3-none-any.whl
+Collecting streamlit
+  Using cached streamlit-1.58.0-py3-none-any.whl.metadata (9.6 kB)
+Collecting hdbscan
+  Using cached hdbscan-0.8.44-cp311-cp311-macosx_10_9_universal2.whl.metadata (15 kB)
+Requirement already satisfied: numpy>=1.23 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (2.4.6)
+Collecting pandas<3.0,>=2.0 (from vectorbt)
+  Downloading pandas-2.3.3-cp311-cp311-macosx_11_0_arm64.whl.metadata (91 kB)
+Requirement already satisfied: scipy in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (1.17.1)
+Requirement already satisfied: matplotlib in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (3.10.9)
+Requirement already satisfied: plotly>=4.12.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (6.8.0)
+Collecting ipywidgets>=7.0.0 (from vectorbt)
+  Using cached ipywidgets-8.1.8-py3-none-any.whl.metadata (2.4 kB)
+Collecting anywidget (from vectorbt)
+  Using cached anywidget-0.11.0-py3-none-any.whl.metadata (8.9 kB)
+Requirement already satisfied: numba>=0.60 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (0.65.1)
+Collecting dill (from vectorbt)
+  Using cached dill-0.4.1-py3-none-any.whl.metadata (10 kB)
+Requirement already satisfied: tqdm in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (4.68.2)
+Collecting dateparser (from vectorbt)
+  Using cached dateparser-1.4.0-py3-none-any.whl.metadata (31 kB)
+Collecting imageio (from vectorbt)
+  Using cached imageio-2.37.3-py3-none-any.whl.metadata (9.7 kB)
+Requirement already satisfied: scikit-learn in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (1.9.0)
+Collecting schedule (from vectorbt)
+  Using cached schedule-1.2.2-py3-none-any.whl.metadata (3.8 kB)
+Requirement already satisfied: requests in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from vectorbt) (2.34.2)
+Collecting pytz (from vectorbt)
+  Using cached pytz-2026.2-py2.py3-none-any.whl.metadata (22 kB)
+Collecting mypy_extensions (from vectorbt)
+  Using cached mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+Requirement already satisfied: python-dateutil>=2.8.2 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from pandas<3.0,>=2.0->vectorbt) (2.9.0.post0)
+Requirement already satisfied: tzdata>=2022.7 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from pandas<3.0,>=2.0->vectorbt) (2026.2)
+Collecting altair!=5.4.0,!=5.4.1,<7,>=4.0 (from streamlit)
+  Using cached altair-6.2.1-py3-none-any.whl.metadata (11 kB)
+Collecting blinker<2,>=1.5.0 (from streamlit)
+  Using cached blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting cachetools<8,>=5.5 (from streamlit)
+  Using cached cachetools-7.1.4-py3-none-any.whl.metadata (5.5 kB)
+Collecting click<9,>=7.0 (from streamlit)
+  Using cached click-8.4.1-py3-none-any.whl.metadata (2.6 kB)
+Collecting gitpython!=3.1.19,<4,>=3.0.7 (from streamlit)
+  Using cached gitpython-3.1.50-py3-none-any.whl.metadata (14 kB)
+Requirement already satisfied: packaging>=20 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from streamlit) (26.0)
+Requirement already satisfied: pillow<13,>=7.1.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from streamlit) (12.2.0)
+Collecting pydeck<1,>=0.8.0b4 (from streamlit)
+  Using cached pydeck-0.9.2-py2.py3-none-any.whl.metadata (4.2 kB)
+Collecting protobuf<8,>=3.20 (from streamlit)
+  Using cached protobuf-7.35.1-cp310-abi3-macosx_10_9_universal2.whl.metadata (595 bytes)
+Requirement already satisfied: pyarrow>=7.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from streamlit) (24.0.0)
+Collecting tenacity<10,>=8.1.0 (from streamlit)
+  Using cached tenacity-9.1.4-py3-none-any.whl.metadata (1.2 kB)
+Collecting toml<2,>=0.10.1 (from streamlit)
+  Using cached toml-0.10.2-py2.py3-none-any.whl.metadata (7.1 kB)
+Requirement already satisfied: typing-extensions<5,>=4.10.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from streamlit) (4.15.0)
+Collecting starlette>=0.40.0 (from streamlit)
+  Using cached starlette-1.3.1-py3-none-any.whl.metadata (6.4 kB)
+Collecting uvicorn>=0.30.0 (from streamlit)
+  Using cached uvicorn-0.49.0-py3-none-any.whl.metadata (6.7 kB)
+Collecting httptools>=0.6.3 (from streamlit)
+  Downloading httptools-0.8.0-cp311-cp311-macosx_11_0_arm64.whl.metadata (3.5 kB)
+Requirement already satisfied: anyio>=4.0.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from streamlit) (4.13.0)
+Collecting python-multipart>=0.0.10 (from streamlit)
+  Using cached python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+Collecting websockets>=12.0.0 (from streamlit)
+  Downloading websockets-16.0-cp311-cp311-macosx_11_0_arm64.whl.metadata (6.8 kB)
+Collecting itsdangerous>=2.1.2 (from streamlit)
+  Using cached itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Requirement already satisfied: jinja2 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (3.1.6)
+Requirement already satisfied: jsonschema>=3.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (4.26.0)
+Requirement already satisfied: narwhals>=2.4.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (2.22.1)
+Collecting gitdb<5,>=4.0.1 (from gitpython!=3.1.19,<4,>=3.0.7->streamlit)
+  Using cached gitdb-4.0.12-py3-none-any.whl.metadata (1.2 kB)
+Collecting smmap<6,>=3.0.1 (from gitdb<5,>=4.0.1->gitpython!=3.1.19,<4,>=3.0.7->streamlit)
+  Using cached smmap-5.0.3-py3-none-any.whl.metadata (4.6 kB)
+Requirement already satisfied: charset_normalizer<4,>=2 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from requests->vectorbt) (3.4.7)
+Requirement already satisfied: idna<4,>=2.5 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from requests->vectorbt) (3.17)
+Requirement already satisfied: urllib3<3,>=1.26 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from requests->vectorbt) (2.7.0)
+Requirement already satisfied: certifi>=2023.5.7 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from requests->vectorbt) (2026.5.20)
+Requirement already satisfied: joblib>=1.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from hdbscan) (1.5.3)
+Requirement already satisfied: comm>=0.1.3 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipywidgets>=7.0.0->vectorbt) (0.2.3)
+Requirement already satisfied: ipython>=6.1.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipywidgets>=7.0.0->vectorbt) (9.14.1)
+Requirement already satisfied: traitlets>=4.3.1 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipywidgets>=7.0.0->vectorbt) (5.15.1)
+Collecting widgetsnbextension~=4.0.14 (from ipywidgets>=7.0.0->vectorbt)
+  Using cached widgetsnbextension-4.0.15-py3-none-any.whl.metadata (1.6 kB)
+Collecting jupyterlab_widgets~=3.0.15 (from ipywidgets>=7.0.0->vectorbt)
+  Using cached jupyterlab_widgets-3.0.16-py3-none-any.whl.metadata (20 kB)
+Requirement already satisfied: decorator>=5.1.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (5.3.1)
+Requirement already satisfied: ipython-pygments-lexers>=1.0.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (1.1.1)
+Requirement already satisfied: jedi>=0.18.2 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.19.2)
+Requirement already satisfied: matplotlib-inline>=0.1.6 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.2.2)
+Requirement already satisfied: pexpect>4.6 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (4.9.0)
+Requirement already satisfied: prompt_toolkit<3.1.0,>=3.0.41 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (3.0.52)
+Requirement already satisfied: psutil>=7 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (7.2.2)
+Requirement already satisfied: pygments>=2.14.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (2.20.0)
+Requirement already satisfied: stack_data>=0.6.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.6.3)
+Requirement already satisfied: wcwidth in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from prompt_toolkit<3.1.0,>=3.0.41->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.8.1)
+Requirement already satisfied: parso<0.9.0,>=0.8.4 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jedi>=0.18.2->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.8.7)
+Requirement already satisfied: MarkupSafe>=2.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jinja2->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (3.0.3)
+Requirement already satisfied: attrs>=22.2.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (26.1.0)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (2025.9.1)
+Requirement already satisfied: referencing>=0.28.4 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (0.37.0)
+Requirement already satisfied: rpds-py>=0.25.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (2026.5.1)
+Requirement already satisfied: llvmlite<0.48,>=0.47.0dev0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from numba>=0.60->vectorbt) (0.47.0)
+Requirement already satisfied: ptyprocess>=0.5 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from pexpect>4.6->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.7.0)
+Requirement already satisfied: six>=1.5 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from python-dateutil>=2.8.2->pandas<3.0,>=2.0->vectorbt) (1.17.0)
+Requirement already satisfied: threadpoolctl>=3.5.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from scikit-learn->vectorbt) (3.6.0)
+Requirement already satisfied: executing>=1.2.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from stack_data>=0.6.0->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (2.2.1)
+Requirement already satisfied: asttokens>=2.1.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from stack_data>=0.6.0->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (3.0.1)
+Requirement already satisfied: pure_eval in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from stack_data>=0.6.0->ipython>=6.1.0->ipywidgets>=7.0.0->vectorbt) (0.2.3)
+Requirement already satisfied: h11>=0.8 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from uvicorn>=0.30.0->streamlit) (0.16.0)
+Collecting psygnal>=0.8.1 (from anywidget->vectorbt)
+  Downloading psygnal-0.15.1-cp311-cp311-macosx_11_0_arm64.whl.metadata (6.1 kB)
+Collecting regex>=2024.9.11 (from dateparser->vectorbt)
+  Downloading regex-2026.5.9-cp311-cp311-macosx_11_0_arm64.whl.metadata (40 kB)
+Collecting tzlocal>=0.2 (from dateparser->vectorbt)
+  Using cached tzlocal-5.3.1-py3-none-any.whl.metadata (7.6 kB)
+Requirement already satisfied: contourpy>=1.0.1 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from matplotlib->vectorbt) (1.3.3)
+Requirement already satisfied: cycler>=0.10 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from matplotlib->vectorbt) (0.12.1)
+Requirement already satisfied: fonttools>=4.22.0 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from matplotlib->vectorbt) (4.63.0)
+Requirement already satisfied: kiwisolver>=1.3.1 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from matplotlib->vectorbt) (1.5.0)
+Requirement already satisfied: pyparsing>=3 in /Users/tokyotechies/miniforge3/envs/kenkem/lib/python3.11/site-packages (from matplotlib->vectorbt) (3.3.2)
+Using cached vectorbt-1.0.0-py3-none-any.whl (451 kB)
+Downloading pandas-2.3.3-cp311-cp311-macosx_11_0_arm64.whl (10.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.8/10.8 MB 57.3 MB/s  0:00:00
+Using cached streamlit-1.58.0-py3-none-any.whl (9.2 MB)
+Using cached altair-6.2.1-py3-none-any.whl (797 kB)
+Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Using cached cachetools-7.1.4-py3-none-any.whl (16 kB)
+Using cached click-8.4.1-py3-none-any.whl (116 kB)
+Using cached gitpython-3.1.50-py3-none-any.whl (212 kB)
+Using cached gitdb-4.0.12-py3-none-any.whl (62 kB)
+Using cached protobuf-7.35.1-cp310-abi3-macosx_10_9_universal2.whl (433 kB)
+Using cached pydeck-0.9.2-py2.py3-none-any.whl (11.3 MB)
+Using cached smmap-5.0.3-py3-none-any.whl (24 kB)
+Using cached tenacity-9.1.4-py3-none-any.whl (28 kB)
+Using cached toml-0.10.2-py2.py3-none-any.whl (16 kB)
+Using cached hdbscan-0.8.44-cp311-cp311-macosx_10_9_universal2.whl (2.6 MB)
+Downloading httptools-0.8.0-cp311-cp311-macosx_11_0_arm64.whl (113 kB)
+Using cached ipywidgets-8.1.8-py3-none-any.whl (139 kB)
+Using cached jupyterlab_widgets-3.0.16-py3-none-any.whl (914 kB)
+Using cached widgetsnbextension-4.0.15-py3-none-any.whl (2.2 MB)
+Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Using cached python_multipart-0.0.32-py3-none-any.whl (30 kB)
+Using cached pytz-2026.2-py2.py3-none-any.whl (510 kB)
+Using cached starlette-1.3.1-py3-none-any.whl (73 kB)
+Using cached uvicorn-0.49.0-py3-none-any.whl (71 kB)
+Downloading websockets-16.0-cp311-cp311-macosx_11_0_arm64.whl (175 kB)
+Using cached anywidget-0.11.0-py3-none-any.whl (317 kB)
+Downloading psygnal-0.15.1-cp311-cp311-macosx_11_0_arm64.whl (567 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 567.8/567.8 kB 32.6 MB/s  0:00:00
+Using cached dateparser-1.4.0-py3-none-any.whl (300 kB)
+Downloading regex-2026.5.9-cp311-cp311-macosx_11_0_arm64.whl (289 kB)
+Using cached tzlocal-5.3.1-py3-none-any.whl (18 kB)
+Using cached dill-0.4.1-py3-none-any.whl (120 kB)
+Using cached imageio-2.37.3-py3-none-any.whl (317 kB)
+Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+Using cached schedule-1.2.2-py3-none-any.whl (12 kB)
+Installing collected packages: pytz, widgetsnbextension, websockets, tzlocal, toml, tenacity, smmap, schedule, regex, python-multipart, psygnal, protobuf, mypy_extensions, jupyterlab_widgets, itsdangerous, imageio, httptools, dill, click, cachetools, blinker, uvicorn, starlette, pydeck, pandas, gitdb, dateparser, ta, ipywidgets, hdbscan, gitpython, anywidget, altair, vectorbt, streamlit
+  Attempting uninstall: pandas
+    Found existing installation: pandas 3.0.3
+    Uninstalling pandas-3.0.3:
+      Successfully uninstalled pandas-3.0.3
+
+Successfully installed altair-6.2.1 anywidget-0.11.0 blinker-1.9.0 cachetools-7.1.4 click-8.4.1 dateparser-1.4.0 dill-0.4.1 gitdb-4.0.12 gitpython-3.1.50 hdbscan-0.8.44 httptools-0.8.0 imageio-2.37.3 ipywidgets-8.1.8 itsdangerous-2.2.0 jupyterlab_widgets-3.0.16 mypy_extensions-1.1.0 pandas-2.3.3 protobuf-7.35.1 psygnal-0.15.1 pydeck-0.9.2 python-multipart-0.0.32 pytz-2026.2 regex-2026.5.9 schedule-1.2.2 smmap-5.0.3 starlette-1.3.1 streamlit-1.58.0 ta-0.11.0 tenacity-9.1.4 toml-0.10.2 tzlocal-5.3.1 uvicorn-0.49.0 vectorbt-1.0.0 websockets-16.0 widgetsnbextension-4.0.15
+==> Smoke test...
+Matplotlib is building the font cache; this may take a moment.
+python arch: arm64
+Smoke test OK — all imports loaded
+==> DONE. Activate with:  source /Users/tokyotechies/miniforge3/etc/profile.d/conda.sh && conda activate kenkem

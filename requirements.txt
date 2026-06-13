@@ -1,0 +1,40 @@
+# KenKem Quant OS — Python research stack (Python 3.11, conda env "kenkem")
+# Install via: bash scripts/setup_env.sh   (creates the conda env)
+# Or into an existing env: pip install -r requirements.txt
+
+# --- Data engineering (Layer 1) ---
+polars
+duckdb
+pyarrow
+pandas
+
+# --- Numerics & stats (Layer: research) ---
+numpy
+scipy
+statsmodels
+scikit-learn
+
+# --- ML & explainability (discovery / SHAP) ---
+lightgbm
+xgboost
+shap
+hdbscan
+
+# --- Backtesting & optimization ---
+vectorbt
+optuna
+
+# --- Indicators ---
+ta
+
+# --- Visualization / dashboard ---
+plotly
+matplotlib
+streamlit
+
+# --- Tooling ---
+jupyterlab
+ipykernel
+pytest
+pyyaml
+tqdm

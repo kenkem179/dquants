@@ -1,0 +1,638 @@
+
+OK then give me the full quant playbook as suggested, in markdown syntax. I don't mind using Python for research, but note that MQL5 is the final language I use for MT5 Expert Advisor development.
+
+I am also quite hungry to have a super smart approach of using C++ code to implement the Expert Advisor precisely for headless unit testing and back/forward testing directly on real tick data set, rather than relying too much on the MT5 strategy tester. Why? I believe I can super easily convert C++ code to MQL5 code, right? I can't be wrong
+
+You're actually pointing toward a design used by many serious quant firms:
+
+Research Layer      → Python
+Strategy Engine     → C++
+Execution Layer     → Broker Adapter
+Production Layer    → MT5 / FIX / Exchange API
+
+Not:
+
+Research
+→ MT5
+→ Strategy Tester
+→ Pray
+
+And on your second question:
+
+I believe I can super easily convert C++ code to MQL5 code, right?
+
+Mostly yes, but with an important caveat.
+
+MQL5 is essentially:
+
+C++-like syntax
++
+MetaTrader runtime
++
+Trading API
++
+Indicator API
+
+So things like:
+
+double EMA(...)
+double ATR(...)
+bool EntrySignal(...)
+
+translate almost 1:1.
+
+But:
+
+OrderSend()
+PositionSelect()
+CopyRates()
+iATR()
+
+are MT5-specific.
+
+Therefore the architecture I would recommend for KenKem is:
+
+┌─────────────────────────┐
+│ Python Quant Research   │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│ C++ Strategy Core       │
+│ Pure Logic              │
+│ No MT5 APIs             │
+└───────────┬─────────────┘
+            │
+            ├──────────────► C++ Tick Backtester
+            │
+            └──────────────► MQL5 Wrapper EA
+
+This is extremely powerful.
+
+What I would build for KenKem
+Layer 1
+
+Research
+
+Python
+
+Purpose:
+
+Tick cleaning
+Feature generation
+Volume profile generation
+Statistical testing
+SHAP
+Optimization
+
+Libraries:
+
+Polars
+DuckDB
+NumPy
+SciPy
+LightGBM
+Optuna
+Plotly
+Layer 2
+
+Strategy Core
+
+Modern C++20
+
+Contains:
+
+class KenKemStrategy
+{
+public:
+
+    bool LongSignal();
+
+    bool ShortSignal();
+
+    double CalculateSL();
+
+    double CalculateTP();
+
+};
+
+No MT5.
+
+No broker.
+
+No OrderSend.
+
+Pure logic.
+
+Layer 3
+
+Backtest Engine
+
+class TickEngine
+
+Feeds:
+
+Tick
+→ Strategy
+→ Position Manager
+→ Equity Curve
+
+on:
+
+Real Exness Tick Data
+
+This becomes your true tester.
+
+Not MT5.
+
+Layer 4
+
+MQL5 Adapter
+
+Thin wrapper.
+
+Example:
+
+void OnTick()
+{
+    Strategy.Update();
+
+    if(strategy.LongSignal())
+    {
+        OrderSend(...);
+    }
+}
+
+Very small.
+
+Why Top Quants Do This
+
+MT5 Tester has problems.
+
+Examples:
+
+Problem 1
+
+Optimization is slow.
+
+You are trapped inside:
+
+MT5
+
+instead of:
+
+Python
+C++
+Cluster
+Cloud
+Problem 2
+
+Feature engineering sucks.
+
+Imagine:
+
+Distance to POC
+Volume Node Strength
+ATR Percentile
+Liquidity Sweep Score
+
+Much easier in Python.
+
+Problem 3
+
+No SHAP
+
+No clustering
+
+No ML
+
+No research ecosystem
+
+Quant Playbook Architecture
+
+For KenKem I would structure:
+
+KenKem Quant OS
+
+into phases.
+
+Phase 1
+
+Market Data Layer
+
+Deliverables:
+
+Tick Loader
+Bar Builder
+Spread Analyzer
+Session Analyzer
+
+Output:
+
+Parquet
+Phase 2
+
+Feature Factory
+
+Every feature becomes:
+
+Feature
+
+Examples:
+
+EMA Slope
+EMA Compression
+ATR Percentile
+ADX Strength
+DI Spread
+POC Distance
+VAH Distance
+VAL Distance
+
+Store:
+
+features.parquet
+Phase 3
+
+Label Factory
+
+Generate:
+
+future_return_5
+future_return_10
+future_return_20
+future_return_60
+
+and
+
+hit_tp_before_sl
+
+which is much more useful.
+
+Phase 4
+
+Discovery Engine
+
+Automatic.
+
+Claude Code can run:
+
+Correlation
+Mutual Information
+SHAP
+Clustering
+
+and generate reports.
+
+Phase 5
+
+Hypothesis Generator
+
+Claude generates:
+
+Hypothesis #17
+
+ADX > 23
+ATR percentile > 70
+Price above POC
+
+Expected Return:
++0.31R
+
+Automatically.
+
+Phase 6
+
+Strategy Builder
+
+Turn hypothesis into:
+
+bool LongSignal()
+Phase 7
+
+Tick Backtest
+
+Run:
+
+2019
+2020
+2021
+2022
+2023
+2024
+2025
+
+real ticks.
+
+Phase 8
+
+Sensitivity
+
+Instead of:
+
+ADX 24
+ADX 25
+ADX 26
+
+Visualize:
+
+Heatmaps
+
+You want:
+
+Stable plateau
+
+not:
+
+Single magic parameter
+Phase 9
+
+Walk Forward
+
+Train:
+
+2 years
+
+Validate:
+
+6 months
+
+Test:
+
+6 months
+
+Rolling.
+
+Phase 10
+
+Production
+
+Only now:
+
+Generate MQL5
+
+from the C++ Strategy Core.
+
+If I were building KenKem today
+
+I would use:
+
+Research
+    Python
+
+Strategy Logic
+    C++20
+
+Execution
+    MQL5
+
+AI Research Assistant
+    Claude Code
+
+Data Storage
+    DuckDB + Parquet
+
+Visualization
+    Plotly Dash
+
+Optimization
+    Optuna
+
+Backtesting
+    Custom Tick Engine
+
+and treat MT5 Strategy Tester only as:
+
+Final sanity check
+
+not the primary research environment.
+
+That's much closer to how a professional quantitative research shop operates than keeping all logic trapped inside an MQL5 Expert Advisor.
+
+OK now I don't mind to download a bigger Markdown playbook for me to become super powerful top 1% world class data science based quant developer with the mix of C++ MQL and Python code for me. Promise me to definitely not miss any critical discussion point and contents above!!!
+
+Yes, but I would change one thing before generating it.
+
+Do not ask for:
+
+Top 1% Quant Book
+
+Ask for:
+
+KenKem Quant Operating System
+
+because your goal is not becoming a PhD quant at a hedge fund.
+
+Your goal is:
+
+Find profitable XAUUSD/BTCUSD M1/M3 edges
+Research them scientifically
+Validate them properly
+Deploy them to MT5 safely
+
+Those are different objectives.
+
+Also, I would explicitly include several things that most "quant books" completely miss but are critical for your situation:
+
+Part A - Quant Research Foundations
+Market microstructure for Gold and BTC
+Tick data realities
+Spread analysis
+Slippage modeling
+Broker-specific behavior (Exness)
+Session behavior
+News impact modeling
+Part B - Data Engineering
+DuckDB
+Polars
+Parquet
+Feature Store Design
+Tick → M1 → M3 conversion
+Multi-timeframe synchronization
+Part C - Statistical Research
+Correlation
+Mutual Information
+Entropy
+Stationarity
+Regime detection
+SHAP
+Feature importance
+Feature redundancy
+Part D - KenKem Indicator Research
+
+Everything you've been studying:
+
+EMA 12/25/50/75/100/200
+RSI 7/14/21
+ADX
+DI+/DI-
+ATR
+Ichimoku
+Volume Profile
+POC
+VAH
+VAL
+
+including:
+
+Mathematical formula
+Interpretation
+Failure modes
+Correlation with other indicators
+Scalping usage
+Non-scalping usage
+Part E - C++ Strategy Core
+
+This is the most important addition.
+
+I would not recommend:
+
+Python
+→ Generate MQL
+
+Instead:
+
+Python Research
+
+→
+
+C++ Strategy Core
+
+→
+
+MQL5 Adapter
+
+The playbook would contain:
+
+class Strategy
+{
+};
+
+class PositionManager
+{
+};
+
+class RiskManager
+{
+};
+
+class ExecutionSimulator
+{
+};
+
+class TickEngine
+{
+};
+
+architecture.
+
+Part F - Custom Tick Backtester
+
+This is where you will likely gain a huge advantage over typical MT5 users.
+
+Topics:
+
+Event-driven engine
+Tick replay
+Headless execution
+Deterministic testing
+Trade logs
+Performance metrics
+Unit testing
+Part G - AI Research Team
+
+Claude Code
+Codex CLI
+Gemini CLI
+
+Multi-agent workflow:
+
+Claude
+=
+Research Manager
+
+Codex
+=
+Implementation Engineer
+
+Gemini
+=
+Reviewer
+
+with structured prompts.
+
+Part H - Optimization
+
+Not brute force.
+
+Instead:
+
+Optuna
+Bayesian Optimization
+Parameter Stability
+Sensitivity Maps
+Regime-specific optimization
+Part I - Visualization
+
+Plotly
+
+Dashboards:
+
+Equity curve
+Drawdown
+Session heatmaps
+SHAP charts
+Volume Profile overlays
+Regime performance
+Part J - Production MT5
+MQL5 wrapper architecture
+Logging
+Signal validation
+Risk controls
+VPS deployment
+Forward testing
+Rollback procedures
+Part K - Quant Development SOP
+
+The most valuable section.
+
+Claude Code can execute it directly:
+
+Phase 1
+Import Data
+
+Phase 2
+Validate Data
+
+Phase 3
+Build Features
+
+Phase 4
+Run Discovery
+
+Phase 5
+Generate Hypotheses
+
+Phase 6
+Backtest
+
+Phase 7
+Sensitivity
+
+Phase 8
+Walk Forward
+
+Phase 9
+Report
+
+Phase 10
+Promote to Production
+
+Each phase contains:
+
+Inputs
+Outputs
+Folder structures
+Commands
+Acceptance criteria
+Common mistakes

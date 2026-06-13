@@ -1,0 +1,79 @@
+{
+  "symbol": "btcusd",
+  "year": 2024,
+  "src": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2024.parquet",
+  "clean_dst": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_btcusd_2024_clean.parquet",
+  "total_in": 83350554,
+  "total_kept": 83264725,
+  "dropped": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 85828,
+    "spike": 1
+  },
+  "flagged": {
+    "ts_collision": 85867,
+    "zero_spread": 0,
+    "wide_spread": 5964
+  },
+  "spread": {
+    "mean": 23.4832,
+    "median": 20.29,
+    "p95": 47.45,
+    "p99": 58.34,
+    "min": 4.09,
+    "max": 180.24
+  },
+  "gaps": {
+    "gt_1s": 12088496,
+    "gt_10s": 4984,
+    "gt_60s": 195,
+    "gt_300s": 33,
+    "gt_3600s": 18,
+    "max_gap_s": 24919.5,
+    "top": [
+      {
+        "start": "2024-04-08 17:04:40.84",
+        "end": "2024-04-09 00:00:00.314",
+        "gap_s": 24919.5
+      },
+      {
+        "start": "2024-04-28 18:00:51.513",
+        "end": "2024-04-29 00:00:00.303",
+        "gap_s": 21548.8
+      },
+      {
+        "start": "2024-04-02 19:02:39.65",
+        "end": "2024-04-03 00:00:00.164",
+        "gap_s": 17840.5
+      },
+      {
+        "start": "2024-04-21 20:00:52.761",
+        "end": "2024-04-22 00:00:00.439",
+        "gap_s": 14347.7
+      },
+      {
+        "start": "2024-03-30 20:01:15.85",
+        "end": "2024-03-31 00:00:00.247",
+        "gap_s": 14324.4
+      }
+    ]
+  },
+  "coverage": {
+    "n_days": 366,
+    "min_day": 73388,
+    "med_day": 209219.0,
+    "max_day": 736341,
+    "first_day": "2024-01-01",
+    "last_day": "2024-12-31",
+    "low_days": [],
+    "missing_hours": []
+  },
+  "residual": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 0
+  },
+  "passed": true,
+  "elapsed_s": 32.9
+}

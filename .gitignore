@@ -1,0 +1,41 @@
+# ---- Data (large / regenerable) ----
+data/btcusd/
+data/raw/
+data/processed/
+data/features/
+data/labels/
+*.csv
+*.parquet
+*.duckdb
+*.feather
+
+# ---- Research artifacts ----
+backtests/results/
+reports/*.html
+research/notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# ---- C++ build ----
+cpp_core/build/
+*.o
+*.a
+*.out
+*.dSYM/
+
+# ---- MT5 compiled ----
+*.ex5
+
+# ---- OS / editor ----
+.DS_Store
+.idea/
+.vscode/
