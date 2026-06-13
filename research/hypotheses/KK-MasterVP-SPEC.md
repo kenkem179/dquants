@@ -197,3 +197,14 @@ guard, not a one-off check.
 MT5 iATR/iADX seeding vs our Wilder seed — discard warmup; (3) news calendar (disable for v1 parity);
 (4) fill model (next-tick vs MT5 bar-open) — match MT5 tester's fill assumptions; (5) the node grid
 *slides* every bar — replicate, don't "fix".
+
+**Level-1 results (BTCUSD M3, 2026-04-09, 480 rows; `cpp_core/tools/validate_parity_py.py`):**
+master VP <0.001, ADX/+DI/-DI <0.005, regime trend **100%**. Two hard-won facts:
+- **`iADX` ≠ Wilder.** MT5's `iADX` handle (what the EA uses, *not* `iADXWilder`) computes per-bar
+  `100·DM/TR` then smooths `+DI`/`-DI`/`DX` with **EMA k=2/(n+1)**; DM-zeroing clamps negatives then
+  the strictly-greater wins (ties→both 0). Textbook Wilder put `-DI` off by ~10 pts. → C++
+  `kk::ind::dmi_adx_mt5` (golden `test_dmi_mt5_golden`); regime/signal must consume it, not `dmi_adx`.
+- **ATR is not dollar-matchable from the CSV.** Matches on average (ratio mean 0.9986) but diverges on
+  vol spikes — the tester's tick model captures wider intrabar extremes than the exported tick CSV.
+  VP (window-extreme) and ADX (ratio) are robust; ATR is scale-sensitive. Accept the caveat; expect
+  small SL/TP/breakout-distance differences on spike bars at trade level.

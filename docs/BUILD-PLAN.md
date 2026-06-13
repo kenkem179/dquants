@@ -29,10 +29,16 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 - [x] Regime (trend vs balance) — `kk/regime.hpp`
 - [x] DetectSignal (4 bidirectional signals + SL/TP economics) — `kk/strategy.hpp`
 ### Front-half validation (do BEFORE execution half)
-- [ ] Data plumbing: Python exports bars window (Parquet → flat file C++ reads)
-- [ ] Parity harness driver: run computation layer per bar → emit `parity_*.csv`
-- [ ] Level-1 diff vs `parity_BTCUSD-Exnes-0406_PERIOD_M3.csv` (master VP + regime + signal)
-- [ ] Resolve node-gate ambiguity + indicator-seed drift from the diff
+- [x] Python reference harness `cpp_core/tools/validate_parity_py.py` (bid M3 bars from ticks)
+- [x] Level-1 diff vs `parity_BTCUSD-Exnes-0406_PERIOD_M3.csv`: **master VP <0.001, ADX/+DI/-DI
+      <0.005, trend agree 100%** (480/480 rows) on BTCUSD M3 2026-04-09
+- [x] Resolved: EA uses MT5 `iADX` (EMA 2/(n+1) of per-bar 100·DM/TR), **not** Wilder iADXWilder
+      → ported to C++ `dmi_adx_mt5` + golden test; regime must consume it
+- [x] Resolved (caveat): ATR matches on avg (ratio mean 0.9986) but diverges on vol spikes —
+      MT5 tester's tick model captures wider intrabar extremes than the exported CSV. VP/ADX are
+      robust (window-extreme / ratio based); ATR is not. Perfect ATR parity unattainable from CSV.
+- [ ] C++ parity harness driver: Parquet→bars→computation layer per bar → emit `parity_*.csv`
+      (validate C++ reproduces the Python/MT5 numbers; ATR carries the documented caveat)
 ### Execution layer
 - [ ] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — TradeManager.mqh
 - [ ] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — RiskManager.mqh

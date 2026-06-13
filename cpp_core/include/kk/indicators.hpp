@@ -73,6 +73,50 @@ inline vector<double> rsi(const vector<double>& c, int n) {
 // Returns adx, +di, -di (all Wilder-smoothed, [0,100]).
 struct DMI { vector<double> adx, plus_di, minus_di; };
 
+// EMA over a buffer, MT5 ExponentialMAOnBuffer semantics: k=2/(n+1), output begins
+// at index `start` seeded with x[start]; earlier entries left 0.
+inline vector<double> ema_on_buffer(const vector<double>& x, int n, size_t start) {
+    const size_t N = x.size();
+    vector<double> o(N, 0.0);
+    if (start >= N) return o;
+    const double k = 2.0 / (n + 1.0);
+    o[start] = x[start];
+    for (size_t i = start + 1; i < N; ++i) o[i] = x[i] * k + o[i - 1] * (1.0 - k);
+    return o;
+}
+
+// MT5 built-in iADX (what KK-MasterVP's iADX handle returns) — NOT textbook Wilder
+// (iADXWilder). Per-bar PD/ND = 100*DM/TR, then EMA(2/(n+1)) smoothing of +DI/-DI and
+// of DX. DM-zeroing: clamp negatives, then the strictly-greater wins (ties -> both 0).
+// Validated to <0.005 vs the MT5 parity_*.csv reference (cpp_core/tools/validate_parity_py.py).
+inline DMI dmi_adx_mt5(const vector<double>& h, const vector<double>& l,
+                       const vector<double>& c, int n) {
+    const size_t N = h.size();
+    vector<double> pd(N, 0.0), nd(N, 0.0);
+    for (size_t i = 1; i < N; ++i) {
+        double plus_dm  = h[i] - h[i - 1];
+        double minus_dm = l[i - 1] - l[i];
+        if (plus_dm < 0.0)  plus_dm  = 0.0;
+        if (minus_dm < 0.0) minus_dm = 0.0;
+        if (plus_dm > minus_dm)       minus_dm = 0.0;
+        else if (minus_dm > plus_dm)  plus_dm  = 0.0;
+        else { plus_dm = 0.0; minus_dm = 0.0; }
+        const double pc = c[i - 1];
+        const double tr = std::max(h[i], pc) - std::min(l[i], pc);
+        if (tr != 0.0) { pd[i] = 100.0 * plus_dm / tr; nd[i] = 100.0 * minus_dm / tr; }
+    }
+    DMI r;
+    r.plus_di  = ema_on_buffer(pd, n, 1);
+    r.minus_di = ema_on_buffer(nd, n, 1);
+    vector<double> dx(N, 0.0);
+    for (size_t i = 0; i < N; ++i) {
+        const double s = r.plus_di[i] + r.minus_di[i];
+        dx[i] = s != 0.0 ? 100.0 * std::fabs(r.plus_di[i] - r.minus_di[i]) / s : 0.0;
+    }
+    r.adx = ema_on_buffer(dx, n, 1);
+    return r;
+}
+
 inline DMI dmi_adx(const vector<double>& h, const vector<double>& l,
                    const vector<double>& c, int n) {
     const size_t N = h.size();
