@@ -99,11 +99,17 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       flips −$904→+$1052 (PF 1.16)**. Edge holds out-of-sample. Key moves: tighter breakout (bbuf
       0.65→0.31), wider stop (2.2→2.65), tighter trail + lower runner target (3.6→2.05, rr 10→5.3),
       more selective trend (adx 22→24), Tp1R 0.8→1.0.
-- [ ] **Validate `best_btc.set` in the MT5 tester** (confirm the C++ improvement survives the ATR-from-
-      CSV residual) before trusting live. XAUUSD M3 optimization still TODO.
+- [x] **Validated `best_btc.set` in the MT5 tester — user confirmed PF > 1** (2026-06-14). The C++
+      optimization improvement transfers to the real MQL5 EA: the full loop (research → C++ port → parity
+      → optimize → MT5 confirm) is closed. XAUUSD M3 optimization still TODO.
 
 ## Phase 9 — Walk-forward + Monte Carlo
-- [ ] Rolling train/validate/test; never mix periods
+- [x] Robustness (light) on the optimized BTCUSD config — `research/optimization/robustness_btc.py`.
+      **Monte Carlo (5000 bootstraps): 97.7% profitable, PF P5=1.044 (bad-luck draws still >1), net
+      P5=$1167. Rolling: ALL 4 months positive (PF 1.16–1.29), 7/8 half-months positive.** Edge is
+      temporally consistent + resampling-robust. Residual watch: the fragile AdxTrendMin=24 knob.
+- [ ] Full re-optimizing walk-forward (rolling per-fold Optuna) — needs a longer tick window; deferred.
+- [ ] XAUUSD M3 optimization (in progress).
 
 ## Phase 10 — Promote
 - [ ] Push winning params back to `KK-MasterVP.mq5`; demo forward-test
