@@ -1,0 +1,23 @@
+[xauusd 2024] XAUUSD_ticks_mt5_2024.csv -> ticks_xauusd_2024.parquet
+  rows written : 39,791,521
+  source lines : 39,791,521  [OK]
+  ts range     : 2024-01-01 23:05:09.879000 -> 2024-12-31 21:57:57.765000
+  monotonic ts : True
+  elapsed      : 3.6s
+[xauusd 2025] XAUUSD_ticks_mt5_2025.csv -> ticks_xauusd_2025.parquet
+  rows written : 76,283,473
+  source lines : 76,283,473  [OK]
+  ts range     : 2025-01-01 23:05:07.735000 -> 2025-12-31 21:57:58.899000
+  monotonic ts : True
+  elapsed      : 5.7s
+[xauusd 2026] XAUUSD_ticks_mt5_2026.csv -> ticks_xauusd_2026.parquet
+  rows written : 46,686,241
+  source lines : 46,686,241  [OK]
+  ts range     : 2026-01-01 23:05:00.140000 -> 2026-05-29 20:57:59.741000
+  monotonic ts : True
+  elapsed      : 3.9s
+
+=== Summary: 3 file(s) imported ===
+  xauusd 2024: 39,791,521 rows in 3.6s
+  xauusd 2025: 76,283,473 rows in 5.7s
+  xauusd 2026: 46,686,241 rows in 3.9s

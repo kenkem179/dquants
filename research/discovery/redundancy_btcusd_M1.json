@@ -1,0 +1,85 @@
+{
+  "linkage_groups": [
+    [
+      "di_spread",
+      "dist_cloud",
+      "dist_kijun",
+      "dist_tenkan",
+      "ema_100_dist",
+      "ema_100_slope",
+      "ema_12_dist",
+      "ema_12_slope",
+      "ema_200_dist",
+      "ema_200_slope",
+      "ema_25_dist",
+      "ema_25_slope",
+      "ema_50_dist",
+      "ema_50_slope",
+      "ema_75_dist",
+      "ema_75_slope",
+      "rsi_14",
+      "rsi_21",
+      "rsi_7"
+    ],
+    [
+      "rsi_14_slope",
+      "rsi_21_slope",
+      "rsi_7_slope"
+    ],
+    [
+      "rsi_14_accel",
+      "rsi_21_accel",
+      "rsi_7_accel"
+    ],
+    [
+      "dist_poc",
+      "dist_vah",
+      "dist_val"
+    ]
+  ],
+  "keep": [
+    "di_minus",
+    "di_plus",
+    "rsi_7",
+    "di_spread",
+    "dist_val",
+    "dist_vah",
+    "hour",
+    "dist_kijun",
+    "ema_200_dist",
+    "atr",
+    "dow",
+    "dist_tenkan",
+    "rsi_21_accel",
+    "atr_pct",
+    "dist_cloud",
+    "ema_compression",
+    "rsi_7_slope",
+    "adx",
+    "cloud_thickness",
+    "adx_slope",
+    "session",
+    "atr_slope",
+    "ema_12_slope",
+    "adx_accel"
+  ],
+  "drop": {
+    "rsi_21": "di_spread",
+    "rsi_14": "rsi_7",
+    "rsi_14_accel": "rsi_21_accel",
+    "dist_poc": "dist_val",
+    "ema_200_slope": "ema_200_dist",
+    "ema_75_dist": "dist_cloud",
+    "ema_50_dist": "dist_cloud",
+    "rsi_21_slope": "rsi_7_slope",
+    "ema_100_dist": "ema_200_dist",
+    "rsi_7_accel": "rsi_21_accel",
+    "ema_25_dist": "dist_kijun",
+    "ema_50_slope": "dist_cloud",
+    "ema_75_slope": "dist_cloud",
+    "ema_12_dist": "rsi_7",
+    "ema_100_slope": "ema_200_dist",
+    "ema_25_slope": "dist_kijun",
+    "rsi_14_slope": "rsi_7_slope"
+  }
+}

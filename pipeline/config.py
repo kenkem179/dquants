@@ -15,6 +15,9 @@ PROCESSED_DIR: Path = DATA_DIR / "processed"
 FEATURES_DIR: Path = DATA_DIR / "features"
 LABELS_DIR: Path = DATA_DIR / "labels"
 REPORTS_DIR: Path = PROJECT_ROOT / "reports"
+RESEARCH_DIR: Path = PROJECT_ROOT / "research"
+DISCOVERY_DIR: Path = RESEARCH_DIR / "discovery"
+HYPOTHESES_DIR: Path = RESEARCH_DIR / "hypotheses"
 
 # --- Raw tick data ---
 # MT5 tick exports live in a per-symbol directory, e.g. data/btcusd/BTCUSD_ticks_mt5_2025.csv
