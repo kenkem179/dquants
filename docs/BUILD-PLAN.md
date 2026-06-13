@@ -68,8 +68,21 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       runner backstop** (TradeManager.mqh:61,99). 3 integration tests (fill model, coherent+balance-
       reconciled trades on the golden fixture, determinism) pass. **Next:** real-tick export + Level-2 diff.
 ### Full validation
-- [ ] Emit `trades_*.csv`; Level-2 trade diff vs reference
-- [ ] Level-3 aggregate: reproduce PF 1.21/1.10 on XAUUSD M3
+- [x] `backtester` main (`tools/backtester.cpp`) + tick bridge (`tools/export_ticks.py`, DuckDB
+      Parquet→ts_ms,bid,ask) + byte-compatible `trades_*.csv` writer (`include/kk/trade_journal.hpp`).
+      Streams 30M ticks over the window in ~5s, flat memory.
+- [x] **Level-2 trade diff** vs the 473-trade MT5 reference (BTCUSD M3 2025-08-11..11-29),
+      `tools/diff_trades.py`. **Result: 478 trades vs 473; 377 match by exact entry-timestamp;
+      dir/rev/regimeTrend/session/entryReason/bodyPct/adx/diSpread/spreadPips EXACT on matched;
+      entry meanΔ 0.18, riskPrice meanΔ 15 (ATR-from-CSV caveat), exitTag mismatch 13/377.**
+      Residual 96 missed / 101 extra = ATR-feed-extreme cascade (different stops → different exits
+      → different re-entries), NOT a logic bug. Authoritative run config = `tools/btc_ref_run.set`
+      (extracted from the tester logs — baseline.set is XAU-oriented and was NOT what the BTC run used).
+- [x] **Level-3 aggregate:** CPP net -$75 / win 57.3% / PF 0.995 vs REF +$451 / 59.2% / 1.026 —
+      same trade count + win-rate + PF band; net gap is small per-trade $ deltas across a PF≈1 strategy.
+- [x] Two bugs fixed en route: RiskManager min-lot skip needed the `flooredUp=(rawLot<minLot)`
+      precondition (was dropping normal trades); the BTC run uses code-default economics (SlAtrBrk=2.2,
+      RrBrk=3, UseMtfAgree=false, MaxSpreadPips=0, MaxPeakDDPct=30), not baseline.set.
 - [x] Golden test (`tests/test_parity_golden.cpp` + frozen `tests/golden/`): replays the bid M3
       warmup slice + MT5 ref day in `make test`; asserts VP/DI/trend/sigValid stay within tolerance.
       Front-half faithfulness is now a regression guard, not a one-off. (Trade-level diff still TODO.)

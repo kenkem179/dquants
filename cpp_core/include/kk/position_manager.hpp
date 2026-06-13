@@ -70,7 +70,8 @@ public:
     // Open at an actual fill price + sized lot. entry_atr1 = the shift-1 ATR at entry (used only if
     // a value is needed before the first managed tick supplies a live atr). Returns false if degenerate.
     bool open_position(const Params& p, const Signal& sig, double fill_price, double lot,
-                       int64_t entry_ts_ms, int session, double entry_spread, double entry_atr1) {
+                       int64_t entry_ts_ms, int session, double entry_spread, double entry_atr1,
+                       bool regime_trend = false) {
         if (lot <= 0.0 || sig.risk <= 0.0) return false;
         p_ = &p;
         open_ = true; is_long_ = sig.is_long;
@@ -95,6 +96,7 @@ public:
 
         rec_ = TradeRecord{};
         rec_.entry_ts_ms = entry_ts_ms; rec_.is_long = is_long_; rec_.is_rev = sig.is_rev;
+        rec_.regime_trend = regime_trend;
         rec_.session = session; rec_.entry = entry_; rec_.risk_price = risk_; rec_.reason = sig.reason;
         rec_.brk_dist_atr = sig.f_brk_dist_atr; rec_.body_pct = sig.f_body_pct; rec_.adx = sig.f_adx;
         rec_.di_spread = sig.f_di_spread; rec_.runway_atr = sig.f_runway_atr; rec_.node_net = sig.f_node_net;

@@ -102,9 +102,14 @@ public:
         raw *= peak_dd_lot_mult(equity);
         if (raw <= 0.0) return 0.0;
         const double lot = p.normalize_lot(raw);
+        // Min-lot over-risk skip-guard (RiskManager.mqh:114): skip ONLY when the broker's
+        // VOLUME_MIN floored the raw lot UP (rawLot < minLot) AND the resulting min-lot risks
+        // more than the budget. A normal lot rounded slightly over budget does NOT skip — the
+        // flooredUp precondition is essential (without it, ordinary trades get dropped).
         if (p.skip_if_minlot_over_risk) {
+            const bool floored_up = (raw < p.min_lot);
             const double actual_risk = lot * risk_price_dist * vppl;
-            if (actual_risk > budget * 1.001) return 0.0;   // min-lot would over-risk -> skip
+            if (floored_up && actual_risk > budget * 1.001) return 0.0;
         }
         return lot;
     }

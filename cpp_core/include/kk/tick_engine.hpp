@@ -24,6 +24,8 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <cstdio>
+#include <string>
 #include <cmath>
 #include <algorithm>
 #include "kk/types.hpp"
@@ -47,12 +49,26 @@ public:
     // Precompute the front-half over the full bar series, then ready the streaming state.
     // Call once before feeding ticks. Bars must be oldest..newest, contiguous in series
     // order (gaps in TIME are fine — empty M3 buckets simply aren't bars, exactly as MT5).
-    void load_bars(const std::vector<Bar>& bars) {
+    //
+    // trade_from_ts_ms = the test-period start (epoch ms, UTC). Bars before it are WARMUP
+    // only (precomputed for indicator convergence, never bar-closed/traded) — exactly the
+    // MT5 tester's preloaded history. The stream must then begin at the first tick >=
+    // trade_from_ts_ms. 0 (default) trades from the first bar (used by the unit test).
+    void load_bars(const std::vector<Bar>& bars, int64_t trade_from_ts_ms = 0) {
         bars_ = bars;
         precompute_();
         rm_.reset(p_);
         sess_.init(p_);
+        // Position the forming-bar cursor at the last warmup bar strictly before the test
+        // start, so the first in-window tick fires exactly the boundary bar's signal (and
+        // never replays warmup bars into spurious fills).
         cur_forming_ = -1;
+        if (trade_from_ts_ms > 0) {
+            for (int i = 0; i < N_; ++i) {
+                if (bars_[i].ts_ms < trade_from_ts_ms) cur_forming_ = i;
+                else break;
+            }
+        }
         equity_ = rm_.balance();
         trades_.clear();
     }
@@ -89,6 +105,10 @@ public:
         if (pos_.open()) { pos_.force_close(last_bid, last_ask); finalize_trade_(last_ts_ms); }
     }
 
+    // Debug: print the gate decision for every valid signal whose shift-1 bar time is in
+    // [from_ms, to_ms]. 0,0 disables. Used to trace Level-2 trade divergences.
+    void set_debug_window(int64_t from_ms, int64_t to_ms) { dbg_from_ = from_ms; dbg_to_ = to_ms; }
+
     const std::vector<TradeRecord>& trades() const { return trades_; }
     double balance() const { return rm_.balance(); }
     double peak_equity() const { return rm_.peak_equity(); }
@@ -101,6 +121,7 @@ private:
         Signal sig;               // raw DetectSignal output (pre-gate)
         double atr1 = 0.0;        // atr at this (shift-1) bar
         double price = 0.0;       // close at this bar (ATR%-gate denominator = iClose(1))
+        bool   regime_trend = false;  // regime.trend at this bar (trade-journal context)
     };
 
     void precompute_() {
@@ -139,6 +160,7 @@ private:
             BarEval& ev = evals_[i];
             ev.atr1 = atr_[i];
             ev.price = bars_[i].close;
+            ev.regime_trend = regime.trend;
             if (i >= 1) {
                 SignalBar s;
                 s.o = bars_[i - 1].open; s.h = bars_[i - 1].high; s.l = bars_[i - 1].low; s.c = bars_[i - 1].close;
@@ -233,34 +255,47 @@ private:
 
         if (!ev.valid || !ev.sig.valid) return;
         const Signal& sig = ev.sig;
+        const bool dbg = dbg_from_ && bars_[sig_bar].ts_ms >= dbg_from_ && bars_[sig_bar].ts_ms <= dbg_to_;
+        auto blk = [&](const char* why) { if (dbg) std::fprintf(stderr, "[gate] %s %s -> BLOCK: %s\n",
+                       trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", why); };
 
         // Supplementary quality gate (before the main safety gate, as in OnTick).
-        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms)) return;
+        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms)) { blk("quality (MTF/RSI)"); return; }
 
         // Flat check + main safety gate (order mirrors OnTick / SafetyBlockReason).
-        if (pos_.open()) return;
+        if (pos_.open()) { blk("position already open"); return; }
         const double risk_budget = rm_.risk_budget_usd();
-        const bool safety =
-               sessionId != 0
-            && atr_pct_ok(ev.atr1, ev.price, p_)
-            && spread_ok(t.bid, t.ask, p_)
-            && sess_.max_trades_ok()
-            && !rm_.is_daily_dd_hit(equity_, risk_budget)
-            && !sess_.is_blocked_hour(u.hour)
-            && !rm_.is_peak_dd_halt(equity_)
-            && !rm_.is_in_cooldown(t.ts_ms);
-        if (!safety) return;
+        if (sessionId == 0) { blk("out of session"); return; }
+        if (!atr_pct_ok(ev.atr1, ev.price, p_)) { blk("ATR% band"); return; }
+        if (!spread_ok(t.bid, t.ask, p_)) { blk("spread"); return; }
+        if (!sess_.max_trades_ok()) { blk("max trades/session"); return; }
+        if (rm_.is_daily_dd_hit(equity_, risk_budget)) { blk("daily DD"); return; }
+        if (sess_.is_blocked_hour(u.hour)) { blk("blocked hour"); return; }
+        if (rm_.is_peak_dd_halt(equity_)) { blk("peak DD halt"); return; }
+        if (rm_.is_in_cooldown(t.ts_ms)) { blk("cooldown"); return; }
 
         // Cost-clearance: live spread must not eat the TP1 partial.
-        if (!spread_vs_tp1_ok(t.bid, t.ask, sig.tp1, sig.entry, p_)) return;
+        if (!spread_vs_tp1_ok(t.bid, t.ask, sig.tp1, sig.entry, p_)) { blk("spread vs TP1"); return; }
 
         // Size + market fill at this tick (long->ask, short->bid).
         const double lot = rm_.compute_lot(sig.risk, equity_);
-        if (lot <= 0.0) return;   // ComputeLot guard -> no fill, no session-counter increment
+        if (lot <= 0.0) { blk("lot<=0 (min-lot-over-risk)"); return; }   // no fill, no counter
         const double fill = ExecutionSimulator::fill_price(sig.is_long, t);
         const double entry_spread = ExecutionSimulator::entry_spread(t);
-        if (pos_.open_position(p_, sig, fill, lot, bars_[sig_bar].ts_ms, sessionId, entry_spread, ev.atr1))
+        if (pos_.open_position(p_, sig, fill, lot, bars_[sig_bar].ts_ms, sessionId, entry_spread,
+                               ev.atr1, ev.regime_trend)) {
             sess_.on_fill();   // g_tradesThisSession++
+            if (dbg) std::fprintf(stderr, "[gate] %s %s -> FILL entry=%.3f sl=%.3f lot=%.2f\n",
+                                  trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S",
+                                  fill, sig.sl, lot);
+        }
+    }
+
+    std::string trade_dbg_time_(int sig_bar) const {
+        const UtcParts u = utc_parts(bars_[sig_bar].ts_ms);
+        char b[24]; std::snprintf(b, sizeof(b), "%04d.%02d.%02d %02d:%02d",
+                                  u.year, u.mon, u.day, u.hour, u.min);
+        return std::string(b);
     }
 
     void finalize_trade_(int64_t ts_ms) {
@@ -286,6 +321,7 @@ private:
     int     cur_forming_ = -1;
     double  equity_ = 0.0;
     int     raw_signals_ = 0;
+    int64_t dbg_from_ = 0, dbg_to_ = 0;
     std::vector<TradeRecord> trades_;
 };
 
