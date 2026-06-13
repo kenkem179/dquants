@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 #include <unordered_set>
 
 namespace kk {
@@ -115,8 +116,29 @@ struct Params {
     double pip_size           = 0.01;    // XAUUSD digits=2
     double mintick            = 0.01;
     double contract_size      = 100.0;
+    // ---- broker specs (NOT in .set; supplied per instrument by the user for $ parity).
+    // valuePerPricePerLot = tick_value/tick_size (falls back to contract_size if unset).
+    // Placeholders below; the real Exness BTCUSD/XAUUSD values slot in here. ----
+    double tick_value         = 0.0;     // USD per tick per lot (0 => use contract_size)
+    double tick_size          = 0.0;     // price increment per tick
+    double lot_step           = 0.01;    // broker volume step
+    double min_lot            = 0.01;    // broker minimum volume
+    double broker_max_lot     = 100.0;   // broker maximum volume (risk `max_lot` is the strategy cap)
+    double commission_per_lot = 0.0;     // round-turn USD commission per lot
+    double start_balance      = 10000.0; // tester starting balance
 
     int master_len() const { return vp_lookback * master_mult; }
+    // USD change per 1.0 price unit per 1.0 lot.
+    double value_per_price_per_lot() const {
+        return (tick_value > 0.0 && tick_size > 0.0) ? (tick_value / tick_size) : contract_size;
+    }
+    double normalize_lot(double lot) const {
+        if (lot < min_lot) lot = min_lot;
+        if (lot > broker_max_lot) lot = broker_max_lot;
+        if (lot_step > 0.0) lot = std::round(lot / lot_step) * lot_step;
+        if (lot < min_lot) lot = min_lot;
+        return lot;
+    }
 };
 
 namespace detail {

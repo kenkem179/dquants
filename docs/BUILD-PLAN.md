@@ -45,7 +45,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       raw sigValid 74/75 (entry exact on both-fired rows). The 1 miss (00:03) + sl/tp deltas are the
       documented ATR-from-CSV spike caveat.**
 ### Execution layer
-- [ ] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — TradeManager.mqh
+- [x] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — `include/kk/position_manager.hpp`,
+      port of TradeManager.mqh. Per-tick state machine (broker SL/TP first, then EA TP1→BE→trail; trail only
+      ever tightens, anti-churn step). Tracks mfeR/maeR (broker-spec-free) + realized USD (via broker specs).
+      4 unit tests cover SL-loss / TP1→trail→SL-win / backstop-TP / trail-tightens-only. `Params` gained broker
+      spec fields (tick_value/tick_size/lot_step/min_lot/commission/start_balance) — **awaiting real Exness numbers**.
 - [ ] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — RiskManager.mqh
 - [ ] Filters (sessions, news calendar, ATR% band, spread, blocked hours)
 - [ ] ExecutionSimulator (spread/slippage/commission, tick fills)
