@@ -1,0 +1,11 @@
+[opt] wrote 200 trials -> /Users/tokyotechies/Workspace/KEM/dquants/research/optimization/optuna_btc_results.csv
+[opt] BEST score=6.02 train_net=4428.89 test_net=901.03 test_pf=1.154
+       InpSlAtrBrk=2.6140618822622956
+       InpBreakBufAtr=0.3129384104751019
+       InpBreakMaxAtr=4.865969305210582
+       InpTp1R=0.8852861479320543
+       InpTp1ClosePct=33.01601836508599
+       InpTrailAtrMult=2.002000700876699
+       InpRunnerRr=5.507137504471287
+       InpAdxTrendMin=24.492827241034224
+       InpDiSpreadMin=5.6493228940018625

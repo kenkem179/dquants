@@ -88,8 +88,19 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       Front-half faithfulness is now a regression guard, not a one-off. (Trade-level diff still TODO.)
 
 ## Phase 8 — Optimization
-- [ ] Python harness drives C++ engine (Optuna); attack tail-dependence via trail/TP1 params
-- [ ] Sensitivity heatmaps (plateaus, not peaks)
+- [x] Python harness drives C++ engine (Optuna) — `research/optimization/optimize_btc.py`. 200-trial
+      TPE over exit/economics + regime gates; full-window net/maxDD objective + train/test consistency
+      bonus. BTCUSD M3. 16/200 robust-plateau configs converged to a tight cluster.
+- [x] Sensitivity sweep (plateaus, not peaks) — `research/optimization/sensitivity_btc.py`. Trail/
+      runner_rr/tp1%/di_spread are PLATEAUS; breakBuf/breakMax robust in direction; **AdxTrendMin=24 is
+      a sharp peak (fragile — walk-forward must confirm)**.
+- [x] **Result (`research/optimization/FINDINGS.md`, `best_btc.set`):** refined config turns the BTCUSD
+      window from full net −$75/PF 0.995 into **+$5744/PF 1.240, DD halved ($2383→$1190), and Nov OOS
+      flips −$904→+$1052 (PF 1.16)**. Edge holds out-of-sample. Key moves: tighter breakout (bbuf
+      0.65→0.31), wider stop (2.2→2.65), tighter trail + lower runner target (3.6→2.05, rr 10→5.3),
+      more selective trend (adx 22→24), Tp1R 0.8→1.0.
+- [ ] **Validate `best_btc.set` in the MT5 tester** (confirm the C++ improvement survives the ATR-from-
+      CSV residual) before trusting live. XAUUSD M3 optimization still TODO.
 
 ## Phase 9 — Walk-forward + Monte Carlo
 - [ ] Rolling train/validate/test; never mix periods
