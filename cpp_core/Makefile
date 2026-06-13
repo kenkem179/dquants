@@ -1,7 +1,8 @@
 # KK-MasterVP C++ tick backtester — dependency-free build (Apple clang, C++20).
 # Targets:
-#   make test   build + run all unit tests in tests/
-#   make        build everything
+#   make test     build + run all unit tests in tests/
+#   make parity   build the parity harness driver (tools/parity_driver.cpp)
+#   make          build everything
 #   make clean
 CXX      := clang++
 CXXFLAGS := -std=c++20 -O2 -Wall -Wextra -Wpedantic -Iinclude
@@ -10,10 +11,16 @@ BUILD    := build
 TEST_SRCS := $(wildcard tests/*.cpp)
 TEST_BINS := $(patsubst tests/%.cpp,$(BUILD)/%,$(TEST_SRCS))
 HEADERS   := $(wildcard include/kk/*.hpp)
+PARITY    := $(BUILD)/parity_driver
 
-all: $(TEST_BINS)
+all: $(TEST_BINS) $(PARITY)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+parity: $(PARITY)
+$(PARITY): tools/parity_driver.cpp $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $< -o $@
 
@@ -24,4 +31,4 @@ test: $(TEST_BINS)
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test clean
+.PHONY: all test parity clean

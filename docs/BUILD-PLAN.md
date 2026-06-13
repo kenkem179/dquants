@@ -37,8 +37,13 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 - [x] Resolved (caveat): ATR matches on avg (ratio mean 0.9986) but diverges on vol spikes —
       MT5 tester's tick model captures wider intrabar extremes than the exported CSV. VP/ADX are
       robust (window-extreme / ratio based); ATR is not. Perfect ATR parity unattainable from CSV.
-- [ ] C++ parity harness driver: Parquet→bars→computation layer per bar → emit `parity_*.csv`
-      (validate C++ reproduces the Python/MT5 numbers; ATR carries the documented caveat)
+- [x] C++ parity harness driver: Parquet→bars→computation layer per bar → emit `parity_*.csv`.
+      Bridge `tools/export_bars.py` (DuckDB Parquet→bid M3 bars CSV) → `build/parity_driver`
+      (`include/kk/parity_runner.hpp` drives VP+regime+indicators+node+DetectSignal per bar, MT5
+      shift map verified from MQL source) → `tools/diff_parity.py` vs MT5 ref. **Result on the
+      480-row BTCUSD M3 2026-04-09 ref: master VP ≤0.001, +DI/-DI/ADX exact (0.000), trend 100%,
+      raw sigValid 74/75 (entry exact on both-fired rows). The 1 miss (00:03) + sl/tp deltas are the
+      documented ATR-from-CSV spike caveat.**
 ### Execution layer
 - [ ] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — TradeManager.mqh
 - [ ] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — RiskManager.mqh
@@ -48,7 +53,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 ### Full validation
 - [ ] Emit `trades_*.csv`; Level-2 trade diff vs reference
 - [ ] Level-3 aggregate: reproduce PF 1.21/1.10 on XAUUSD M3
-- [ ] Golden test: freeze a parity-CSV day as a `make test` regression guard
+- [x] Golden test (`tests/test_parity_golden.cpp` + frozen `tests/golden/`): replays the bid M3
+      warmup slice + MT5 ref day in `make test`; asserts VP/DI/trend/sigValid stay within tolerance.
+      Front-half faithfulness is now a regression guard, not a one-off. (Trade-level diff still TODO.)
 
 ## Phase 8 — Optimization
 - [ ] Python harness drives C++ engine (Optuna); attack tail-dependence via trail/TP1 params

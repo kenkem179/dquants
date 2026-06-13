@@ -31,6 +31,12 @@ cpp_core/build/
 *.a
 *.out
 *.dSYM/
+# generated parity bridge artifacts (regenerable via tools/export_bars.py + parity_driver)
+cpp_core/tools/bars_*.csv
+cpp_core/tools/parity_cpp_*.csv
+# but DO commit the frozen golden parity fixtures (small, test regression guard)
+!cpp_core/tests/golden/
+!cpp_core/tests/golden/*.csv
 
 # ---- MT5 compiled ----
 *.ex5
