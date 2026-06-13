@@ -122,10 +122,20 @@ FORCED on, momentum/flow toggles categorical). Refine from the strong-OOS **sub-
       +$1071/PF 1.35 (114 tr, 64% win)**. AdxTrendMin landed at a STABLE **16.1 plateau** (vs the
       fragile 24 of the breakout-only pass) — 20-trial coherent sub-cluster. MC 96.3% profitable
       (P5 PF 1.020); **ALL 4 months + ALL 8 half-months positive**.
-- [~] **XAU Monster** — 400-trial joint opt running (`optuna_monster_xau.csv`).
+- [x] **XAU Monster** (`best_monster_xau.set`): FULL **+$11,615/PF 1.323**, OOS (Nov–Dec)
+      **+$5086/PF 1.276**, DD $873, 641 tr. MC **99.9% profitable** (P5 PF 1.137); ALL 5 months
+      positive. 348/400 robust trials (broad plateau → best trial adopted). Symbol-specific: XAU wants
+      `UseMomVeto=ON` (opposite of BTC) — the momentum gate is what makes the reversion leg net-additive.
+- [x] **`MONSTER-FINDINGS.md`** documents both symbols + cross-symbol takeaways (reversion additive on
+      both, gated differently; XAU carries the larger $ edge).
 - [ ] vol-RR engine support (ComputeRrScale: session × ATR-pctile) — currently rr_scale=1.0 hardcoded.
-- [ ] Confluence scoring + session-adaptive exits (evidence-based enhancements on the joint base).
+      (Optional enhancement; MQL5 already supports `InpEnableVolRR`, default off — parity preserved.)
 
-## Phase 10 — Promote
-- [ ] Port winning Monster config → clean MQL5 EA at `kenkem/MQL5/Experts/KK-MasterVP-Monster/`
-- [ ] Push winning params back to `KK-MasterVP.mq5`; demo forward-test
+## Phase 10 — Promote (revised: the Monster EA ALREADY EXISTS on the user's side)
+- [!] **Do NOT recreate** `kenkem/MQL5/Experts/KK-MasterVP-Monster/` — it already exists and has evolved
+      (NetVolume, StatePersistence, single-instance guard, embedded news; 7 R-series commits on
+      `origin/KKMasterVPv1`, ahead of local). A blind recreate clobbered it once (recovered via git).
+- [ ] Read the user's Monster EA `InputParams.mqh` schema (read-only), map `best_monster_btc.set` /
+      `best_monster_xau.set` onto its ACTUAL inputs, deliver as non-destructive `.set` files.
+- [ ] Confirm the user's evolved Monster still parity-matches the C++ engine (or note the deltas) before
+      claiming the configs transfer; then demo forward-test in MT5.
