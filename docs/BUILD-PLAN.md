@@ -54,7 +54,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       RiskManager.mqh. Owns balance/peak/day-start/streak/cooldown; budget=balance·riskAccPct%,
       lot=budget/(stop·vppl)·peakDDmult, predictive daily-DD breaker, 22% halt / 15%→×0.55 soft-block,
       3-loss→4h + daily-DD→12h cooldowns (extend-only). 7 unit tests pass.
-- [ ] Filters (sessions, news calendar, ATR% band, spread, blocked hours)
+- [~] Filters (sessions, news calendar, ATR% band, spread, blocked hours) — `include/kk/filters.hpp`
+      (port of SessionManager.mqh): sessions (Asia/Ldn/NY UTC), blocked hours (+ranges), max-trades/session
+      reset, ATR% band, spread + TP1 cost-clearance gates. 6 unit tests pass. **Pending in TickEngine:**
+      MTF-agree (M15 EMA) + RSI veto quality gates (need HTF bars), news calendar (disabled for v1 parity).
 - [ ] ExecutionSimulator (spread/slippage/commission, tick fills)
 - [ ] TickEngine (replay ticks → bars → drive modules → trades) + `backtester` main
 ### Full validation
