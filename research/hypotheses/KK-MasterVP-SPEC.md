@@ -171,11 +171,27 @@ are computed per side for the selectivity study — no trading effect.)
 `RiskManager.mqh`→`RiskManager`, sessions/news→`Filters`. `TickEngine` replays Parquet ticks →
 builds M1/M3 bars → drives the above → `ExecutionSimulator` (spread/slippage/commission).
 
-**Parity gate (the trust milestone):** run the EA in MT5 Strategy Tester on XAUUSD M3 with
-`InpExportParity=true` + `InpExportTradeJournal=true` → it dumps per-bar VP/regime/signal CSV and a
-per-trade journal. Our engine must reproduce those **bar-for-bar** (VP levels, regime flags, signals)
-and the trade list (PF should land at the known **1.21 TRAIN / 1.10 OOS**). Only then is optimization
-trustworthy. The existing `Parity/` exporters are purpose-built for exactly this diff.
+**Parity methodology — three levels, identical schemas, diff (bar-level FIRST).** The C++ engine
+emits **byte-compatible CSVs** to the MQL exporters (same column order, `DoubleToString(.,3)` rounding,
+`YYYY.MM.DD HH:MM` timestamps) so a plain diff works:
+
+1. **Per-bar computation** (`parity_*.csv`, `ParityExport.mqh`): poc/vah/val/mpoc/mvah/mval,
+   trend/plus/minus/adx/atr1, sigValid/long/rev/entry/sl/tp1/tp2. Proves the *math* matches
+   independent of trading — **diff this first**; it pinpoints the exact bar + column that diverges
+   before any trade exists. This is the primary tool.
+2. **Per-trade** (`trades_*.csv`, `TradeJournal.mqh`): entry/dir/sl/tp/mfeR/maeR/realized/exitTag —
+   catches execution & management (TP1 partial, trail, BE, fills).
+3. **Aggregate**: PF/trade-count/net (target **1.21 TRAIN / 1.10 OOS**) — headline only, weak for debug.
+
+**Rules that make it rigorous:** (a) compare with **tolerance, not bytes** — FP order + MT5's Wilder
+SMA-seed vs our ewm-seed differ on warmup; the 3-decimal CSV rounding quantizes FP noise; discard
+warmup; flag *systematic* vs last-digit divergence. (b) **Verify bars match before strategy** — if
+`vah`/`adx` already differ at Level 1, the bug is bar-construction/indicator-seeding (the TV-vs-MT5
+class), not the logic; feed the engine the *same ticks* and run the tester in "every tick based on real
+ticks". (c) **Deterministic parity mode** — identical news CSV, fixed spread, no realtime-only gates,
+so the only possible difference is strategy logic; re-enable extras one at a time. (d) **Golden test** —
+freeze ~1 day of `parity_*.csv` as a C++ unit test so faithfulness becomes a `make test` regression
+guard, not a one-off check.
 
 **Known parity risks to control:** (1) tick_volume vs our tick_count (should match exactly); (2)
 MT5 iATR/iADX seeding vs our Wilder seed — discard warmup; (3) news calendar (disable for v1 parity);
