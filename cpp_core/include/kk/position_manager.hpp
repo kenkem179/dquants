@@ -53,7 +53,19 @@ struct TradeRecord {
 class PositionManager {
 public:
     bool open() const { return open_; }
+    bool is_long() const { return is_long_; }
     const TradeRecord& record() const { return rec_; }
+
+    // Trade's contribution to account equity beyond the running balance: realized-so-far
+    // (TP1 partial already booked to balance in MT5) + floating MtM of the remaining volume
+    // on the exit side (long->bid, short->ask). Used by the engine for peak/daily-DD tracking.
+    double open_pnl(double bid, double ask) const {
+        if (!open_) return 0.0;
+        const double exit_px = is_long_ ? bid : ask;
+        const double dir = is_long_ ? 1.0 : -1.0;
+        const double floating = (exit_px - entry_) * dir * cur_vol_ * p_->value_per_price_per_lot();
+        return realized_usd_ + floating;
+    }
 
     // Open at an actual fill price + sized lot. entry_atr1 = the shift-1 ATR at entry (used only if
     // a value is needed before the first managed tick supplies a live atr). Returns false if degenerate.
@@ -63,12 +75,18 @@ public:
         p_ = &p;
         open_ = true; is_long_ = sig.is_long;
         entry_ = fill_price; initial_vol_ = lot; cur_vol_ = lot;
-        risk_ = sig.risk;
+        // Effective risk = |actual fill - SL| (TradeManager.mqh:99 effRisk), NOT the anchor
+        // sig.risk. The journal's riskPrice/mfeR/maeR all measure against this true R so a
+        // fill away from the anchor is scored fairly. Fall back to sig.risk if degenerate.
+        risk_ = std::fabs(fill_price - sig.sl);
+        if (risk_ <= 0.0) risk_ = sig.risk;
         sl_ = sig.sl;
         // Runner: open with a far InpRunnerRr backstop TP (not the fixed rrBrk cap) so a real
-        // breakout can run; the chandelier trail normally exits first.
+        // breakout can run; the chandelier trail normally exits first. The backstop is anchored
+        // to sig.entry + sig.risk*RunnerRr (TradeManager.mqh:61-64) — the SIGNAL anchor/risk,
+        // not the fill — so it is a fixed absolute price the broker holds as TP.
         tp_backstop_ = (p.trail_runner && sig.risk > 0.0)
-            ? (is_long_ ? entry_ + sig.risk * p.runner_rr : entry_ - sig.risk * p.runner_rr)
+            ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
             : sig.tp2;
         tp1_ = sig.tp1;
         tp1_done_ = false; be_applied_ = false;
