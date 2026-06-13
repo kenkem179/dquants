@@ -109,7 +109,23 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       P5=$1167. Rolling: ALL 4 months positive (PF 1.16–1.29), 7/8 half-months positive.** Edge is
       temporally consistent + resampling-robust. Residual watch: the fragile AdxTrendMin=24 knob.
 - [ ] Full re-optimizing walk-forward (rolling per-fold Optuna) — needs a longer tick window; deferred.
-- [ ] XAUUSD M3 optimization (in progress).
+- [x] XAUUSD M3 base measured (net −$326/PF 0.991, 995 tr) — same headroom as BTC. Monster opt below.
+
+## Phase 11 — KK-MasterVP-Monster edition (full-space, both legs active)
+Activate the dormant **reversion leg** + jointly optimize the **entire wired param space** (breakout +
+reversion + exits + regime + node + vol-gate + sizing), on the parity-validated C++ tick engine.
+Optimizer: `research/optimization/optimize_monster.py <btc|xau>` (400-trial joint Optuna, reversion
+FORCED on, momentum/flow toggles categorical). Refine from the strong-OOS **sub-cluster median**
+(plateau, not the lone best trial).
+- [x] **BTC Monster** (`best_monster_btc.set`, commit e815cce): FULL **+$3934/PF 1.228**, OOS
+      **+$421/PF 1.081**. Both legs profitable: breakout +$2863/PF 1.20 (486 tr), **reversion
+      +$1071/PF 1.35 (114 tr, 64% win)**. AdxTrendMin landed at a STABLE **16.1 plateau** (vs the
+      fragile 24 of the breakout-only pass) — 20-trial coherent sub-cluster. MC 96.3% profitable
+      (P5 PF 1.020); **ALL 4 months + ALL 8 half-months positive**.
+- [~] **XAU Monster** — 400-trial joint opt running (`optuna_monster_xau.csv`).
+- [ ] vol-RR engine support (ComputeRrScale: session × ATR-pctile) — currently rr_scale=1.0 hardcoded.
+- [ ] Confluence scoring + session-adaptive exits (evidence-based enhancements on the joint base).
 
 ## Phase 10 — Promote
+- [ ] Port winning Monster config → clean MQL5 EA at `kenkem/MQL5/Experts/KK-MasterVP-Monster/`
 - [ ] Push winning params back to `KK-MasterVP.mq5`; demo forward-test
