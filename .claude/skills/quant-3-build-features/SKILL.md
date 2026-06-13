@@ -1,5 +1,5 @@
 ---
-name: quant-build-features
+name: quant-3-build-features
 description: Phase 3+4 of the KenKem Quant OS SOP — build M1/M3 bars, engineer indicator features, and create forward-return labels. Use after data validation.
 ---
 
@@ -8,7 +8,7 @@ description: Phase 3+4 of the KenKem Quant OS SOP — build M1/M3 bars, engineer
 Turn clean ticks into the research dataset: bars → features → forward-return labels.
 
 ## Input
-Cleaned `data/processed/ticks_<year>.parquet` (from `/quant-validate-data`).
+Cleaned `data/processed/ticks_<year>.parquet` (from `/quant-2-validate-data`).
 
 ## Output
 - `data/processed/bars_M1_<year>.parquet`, `bars_M3_<year>.parquet`:
@@ -36,4 +36,4 @@ Put logic in `pipeline/build_bars.py`, `pipeline/features.py`, `pipeline/labels.
 - No unexpected nulls (warmup periods excepted and documented).
 - Bars reconcile with tick aggregates (tick_count > 0, OHLC sane).
 
-Next: `/quant-discovery`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 3–4).
+Next: `/quant-5-discovery`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 3–4).

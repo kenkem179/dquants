@@ -1,5 +1,5 @@
 ---
-name: quant-promote-mt5
+name: quant-10-promote-mt5
 description: Phase 10 of the KenKem Quant OS SOP — promote a validated C++ strategy core into a thin MQL5 Expert Advisor with forward-test plan. Use only after walk-forward + Monte Carlo pass.
 ---
 

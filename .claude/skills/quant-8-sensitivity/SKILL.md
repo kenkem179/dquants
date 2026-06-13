@@ -1,5 +1,5 @@
 ---
-name: quant-sensitivity
+name: quant-8-sensitivity
 description: Phase 8 of the KenKem Quant OS SOP — parameter sensitivity heatmaps + Bayesian (Optuna) optimization to find stable plateaus, not lone peaks. Use after a strategy backtests positively.
 ---
 
@@ -23,4 +23,4 @@ A backtesting strategy + its parameter ranges.
 - Chosen parameters sit on a plateau, robust to ± perturbation.
 - No single-point magic value relied upon.
 
-Next: `/quant-walkforward`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 8).
+Next: `/quant-9-walkforward`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 8).

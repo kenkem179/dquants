@@ -1,5 +1,5 @@
 ---
-name: quant-import-data
+name: quant-1-import-data
 description: Phase 1 of the KenKem Quant OS SOP — stream raw MT5 tab-separated tick CSVs into typed, partitioned Parquet. Use when importing or re-importing tick data before any research.
 ---
 
@@ -30,4 +30,4 @@ Put the importer in `pipeline/import_data.py`.
 - No parse/cast errors; `ts` strictly typed; `spread` present.
 - Spot-check first/last timestamps per year.
 
-Next: `/quant-validate-data`. See `docs/KENKEM_QUANT_OS.md` §3–4 for the data contract.
+Next: `/quant-2-validate-data`. See `docs/KENKEM_QUANT_OS.md` §3–4 for the data contract.

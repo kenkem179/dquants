@@ -1,5 +1,5 @@
 ---
-name: quant-validate-data
+name: quant-2-validate-data
 description: Phase 2 of the KenKem Quant OS SOP — validate and clean imported tick Parquet (dedup, impossible prices, negative spread, gaps). Use after import, before building bars/features.
 ---
 
@@ -8,7 +8,7 @@ description: Phase 2 of the KenKem Quant OS SOP — validate and clean imported 
 Bad ticks are the #1 source of fake edges. Validate and clean before anything downstream.
 
 ## Input
-`data/processed/ticks_<year>.parquet` (from `/quant-import-data`).
+`data/processed/ticks_<year>.parquet` (from `/quant-1-import-data`).
 
 ## Output
 - Cleaned `data/processed/ticks_<year>.parquet` (or a `*_clean.parquet` variant).
@@ -27,4 +27,4 @@ Put logic in `pipeline/validate_data.py`. Run in the `kenkem` env.
 - Session coverage looks complete (24/5 for BTC; respect XAUUSD sessions when added).
 - Report committed; cleaning is reproducible (deterministic, no manual edits).
 
-Next: `/quant-build-features`.
+Next: `/quant-3-build-features`.

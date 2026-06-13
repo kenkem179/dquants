@@ -1,5 +1,5 @@
 ---
-name: quant-discovery
+name: quant-5-discovery
 description: Phase 5 of the KenKem Quant OS SOP — statistical discovery (correlation, mutual information, SHAP, regime clustering) to find which features actually drive forward returns. Use after features+labels exist.
 ---
 
@@ -30,4 +30,4 @@ Put logic in `research/discovery/`. Run in `kenkem`.
 - Regimes labeled and counted; each studied separately downstream.
 - Redundancy explicitly flagged.
 
-Next: `/quant-hypothesis`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 5).
+Next: `/quant-6-hypothesis`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 5).

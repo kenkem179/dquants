@@ -1,5 +1,5 @@
 ---
-name: quant-backtest
+name: quant-7-backtest
 description: Phase 7 of the KenKem Quant OS SOP — backtest a hypothesis with realistic costs, first vectorized (vectorbt) then on the C++ tick engine. Use after a hypothesis is defined.
 ---
 
@@ -27,4 +27,4 @@ Profit Factor).
 - Vectorized and tick-engine results are directionally consistent.
 - Trade log reproducible (deterministic); metrics committed.
 
-Next: `/quant-sensitivity`. See `docs/KENKEM_QUANT_OS.md` §5, §7 (Phase 7).
+Next: `/quant-8-sensitivity`. See `docs/KENKEM_QUANT_OS.md` §5, §7 (Phase 7).

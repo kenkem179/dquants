@@ -90,16 +90,16 @@ phase's output is the next phase's input.
 
 | # | Phase | Skill | Input | Output | Acceptance |
 |---|-------|-------|-------|--------|------------|
-| 1 | Import Data | `/quant-import-data` | raw CSV | `data/processed/ticks_*.parquet` | row counts match, no parse errors |
-| 2 | Validate Data | `/quant-validate-data` | ticks parquet | validation report | no dup ts, no neg spread, session coverage OK |
-| 3 | Build Bars + Features | `/quant-build-features` | ticks parquet | `data/processed/bars_*.parquet`, `data/features/features.parquet` | features non-null, no lookahead |
+| 1 | Import Data | `/quant-1-import-data` | raw CSV | `data/processed/ticks_*.parquet` | row counts match, no parse errors |
+| 2 | Validate Data | `/quant-2-validate-data` | ticks parquet | validation report | no dup ts, no neg spread, session coverage OK |
+| 3 | Build Bars + Features | `/quant-3-build-features` | ticks parquet | `data/processed/bars_*.parquet`, `data/features/features.parquet` | features non-null, no lookahead |
 | 4 | Forward-Return Labels | (part of build-features) | bars/features | `data/labels/labels.parquet` | labels align to bar t, computed from t+k |
-| 5 | Discovery | `/quant-discovery` | features+labels | correlation/MI/SHAP/cluster report | top drivers ranked, redundancy flagged |
-| 6 | Hypotheses | `/quant-hypothesis` | discovery report | `research/hypotheses/*.md` | each has rule, expectancy, sample size |
-| 7 | Backtest | `/quant-backtest` | hypothesis + bars | equity curve, trade log, metrics | costs modeled (spread/slip/commission/latency) |
-| 8 | Sensitivity | `/quant-sensitivity` | strategy params | parameter heatmaps | stable plateau, not a single peak |
-| 9 | Walk-Forward + MC | `/quant-walkforward` | strategy | WF + Monte Carlo report | OOS holds, no period mixing |
-| 10 | Promote to MT5 | `/quant-promote-mt5` | C++ strategy core | MQL5 EA + forward-test plan | C++ tests pass, EA mirrors core logic |
+| 5 | Discovery | `/quant-5-discovery` | features+labels | correlation/MI/SHAP/cluster report | top drivers ranked, redundancy flagged |
+| 6 | Hypotheses | `/quant-6-hypothesis` | discovery report | `research/hypotheses/*.md` | each has rule, expectancy, sample size |
+| 7 | Backtest | `/quant-7-backtest` | hypothesis + bars | equity curve, trade log, metrics | costs modeled (spread/slip/commission/latency) |
+| 8 | Sensitivity | `/quant-8-sensitivity` | strategy params | parameter heatmaps | stable plateau, not a single peak |
+| 9 | Walk-Forward + MC | `/quant-9-walkforward` | strategy | WF + Monte Carlo report | OOS holds, no period mixing |
+| 10 | Promote to MT5 | `/quant-10-promote-mt5` | C++ strategy core | MQL5 EA + forward-test plan | C++ tests pass, EA mirrors core logic |
 
 ### Per-phase detail
 

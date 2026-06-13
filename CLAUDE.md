@@ -77,9 +77,9 @@ Raw ticks: `data/btcusd/BTCUSD_ticks_mt5_<year>.csv`, **tab-separated**, ~12GB t
 Each phase of the SOP is a slash-command skill in `.claude/skills/`. Invoke in order; each consumes the
 prior phase's output:
 
-`/quant-import-data` → `/quant-validate-data` → `/quant-build-features` → `/quant-discovery` →
-`/quant-hypothesis` → `/quant-backtest` → `/quant-sensitivity` → `/quant-walkforward` →
-`/quant-promote-mt5`
+`/quant-1-import-data` → `/quant-2-validate-data` → `/quant-3-build-features` → `/quant-5-discovery` →
+`/quant-6-hypothesis` → `/quant-7-backtest` → `/quant-8-sensitivity` → `/quant-9-walkforward` →
+`/quant-10-promote-mt5`
 
 Use `/codex` for heavy C++/Python implementation and `/gemini` for independent review of plans and
 risky logic.

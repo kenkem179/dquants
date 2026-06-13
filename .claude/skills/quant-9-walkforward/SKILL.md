@@ -1,5 +1,5 @@
 ---
-name: quant-walkforward
+name: quant-9-walkforward
 description: Phase 9 of the KenKem Quant OS SOP — walk-forward validation + Monte Carlo robustness. Use to confirm out-of-sample performance before considering MT5 deployment.
 ---
 
@@ -23,4 +23,4 @@ A strategy with chosen (plateau) parameters.
 - Out-of-sample performance holds across windows (no period-mixing, no peeking).
 - Monte Carlo drawdown / ruin within risk tolerance.
 
-Next: `/quant-promote-mt5`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 9).
+Next: `/quant-10-promote-mt5`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 9).

@@ -1,5 +1,5 @@
 ---
-name: quant-hypothesis
+name: quant-6-hypothesis
 description: Phase 6 of the KenKem Quant OS SOP — turn discovery findings into explicit, testable trading hypotheses with measured expectancy. Use after discovery.
 ---
 
@@ -26,4 +26,4 @@ Convert statistical findings into explicit entry/exit rules with measured edge.
 - Each hypothesis is falsifiable, has a concrete rule, and reports expectancy + n.
 - No rule depends on lookahead or survivorship.
 
-Next: `/quant-backtest`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 6).
+Next: `/quant-7-backtest`. See `docs/KENKEM_QUANT_OS.md` §7 (Phase 6).
