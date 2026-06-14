@@ -28,12 +28,14 @@ cmd="${1:-status}"
 case "$cmd" in
   restore)
     mkdir -p "$LIVE_MEM"
-    rsync -av --delete "$REPO_MEM/" "$LIVE_MEM/"
+    # README.md is a repo-only doc — never push it into Claude's live memory dir.
+    rsync -av --delete --exclude='README.md' "$REPO_MEM/" "$LIVE_MEM/"
     echo "Restored repo memory -> $LIVE_MEM"
     ;;
   backup)
     mkdir -p "$REPO_MEM"
-    rsync -av --delete "$LIVE_MEM/" "$REPO_MEM/"
+    # Keep README.md (repo-only) — exclude it so --delete doesn't remove it.
+    rsync -av --delete --exclude='README.md' "$LIVE_MEM/" "$REPO_MEM/"
     echo "Backed up live memory -> $REPO_MEM (now: git add .claude/memory && commit)"
     ;;
   status)
@@ -41,7 +43,7 @@ case "$cmd" in
     echo "Live memory:  $LIVE_MEM"
     echo
     if [ -d "$LIVE_MEM" ]; then
-      diff -rq "$REPO_MEM" "$LIVE_MEM" || true
+      diff -rq --exclude='README.md' "$REPO_MEM" "$LIVE_MEM" || true
     else
       echo "(live memory dir does not exist yet — run: $0 restore)"
     fi
