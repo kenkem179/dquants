@@ -194,3 +194,37 @@ SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/AD
       logic) over Monster-XAU / MasterVP. Delivered production EA `kenkem/MQL5/Experts/KK-KenKemE4/`
       (single-file, CTrade-based) + README. **Final gate = user compiles (`make compile`) + MT5 demo
       forward-test.** Spec: `research/optimization/PROMOTION-SPEC.md`.
+
+## R&D — "volume never lies" features (test on VP engines first, then port to KenKem)
+Adoption rule (user): **only commit better results.** A feature is adopted into a locked `.set` ONLY if
+its sweep strictly beats the feature-OFF baseline (PF↑ AND net↑, DD not materially worse, OOS not degraded);
+otherwise the (inert, default-OFF) engine code stays but the `.set` is left untouched.
+
+### Feature #1 — multi-bar net-volume persistence-entry + N-bar flip-exit
+- [x] **Monster (prior session):** persistence-entry helped BTC **PF 1.299→1.618**; XAU restored; flip-exit OFF.
+- [x] **MasterVP engine** (`kk::vp` TickEngine): per-bar volume-weighted net flow + persistence gate + flip-exit,
+      default OFF/inert. Tests green; OFF reproduces baselines exactly (BTC PF 1.204, XAU PF 1.737). `311b09e`.
+- [x] **MasterVP sweep → REJECT both symbols** (`sweep_mastervp_f1.py`). BTC: PF 1.204→1.239 but net flat (+$22),
+      **DD +32%** (1119→1474), **OOS PF 1.044→1.016** + best params degenerate (persist bars=1/min≈0 ⇒ gate inert) =
+      noise, not edge. XAU: strictly worse, **PF 1.737→1.520, net halved**. → F1 is **engine-specific** (helps
+      Monster-BTC, hurts MasterVP). `.set` files UNCHANGED. Code kept inert for possible cross-broker revisit.
+- [ ] **KenKem port** — speculative given mixed VP results; test-only, adopt only if it helps.
+
+### Feature #2 — volume-node STRUCTURE SL/TP (HVN/LVN shelves instead of blind ATR SL / RR TP)
+- [~] **Monster:** already implemented (`enable_hvn_shelf_sl` + `enable_structural_tp2`, default OFF) →
+      ENABLE + sweep (`sweep_monster_f2.py`, BTC+XAU IN PROGRESS).
+- [ ] **MasterVP:** ADD an equivalent node-shelf SL/TP to `kk::vp` NodeEngine + sweep.
+- [ ] If it helps, add node-structure SL/TP to KenKem too.
+
+### DeferredEntry (pullback/limit entry) — pending
+- [ ] Wire the existing `DeferredEntry` module into families as a toggle + C++ sweep-validate.
+
+## Cross-dataset robustness harness (DuckDB, multi-broker) — DONE
+- [x] `research/validation/ingest_dataset.py` — normalise any broker export (mt5_tab/bidask_csv/price_csv/
+      binance_aggtrades/binance_klines) → canonical Parquet + M1/M3/M5 bid bars + ticks CSV. DuckDB does the
+      multi-GB read. Smoke-tested on synthetic mt5_tab + klines feeds.
+- [x] `research/validation/cross_validate.py` — replay one `.set` across many datasets → PF/net/maxDD per
+      dataset + consistency summary; dispatches mastervp/monster/kenkem. Smoke-tested across all 3 engines.
+- [x] `datasets.example.json` (OANDA/Exness/Binance × BTC/XAU) + `make kenkem` rule. `3301505`.
+- [ ] **AWAITING USER DATA** — drop broker files under `data/external/<broker>/`, copy spec to datasets.json,
+      run ingest + cross_validate to confirm each locked edge holds broker-to-broker.
