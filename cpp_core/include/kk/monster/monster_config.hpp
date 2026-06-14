@@ -133,6 +133,13 @@ struct MonsterConfig {
     int    max_concurrent_per_dir = 1;     // v1: single netted position
     bool   enable_early_exit    = false;   // legacy M1+M3/M3+M5 flush
     double exit_net_min         = 0.80;
+    // multi-bar net volume (feature #1): persistence-on-entry + N-bar flip-exit
+    bool   enable_net_persist   = false;
+    int    net_persist_bars     = 3;
+    double net_persist_min      = 0.5;
+    bool   enable_net_flip_exit = false;
+    int    net_flip_bars        = 3;
+    double net_flip_min         = 0.5;
     bool   enable_m1_flush_exit = false;
     double m1_flush_net_min     = 0.80;
     int    m1_flush_bars        = 2;
@@ -330,6 +337,12 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     // stacking / early exit
     else if (key == "InpEnableEarlyExit") p.enable_early_exit = mbool(val);
     else if (key == "InpExitNetMin") p.exit_net_min = D();
+    else if (key == "InpEnableNetPersist") p.enable_net_persist = mbool(val);
+    else if (key == "InpNetPersistBars") p.net_persist_bars = I();
+    else if (key == "InpNetPersistMin") p.net_persist_min = D();
+    else if (key == "InpEnableNetFlipExit") p.enable_net_flip_exit = mbool(val);
+    else if (key == "InpNetFlipBars") p.net_flip_bars = I();
+    else if (key == "InpNetFlipMin") p.net_flip_min = D();
     else if (key == "InpEnableM1FlushExit") p.enable_m1_flush_exit = mbool(val);
     else if (key == "InpM1FlushNetMin") p.m1_flush_net_min = D();
     else if (key == "InpM1FlushBars") p.m1_flush_bars = I();

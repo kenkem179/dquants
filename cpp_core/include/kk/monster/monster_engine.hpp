@@ -393,6 +393,7 @@ private:
         bool haveSig = false;
         if (warm) {
             haveSig = compute_bar_signals_(j, longSig, shortSig, net);
+            net_hist_.push_back(net.netM3);   // feature #1 ring
         }
 
         // 8) EARLY EXITS on the open position (all default OFF; gated).
@@ -442,6 +443,13 @@ private:
                     exited = true;
                 }
             }
+            // multi-bar net flip exit (feature #1): flow against for N continuous bars.
+            if (!exited && cfg_.enable_net_flip_exit
+                && net_against_n_(pos_.is_long, cfg_.net_flip_bars, cfg_.net_flip_min)) {
+                const double px = pos_.is_long ? t.bid : t.ask;
+                close_remainder_(px, "NETFLIP");
+                exited = true;
+            }
             // legacy early-exit (net flush against the position on M3).
             if (!exited && cfg_.enable_early_exit) {
                 const bool against = pos_.is_long ? (net.netM3 <= -cfg_.exit_net_min)
@@ -465,6 +473,10 @@ private:
         if (haveLong && haveShort) return;            // both -> single-position EA SKIP, log nothing
         if (!haveLong && !haveShort) return;
         const Signal& sig = haveLong ? longSig : shortSig;
+
+        // feature #1: require net to PERSIST with the trade for N bars before entering.
+        if (cfg_.enable_net_persist
+            && !net_persist_n_(sig.is_long, cfg_.net_persist_bars, cfg_.net_persist_min)) return;
 
         const bool flat = !pos_.open;
         // safety gate.
@@ -628,6 +640,27 @@ private:
             } catch (...) { /* ignore malformed token */ }
         }
         return false;
+    }
+
+    // multi-bar net volume ring (feature #1): last netM3 per warm bar (oldest..newest).
+    std::vector<double> net_hist_;
+    // last `n` netM3 all AGAINST the position side (long: <= -minv ; short: >= minv).
+    bool net_against_n_(bool is_long, int n, double minv) const {
+        if (n < 1 || (int)net_hist_.size() < n) return false;
+        for (int i = (int)net_hist_.size() - n; i < (int)net_hist_.size(); ++i) {
+            double v = net_hist_[i];
+            if (is_long ? !(v <= -minv) : !(v >= minv)) return false;
+        }
+        return true;
+    }
+    // last `n` netM3 all WITH the trade side (long: >= minv ; short: <= -minv).
+    bool net_persist_n_(bool is_long, int n, double minv) const {
+        if (n < 1 || (int)net_hist_.size() < n) return false;
+        for (int i = (int)net_hist_.size() - n; i < (int)net_hist_.size(); ++i) {
+            double v = net_hist_[i];
+            if (is_long ? !(v >= minv) : !(v <= -minv)) return false;
+        }
+        return true;
     }
 
     MonsterConfig cfg_;
