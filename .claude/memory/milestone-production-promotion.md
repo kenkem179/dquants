@@ -66,3 +66,11 @@ clamp, partial/BE/trail), `KenKem/{Inputs,State,Indicators,Snapshot,Gates,Engine
 (thin shell). Compiles clean via `scripts/compile_mql5.sh`. Symlinked into wine MT5 as `Experts/dquants`.
 This dquants codebase is now canonical (supersedes the kenkem-repo copy). NEXT: VP family (MasterVP/Monster)
 as siblings reusing KK-Common + their VolumeProfile modules. Final gate: demo forward-test.
+
+**VP FAMILY STARTED (2026-06-14, compiles 0/0):** `dquants/mql5/experts/VP-Common/` (Types, VolumeProfile,
+Regime, NodeEngine) + `KK-MasterVP/` (Inputs, Strategy=MVP_DetectSignal, CompileCheck.mq5) — faithful
+transcription of cpp_core kk::vp / kk::detect_signal. Foundation verified via CompileCheck. REMAINING for
+MasterVP: the OnTick orchestration integrator (port cpp_core mastervp/tick_engine.hpp — build master+local
+VP from HTF bars, update NodeEngine per closed bar, detect on signal bar, manage via KK-Common) + EA shell.
+THEN Monster (bigger: kk::monster engine ~1700 LOC, 4-kind signal + multi-TF net-volume). NOTE: shell-style
+git commit messages with newlines were getting swallowed by the shell — use single-line -m or a file.
