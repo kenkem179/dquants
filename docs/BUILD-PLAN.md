@@ -11,6 +11,32 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 > (C++ tick engine + parity), Phase 8 (optimization), Phase 9 (light WFA/MC), Phase 11 (original-Monster).**
 > This file tracks only live/open work.
 
+## 🛑 Phase 13 — MT5 REALITY CHECK (2026-06-15) — READ FIRST
+The user ran all three dquants-promoted EAs in the MT5 tester. **All failed the recent OOS window.**
+This invalidated the optimistic PF tables; see **`research/optimization/MT5-GROUND-TRUTH.md`** (the
+authoritative numbers, reconstructed from MT5's own deal stream by `research/validation/mt5_log_truth.py`).
+
+Done this session:
+- [x] Honest re-baseline: MT5-true 9-col metrics for every run; reconstruction validated vs reported
+      final balance. KenKem E5-only −62/−93%, MasterVP BTC M3 −19%, **Monster 0 trades**.
+- [x] Root cause (KenKem): distilled engine was a **bar-OHLC walk** (lies about path-dependent exits)
+      AND dropped the original's selectivity (conviction, session caps, cooldowns, ATR-pctile gate).
+- [x] **KenKem tick engine** (`cpp_core/include/kk/kenkem/tick_engine.hpp`, make `kenkem_tick`),
+      VALIDATED vs MT5: ungated E5 → PF 0.855 (MT5 0.85). Use it for ALL KenKem P&L now.
+- [x] Wired dropped governors (min_entry_atr_pctile, max_entries_per_day, e5_require_trend_core).
+- [x] Monster: confirmed **engine/MQL5 parity divergence** (engine 150–184 trades PF 1.65, MQL5 0) —
+      net-volume keyed off broker VOLUME=0 on feed. Documented in MONSTER-FINDINGS.md.
+- [x] Corrected PROMOTION-SPEC.md + KENKEM-RESULTS.md. **Production pick = ORIGINAL `KenKemExpert`
+      (E1+E2, MT5 +24% PF1.62)**; config saved `research/optimization/ORIGINAL_kenkem_xau_WINNING.set`.
+
+Open (needs the user / next session):
+- [ ] **Confirm in MT5:** any new dquants config must be run in the tester on the recent OOS window
+      before it is trusted. The tick engine is necessary but the MT5 tester is the gate.
+- [ ] Faithful port of the original's selectivity to `kk::kenkem` (conviction 6-component score,
+      session-window caps, cooldowns, RSI veto) — full spec extracted; large, do deliberately.
+- [ ] Monster: fix net-volume parity (engine price-delta vs MQL5 volume) OR formally drop.
+- [ ] MasterVP: ~breakeven/period-dependent (parity-valid, no robust edge) — decide keep/drop.
+
 ## Phase 12 — REAL Monster C++ engine + optimization (the user's actual 4-kind EA)
 Faithful C++ port of the user's evolved Monster (`SignalCore_Monster.mqh`, 779 LOC): breakout +
 impulse-thrust + 4-variant mean-reversion, multi-TF near-net (M1/M5/M15), predicted/aged master VP,
