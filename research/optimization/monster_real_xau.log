@@ -1,0 +1,2 @@
+[monster-real:xau] 400 trials -> /Users/tokyotechies/Workspace/KEM/dquants/research/optimization/optuna_monster_real_xau.csv
+[monster-real:xau] BEST score=6.17 full_net=7519 full_pf=1.398 test_net=4440 test_pf=1.480
