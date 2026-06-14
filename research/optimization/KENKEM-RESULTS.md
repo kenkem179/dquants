@@ -5,11 +5,27 @@ essential winning core in a separate `kk::kenkem` C++ engine (config → tf-cach
 gates → entries → trade-manager → engine), not byte-reproduced. Validation = the quant SOP (costs →
 optimize → train/test → OOS → Monte Carlo → spread sensitivity), not MT5 byte-parity.
 
-## Headline
-The optimizer **disabled E1 (EMA-stack cross) and E2 (EMA75 pullback)** — they added drawdown without
-edge. The robust strategy is **E4 only: the Ichimoku Tenkan/Kijun cross**, gated by a high ADX-momentum
-requirement (~26), multi-TF DI alignment, a sideways/chop block, and an M5/M15 HTF filter; tight
-structure SL (ATR-capped ~2×), RR ~1.7, partial-TP at ~53% then a 0.27× chandelier trail.
+## Headline — the entries are a MENU (toggle separately or combine)
+KenKem's value is its **four independently-toggleable entries**, confirmed by the data:
+
+**Standalone PF, BTC 2025 (untuned defaults), every one profitable:**
+| Entry | PF | Win% | Net | Character |
+|---|---|---|---|---|
+| **E5** SuperBros (fresh strict M1 EMA-stack align + price>EMA25) | **1.147** | 57% | +$47k | best standalone |
+| **E4** Ichimoku Tenkan/Kijun cross | 1.090 | 46% | +$41k | high-selectivity |
+| **E1** EMA-stack cross (MTF + momentum) | 1.064 | 41% | +$21k | trend continuation |
+| **E2** EMA75 pullback touch | 1.036 | 51% | +$18k | pullback |
+
+**Optimized combinations (the production picks), 2026 true OOS:**
+| Symbol | Best combo | 2025 PF | **2026 OOS PF** | OOS net | maxDD |
+|---|---|---|---|---|---|
+| BTC (max PF) | **E4 only** | 1.270 | **1.239** | +$61k | $8.6k |
+| BTC (max net) | **E1+E4+E5** | 1.210 | 1.145 | **+$79k** | $10.2k |
+| XAU (best) | **E4+E5** | 1.247 | **1.132** | +$32k | $5.9k |
+
+Takeaways: **E5 was wrongly skipped initially and is the strongest standalone**; **E5 improves XAU**
+(E4+E5 beats E4-only on both PF and net OOS); on BTC, E4-only maximizes PF while E1+E4+E5 maximizes net
+with every entry contributing positively OOS. E2 rarely makes the optimized cut but is profitable solo.
 
 ## Numbers (fixed-fraction sizing on $10k, costs modelled)
 | | 2025 (IS, train+test) | 2026 (true OOS) |

@@ -12,11 +12,13 @@ winning core rather than byte-reproduce it. Built `kk::kenkem` C++ engine (confi
 snapshot→gates→entries→trade_manager→engine, 8 unit tests / 131 checks) + `tools/kenkem/backtester.cpp`
 + `optimize_kenkem.py`. Validation = quant SOP (NOT MT5 byte-parity, which the distillation makes moot).
 
-**Key finding:** Optuna disabled E1 (EMA-stack cross) and E2 (EMA75 pullback) — they added drawdown
-without edge. **The robust strategy is E4 ONLY: the Ichimoku Tenkan/Kijun cross**, gated by high ADX
-momentum (~26) + MTF DI alignment + sideways block + M5/M15 HTF filter; tight ATR-capped structure SL,
-RR ~1.7, partial-TP ~53% then 0.27 chandelier trail. Note: the EA reads iIchimoku buffers 0/1 as the
-"cloud" = actually Tenkan/Kijun (mislabel), so E4's trigger is a TK cross. See [[kenkem-parity-traps]].
+**Entries are a toggleable MENU** (user corrected my over-pruning — E5/SuperBros belongs in KenKem and
+was wrongly skipped; it's the BEST standalone). Standalone BTC-2025 PF: E5 1.147 / E4 1.090 / E1 1.064 /
+E2 1.036 — all profitable. E5 = fresh STRICT M1 4-EMA alignment onset + price>EMA25, sideways+HTF only
+(no hard gate), SL at EMA200. E4 = Ichimoku Tenkan/Kijun cross (the EA mislabels iIchimoku buffers 0/1
+as "cloud" = really TK lines; see [[kenkem-parity-traps]]).
+Optimized COMBINATIONS (2026 true OOS): BTC E4-only PF 1.239 (max PF) OR E1+E4+E5 PF 1.145/+$79k (max
+net); XAU E4+E5 PF 1.132 (beats E4-only on both PF & net — E5 helps XAU). E2 rarely makes the cut.
 
 **Validated numbers** (fixed-fraction sizing $10k, costs modelled):
 - BTC: 2025 PF 1.270 (test-split 1.201) → **2026 true-OOS PF 1.239** net +$61k DD $8.6k win 57%.
