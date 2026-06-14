@@ -43,5 +43,17 @@ reusable modules via ONE FLAT `KK-Common` include lib — partition by MODULE no
 used by both families; Ichimoku=KenKem-only, VolumeProfile=VP-only). `KK-Common` ALREADY EXISTS in kenkem
 repo: Utils/BrokerHelpers, TradeManagement/{RiskManager,TradeManager}, Core/IndicatorCache, SessionManager,
 Logging/TradeJournal. Compile-time module exclusion REJECTED as over-engineering (runtime guarded handles
-already capture the win). NEXT step (after user OK): refactor KK-KenKem to `#include <KK-Common/...>`
-(proof), then move MasterVP/Monster onto it. Final gate stays: demo forward-test.
+already capture the win). Final gate stays: demo forward-test.
+
+**SOURCE-OF-TRUTH RULE (user, 2026-06-14):** our dquants `kk::kenkem` engine + the compiled EA are the
+SINGLE SOURCE OF TRUTH; everything in `../kenkem` (incl. the existing KK-Common RiskManager/TradeManager)
+is REFERENCE only — build KK-Common from OUR validated logic, borrow patterns not behavior.
+
+**REFACTOR DONE (compiles 0/0):** extracted KK-KenKem's validated logic into shared modules
+`kenkem/MQL5/Experts/KK-Common/KenKem/{Inputs,Engine}.mqh`; `KK-KenKemE4/KK-KenKem.mq5` is now an 18-line
+include shell. Pure code-move (logic byte-identical) → behavior preserved. Removed the redundant
+self-contained E4-only EA (multi-entry shell covers it via toggles). Existing reference KK-Common files
+untouched. NEXT (optional): promote cross-family generics (CopyBuffer reader, risk sizing, position
+manager) from KenKem/Engine.mqh to KK-Common/Indicators + /Trade so VP family (MasterVP/Monster) reuses;
+then refactor those EAs onto KK-Common. Files left UNTRACKED in kenkem repo for user review (I compile via
+[[mql5-compile-workflow]]).
