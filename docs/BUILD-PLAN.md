@@ -215,9 +215,12 @@ otherwise the (inert, default-OFF) engine code stays but the `.set` is left unto
       EVERY metric — PF 1.617→1.645, net 2740→2901, **DD 293→270 (better)**, **OOS PF 1.676→1.720 (better)**.
       Params HvnFrac 0.637 / EdgeOff 0.125 / MinRr 1.10 / MaxRr 2.51. Applied to `best_monster_real_btc.set`.
 - [x] **Monster XAU → REJECT** — F2 hurts (PF 1.321→1.284, net down, DD up). `best_monster_real_xau.set` unchanged.
-- [ ] **MasterVP:** ADD an equivalent node-shelf SL/TP to `kk::vp` NodeEngine + sweep (structural TP2 worth a
-      shot given Monster-BTC; HVN-shelf SL underperformed even on Monster).
-- [ ] If it helps broadly, add node-structure SL/TP to KenKem too.
+- [x] **MasterVP → REJECT both** (`sweep_mastervp_f2.py`; added `NodeEngine::structural_tp`, inert default OFF,
+      `67a470b`). BTC PF 1.204→1.201 (flat; higher net is just +trades at lower quality, DD+OOS worse); XAU
+      PF 1.737→1.551 (worse). MasterVP's chandelier trail already exits well — a fixed structural TP cuts
+      winners short. `.set` files unchanged. **F2 net: 1 win / 4 combos (Monster-BTC only).**
+- [ ] KenKem node-structure TP — skipped: F2 only helped 1 of 4 VP combos, so low expected value on a
+      trend (Ichimoku-E4) strategy. Revisit only if cross-broker data motivates it.
 
 ### DeferredEntry (pullback/limit entry) — pending
 - [ ] Wire the existing `DeferredEntry` module into families as a toggle + C++ sweep-validate.
