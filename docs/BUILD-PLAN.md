@@ -170,8 +170,15 @@ SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/AD
       momentum / EMA-align / sideways / conviction / RSI-div / HTF), triggers (EMA-cross / EMA75-touch /
       Ichi-cloud-cross), indicator cache, dynamic-RR + risk-based sizing, tick-fill trade manager, all param
       defaults read direct from InputParams.mqh. Port scope + parity caveat documented.
-- [ ] P1 `kenkem_config.hpp` (input schema + `.set` loader) + P2 `indicator_cache.hpp` (M1/M3/M5/M15, `[1]` reads).
-- [ ] P3 `triggers.hpp` (EMA-cross/touch/Ichi-cloud state machine) + P4 `gates.hpp` (trend-quality/momentum/align/conviction/RSI-div).
+- [x] **Port-note specs** from real source (`research/hypotheses/kenkem-portnotes/01-04`, 1640 lines, exact
+      line refs) + 5 parity traps locked (EMAs 10/25/71/97/192; BTC pip=1/contract=1/std-lot×2; ATR cache
+      shift-0; Ichimoku buffer-mislabel ⇒ E4 trigger is a Tenkan/Kijun cross; E4-short uses E4_RR_SHORT×0.875).
+      EA snapshot pinned sha256 `61bc702b`. See [[kenkem-parity-traps]].
+- [x] P1 `kenkem_config.hpp` (full input schema + `.set` loader, real defaults) — 33 checks.
+- [x] P2 `tf_cache.hpp` (per-TF M1/M3/M5/M15 buffers + open-time alignment, shift-1 reads; shift-0 forming
+      bar deferred to engine) — 20 checks. `indicators.hpp` Ichimoku primitive — 12 checks.
+- [x] P3 `triggers.hpp` (EMA-stack cross + EMA200/EMA75 touch + Ichi **TK** cross state machines) — 12 checks.
+- [ ] **P4 `gates.hpp` (trend-quality hard-gate / momentum / MTF-align / conviction / RSI-div / HTF filters). ← NEXT**
 - [ ] P5 `entries.hpp` (E1/E2/E4 Detect + SL) + P6 `trade_manager.hpp` (partial/BE/trail/ext/ladder/panic/score-drop).
 - [ ] P7 `kenkem_engine.hpp` (OnTick integrator + sizing) + `kenkem_backtester.cpp` + unit tests + **lookahead audit**.
 - [ ] **P8 PARITY (hard gate, same standard as MasterVP/Monster):** add non-destructive `KenKem/Parity/`
