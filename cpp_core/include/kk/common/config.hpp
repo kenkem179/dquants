@@ -31,6 +31,7 @@ struct Params {
     double node_neutral_band  = 0.15;
     double node_saturation    = 4.0;
     int    atr_len            = 14;
+    bool   atr_mt5_mode       = false;   // false=textbook Wilder atr(); true=EMA k=2/(n+1) atr_mt5()
     // ---- regime ----
     int    ema_fast           = 24;
     int    ema_slow           = 194;
@@ -214,6 +215,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNodeNeutralBand") p.node_neutral_band = D();
     else if (key == "InpNodeSaturation") p.node_saturation = D();
     else if (key == "InpAtrLen") p.atr_len = I();
+    else if (key == "InpAtrMt5Mode") p.atr_mt5_mode = to_bool(val);
     else if (key == "InpEmaFast") p.ema_fast = I();
     else if (key == "InpEmaSlow") p.ema_slow = I();
     else if (key == "InpAdxLen") p.adx_len = I();

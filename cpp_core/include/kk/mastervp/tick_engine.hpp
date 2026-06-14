@@ -135,7 +135,8 @@ private:
 
         std::vector<double> h(N_), l(N_), c(N_);
         for (int i = 0; i < N_; ++i) { h[i] = bars_[i].high; l[i] = bars_[i].low; c[i] = bars_[i].close; }
-        atr_  = kk::ind::atr(h, l, c, p_.atr_len);
+        atr_  = p_.atr_mt5_mode ? kk::ind::atr_mt5(h, l, c, p_.atr_len)
+                                : kk::ind::atr(h, l, c, p_.atr_len);
         build_net_flow_();
         rsi_  = kk::ind::rsi(c, p_.rsi_len);
         const auto dmi  = kk::ind::dmi_adx_mt5(h, l, c, p_.adx_len);

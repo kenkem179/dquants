@@ -48,6 +48,18 @@ inline vector<double> atr(const vector<double>& h, const vector<double>& l,
     return wilder_rma(true_range(h, l, c), n);
 }
 
+// fwd decl (defined below): MT5 ExponentialMAOnBuffer, k=2/(n+1), seeded at `start`.
+inline vector<double> ema_on_buffer(const vector<double>& x, int n, size_t start);
+
+// MT5-style ATR: smooths True Range with the EMA k=2/(n+1) used by MT5's "Wilder"
+// indicators (same kernel dmi_adx_mt5 uses for +DI/-DI/DX), seeded at index 1 with
+// ema_on_buffer (TR[0] is degenerate single-bar range, so we start the EMA at TR[1]).
+// Opt-in via InpAtrMt5Mode; textbook Wilder atr() above stays the default.
+inline vector<double> atr_mt5(const vector<double>& h, const vector<double>& l,
+                              const vector<double>& c, int n) {
+    return ema_on_buffer(true_range(h, l, c), n, 1);
+}
+
 inline vector<double> rsi(const vector<double>& c, int n) {
     const size_t N = c.size();
     vector<double> gain(N, 0.0), loss(N, 0.0);

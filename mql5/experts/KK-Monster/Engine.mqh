@@ -102,7 +102,7 @@ void MonOnNewBar()
    g_cross.UpdateFresh(c[1],m,g_barIdx);
    MonRegime reg; g_mph.ComputeRegime(atr1,m.poc,pred.valid,pred.poc,g_cfg,reg);
 
-   double atrFrac=(c[1]>0)?atr1/c[1]:0.0;
+   double atrFrac=(c[1]>0)?atr1/c[1]*100.0:0.0;   // percent, to match cfg.min/max_atr_pct (oracle parity)
    bool ceilOk=(g_cfg.max_atr_pct<=0)||(atrFrac<=g_cfg.max_atr_pct);
    bool inBand=(g_cfg.max_atr_pct>0)&&(atrFrac>g_cfg.max_atr_pct);
    bool floorOk=(g_cfg.min_atr_pct<=0)||(atrFrac>=g_cfg.min_atr_pct);
