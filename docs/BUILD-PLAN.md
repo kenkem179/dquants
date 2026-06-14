@@ -241,3 +241,54 @@ otherwise the (inert, default-OFF) engine code stays but the `.set` is left unto
 - [x] `datasets.example.json` (OANDA/Exness/Binance × BTC/XAU) + `make kenkem` rule. `3301505`.
 - [ ] **AWAITING USER DATA** — drop broker files under `data/external/<broker>/`, copy spec to datasets.json,
       run ingest + cross_validate to confirm each locked edge holds broker-to-broker.
+
+## Phase 14 — Risk/exit machinery audit + adaptive trailing + walk-forward (user concerns 2026-06-14)
+Same discipline as the R&D round: add tunable MODES default-OFF/inert, sweep, **adopt only if it beats the
+baseline on net AND drawdown** (risk-adjusted). Audit findings traced through the live code below.
+
+### C1 — Blocked-hours: kill-switch + data-driven retune (cheap)
+Today: MasterVP `InpBlockedHoursStr="8,10,11,16"` (baked from 2025, used via `Sessions::is_blocked_hour`, **never
+tuned**); Monster `""`; KenKem none. Kill-switch ALREADY exists (empty string).
+- [ ] Add an "hour-of-day expectancy" report over the LATEST dataset (per-hour PF/net/n) — replace the past-biased
+      hardcode with empirically-blocked hours, OR none.
+- [ ] Sweep blocked-hours as a choice {none / empirical-from-latest / current} per symbol; A/B vs the hardcode.
+
+### C2 — DD / softblock / loss-streak cooldown: WIRE into KenKem + validate (don't return-optimize)
+Today: implemented+wired in MasterVP (`RiskManager`) & Monster (own copy: softblock lot-mult, daily/peak-DD,
+loss-streak + daily-DD cooldowns) but **none are in any optimizer space** (run at defaults; Monster ships most OFF).
+**KenKem (production pick #1) has ZERO drawdown breakers** — top-priority safety gap.
+- [ ] Add a unified risk controller (softblock micro-lot, daily/peak-DD halt, loss-streak + wait-hours cooldown)
+      to the `kk::kenkem` engine.
+- [ ] Instrument backtests to COUNT cooldown/halt/softblock activations — confirm they actually fire (else inert).
+- [ ] Tune limits on a **secondary objective** (minimise tail-DD / maximise Calmar) with a guardrail that net
+      drops <X%; validate OOS + cross-dataset. **Do NOT return-optimize risk limits** (overfits to "dodge the 2025
+      bad streak"); treat as exogenous risk policy lightly validated.
+
+### C3 — TP1 level + percentile: ✅ already tuned in all three (Mvp Tp1R/ClosePct, Monster per-kind, KenKem per-entry). No action; confirmed.
+
+### C4 — TP2 / trailing-TP2
+Today: final target tuned everywhere (RunnerRr / Brk-Rr / E*_RR). The adopted Monster-BTC `stp2_*` params live ONLY
+in the one-off F2 sweep.
+- [ ] Fold `stp2_*` (+ enable flag) into Monster's MAIN optimizer space so re-opts co-tune them.
+- [ ] Consider a trailing/ratcheting TP2 (overlaps C5) — design with the adaptive trail.
+
+### C5 — Adaptive trailing SL (HIGH EV — observed 3R→gave back 2R)
+Today: all three use a FIXED-multiple chandelier (dist = const×ATR for Mvp/Monster, const×risk for KenKem). Multiple
+is tuned; MECHANISM is naive → donates a fixed slab on big runners. Quant fixes to implement as a tunable trail-MODE
+in the shared trade-manager (default `fixed` = inert):
+- [ ] **give-back cap (MFE-anchored profit-lock)** — once peak open-profit ≥ thresh, stop may not retreat >X% of peak.
+- [ ] **tiered/ratcheting** — tighten the ATR multiple at R milestones (2.5×→+1R, 1.8×→+2R, 1.2×→+3R).
+- [ ] **accelerating** — dist = max(floor, ATR×(m0 − slope·R_reached)); and/or **momentum-gated** (widen on strong
+      ADX/EMA-slope, tighten on fade). Sweep per engine; adopt only if net↑ AND DD↓.
+
+### C6 — Adaptive params / dynamic .set — via WALK-FORWARD (the principled answer; also Phase 9)
+Honest stance: an EA that re-optimizes its own ALPHA params online is the #1 cause of live-vs-backtest divergence
+(the half-baked KenKemExpert attempt). Safe "adaptation": vol-normalisation (mostly done), regime-conditioned param
+sets (selected by rule, frozen per regime), and **rolling offline walk-forward re-opt** that writes a guarded
+dynamic `.set` the EA loads from `MQL5/Files/`. Online updates ONLY for slow descriptive stats (ATR%-bands, session
+profile, spread cost), never alpha.
+- [ ] Build a true **walk-forward harness**: optimize `[t−N,t]` → freeze → trade OOS `[t,t+M]` → roll → stitch OOS
+      curve. Metric = **Walk-Forward Efficiency** (OOS/IS return; >~0.5–0.6 = not overfit). Compare WFA-OOS vs static
+      `.set` OOS, then re-confirm via the cross-dataset harness.
+- [ ] If WFE passes: scheduled offline re-opt → guarded dynamic `.set` (deploy only if OOS Calmar≥thresh + params in
+      bounds); MQL5 loads it on init/refresh. Regime-conditioned sets as the middle-ground fallback.
