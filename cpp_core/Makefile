@@ -27,8 +27,9 @@ HEADERS   := $(wildcard include/kk/common/*.hpp) \
 PARITY    := $(BUILD)/parity_driver
 BACKTEST  := $(BUILD)/backtester
 MONSTER   := $(BUILD)/monster_backtester
+KENKEM    := $(BUILD)/kenkem/backtester
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -49,6 +50,11 @@ $(MONSTER): tools/monster/monster_backtester.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+kenkem: $(KENKEM)
+$(KENKEM): tools/kenkem/backtester.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 test: $(TEST_BINS)
 	@fail=0; for t in $(TEST_BINS); do echo "==== $$t ===="; $$t || fail=1; done; \
 	 if [ $$fail -eq 0 ]; then echo "ALL TESTS PASSED"; else echo "TESTS FAILED"; fi; exit $$fail
@@ -56,4 +62,4 @@ test: $(TEST_BINS)
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test parity backtester monster clean
+.PHONY: all test parity backtester monster kenkem clean
