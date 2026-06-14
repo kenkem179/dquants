@@ -81,6 +81,13 @@ struct Params {
     double stp_edge_off_atr     = 0.20;  // pull the target inside the shelf by this ATR
     double stp_min_rr           = 1.2;
     double stp_max_rr           = 3.0;
+    // ---- deferred / pullback-limit entry (shared module) — default OFF (inert) ----
+    // Instead of a market fill on the signal bar, arm a virtual limit at a more favourable
+    // price (entry pulled back by defer_pullback_atr*ATR) and fill within defer_bars if price
+    // trades through it; cancel on expiry. SL/TP recompute off the limit price.
+    bool   enable_defer_entry   = false;
+    double defer_pullback_atr   = 0.5;
+    int    defer_bars           = 3;
     // ---- risk ----
     int    risk_unit          = 0;       // 0=%acct,1=USD,2=Min,3=Max
     double risk_usd           = 180.0;
@@ -244,6 +251,9 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();
     else if (key == "InpStpMinRr") p.stp_min_rr = D();
     else if (key == "InpStpMaxRr") p.stp_max_rr = D();
+    else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
+    else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
+    else if (key == "InpDeferBars") p.defer_bars = I();
     else if (key == "InpRiskUnit") p.risk_unit = I();
     else if (key == "InpRiskUsd") p.risk_usd = D();
     else if (key == "InpRiskAccPct") p.risk_acc_pct = D();

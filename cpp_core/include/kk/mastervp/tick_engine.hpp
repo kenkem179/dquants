@@ -71,6 +71,7 @@ public:
         }
         equity_ = rm_.balance();
         trades_.clear();
+        defer_ = Defer{};
     }
 
     // Feed one tick (UTC epoch-ms order). Drives management + new-bar entry.
@@ -90,6 +91,9 @@ public:
             const double atr1 = (shift1 >= 0) ? atr_[shift1] : 0.0;
             if (pos_.on_tick(t.bid, t.ask, atr1)) finalize_trade_(t.ts_ms);
         }
+
+        // DeferredEntry: try to fill / expire an armed virtual limit on this tick (only when flat).
+        if (defer_.active && !pos_.open()) try_defer_fill_(forming, t);
 
         // New-bar gate: every bar that just completed fires its signal/entry block, with the
         // current tick as the fill candidate. Normally advances by exactly one bar.
@@ -336,6 +340,24 @@ private:
         // Cost-clearance: live spread must not eat the TP1 partial.
         if (!spread_vs_tp1_ok(t.bid, t.ask, sig.tp1, sig.entry, p_)) { blk("spread vs TP1"); return; }
 
+        // DeferredEntry (shared module): instead of a market fill, arm a virtual limit at a more
+        // favourable pullback price; it fills within defer_bars if price trades through it (checked
+        // per tick), else cancels. SL/TP prices stay put, so the better entry shrinks risk = better R.
+        if (p_.enable_defer_entry && ev.atr1 > 0.0) {
+            const double limit = sig.is_long ? sig.entry - p_.defer_pullback_atr * ev.atr1
+                                             : sig.entry + p_.defer_pullback_atr * ev.atr1;
+            Signal ds = sig;
+            ds.entry = limit;
+            ds.risk  = std::fabs(limit - sig.sl);
+            if (ds.risk > 0.0 && ((sig.is_long && limit < sig.entry) || (!sig.is_long && limit > sig.entry))) {
+                defer_ = Defer{true, ds, sessionId, ev.atr1, ev.regime_trend, sig_bar,
+                               bars_[sig_bar].ts_ms};
+                if (dbg) std::fprintf(stderr, "[gate] %s %s -> DEFER-ARM limit=%.3f sl=%.3f\n",
+                                      trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", limit, ds.sl);
+            }
+            return;   // no market fill this bar; the deferred limit may fill on a later tick
+        }
+
         // Size + market fill at this tick (long->ask, short->bid).
         const double lot = rm_.compute_lot(sig.risk, equity_);
         if (lot <= 0.0) { blk("lot<=0 (min-lot-over-risk)"); return; }   // no fill, no counter
@@ -348,6 +370,36 @@ private:
                                   trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S",
                                   fill, sig.sl, lot);
         }
+    }
+
+    // Deferred-limit intent (feature: DeferredEntry). Armed in on_bar_closed_, filled/expired here.
+    struct Defer {
+        bool   active = false;
+        Signal sig;                 // limit-based signal (entry=limit, recomputed risk)
+        int    session = 0;
+        double atr1 = 0.0;
+        bool   regime_trend = false;
+        int    arm_sig_bar = -1;    // signal bar at arm time (for the bars-elapsed expiry)
+        int64_t arm_ts_ms = 0;
+    };
+    Defer defer_;
+
+    // Per-tick: fill the armed limit if price trades through it, or cancel on expiry.
+    void try_defer_fill_(int forming, const Tick& t) {
+        // Expiry: bars elapsed since the signal bar. Armed when forming was arm_sig_bar+1.
+        if (forming - defer_.arm_sig_bar > p_.defer_bars + 1) { defer_.active = false; return; }
+        const Signal& ds = defer_.sig;
+        const double limit = ds.entry;
+        const bool touched = ds.is_long ? (t.ask <= limit) : (t.bid >= limit);
+        if (!touched) return;
+        const double lot = rm_.compute_lot(ds.risk, equity_);
+        if (lot <= 0.0) { defer_.active = false; return; }   // unsized -> drop the intent
+        const double entry_spread = ExecutionSimulator::entry_spread(t);
+        if (pos_.open_position(p_, ds, limit, lot, defer_.arm_ts_ms, defer_.session, entry_spread,
+                               defer_.atr1, defer_.regime_trend)) {
+            sess_.on_fill();
+        }
+        defer_.active = false;
     }
 
     std::string trade_dbg_time_(int sig_bar) const {
