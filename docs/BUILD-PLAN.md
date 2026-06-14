@@ -270,16 +270,25 @@ loss-streak + daily-DD cooldowns) but **none are in any optimizer space** (run a
 Today: final target tuned everywhere (RunnerRr / Brk-Rr / E*_RR). The adopted Monster-BTC `stp2_*` params live ONLY
 in the one-off F2 sweep.
 - [ ] Fold `stp2_*` (+ enable flag) into Monster's MAIN optimizer space so re-opts co-tune them.
-- [ ] Consider a trailing/ratcheting TP2 (overlaps C5) — design with the adaptive trail.
+- [ ] Trailing/ratcheting TP2 → delivered by C5's ProfitManager `tp_extension` toggle (don't build separately).
 
-### C5 — Adaptive trailing SL (HIGH EV — observed 3R→gave back 2R)
-Today: all three use a FIXED-multiple chandelier (dist = const×ATR for Mvp/Monster, const×risk for KenKem). Multiple
-is tuned; MECHANISM is naive → donates a fixed slab on big runners. Quant fixes to implement as a tunable trail-MODE
-in the shared trade-manager (default `fixed` = inert):
-- [ ] **give-back cap (MFE-anchored profit-lock)** — once peak open-profit ≥ thresh, stop may not retreat >X% of peak.
-- [ ] **tiered/ratcheting** — tighten the ATR multiple at R milestones (2.5×→+1R, 1.8×→+2R, 1.2×→+3R).
-- [ ] **accelerating** — dist = max(floor, ATR×(m0 − slope·R_reached)); and/or **momentum-gated** (widen on strong
-      ADX/EMA-slope, tighten on fade). Sweep per engine; adopt only if net↑ AND DD↓.
+### C5 — Common ProfitManager module (SUPERSEDES "adaptive trailing"; absorbs C4 trailing-TP2)
+The naive fixed-multiple chandelier (dist = const×ATR for Mvp/Monster, const×risk for KenKem) donates a fixed slab on
+big runners (observed 3R→gave back 2R). Rather than a per-engine trail-mode, EXTRACT the proven profit-mgmt toolkit
+the user already built in `../kenkem` KenKemExpert into ONE shared, **toggleable** module any strategy includes.
+Two layers (mirrors the architecture): **`kk::common::ProfitManager` (C++, PURE — validation source of truth)** +
+**`KK-Common/ProfitManager.mqh` (MQL5, thin — does PositionModify + stops/freeze clamp)**. Interface: TradeState
+(entry/SL/TP/is_long/best_price(MFE)/current/origRisk/ATR/barsHeld + optional structureLevel + trendWeakening) +
+toggle config → returns actions (newSL/newTP/partialFrac). Each behavior an INDEPENDENT ON/OFF toggle:
+- [ ] `be_protect` — R-multiple → SL to entry+buffer (port `ApplyRMultipleSLProtection`). PURE.
+- [ ] `progressive_trail` — R-milestone stepped SL tightening = accelerating trail (port `ApplyConservativeTradeManagement` / `ApplyLadderStage`). PURE.
+- [ ] `giveback_cap` — once peak MFE ≥ thresh, stop may not retreat >X% of peak (port `HasSignificantRetrace`). PURE. **Most direct fix for the 3R→2R giveback.**
+- [ ] `tp_extension` — extend TP while trend persists, capped (port `ExtendTPAsNeeded`). Needs a `trendWeakening` flag from the engine (falling ADX / flattening EMA-slope).
+- [ ] `pre_be_structure` — tighten to BOS/swing before BE (port `ApplyPreBEStructureProtection`). Needs a prior-swing structure level from the engine.
+- [ ] `partial_tp` — R-trigger partial (port `TakePartialProfitAsNeeded`). PURE.
+- [ ] Wire into kk::vp / kk::monster / kk::kenkem engines (replaces their duplicated BE/trail/partial). Default = current
+      behavior (inert). **Validate each toggle via sweep — adopt only if net↑ AND DD↓** (logic was unvalidated/half-baked
+      in KenKemExpert; the toggle design is exactly what makes per-behavior validation clean). Then port to MQL5 KK-Common.
 
 ### C6 — Adaptive params / dynamic .set — via WALK-FORWARD (the principled answer; also Phase 9)
 Honest stance: an EA that re-optimizes its own ALPHA params online is the #1 cause of live-vs-backtest divergence
