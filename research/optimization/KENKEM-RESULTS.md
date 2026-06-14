@@ -51,6 +51,50 @@ E4-only BTC alt: 2026 MC 100% profitable, PF P5 1.164; spread PF 1.270→1.173 (
 positive across two years; every entry contributes positively OOS (E5 the strongest leg). Edges survive
 3× spread.
 
+## Entry-set comparison (2026-06-14, user request — "what to keep in production")
+Controlled experiment (`sweep_kenkem_entrysets.py`): each entry-set FORCED on, an INDEPENDENT 400-trial
+Optuna search over shared + active-entry params on 2025, winner re-run on **2026 = true OOS** (the
+production decider). E3 is absent in the distilled engine, so the requested E1&E3&E5 ran as E1&E5.
+
+**Ranked by 2026 OOS PF:**
+
+| BTC combo | OOS PF | OOS net | IS PF | note |
+|---|---|---|---|---|
+| **E5** | **1.523** | 55.6k | 1.606 | most robust per-trade edge; near-perfect IS→OOS |
+| **E2+E5** | 1.348 | **124.8k** | 1.345 | best net among robust combos; IS≈OOS (very stable) |
+| E4 | 1.291 | 89.0k | 1.295 | solid, stable |
+| E2 | 1.273 | 99.6k | 1.262 | solid (OOS≥IS) |
+| ALL | 1.207 | 121.7k | 1.241 | net high, PF diluted |
+| E1+E5 | 1.193 | 66.0k | 1.376 | **overfits** (1.376→1.193) |
+| E1+E2 | 1.166 | 91.1k | 1.191 | |
+| E1+E2+E4 | 1.133 | 78.2k | 1.211 | degrades |
+| E1 | 1.121 | 27.8k | 1.267 | weakest; degrades OOS |
+
+| XAU combo | OOS PF | OOS net | IS PF | note |
+|---|---|---|---|---|
+| **E5** | **1.636** | 33.1k | 1.635 | best PF, perfect consistency, low net |
+| E1 | 1.380 | 28.0k | 1.257 | strong standalone (OOS>IS) |
+| **E2** | 1.355 | 62.1k | 1.221 | high net + robust (OOS>IS) |
+| E1+E5 | 1.307 | 43.7k | 1.374 | |
+| **E2+E5** | 1.270 | 63.2k | 1.247 | best net+robust blend |
+| E1+E2 | 1.234 | 57.1k | 1.191 | |
+| E4 | 1.168 | 40.2k | 1.262 | **degrades OOS** (1.262→1.168) |
+| E1+E2+E4 | 1.167 | 62.3k | 1.193 | E4 drag |
+| ALL | 1.166 | 84.2k | 1.189 | net high, PF lowest |
+
+**Findings (every combo is OOS-profitable):**
+- **E5 (SuperBros M1 EMA-alignment) is the most robust entry on BOTH symbols** — highest OOS PF, IS≈OOS.
+  Confirms keeping E5 as the core. Current BTC prod (E5-only) is the most robust single config.
+- **E1 is the weakest** (lowest OOS PF on BTC; only decent standalone on XAU) and the E1 combos OVERFIT
+  (IS PF collapses OOS). Recommend dropping E1.
+- **E4 degrades OOS on XAU** (1.262→1.168) — it is the weak leg inside the current XAU prod (E2+E4+E5).
+- **E2 is a strong, robust net contributor** on both (OOS≥IS).
+- **Recommended production: E2+E5 on both symbols** — best blend of high net + robust OOS PF + IS≈OOS
+  consistency, dropping the two weak/overfitting legs (E1 everywhere, E4 on XAU). vs current:
+  BTC E5-only → E2+E5 keeps OOS PF 1.35 while **2.2× the net** (56k→125k); XAU E2+E4+E5 → E2+E5 drops the
+  E4 drag (OOS PF 1.17→1.27 at similar net). Each combo's tuned config saved as
+  `best_kenkem_<combo>_<sym>.set` — promotion to the locked `best_kenkem_<sym>.set` pending user sign-off.
+
 ## Artifacts
 - Engine: `cpp_core/include/kk/kenkem/*.hpp` (8 unit tests, 131 checks).
 - Backtester: `cpp_core/tools/kenkem/backtester.cpp` (loads M1, aggregates M3/M5/M15).
