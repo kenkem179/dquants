@@ -286,18 +286,59 @@ toggle config → returns actions (newSL/newTP/partialFrac). Each behavior an IN
 - [ ] `tp_extension` — extend TP while trend persists, capped (port `ExtendTPAsNeeded`). Needs a `trendWeakening` flag from the engine (falling ADX / flattening EMA-slope).
 - [ ] `pre_be_structure` — tighten to BOS/swing before BE (port `ApplyPreBEStructureProtection`). Needs a prior-swing structure level from the engine.
 - [ ] `partial_tp` — R-trigger partial (port `TakePartialProfitAsNeeded`). PURE.
-- [ ] Wire into kk::vp / kk::monster / kk::kenkem engines (replaces their duplicated BE/trail/partial). Default = current
-      behavior (inert). **Validate each toggle via sweep — adopt only if net↑ AND DD↓** (logic was unvalidated/half-baked
-      in KenKemExpert; the toggle design is exactly what makes per-behavior validation clean). Then port to MQL5 KK-Common.
+- [x] Wire into kk::vp / kk::monster / kk::kenkem engines (additive, default OFF/inert; baselines byte-exact, parity
+      golden green). `kk::common::profit_manager.hpp` + tests; `InpPm*`/`PM_*` keys in all three apply_kv.
+- [x] **Round-1 sweep — giveback_cap + progressive_trail (PURE SL toggles), MasterVP+Monster, BTC+XAU** (`sweep_pm_sl.py`,
+      140 trials each). Pattern across ALL four: net↑ and PF↑ (giveback lets runners run), but absolute maxDD ticks up —
+      a real Calmar gain, not a DD reduction. Under the strict net↑∧DD↓ rule:
+      - **MasterVP-BTC → ADOPT** `giveback` arm=2.2 cap=0.38: net 4325→5740 (+33%), DD 1119→1075 (−4%), PF 1.204→1.254,
+        OOS test net 289→845 (+192%). Narrow but real DD↓ plateau (arm 2.18–2.3 / cap 0.36–0.40). Locked into
+        `best_mastervp_btc.set`.
+      - **MasterVP-XAU → REJECT** (0/134 trials achieve DD↓; net-up needs +DD). `.set` unchanged.
+      - **Monster-BTC → REJECT** (0/135; best net +3% raises DD). `.set` unchanged.
+      - **Monster-XAU → REJECT** (1/134 marginal: net +1.9%/DD −0.3% but OOS net dropped — within noise). `.set` unchanged.
+- [ ] Round-2: sweep `be_protect` / `partial_tp` (PURE) on the rejected engines; then `tp_extension` / `pre_be_structure`
+      once a trend-weakening + prior-swing structure feed is wired from each engine. Then port adopted toggles to MQL5 KK-Common.
 
 ### C6 — Adaptive params / dynamic .set — via WALK-FORWARD (the principled answer; also Phase 9)
 Honest stance: an EA that re-optimizes its own ALPHA params online is the #1 cause of live-vs-backtest divergence
-(the half-baked KenKemExpert attempt). Safe "adaptation": vol-normalisation (mostly done), regime-conditioned param
-sets (selected by rule, frozen per regime), and **rolling offline walk-forward re-opt** that writes a guarded
-dynamic `.set` the EA loads from `MQL5/Files/`. Online updates ONLY for slow descriptive stats (ATR%-bands, session
-profile, spread cost), never alpha.
+(the half-baked KenKemExpert attempt — user switched it off, correctly: it is structurally *unvalidatable*). Safe
+"adaptation": vol-normalisation (mostly done), regime-conditioned param sets (selected by rule, frozen per regime),
+and **rolling offline walk-forward re-opt** that writes a guarded dynamic `.set` the EA loads from `MQL5/Files/`.
+Online updates ONLY for slow descriptive stats (ATR%-bands, session profile, spread cost), never alpha.
 - [ ] Build a true **walk-forward harness**: optimize `[t−N,t]` → freeze → trade OOS `[t,t+M]` → roll → stitch OOS
       curve. Metric = **Walk-Forward Efficiency** (OOS/IS return; >~0.5–0.6 = not overfit). Compare WFA-OOS vs static
       `.set` OOS, then re-confirm via the cross-dataset harness.
 - [ ] If WFE passes: scheduled offline re-opt → guarded dynamic `.set` (deploy only if OOS Calmar≥thresh + params in
       bounds); MQL5 loads it on init/refresh. Regime-conditioned sets as the middle-ground fallback.
+
+### C7 — Common AdaptiveState module (the "self-tuning / smart EA" ask, done SAFELY) — user concern 2026-06-14
+User question: should the EAs do adaptive learning / ML to self-tune key params and persist them across restart?
+**Verdict: yes, but reframed.** "Let the EA learn its own alpha online" is rejected (unvalidatable; = the dead
+KenKemExpert path). Instead deliver adaptiveness as a THIRD common toggleable module, mirroring ProfitManager:
+PURE Layer-2 logic, MQL5 thin adapter, **default OFF / inert**, adopted into a locked `.set` only if net↑ AND
+drawdown↓ (risk-adjusted), validated by C6's walk-forward + cross-dataset harness. Three tiers, lowest-risk first:
+
+- **Tier 0 — vol normalisation (highest EV, lowest risk; mostly already in engines):** express SL/TP/trail/size as
+  multiples of current ATR / EWMA realised vol so params are dimensionless w.r.t. regime. NOT learning — a units
+  fix. Audit all 3 engines; make every absolute price/lot knob vol-relative where it isn't.
+- **Tier 1 — regime-conditioned FROZEN param sets (the "smart" feel, still safe):** offline, bucket into a SMALL
+  set of robust observable regimes (ATR%-band × session, optional ADX trend/range). Walk-forward-optimise each
+  bucket; ship a frozen lookup table. EA selects the pre-validated set per bar by rule — deterministic, parity-able.
+- **Tier 2 — true online learning (bandits/RL/online re-opt): explicitly DEFERRED / out of scope.** Overkill for a
+  retail scalping book, silent failure mode, brutal to validate. Do not build until Tier 0/1 exhausted.
+
+Module shape (mirror `kk::common::ProfitManager`):
+- [ ] `kk::common::AdaptiveState` (C++, PURE = validation source of truth) — holds slow estimators {EWMA realised
+      vol, rolling spread, session/hour profile, regime counts}; `update(bar)` advances them; `select(...)` maps
+      current regime → frozen param set (Tier 1) and/or vol-scale factor (Tier 0). NO broker calls. Clamp every
+      output to offline-validated bounds.
+- [ ] `KK-Common/AdaptiveState.mqh` (MQL5, thin) — ports 1:1; **persists estimators (not opaque tuned params)** to
+      `MQL5/Files/` as versioned JSON/CSV on deinit; reloads on init.
+- [ ] **Persistence safeguards (load-bearing):** versioned schema; max-staleness guard (ignore state older than N
+      days); missing/corrupt/stale → fall back to the offline-validated COLD-START default, never a wild value.
+      A degraded state file must reproduce the frozen baseline, so backtests of the OFF path stay byte-identical.
+- [ ] **Validation = validate the MECHANISM, not the moving params.** The adaptive rule is a meta-strategy with its
+      own hyperparams (EWMA half-life, regime thresholds, clamp bounds). A/B in the C++ engine on identical ticks:
+      static baseline vs adaptive → compare OOS PF / Calmar / MaxDD with Monte Carlo, BTC & XAU. Adopt only if it
+      beats the frozen baseline OOS under the standard risk-adjusted gate; else keep inert.

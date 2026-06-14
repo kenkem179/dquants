@@ -80,3 +80,6 @@ InpMinAtrPct=0.026243418879151003
 InpMaxAtrPct=0.26280948090913864
 InpEmaFast=25
 InpEmaSlow=133
+InpPmGiveback=true
+InpPmGivebackArmR=2.2
+InpPmGivebackCapFrac=0.38
