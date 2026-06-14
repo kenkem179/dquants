@@ -208,7 +208,8 @@ otherwise the (inert, default-OFF) engine code stays but the `.set` is left unto
       **DD +32%** (1119→1474), **OOS PF 1.044→1.016** + best params degenerate (persist bars=1/min≈0 ⇒ gate inert) =
       noise, not edge. XAU: strictly worse, **PF 1.737→1.520, net halved**. → F1 is **engine-specific** (helps
       Monster-BTC, hurts MasterVP). `.set` files UNCHANGED. Code kept inert for possible cross-broker revisit.
-- [ ] **KenKem port** — speculative given mixed VP results; test-only, adopt only if it helps.
+- [ ] **KenKem port** — SKIPPED: F1 only helped Monster-BTC (1 of 5 combos) and KenKem is a trend
+      (Ichimoku-E4) strategy where net-volume persistence is a weak fit. Low EV; revisit if data motivates.
 
 ### Feature #2 — volume-node STRUCTURE SL/TP (HVN/LVN shelves instead of blind ATR SL / RR TP)
 - [x] **Monster BTC → ADOPT** (`sweep_monster_f2.py`): **structural TP2** ON (hvn_sl OFF) is a clean win on
@@ -222,8 +223,14 @@ otherwise the (inert, default-OFF) engine code stays but the `.set` is left unto
 - [ ] KenKem node-structure TP — skipped: F2 only helped 1 of 4 VP combos, so low expected value on a
       trend (Ichimoku-E4) strategy. Revisit only if cross-broker data motivates it.
 
-### DeferredEntry (pullback/limit entry) — pending
-- [ ] Wire the existing `DeferredEntry` module into families as a toggle + C++ sweep-validate.
+### DeferredEntry (pullback/limit entry) — REJECT (risk-adjusted)
+- [x] Ported `KK-Common/DeferredEntry.mqh` → C++ `kk::vp` TickEngine (arm virtual limit at entry∓
+      pullback*ATR, fill within defer_bars per tick, else expire), default OFF/inert (`ec44fd4`).
+- [x] **Sweep → REJECT both** (`sweep_mastervp_defer.py`). BTC: PF 1.204→1.239, net +38% ($4325→$5984),
+      OOS better — BUT **DD +62%** (1119→1809), so risk-adjusted net/DD 3.86→3.31 (WORSE); the gain is
+      inflated lot size (keep-SL-price design shrinks per-trade risk → bigger lots), not a cleaner edge.
+      XAU: outright worse (PF 1.737→1.667, net down). `.set` files unchanged. **Possible refinement (not
+      pursued):** a keep-RISK-constant variant (move SL with entry) would give better R without size inflation.
 
 ## Cross-dataset robustness harness (DuckDB, multi-broker) — DONE
 - [x] `research/validation/ingest_dataset.py` — normalise any broker export (mt5_tab/bidask_csv/price_csv/
