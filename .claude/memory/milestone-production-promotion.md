@@ -74,3 +74,5 @@ MasterVP: the OnTick orchestration integrator (port cpp_core mastervp/tick_engin
 VP from HTF bars, update NodeEngine per closed bar, detect on signal bar, manage via KK-Common) + EA shell.
 THEN Monster (bigger: kk::monster engine ~1700 LOC, 4-kind signal + multi-TF net-volume). NOTE: shell-style
 git commit messages with newlines were getting swallowed by the shell — use single-line -m or a file.
+
+**MONSTER DONE (2026-06-14, compiles 0/0):** all THREE families now complete in dquants/mql5/experts/, each compile-clean: KK-KenKem (E1/E2/E4/E5), KK-MasterVP, KK-Monster (Config+Signal=4-kind+Engine). Monster signal = faithful transcription of cpp_core monster_signal.hpp (breakout/rev1/rev2/impulse + node-flow + master-POC regime + fresh-cross + multi-TF near-net via CopyRates). Shared: KK-Common (Sizing/PositionManager/Indicators), VP-Common (used by MasterVP; Monster self-contained structs). NOTE: Monster mgmt (TP1 50%/BE/trail) is a reasonable approximation - refine vs cpp_core position_manager if needed. Final gate for all 3: load best_*.set + demo forward-test.
