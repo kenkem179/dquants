@@ -132,6 +132,7 @@ private:
         std::vector<double> h(N_), l(N_), c(N_);
         for (int i = 0; i < N_; ++i) { h[i] = bars_[i].high; l[i] = bars_[i].low; c[i] = bars_[i].close; }
         atr_  = kk::ind::atr(h, l, c, p_.atr_len);
+        build_net_flow_();
         rsi_  = kk::ind::rsi(c, p_.rsi_len);
         const auto dmi  = kk::ind::dmi_adx_mt5(h, l, c, p_.adx_len);
         const auto emaF = kk::ind::ema(c, p_.ema_fast);
@@ -194,6 +195,45 @@ private:
         m15_emaS_ = kk::ind::ema(m15_close_, p_.ema_slow);
     }
 
+    // Per-bar net flow (feature #1): volume-weighted directional body ratio in ~[-3,3].
+    // body = (c-o)/max(h-l,mintick) in [-1,1]; weighted by the bar's tick-count relative to a
+    // trailing average (capped at 3) so high-activity directional bars count more. Precomputed
+    // once; inert unless enable_net_persist / enable_net_flip_exit is set.
+    void build_net_flow_() {
+        net_flow_.assign(N_, 0.0);
+        const int W = std::max(1, p_.net_vol_avg_len);
+        double run = 0.0;
+        for (int i = 0; i < N_; ++i) {
+            const double rng = std::max(bars_[i].high - bars_[i].low, p_.mintick);
+            const double body = (bars_[i].close - bars_[i].open) / rng;   // [-1,1]
+            const double vol = static_cast<double>(bars_[i].tick_count);
+            run += vol;
+            if (i >= W) run -= static_cast<double>(bars_[i - W].tick_count);
+            const int cnt = std::min(i + 1, W);
+            const double avg = run / std::max(cnt, 1);
+            const double relvol = (avg > 0.0) ? std::min(vol / avg, 3.0) : 1.0;
+            net_flow_[i] = body * relvol;
+        }
+    }
+    // last `n` bars ending at `bar` all flow WITH the trade side (long: >= minv ; short: <= -minv).
+    bool net_persist_n_(bool is_long, int bar, int n, double minv) const {
+        if (n < 1 || bar - n + 1 < 0) return false;
+        for (int i = bar - n + 1; i <= bar; ++i) {
+            const double v = net_flow_[i];
+            if (is_long ? !(v >= minv) : !(v <= -minv)) return false;
+        }
+        return true;
+    }
+    // last `n` bars ending at `bar` all flow AGAINST the position (long: <= -minv ; short: >= minv).
+    bool net_against_n_(bool is_long, int bar, int n, double minv) const {
+        if (n < 1 || bar - n + 1 < 0) return false;
+        for (int i = bar - n + 1; i <= bar; ++i) {
+            const double v = net_flow_[i];
+            if (is_long ? !(v <= -minv) : !(v >= minv)) return false;
+        }
+        return true;
+    }
+
     // MTF shift-1 HTF EMA at wall-clock `now_ms`: the M15 bar immediately preceding the
     // bucket that contains now_ms (shift-0 = forming bucket, shift-1 = the one before it).
     // Returns {0,0} if no prior M15 bar exists (gate skips silently, as the EA does).
@@ -253,6 +293,13 @@ private:
             finalize_trade_(t.ts_ms);
         }
 
+        // Feature #1: multi-bar net-volume flip exit — flow against the open position for N bars.
+        if (p_.enable_net_flip_exit && pos_.open()
+            && net_against_n_(pos_.is_long(), sig_bar, p_.net_flip_bars, p_.net_flip_min)) {
+            pos_.force_close(t.bid, t.ask);
+            finalize_trade_(t.ts_ms);
+        }
+
         if (!ev.valid || !ev.sig.valid) return;
         const Signal& sig = ev.sig;
         const bool dbg = dbg_from_ && bars_[sig_bar].ts_ms >= dbg_from_ && bars_[sig_bar].ts_ms <= dbg_to_;
@@ -261,6 +308,12 @@ private:
 
         // Supplementary quality gate (before the main safety gate, as in OnTick).
         if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms)) { blk("quality (MTF/RSI)"); return; }
+
+        // Feature #1: require net volume to PERSIST with the trade for N closed bars before entry.
+        if (p_.enable_net_persist
+            && !net_persist_n_(sig.is_long, sig_bar, p_.net_persist_bars, p_.net_persist_min)) {
+            blk("net persistence"); return;
+        }
 
         // Flat check + main safety gate (order mirrors OnTick / SafetyBlockReason).
         if (pos_.open()) { blk("position already open"); return; }
@@ -311,6 +364,7 @@ private:
     // precomputed arrays
     std::vector<BarEval> evals_;
     std::vector<double>  atr_, rsi_;
+    std::vector<double>  net_flow_;   // feature #1: per-bar volume-weighted net flow
     std::vector<int64_t> m15_start_;
     std::vector<double>  m15_close_, m15_emaF_, m15_emaS_;
 

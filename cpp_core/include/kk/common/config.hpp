@@ -63,6 +63,17 @@ struct Params {
     bool   trail_runner       = true;
     double runner_rr          = 10.0;
     double trail_atr_mult     = 3.6;
+    // ---- multi-bar net volume (feature #1) — default OFF (inert) ----
+    // Per-bar net flow = volume-weighted body ratio (c-o)/range * min(vol/avgVol, 3).
+    // Persist: require last N closed bars all flow WITH the trade side beyond min before entry.
+    // Flip-exit: close the open position if last N closed bars all flow AGAINST it beyond min.
+    bool   enable_net_persist   = false;
+    int    net_persist_bars     = 3;
+    double net_persist_min      = 0.5;
+    bool   enable_net_flip_exit = false;
+    int    net_flip_bars        = 3;
+    double net_flip_min         = 0.5;
+    int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
     // ---- risk ----
     int    risk_unit          = 0;       // 0=%acct,1=USD,2=Min,3=Max
     double risk_usd           = 180.0;
@@ -214,6 +225,13 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpTrailRunner") p.trail_runner = to_bool(val);
     else if (key == "InpRunnerRr") p.runner_rr = D();
     else if (key == "InpTrailAtrMult") p.trail_atr_mult = D();
+    else if (key == "InpEnableNetPersist") p.enable_net_persist = to_bool(val);
+    else if (key == "InpNetPersistBars") p.net_persist_bars = I();
+    else if (key == "InpNetPersistMin") p.net_persist_min = D();
+    else if (key == "InpEnableNetFlipExit") p.enable_net_flip_exit = to_bool(val);
+    else if (key == "InpNetFlipBars") p.net_flip_bars = I();
+    else if (key == "InpNetFlipMin") p.net_flip_min = D();
+    else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
     else if (key == "InpRiskUnit") p.risk_unit = I();
     else if (key == "InpRiskUsd") p.risk_usd = D();
     else if (key == "InpRiskAccPct") p.risk_acc_pct = D();
