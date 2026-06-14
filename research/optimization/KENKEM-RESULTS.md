@@ -36,10 +36,20 @@ with every entry contributing positively OOS. E2 rarely makes the optimized cut 
 | **XAU** PF | **1.207** (test-split 1.074) | **1.083** |
 | XAU net / maxDD | +$78.0k / $4.5k | +$14.1k / $8.0k |
 
-## Robustness
-- **BTC 2026 OOS Monte Carlo** (5000 bootstraps, n=2916): **100% profitable**, PF P5 **1.164**, net P5 $43k.
-- **BTC spread sensitivity** (optimized set): PF 1.270 ($2) → 1.246 ($3) → 1.221 ($4) → 1.173 ($6).
-  The edge survives double the realistic spread.
+## Robustness (all on OUR engine — kk::kenkem is the authoritative backtest, no MT5 needed)
+`research/optimization/robustness_kenkem.py` — monthly breakdown + MC + spread sensitivity.
+
+**Production combos:**
+| Combo | Months +ve | MC %prof | PF P5 | spread sweep |
+|---|---|---|---|---|
+| BTC E1+E4+E5 (2026 OOS) | 6/6 | 100% | 1.096 | PF 1.145→1.058 ($2→$6) |
+| XAU E4+E5 (2026 OOS) | 5/5 | 99.8% | 1.057 | PF 1.139→1.103 ($0.03→$0.12) |
+| BTC E1+E4+E5 (2025 IS) | 11/11 | 100% | 1.173 | — |
+| XAU E4+E5 (2025 IS) | 11/12 | 100% | 1.194 | — |
+
+E4-only BTC alt: 2026 MC 100% profitable, PF P5 1.164; spread PF 1.270→1.173 ($2→$6). Near-every month
+positive across two years; every entry contributes positively OOS (E5 the strongest leg). Edges survive
+3× spread.
 
 ## Artifacts
 - Engine: `cpp_core/include/kk/kenkem/*.hpp` (8 unit tests, 131 checks).
