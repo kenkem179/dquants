@@ -342,3 +342,64 @@ Module shape (mirror `kk::common::ProfitManager`):
       own hyperparams (EWMA half-life, regime thresholds, clamp bounds). A/B in the C++ engine on identical ticks:
       static baseline vs adaptive → compare OOS PF / Calmar / MaxDD with Monte Carlo, BTC & XAU. Adopt only if it
       beats the frozen baseline OOS under the standard risk-adjusted gate; else keep inert.
+
+---
+
+## C8 — Missing-sweep program & under-tested logic (user concern 2026-06-15)
+Full plan file: `~/.claude/plans/deep-jingling-fountain.md`. Audits confirmed three gaps: ATR=14 (textbook
+daily) never swept on Monster/KenKem; news avoidance not implemented in any C++ engine (so never sweepable);
+Monster's near-price volume verdict is an OHLC-proxy read once per CLOSED bar with no reliability check.
+**Approved scope: full staged build. Both Monster fixes (persistence + tick-rule reliability). News: port
+2025 + source 2026.** Standing rules everywhere: new param/feature defaults to current value or OFF (parity-
+safe, with an all-OFF==prior unit test); adopt into a locked `.set` only if **net↑ AND DD↓**; sweep on 2025
+(67/33), rank on **2026 true-OOS**; prefer plateaus; report the **standard 9-column table** (`report_metrics.py`).
+
+### C8.1 — Phase 1: sweep never-tested params that are ALREADY tunable (no code)
+- [ ] **ATR length (headline):** add `InpAtrLen` to `optimize_monster_real.py` (range 5–16) and
+      `ATR_PERIOD_FOR_SL` to `sweep_kenkem_tuned.py` per-entry SPACE (5–16). MasterVP already swept — re-confirm
+      its `atr_len` sits on a plateau (6–16), not a peak.
+- [ ] **Monster net-verdict thresholds:** sweep `InpBrkNetMinM3`/`InpBrkNetMin`/`InpBrkOppMax`/`InpRevNetMin`/
+      `InpRevOppMax` (all 0.80, never swept) over ~0.5–0.95; sweep `vp_lookback` (30–90).
+- [ ] **Monster persistence (cheap reliability):** enable + sweep `enable_net_persist` × `net_persist_bars` (2–5)
+      × `net_persist_min` (0.3–0.7).
+- [ ] **KenKem lookbacks:** add `ICHIMOKU_TENKAN/KIJUN/SENKOU` (E4), `ATR_PERCENTILE_LOOKBACK`, `RSI_DIV_LOOKBACK`,
+      `RANGE_HI_LOW_LOOK_BACK_BARS` to the per-entry SPACE.
+- [ ] **MasterVP:** add `adx_len`, `rsi_len` (both fixed 14, both tunable) to `optimize_mastervp.py`, range 6–20.
+- [ ] Deliverable: refreshed candidate `.set` + 9-column before/after on 2026 OOS; promote only on net↑∧DD↓.
+
+### C8.2 — Phase 2: promote high-value hardcoded constants to params, then sweep
+- [ ] **Monster:** promote `node_decay` (0.94→`InpNodeDecay`), `net_win_atr` (1.5→`InpNetWinAtr`),
+      `tf_net_look` (50→`InpTfNetLook`), `brk_overhead_look` (200), `brk_rr_lookback_bars` (25) — add `apply_kv`
+      key + MQL5 `input`, default unchanged (inert). These shape the near-price window the verdict reads.
+- [ ] **MasterVP:** confirm which VP node knobs (`node_touch_atr`/`node_decay`/`node_neutral_band`/`node_saturation`)
+      are not yet keys; promote the VP-shaping ones.
+- [ ] Add one-line parity unit test per promotion (default reproduces prior trades); extend Phase-1 sweeps to
+      include the newly-exposed keys.
+
+### C8.3 — Phase 3A: news avoidance (build it, then sweep ON/OFF × entry combos)
+- [ ] **Data:** port `../kenkem/.../HighImpactNews_USD.csv` (2025) → `data/external/news_usd_2025.csv`; source 2026
+      high-impact USD events (preferred: MQL5 `CalendarValueHistory` export script for one-time user run; fallback
+      public calendar). Normalize to `ts_ms,impact` UTC.
+- [ ] **Engine:** shared `kk::common::news.hpp` + `news_active_(utc)` — replace Monster's `return false` stub
+      (`monster_engine.hpp:650`), add to MasterVP + KenKem; blocks **entry** within `[mins_before,mins_after]`
+      (+ optional force-close). Add `avoid_news`/`news_mins_*` to KenKem config + all three `apply_kv`. Default OFF.
+- [ ] **Backtester:** add `--news <csv>` to `tools/{mastervp,monster,kenkem}/backtester.cpp` (load once, binary-search per bar).
+- [ ] **Sweep:** news ON/OFF Optuna toggle × entry combos, tune `news_mins_before/after` (0–30); 9-column ON-vs-OFF on 2026 OOS.
+- [ ] Unit test: entry in a known event window blocked when ON, allowed when OFF; OFF reproduces current trades exactly.
+
+### C8.4 — Phase 3B: Monster near-price volume RELIABILITY (the world-class push)
+- [ ] **Richer bar export:** extend `cpp_core/tools/common/export_bars.py` (DuckDB) to emit, per M3 bar, from raw
+      bid/ask ticks: `tr_net` = tick-rule signed-volume (mid-price upticks−downticks)/(total), and `tr_reliab` =
+      intra-bar stability (fraction of ticks whose running cumulative sign matched the bar's final sign). Append
+      two columns after `tick_count`; C++ bar struct gains two optional fields (default 0 → inert if absent).
+- [ ] **Engine gate (default inert):** Monster keys `use_tr_verdict` (false), `tr_net_min`, `tr_reliab_min`; when ON
+      require `|tr_net|≥tr_net_min` AND `tr_reliab≥tr_reliab_min` in the net gate (`monster_signal.hpp:335-351`).
+- [ ] **Sweep:** `use_tr_verdict` ON/OFF × `tr_net_min` (0.3–0.9) × `tr_reliab_min` (0.4–0.95), BTC & XAU M3, 2026
+      OOS. Aim: fewer, higher-quality entries (PF/recovery↑). New `research/optimization/sweep_monster_reliab.py`.
+- [ ] Unit test: `tr_reliab=0` / absent column leaves Monster trades unchanged; spot-check `tr_net` sign vs OHLC proxy.
+
+### C8.5 — Verification & wrap
+- [ ] After each code phase: `make -C cpp_core test` green + re-run locked `best_*` through `report_*` → identical
+      numbers (proves new dims inert).
+- [ ] Final cross-engine 9-column bake-off (Monster-reliab & news-tuned vs promoted KenKem-E5) → reconfirm the #1
+      production pick. Commit+push each step; tick these boxes; do NOT touch locked `.set` files without net↑∧DD↓.
