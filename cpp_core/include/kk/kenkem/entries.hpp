@@ -99,12 +99,18 @@ inline double compute_tp(int kind, bool is_long, double entry, double sl, const 
 inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snapshot& s,
                           const TfBundle::Align& align, const KenKemConfig& c) {
     if (sideways_blocked(s, c)) return false;
+    // Universal regime filter (MIN_ENTRY_ATR_PERCENTILE): the original EA only trades when current
+    // ATR sits in the top (100 - thr)% of its recent distribution. This was DEFINED in config but
+    // never wired into the distilled engine — its absence is a primary cause of over-trading in chop.
+    // 0 disables. Applies to EVERY entry, including E5.
+    if (c.min_entry_atr_pctile > 0.0 && s.atr_pctile < c.min_entry_atr_pctile) return false;
     const double tol = c.ema_align_tol_pips * c.pip_size;
-    // E5 (SuperBros) is the loose entry: NO trend hard gate. Price on the right side of EMA25 +
-    // HTF + an optional ADX floor only. (Trigger already required fresh strict M1 alignment.)
+    // E5 (SuperBros): price on the right side of EMA25 + HTF + ADX floor. The original runs E5 with a
+    // trend-quality floor (MIN_TREND_QUALITY_E5), so it is NOT exempt from the hard trend gate.
     if (kind == 5) {
         bool priceOk = is_long ? (s.closeM1 > s.emaM1[1]) : (s.closeM1 < s.emaM1[1]);
         if (!priceOk) return false;
+        if (c.e5_require_trend_core && trend_core_score(s, is_long, c) == 0) return false;
         if (c.e5_min_momentum_adx > 0 && s.adx[0] < c.e5_min_momentum_adx) return false;
         return htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
     }

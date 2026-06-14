@@ -28,8 +28,9 @@ PARITY    := $(BUILD)/parity_driver
 BACKTEST  := $(BUILD)/backtester
 MONSTER   := $(BUILD)/monster_backtester
 KENKEM    := $(BUILD)/kenkem/backtester
+KENKEMTICK:= $(BUILD)/kenkem/tick_backtester
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -52,6 +53,11 @@ $(MONSTER): tools/monster/monster_backtester.cpp $(HEADERS)
 
 kenkem: $(KENKEM)
 $(KENKEM): tools/kenkem/backtester.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+kenkem_tick: $(KENKEMTICK)
+$(KENKEMTICK): tools/kenkem/tick_backtester.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 

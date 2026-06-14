@@ -49,17 +49,26 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
     auto count_dir = [&](bool is_long) {
         int n = 0; for (auto& o : open) if (o.p.is_long == is_long) ++n; return n; };
 
+    // Per-UTC-day entry cap (MAX_ENTRIES_PER_DAY): a robust backstop for the original EA's per-session
+    // trade caps, which the distilled engine never enforced. 0 = off.
+    int64_t cur_day = -1;
+    int     entries_today = 0;
+
     for (int B = 1; B < N; ++B) {
         const kk::Bar& bar = b.m1.bars[B];
         if (start_ms && bar.ts_ms < start_ms) continue;
         if (end_ms && bar.ts_ms >= end_ms) break;
         const TfBundle::Align align = b.align_at(bar.ts_ms);
 
+        const int64_t day = bar.ts_ms / 86400000;   // UTC calendar day
+        if (day != cur_day) { cur_day = day; entries_today = 0; }
+        const bool day_cap_ok = (cfg.max_entries_per_day <= 0) || (entries_today < cfg.max_entries_per_day);
+
         // (1) Triggers from closed bars (<= B-1).
         update_triggers(b, cfg, B, align, tg);
 
         // (2) Entry decision (uses closed data); fill at this bar's open.
-        if (B >= warmup_bars && (int)open.size() < cfg.max_concurrent_pos) {
+        if (B >= warmup_bars && day_cap_ok && (int)open.size() < cfg.max_concurrent_pos) {
             Snapshot snap = build_snapshot(b, cfg, B, align);
             if (snap.valid && snap.atrM1 > 0.0) {
                 EntrySignal sig = detect_entry(b, cfg, B, align, snap, tg);
@@ -78,6 +87,7 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
                             Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, sig.tp, lot, cfg);
                             // seed pnl with entry commission; balance changes only when the trade closes
                             open.push_back({ p, bar.ts_ms, fill, -lot * cfg.commission_per_lot });
+                            ++entries_today;
                         }
                     }
                 }

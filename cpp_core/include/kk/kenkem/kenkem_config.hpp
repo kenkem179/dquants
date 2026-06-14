@@ -49,6 +49,9 @@ struct KenKemConfig {
     int    max_session_losses     = 4;        // MAX_SESSION_LOSSES
     int    max_sltp_per_session   = 7;        // MAX_SLTP_COUNT_PER_SESSION
     int    min_seconds_between    = 60;       // MIN_SECONDS_BETWEEN_ENTRIES
+    int    max_entries_per_day    = 0;        // hard cap on NEW entries per UTC day (0 = off).
+                                              // Robust backstop proxy for the original's per-session
+                                              // SLTP caps; prevents over-trading bleed.
     int    max_concurrent_pos     = 2;        // MAX_CONCURRENT_POSITIONS_ALLOWED
     bool   block_opposite_dir     = true;
     bool   close_at_session_end   = true;
@@ -210,6 +213,8 @@ struct KenKemConfig {
     // ---- E5 (SuperBros: fresh strict M1 EMA-stack alignment + price>EMA25) ----
     int    e5_max_ema_cross_age   = 28;
     double e5_min_momentum_adx    = 18.0;     // 0 = disabled
+    bool   e5_require_trend_core  = true;     // E5 must pass the hard trend-core gate (original runs
+                                              // E5 with MIN_TREND_QUALITY_E5; not a loose entry).
     HtfMode e5_htf_filter         = HTF_M5_ONLY;
     double e5_htf_min_adx         = 18.0;
     double e5_htf_min_di_spread   = 4.0;
@@ -313,6 +318,8 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_E5_ENTRIES") p.enable_e5 = kbool(val);
     else if (key == "E5_MAX_EMA_CROSS_AGE") p.e5_max_ema_cross_age = I();
     else if (key == "E5_MIN_MOMENTUM_ADX") p.e5_min_momentum_adx = D();
+    else if (key == "E5_REQUIRE_TREND_CORE") p.e5_require_trend_core = kbool(val);
+    else if (key == "MAX_ENTRIES_PER_DAY") p.max_entries_per_day = I();
     else if (key == "E5_HTF_TREND_FILTER") p.e5_htf_filter = H();
     else if (key == "E5_HTF_MIN_ADX") p.e5_htf_min_adx = D();
     else if (key == "E5_HTF_MIN_DI_SPREAD") p.e5_htf_min_di_spread = D();
