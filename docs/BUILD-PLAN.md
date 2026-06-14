@@ -174,7 +174,11 @@ SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/AD
 - [ ] P3 `triggers.hpp` (EMA-cross/touch/Ichi-cloud state machine) + P4 `gates.hpp` (trend-quality/momentum/align/conviction/RSI-div).
 - [ ] P5 `entries.hpp` (E1/E2/E4 Detect + SL) + P6 `trade_manager.hpp` (partial/BE/trail/ext/ladder/panic/score-drop).
 - [ ] P7 `kenkem_engine.hpp` (OnTick integrator + sizing) + `kenkem_backtester.cpp` + unit tests + **lookahead audit**.
-- [ ] P8 baseline on BTC/XAU tick Parquet; P9 Optuna optimize per symbol → `best_kenkem_{btc,xau}.set`; MC + rolling robustness.
-- [ ] P10 deliver `.set` into `kenkem/MQL5/Experts/KenKem/Config/` (non-destructive); MT5 demo forward-test (user gate).
-- **NOTE:** no MT5 parity instrumentation exists for this EA → unit-tested + lookahead-audited C++ engine is the
-      source of truth for optimization (Monster precedent), MT5 forward-test is the final gate.
+- [ ] **P8 PARITY (hard gate, same standard as MasterVP/Monster):** add non-destructive `KenKem/Parity/`
+      module to the EA (mirror `KK-MasterVP/Parity/`, `InpExportParity` default-OFF) + `tools/kenkem/parity_driver.cpp`;
+      **user runs KenKem in MT5 tester** → reference CSVs; diff bar-level then trade-level until parity.
+- [ ] P9 baseline on BTC/XAU tick Parquet (parity-validated) → P10 Optuna optimize per symbol →
+      `best_kenkem_{btc,xau}.set`; MC + rolling robustness.
+- [ ] P11 deliver `.set` into `kenkem/MQL5/Experts/KenKem/Config/` (non-destructive); MT5 demo forward-test (final gate).
+- **NOTE:** parity is the gate — no optimization until the C++ engine matches MT5 bar-level + trade-level.
+      Engine build (P2–P7) is prerequisite and needs no user input; the EA parity hooks + MT5 run need user buy-in.

@@ -247,10 +247,20 @@ SHORT `low ≤ TP`. Exit price = the level (model spread on exit; commission per
 7. `kenkem_engine.hpp` — interleaved OnTick integrator (new-bar detect + per-tick manage), risk-based sizing (§5).
 8. `kenkem_backtester.cpp` + `test_kenkem_*` — unit tests per indicator/gate/entry + **lookahead audit**.
 
-**Parity caveat:** the KenKem EA has **no MT5 parity instrumentation** (no `Parity/` module, unlike KK-MasterVP),
-and CLAUDE.md forbids editing the EA. So — exactly as with Monster — the faithful, unit-tested, lookahead-audited
-C++ engine is the **source of truth** for optimization; MT5 demo forward-test is the user's final gate. Deliver
-winning configs as non-destructive `.set` files in `kenkem/MQL5/Experts/KenKem/Config/`, never rewriting code.
+**Parity is a HARD GATE before optimization** (same standard as KK-MasterVP / Monster). KenKem ships no `Parity/`
+module yet, so we ADD one — mirroring `KK-MasterVP/Parity/{ParityExport,TradeJournal}.mqh`: a new
+`KenKem/Parity/` subdir + ~6 `InpExportParity`-gated (default-OFF) hooks in `KenKemExpert.mq5` (OnInit init,
+per-bar `WriteParityRow` after `UpdateIndicatorCache`, OnDeinit close, trade-close → journal). This is
+**additive, read-only instrumentation** (no trading-logic change, no clobber) — distinct from the "never rewrite
+the EA's logic / deliver `.set` only" rule. Parity CSV (per-bar) columns mirror the C++ engine's surface:
+`barTimeUTC, adxM1/M3/M5/M15, diPlusM1.., diMinusM1.., atrM1/M3/M5, ichiSpanA/B_M1/M3, tenkanM3, kijunM3,
+sideways, trendQ_E1/E2/E4, trigE1/E2/E4(state), e{1,2,4}Detected, isLong, entry, sl, tp`. Trade journal mirrors
+per-trade entry/exit/PnL.
+**Workflow:** (1) build C++ engine + a `tools/kenkem/parity_driver.cpp` emitting the same CSV format; (2) user
+compiles + runs KenKem in MT5 Strategy Tester (`InpExportParity=true`) → reference CSVs land in
+`kenkem/Tester/.../MQL5/Files/KenKem/`; (3) diff bar-level (indicators/scores) then trade-level until parity
+(MasterVP reached 377/473 exact); (4) only THEN baseline + optimize. Deliver winning configs as non-destructive
+`.set` files in `kenkem/MQL5/Experts/KenKem/Config/`. MT5 demo forward-test remains the final live gate.
 
 ## 9. Optimization plan (Phase 13, after engine + tests + baseline)
 Optuna joint search over the high-leverage knobs per symbol (BTC, XAU): per-entry RR + sideway RR, trend-quality
