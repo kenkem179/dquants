@@ -31,5 +31,17 @@ best robustness (MC 100% prof, P5 PF 1.164, spread-robust to $6), simplest logic
 cleanest "zero-mistake" code). Runner-up Monster-XAU (higher raw PF 1.276 but softer OOS); MasterVP only
 MT5-proven but weakest edge. **Delivered:** production EA `kenkem/MQL5/Experts/KK-KenKemE4/KK-KenKemE4.mq5`
 (single-file, CTrade-based) + README. Left UNCOMMITTED in the kenkem production repo for user review.
-Pending: user compiles (`make compile EA=KK-KenKemE4/KK-KenKemE4.mq5`), adds a SYMBOL_TRADE_STOPS_LEVEL
-clamp, MT5 Strategy-Tester reproduce, then demo forward-test (final gate). See [[kenkem-distilled-result]].
+**UPDATE 2026-06-14 (later):** Built multi-entry `KK-KenKem.mq5` (E1/E2/E4/E5 toggleable; handle creation
+guarded by toggles so off-entries cost zero), added the stops/freeze clamp on entry SL/TP + BE/trail
+modifies, and **COMPILED IT CLEAN — 0 errors, 0 warnings** (via [[mql5-compile-workflow]] — I can compile
+freely now). Robustness on OUR engine (no MT5 needed): BTC E1+E4+E5 6/6 months +ve / MC 100% / PF-P5
+1.096; XAU E4+E5 5/5 +ve / MC 99.8%. Every entry +ve OOS; E5 (SuperBros) strongest leg. See
+[[kenkem-distilled-result]].
+
+**ARCHITECTURE (user-agreed):** keep strategies as SIBLING EAs (KenKem / KK-MasterVP / KK-Monster); share
+reusable modules via ONE FLAT `KK-Common` include lib — partition by MODULE not family (DMI/ADX/ATR/RSI
+used by both families; Ichimoku=KenKem-only, VolumeProfile=VP-only). `KK-Common` ALREADY EXISTS in kenkem
+repo: Utils/BrokerHelpers, TradeManagement/{RiskManager,TradeManager}, Core/IndicatorCache, SessionManager,
+Logging/TradeJournal. Compile-time module exclusion REJECTED as over-engineering (runtime guarded handles
+already capture the win). NEXT step (after user OK): refactor KK-KenKem to `#include <KK-Common/...>`
+(proof), then move MasterVP/Monster onto it. Final gate stays: demo forward-test.
