@@ -1,6 +1,17 @@
 # Production promotion — #1 strategy → MQL5
 
-## Recommendation: KenKem-distilled **E4** (Ichimoku Tenkan/Kijun cross), BTC primary / XAU secondary
+> 🛑 **WITHDRAWN (2026-06-15). This recommendation was based on engine-internal numbers that FAILED
+> in MT5.** All three dquants-distilled candidates were run in the MT5 tester and none survives the
+> recent OOS window: KenKem E5-only −62 to −93%, MasterVP BTC M3 −19%, Monster BTC M3 **0 trades**
+> (engine/MQL5 parity divergence). The distilled `kk::kenkem` engine was a bar-OHLC approximation that
+> overstated PF; a now-validated tick engine reproduces MT5 (E5 PF 0.855 vs MT5 0.85). **The only
+> KenKem artifact that works in MT5 is the user's ORIGINAL `KenKemExpert` (E1+E2, +24%, PF 1.62), whose
+> selectivity machinery (conviction, session caps, cooldowns) the distillation dropped.**
+> **→ Production recommendation: deploy the ORIGINAL `KenKemExpert` (E1+E2). Do NOT promote any
+> distilled config until confirmed profitable in MT5 on the recent OOS window.** See
+> `MT5-GROUND-TRUTH.md`. —Claude
+
+## [WITHDRAWN] Recommendation: KenKem-distilled **E4** (Ichimoku Tenkan/Kijun cross), BTC primary / XAU secondary
 
 Chosen over Monster-XAU (higher raw PF but 2-month same-year OOS) and MasterVP (MT5-proven but weakest
 edge) because it has the **most rigorous OOS** (full fresh year 2026 H1, PF 1.239), the **best robustness**

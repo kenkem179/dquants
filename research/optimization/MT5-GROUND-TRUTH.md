@@ -78,6 +78,34 @@ trade, and when Monster does trade it loses catastrophically. Worthless as-is.
 
 ---
 
+## Engineering fixes shipped 2026-06-15 (autopilot)
+
+**1. KenKem tick engine (`cpp_core/include/kk/kenkem/tick_engine.hpp`) — VALIDATED against MT5.**
+The distilled `kk::kenkem` was a bar-OHLC walk that reported E5-only at PF 1.69 / +$42k for a config
+MT5 lost 62% on. The new tick engine replays the real bid/ask stream through the same signal/SL/TP
+front-half. Result on the exact ungated E5 config MT5 ran:
+
+| Engine | PF | Net% | verdict |
+|---|--:|--:|---|
+| bar-OHLC walk (old) | 1.69 | +420 | fantasy |
+| **tick engine (new)** | **0.855** | **−74.6** | matches MT5 |
+| MT5 truth (2026 window) | 0.85 | −74.1 | — |
+
+Reproduces MT5 PF to within 0.005. Run: `make kenkem_tick && ./build/kenkem/tick_backtester --bars-m1
+tools/bars_xauusd_2025h2_2026_m1.csv --ticks tools/ticks_xauusd_window.csv --symbol-xau --from-ms
+1754006400000 --set <cfg>`. (Trade count 1074 vs MT5 2338 — the window tick file has 38M ticks vs MT5's
+85M, so fewer intrabar re-entries; the economics match.)
+
+**2. Wired the dropped governors** the distilled engine defined but never enforced: universal
+`min_entry_atr_pctile` (the original's MIN_ENTRY_ATR_PERCENTILE=65), a per-UTC-day entry cap, and an
+E5 trend-core gate. Necessary but NOT sufficient — even gated, the bar engine still lied (PF 1.69);
+only the tick engine tells the truth.
+
+**3. Through the validated tick engine, every dquants-tuned KenKem config still loses** (they were
+Optuna-overfit to the fantasy bar engine): E5 −74%, E1+E2 −58% (E1 the loser), E1-only −44%, E2-only
+PF 1.02 (marginal). The original `KenKemExpert` wins only because of conviction scoring + session caps +
+cooldowns the distillation never ported (full spec captured for a future faithful port).
+
 ## What this means for the process
 
 The failure is systemic, not three unlucky picks: dquants numbers were **optimized against the
