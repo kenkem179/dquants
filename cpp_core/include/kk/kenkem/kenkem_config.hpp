@@ -35,7 +35,9 @@ struct KenKemConfig {
     bool   enable_e1              = true;
     bool   enable_e2              = true;
     bool   enable_e4              = true;
-    // E3/E5 intentionally absent from v1 schema (disabled in EA).
+    bool   enable_e5              = false;   // SuperBros M1 EMA-alignment (default off, like the EA)
+    // E3 intentionally absent (counter-trend, out of scope).
+    double max_loss_ratio_e5      = 0.02;    // COMMON_MAX_RISK_PER_TRADE * 1.0
 
     // ---- drawdown / daily / session guards ----
     double max_daily_loss_ratio   = 0.072;
@@ -201,6 +203,21 @@ struct KenKemConfig {
     double e4_ladder_s1_mult      = 1.10, e4_ladder_s2_mult = 1.18, e4_ladder_s3_mult = 1.27;
     double e4_ladder_s1_trail     = 0.45, e4_ladder_s2_trail = 0.55, e4_ladder_s3_trail = 0.65;
 
+    // ---- E5 (SuperBros: fresh strict M1 EMA-stack alignment + price>EMA25) ----
+    int    e5_max_ema_cross_age   = 28;
+    double e5_min_momentum_adx    = 18.0;     // 0 = disabled
+    HtfMode e5_htf_filter         = HTF_M5_ONLY;
+    double e5_htf_min_adx         = 18.0;
+    double e5_htf_min_di_spread   = 4.0;
+    double e5_rr                  = 1.5;
+    double e5_rr_sideway          = 1.2;
+    double e5_partial_tp_trigger  = 0.54;
+    double e5_partial_tp_ratio    = 0.50;
+    double e5_be_buffer           = 0.05;
+    double e5_trailing_factor     = 0.38;
+    double e5_atr_sl_cap          = 4.0;
+    double e5_atr_sl_floor        = 1.2;
+
     // ---- Ichimoku periods ----
     int    ichimoku_tenkan        = 9;
     int    ichimoku_kijun         = 26;
@@ -289,6 +306,20 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_E1_ENTRIES") p.enable_e1 = kbool(val);
     else if (key == "ENABLE_E2_ENTRIES") p.enable_e2 = kbool(val);
     else if (key == "ENABLE_E4_ENTRIES") p.enable_e4 = kbool(val);
+    else if (key == "ENABLE_E5_ENTRIES") p.enable_e5 = kbool(val);
+    else if (key == "E5_MAX_EMA_CROSS_AGE") p.e5_max_ema_cross_age = I();
+    else if (key == "E5_MIN_MOMENTUM_ADX") p.e5_min_momentum_adx = D();
+    else if (key == "E5_HTF_TREND_FILTER") p.e5_htf_filter = H();
+    else if (key == "E5_HTF_MIN_ADX") p.e5_htf_min_adx = D();
+    else if (key == "E5_HTF_MIN_DI_SPREAD") p.e5_htf_min_di_spread = D();
+    else if (key == "E5_RR") p.e5_rr = D();
+    else if (key == "E5_RR_SIDEWAY") p.e5_rr_sideway = D();
+    else if (key == "E5_PARTIAL_TP_TRIGGER") p.e5_partial_tp_trigger = D();
+    else if (key == "E5_PARTIAL_TP_RATIO") p.e5_partial_tp_ratio = D();
+    else if (key == "E5_SL_TO_BREAKEVEN_BUFFER") p.e5_be_buffer = D();
+    else if (key == "E5_TRAILING_SL_FACTOR") p.e5_trailing_factor = D();
+    else if (key == "E5_ATR_SL_CAP_MULTIPLIER") p.e5_atr_sl_cap = D();
+    else if (key == "E5_ATR_SL_FLOOR_MULTIPLIER") p.e5_atr_sl_floor = D();
     // guards
     else if (key == "MAX_DAILY_LOSS_RATIO") p.max_daily_loss_ratio = D();
     else if (key == "ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN") p.dd_ratio_slowdown = D();

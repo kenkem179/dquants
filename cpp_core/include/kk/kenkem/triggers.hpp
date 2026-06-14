@@ -42,6 +42,7 @@ struct TriggerState {
     int ema_up = -1, ema_down = -1;     // lastEMACrossingUp/Down (E1)
     int e75_up = -1, e75_down = -1;     // lastEma75TouchUp/Down (E2)
     int ichi_up = -1, ichi_down = -1;   // lastIchiCloudCrossUp/Down (E4, TK cross)
+    int e5_up = -1, e5_down = -1;       // E5 SuperBros fresh strict-alignment onset
 };
 
 // Cloud (TK) bullish on a TF at absolute index idx: real Tenkan > real Kijun.
@@ -116,6 +117,20 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
         bool down = bothBear_c && !bothBear_p;
         if (up   && st.ichi_up   == -1) { st.ichi_up = B;   st.ichi_down = -1; }
         if (down && st.ichi_down == -1) { st.ichi_down = B; st.ichi_up = -1; }
+    }
+
+    // ---- E5: SuperBros — fresh STRICT M1 4-EMA alignment onset (no tolerance). Onset = aligned@s1 &
+    // not aligned@s2. Reset when alignment breaks (consumed-lock: won't re-arm while continuously
+    // aligned, since entry consumes e5_*; re-arms only on a fresh onset after a break). ----
+    if (cfg.enable_e5) {
+        bool up1 = emas_ready(bundle.m1, m1s1, true,  true, 0.0);
+        bool up2 = emas_ready(bundle.m1, m1s2, true,  true, 0.0);
+        bool dn1 = emas_ready(bundle.m1, m1s1, false, true, 0.0);
+        bool dn2 = emas_ready(bundle.m1, m1s2, false, true, 0.0);
+        if (!up1) st.e5_up = -1;
+        else if (!up2 && st.e5_up == -1) { st.e5_up = B; st.e5_down = -1; }
+        if (!dn1) st.e5_down = -1;
+        else if (!dn2 && st.e5_down == -1) { st.e5_down = B; st.e5_up = -1; }
     }
 }
 

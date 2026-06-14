@@ -34,10 +34,11 @@ inline void recent_range(const TfIndicators& m1, int idx, int lookback, double& 
     for (int i = start; i <= idx; ++i) { hi = std::max(hi, m1.bars[i].high); lo = std::min(lo, m1.bars[i].low); }
 }
 
-// Custom EMA structure level. E1/E4: ema100 +/- 0.75*|ema100-ema200|; E2: ema100 directly.
+// Custom EMA structure level. E1/E4: ema100 +/- 0.75*|ema100-ema200|; E2: ema100; E5: ema200 (SuperBros).
 inline double custom_ema_level(int kind, bool is_long, const Snapshot& s) {
     const double ema100 = s.emaM1[3], ema200 = s.emaM1[4];
     if (kind == 2) return ema100;
+    if (kind == 5) return ema200;
     double d = std::fabs(ema100 - ema200) * 0.75;
     return is_long ? (ema100 - d) : (ema100 + d);
 }
@@ -45,6 +46,7 @@ inline double custom_ema_level(int kind, bool is_long, const Snapshot& s) {
 inline double atr_sl_caps(int kind, const KenKemConfig& c, double& floor_mult) {
     if (kind == 2) { floor_mult = c.e2_atr_sl_floor; return c.e2_atr_sl_cap; }
     if (kind == 4) { floor_mult = c.e4_atr_sl_floor; return c.e4_atr_sl_cap; }
+    if (kind == 5) { floor_mult = c.e5_atr_sl_floor; return c.e5_atr_sl_cap; }
     floor_mult = c.e1_atr_sl_floor; return c.e1_atr_sl_cap;
 }
 
@@ -78,6 +80,10 @@ inline double per_side_rr(int kind, bool is_long, const Snapshot& s, const KenKe
         if (sideway) return c.e4_rr_sideway;
         return is_long ? c.e4_rr : c.e4_rr_short * KK_E4_SHORT_FACTOR;
     }
+    if (kind == 5) {
+        if (sideway) return c.e5_rr_sideway;
+        return c.e5_rr;   // E5 has no short-RR asymmetry input
+    }
     if (sideway) return c.e1_rr_sideway;
     return is_long ? c.e1_rr : c.e1_rr * KK_E1_SHORT_FACTOR;
 }
@@ -93,8 +99,16 @@ inline double compute_tp(int kind, bool is_long, double entry, double sl, const 
 inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snapshot& s,
                           const TfBundle::Align& align, const KenKemConfig& c) {
     if (sideways_blocked(s, c)) return false;
-    if (trend_core_score(s, is_long, c) == 0) return false;          // hard gate
     const double tol = c.ema_align_tol_pips * c.pip_size;
+    // E5 (SuperBros) is the loose entry: NO trend hard gate. Price on the right side of EMA25 +
+    // HTF + an optional ADX floor only. (Trigger already required fresh strict M1 alignment.)
+    if (kind == 5) {
+        bool priceOk = is_long ? (s.closeM1 > s.emaM1[1]) : (s.closeM1 < s.emaM1[1]);
+        if (!priceOk) return false;
+        if (c.e5_min_momentum_adx > 0 && s.adx[0] < c.e5_min_momentum_adx) return false;
+        return htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
+    }
+    if (trend_core_score(s, is_long, c) == 0) return false;          // hard gate (E1/E2/E4)
     switch (kind) {
         case 1:  // E1: EMA alignment still holds (M1+M3) + M5 HTF
             if (!emas_ready(b.m1, align.m1 - 1, is_long, true, tol)) return false;
@@ -130,10 +144,11 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
     const double entry = s.closeM1;
 
     struct Cand { int kind; bool en; int up; int down; int maxage; };
-    const Cand cands[3] = {
+    const Cand cands[4] = {
         { 1, c.enable_e1, tg.ema_up,  tg.ema_down,  c.e1_max_cross_age },
         { 2, c.enable_e2, tg.e75_up,  tg.e75_down,  c.e2_max_touch_age },
         { 4, c.enable_e4, tg.ichi_up, tg.ichi_down, c.e4_max_cross_age },
+        { 5, c.enable_e5, tg.e5_up,   tg.e5_down,   c.e5_max_ema_cross_age },
     };
     for (const Cand& cd : cands) {
         if (!cd.en) continue;
@@ -152,6 +167,7 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
                 case 1: (is_long ? tg.ema_up  : tg.ema_down)  = -1; break;
                 case 2: (is_long ? tg.e75_up  : tg.e75_down)  = -1; break;
                 case 4: (is_long ? tg.ichi_up : tg.ichi_down) = -1; break;
+                case 5: (is_long ? tg.e5_up   : tg.e5_down)   = -1; break;
             }
             return r;
         }

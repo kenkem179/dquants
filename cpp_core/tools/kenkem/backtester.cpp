@@ -96,9 +96,10 @@ int main(int argc, char** argv) {
     std::printf("PF:       %.3f\n", R.pf);
     std::printf("max DD:   %.2f USD\n", R.max_dd);
     // by-entry breakdown
-    int ce[5] = {0,0,0,0,0}; double pe[5] = {0,0,0,0,0};
-    for (const Trade& t : R.list) { if (t.kind>=1 && t.kind<=4) { ce[t.kind]++; pe[t.kind]+=t.pnl; } }
-    std::printf("by entry: E1 %d (%.0f)  E2 %d (%.0f)  E4 %d (%.0f)\n", ce[1],pe[1], ce[2],pe[2], ce[4],pe[4]);
+    int ce[6] = {0,0,0,0,0,0}; double pe[6] = {0,0,0,0,0,0};
+    for (const Trade& t : R.list) { if (t.kind>=1 && t.kind<=5) { ce[t.kind]++; pe[t.kind]+=t.pnl; } }
+    std::printf("by entry: E1 %d (%.0f)  E2 %d (%.0f)  E4 %d (%.0f)  E5 %d (%.0f)\n",
+                ce[1],pe[1], ce[2],pe[2], ce[4],pe[4], ce[5],pe[5]);
 
     if (!out_path.empty()) {
         FILE* f = std::fopen(out_path.c_str(), "w");

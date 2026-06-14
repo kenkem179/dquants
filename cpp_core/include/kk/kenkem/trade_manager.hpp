@@ -18,6 +18,7 @@ namespace kk::kenkem {
 inline double risk_ratio_for(int kind, const KenKemConfig& c) {
     if (kind == 2) return c.max_loss_ratio_e2;
     if (kind == 4) return c.max_loss_ratio_e4;
+    if (kind == 5) return c.max_loss_ratio_e5;
     return c.max_loss_ratio_e1;
 }
 
@@ -33,6 +34,7 @@ struct MgmtParams { double partial_trigger, partial_ratio, be_buffer, trailing_f
 inline MgmtParams mgmt_for(int kind, const KenKemConfig& c) {
     if (kind == 2) return { c.e2_partial_tp_trigger, c.e2_partial_tp_ratio, c.e2_be_buffer, c.e2_trailing_factor };
     if (kind == 4) return { c.e4_partial_tp_trigger, c.e4_partial_tp_ratio, c.e4_be_buffer, c.e4_trailing_factor };
+    if (kind == 5) return { c.e5_partial_tp_trigger, c.e5_partial_tp_ratio, c.e5_be_buffer, c.e5_trailing_factor };
     return { c.e1_partial_tp_trigger, c.e1_partial_tp_ratio, c.e1_be_buffer, c.e1_trailing_factor };
 }
 
