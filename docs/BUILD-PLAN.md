@@ -112,6 +112,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 - [x] XAUUSD M3 base measured (net −$326/PF 0.991, 995 tr) — same headroom as BTC. Monster opt below.
 
 ## Phase 11 — KK-MasterVP-Monster edition (full-space, both legs active)
+NOTE: this first round optimized the **original KK-MasterVP** C++ port with reversion activated — NOT
+the user's evolved 4-kind Monster EA. Its params don't map to the real Monster schema (only 44/79
+overlap). Kept as directional evidence; the REAL-Monster engine + optimization is **Phase 12**.
+
 Activate the dormant **reversion leg** + jointly optimize the **entire wired param space** (breakout +
 reversion + exits + regime + node + vol-gate + sizing), on the parity-validated C++ tick engine.
 Optimizer: `research/optimization/optimize_monster.py <btc|xau>` (400-trial joint Optuna, reversion
@@ -131,11 +135,28 @@ FORCED on, momentum/flow toggles categorical). Refine from the strong-OOS **sub-
 - [ ] vol-RR engine support (ComputeRrScale: session × ATR-pctile) — currently rr_scale=1.0 hardcoded.
       (Optional enhancement; MQL5 already supports `InpEnableVolRR`, default off — parity preserved.)
 
+## Phase 12 — REAL Monster C++ engine + optimization (the user's actual 4-kind EA)
+Faithful C++ port of the user's evolved Monster (`SignalCore_Monster.mqh`, 779 LOC): breakout +
+impulse-thrust + 4-variant mean-reversion, multi-TF near-net (M1/M5/M15), predicted/aged master VP,
+POC-slope regime + stability/overhead/HTF gates, per-strategy TP1 split. SEPARATE `kk::monster` engine
+(KK-MasterVP engine untouched), inherits the reusable VP/node math. Winning `.set` uses the REAL
+Monster InpXxx names → drops into `kenkem/MQL5/Experts/KK-MasterVP-Monster/`.
+- [x] P1 `monster_config.hpp` (147-input schema + .set loader, Pine defaults).
+- [x] P2 `monster_signal.hpp` (SignalCore_Monster port — 4 kinds + arbitration + all gates/edge-cands).
+- [x] P3 `tf_net.hpp` (multi-TF near-net, per-TF MT5-iATR, `[1]`-read) + P4 M1/M5 bar export (BTC/XAU).
+- [x] P5 `monster_engine.hpp` (interleaved OnTick integrator, gap-aware fills, TP1-split mgmt) +
+      P6 `monster_backtester.cpp` + `test_monster_engine` (22 checks).
+- [x] **CRITICAL: caught + fixed a one-bar LOOKAHEAD** (bar-advance `<=`→`<`). Inflated baseline PF
+      1.83 (OOS>IS, net-gate-insensitive) → realistic **PF 0.915 BTC / 0.751 XAU** (losing baseline,
+      like KK-MasterVP pre-opt). Deterministic; all tests green. This is the verification that makes
+      the engine trustworthy for optimization.
+- [~] P7 optimize the REAL Monster (`optimize_monster_real.py`, 31-param + 3-toggle, reversion ON):
+      BTC + XAU 400-trial runs IN PROGRESS.
+- [ ] Plateau + MC + rolling robustness per symbol; write `best_monster_real_{btc,xau}.set`.
+- [ ] Map winners onto the EA's InputParams (read-only) + deliver as non-destructive `.set` files in
+      `kenkem/MQL5/Experts/KK-MasterVP-Monster/Config/`; demo forward-test in MT5.
+
 ## Phase 10 — Promote (revised: the Monster EA ALREADY EXISTS on the user's side)
 - [!] **Do NOT recreate** `kenkem/MQL5/Experts/KK-MasterVP-Monster/` — it already exists and has evolved
-      (NetVolume, StatePersistence, single-instance guard, embedded news; 7 R-series commits on
-      `origin/KKMasterVPv1`, ahead of local). A blind recreate clobbered it once (recovered via git).
-- [ ] Read the user's Monster EA `InputParams.mqh` schema (read-only), map `best_monster_btc.set` /
-      `best_monster_xau.set` onto its ACTUAL inputs, deliver as non-destructive `.set` files.
-- [ ] Confirm the user's evolved Monster still parity-matches the C++ engine (or note the deltas) before
-      claiming the configs transfer; then demo forward-test in MT5.
+      (NetVolume, StatePersistence, single-instance guard, embedded news; on `origin/KKMasterVPv1`).
+      A blind recreate clobbered it once (recovered via git). Deliver `.set` files only, never rewrite code.
