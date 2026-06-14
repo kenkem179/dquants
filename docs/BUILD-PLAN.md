@@ -178,14 +178,19 @@ SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/AD
 - [x] P2 `tf_cache.hpp` (per-TF M1/M3/M5/M15 buffers + open-time alignment, shift-1 reads; shift-0 forming
       bar deferred to engine) — 20 checks. `indicators.hpp` Ichimoku primitive — 12 checks.
 - [x] P3 `triggers.hpp` (EMA-stack cross + EMA200/EMA75 touch + Ichi **TK** cross state machines) — 12 checks.
-- [ ] **P4 `gates.hpp` (trend-quality hard-gate / momentum / MTF-align / conviction / RSI-div / HTF filters). ← NEXT**
-- [ ] P5 `entries.hpp` (E1/E2/E4 Detect + SL) + P6 `trade_manager.hpp` (partial/BE/trail/ext/ladder/panic/score-drop).
-- [ ] P7 `kenkem_engine.hpp` (OnTick integrator + sizing) + `kenkem_backtester.cpp` + unit tests + **lookahead audit**.
-- [ ] **P8 PARITY (hard gate, same standard as MasterVP/Monster):** add non-destructive `KenKem/Parity/`
-      module to the EA (mirror `KK-MasterVP/Parity/`, `InpExportParity` default-OFF) + `tools/kenkem/parity_driver.cpp`;
-      **user runs KenKem in MT5 tester** → reference CSVs; diff bar-level then trade-level until parity.
-- [ ] P9 baseline on BTC/XAU tick Parquet (parity-validated) → P10 Optuna optimize per symbol →
-      `best_kenkem_{btc,xau}.set`; MC + rolling robustness.
-- [ ] P11 deliver `.set` into `kenkem/MQL5/Experts/KenKem/Config/` (non-destructive); MT5 demo forward-test (final gate).
-- **NOTE:** parity is the gate — no optimization until the C++ engine matches MT5 bar-level + trade-level.
-      Engine build (P2–P7) is prerequisite and needs no user input; the EA parity hooks + MT5 run need user buy-in.
+- [x] P4 `snapshot.hpp` + `gates.hpp` (trend-quality hard-gate / sideways / HTF) — 18 checks.
+- [x] P5 `entries.hpp` (E1/E2/E4 detect + SL/TP) — 10 checks. P6 `trade_manager.hpp` (risk-correct sizing +
+      partial/BE/trail) — 18 checks. [Distilled: dropped ladder/TP-ext/panic/score-drop/DI-flip per user.]
+- [x] P7 `engine.hpp` + `tools/kenkem/backtester.cpp` (8 checks; loads M1, aggregates M3/M5/M15). Fixed
+      trigger-consume + fixed-base research sizing. **No lookahead** (detect on closed bars, fill at open).
+- [~] **PIVOT (user directive):** distill KenKem to its essential winning core; validate via the quant SOP
+      (costs→optimize→OOS→MC), NOT MT5 byte-parity (the distillation makes byte-parity moot). Parity module
+      deferred to an optional future cross-check.
+- [x] P9 `optimize_kenkem.py` (Optuna, train/test consistency) → P10 `best_kenkem_{btc,xau}.set`.
+      **Result: optimizer disabled E1/E2 — winner is E4-only (Ichimoku TK cross).** BTC 2025 PF 1.270 /
+      **2026 true-OOS PF 1.239** (MC 100% prof, P5 1.164, spread-robust to $6); XAU 2025 1.207 / OOS 1.083.
+      See `research/optimization/KENKEM-RESULTS.md`.
+- [x] **P11 / PROMOTION:** recommended **KenKem-E4 as #1** (most rigorous OOS + best robustness + simplest
+      logic) over Monster-XAU / MasterVP. Delivered production EA `kenkem/MQL5/Experts/KK-KenKemE4/`
+      (single-file, CTrade-based) + README. **Final gate = user compiles (`make compile`) + MT5 demo
+      forward-test.** Spec: `research/optimization/PROMOTION-SPEC.md`.
