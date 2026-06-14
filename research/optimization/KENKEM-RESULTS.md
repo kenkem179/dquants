@@ -95,6 +95,67 @@ production decider). E3 is absent in the distilled engine, so the requested E1&E
   E4 drag (OOS PF 1.17→1.27 at similar net). Each combo's tuned config saved as
   `best_kenkem_<combo>_<sym>.set` — promotion to the locked `best_kenkem_<sym>.set` pending user sign-off.
 
+## Per-entry tuning → combination study (2026-06-14, user request "tune each entry's own knobs first")
+Two-phase (`sweep_kenkem_tuned.py`): **phaseA** tunes each entry's OWN knobs in isolation (RR, sideways-RR,
+trend-quality, sideways/momentum-ADX gates, momentum-bypass, SL/trail/partial) at 300 trials on 2025;
+**phaseB** freezes those per-entry knobs and re-tunes only the SHARED gates per combo at 150 trials.
+All ranked by **2026 true-OOS PF**. Standard 9-column table (`report_kenkem.py`, native trail+partial ON,
+common ProfitManager OFF; Sharpe = annualized daily-PnL, recovery = net/maxDD, trades/day over span).
+
+### Per-entry best knobs (the answer to "best RR / trend-quality / sideways-ADX per entry")
+| Entry | Sym | RR | RR-sideway | trend-quality min | HTF min ADX | momentum ADX / bypass | OOS PF |
+|---|---|---|---|---|---|---|---|
+| E5 | BTC | 1.22 | 1.46 | (ungated) | 13.0 | 0.28 | **1.792** |
+| E5 | XAU | 1.23 | 0.81 | (ungated) | 27.5 | 20.9 | **1.619** |
+| E2 | BTC | 1.36 | 1.25 | 5 | 17.6 | 12.9 | 1.277 |
+| E2 | XAU | 1.40 | 1.78 | 5 | 17.6 | 12.5 | 1.329 |
+| E4 | BTC | 1.53 (short 1.84) | 0.90 | 6 | 17.6 | 16.2 / lvl0 · maxSideway 57 | 1.235 |
+| E4 | XAU | 1.86 (short 1.91) | 1.37 | 5 | 22.1 | 15.1 / lvl2 · maxSideway 47 | 1.226 |
+| E1 | BTC | 1.36 | 1.34 | 2 | 14.9 | 24.1 / lvl1 | 1.071 |
+| E1 | XAU | 1.63 | 1.14 | 5 | 14.1 | 17.2 / lvl2 | 1.196 |
+
+Read: **E5 wants tight RR (~1.22) and is the only entry that needs no trend-quality gate — it is its own
+filter (strict M1 EMA-stack onset)**; E5-BTC tolerates low ADX (13), E5-XAU needs a high HTF-ADX (27.5).
+**E2 is stable at RR≈1.4 / quality≥5 / momentum-ADX≈12.5** on both. **E4 wants the widest RR (1.5–1.9) and
+the strictest quality (5–6)** — selective by design. **E1 stays weakest even fully tuned** (BTC OOS 1.071).
+
+### Tuned combinations — ranked by 2026 OOS PF
+**BTCUSD M1**
+| Strategy | Settings | Symbol, TF | Net Profit | Profit Factor | Recovery Factor | Max Drawdown | Sharpe | Trades/day |
+|---|---|---|---|---|---|---|---|---|
+| E5 (tuned) | E5 only | BTCUSD M1 | +72,888 | 1.792 | 29.37 | 2,482 | 17.65 | 12.8 |
+| E1+E5 | E1+E5 | BTCUSD M1 | +96,027 | 1.429 | 27.31 | 3,516 | 14.96 | 22.6 |
+| E2+E5 | E2+E5 | BTCUSD M1 | +132,551 | 1.426 | 40.83 | 3,246 | 16.13 | 30.0 |
+| E4+E5 | E4+E5 | BTCUSD M1 | +134,223 | 1.382 | 33.28 | 4,033 | 13.66 | 31.5 |
+| E1+E2+E5 | E1+E2+E5 | BTCUSD M1 | +135,876 | 1.368 | 35.97 | 3,777 | 15.28 | 33.7 |
+| E1+E2 | E1+E2 | BTCUSD M1 | +82,983 | 1.219 | 16.48 | 5,036 | 8.54 | 28.9 |
+
+**XAUUSD M1**
+| Strategy | Settings | Symbol, TF | Net Profit | Profit Factor | Recovery Factor | Max Drawdown | Sharpe | Trades/day |
+|---|---|---|---|---|---|---|---|---|
+| E5 (tuned) | E5 only | XAUUSD M1 | +28,373 | 1.619 | 24.40 | 1,163 | 10.78 | 7.1 |
+| E1+E5 | E1+E5 | XAUUSD M1 | +49,624 | 1.370 | 14.19 | 3,497 | 8.22 | 14.4 |
+| E2+E5 | E2+E5 | XAUUSD M1 | +74,181 | 1.345 | 26.78 | 2,770 | 10.69 | 21.3 |
+| E1+E2+E5 | E1+E2+E5 | XAUUSD M1 | +90,892 | 1.289 | 13.45 | 6,757 | 9.39 | 28.0 |
+| E4+E5 | E4+E5 | XAUUSD M1 | +67,693 | 1.283 | 14.08 | 4,808 | 8.53 | 20.7 |
+| E1+E2 | E1+E2 | XAUUSD M1 | +61,223 | 1.220 | 9.37 | 6,533 | 6.96 | 21.0 |
+
+**Findings (user decides promotion):**
+- **E5-only remains the highest-PF, highest-recovery, highest-Sharpe config on both symbols** — but lowest
+  net (it trades least). If the goal is risk-adjusted quality, E5-only wins outright.
+- **E2+E5 is the best PF+net+recovery blend on both** — ~1.8× the net of E5-only at only a modest PF/Sharpe
+  give-up, and the best recovery factor among the multi-entry combos (BTC 40.8, XAU 26.8). This is the
+  recommended production pick if net matters.
+- **E1+E5 edges E2+E5 on raw OOS PF** on both symbols, but with markedly lower net and recovery — E2 is the
+  better second leg than E1.
+- **E4 still drags**: E4+E5 trails E2+E5 on PF/recovery/Sharpe on both; E4 adds DD faster than net.
+- **E1+E2 (no E5) is the weakest viable combo** — confirms E5 is the indispensable core.
+- Net caveat: phaseA/phaseB used 300/150 trials; absolute nets are not directly comparable to the older
+  400-trial single-stage `best_kenkem_<combo>` numbers — use this table for *relative* per-entry/combo reads.
+
+Artifacts: `best_tuned_<e>_{btc,xau}.json` (frozen per-entry knobs) + `.set`, `best_kenkem_<combo>_{btc,xau}.set`,
+`sweep_kenkem_tuned_{btc,xau}.csv`. Report tool: `report_kenkem.py` + `report_metrics.py`.
+
 ## Artifacts
 - Engine: `cpp_core/include/kk/kenkem/*.hpp` (8 unit tests, 131 checks).
 - Backtester: `cpp_core/tools/kenkem/backtester.cpp` (loads M1, aggregates M3/M5/M15).
