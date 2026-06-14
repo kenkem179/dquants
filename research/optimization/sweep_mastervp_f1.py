@@ -76,11 +76,6 @@ def main():
                                 sampler=optuna.samplers.TPESampler(seed=42, n_startup_trials=20))
     study.optimize(objective, n_trials=n_trials)
 
-    if rows:
-        with open(os.path.join(HERE, f"sweep_mastervp_f1_{sym}.csv"), "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader()
-            w.writerows(sorted(rows, key=lambda r: r["score"], reverse=True))
-
     a = study.best_trial.user_attrs
     best_full = dict(n=a["n"], pf=a["full_pf"], net=a["full_net"], dd=a["full_dd"])
     best_te = dict(pf=a["test_pf"], net=a["test_net"])
@@ -92,6 +87,13 @@ def main():
     print(f"VERDICT: {'ADOPT — F1 improves ' + sym.upper() if better else 'REJECT — keep F1 OFF for ' + sym.upper()}")
     if better:
         print(f"  PF {b_full['pf']:.3f} -> {best_full['pf']:.3f} | net {b_full['net']:.0f} -> {best_full['net']:.0f}")
+
+    if rows:  # union of keys across trials (flip on/off differ) — write last
+        fields = sorted(set().union(*(r.keys() for r in rows)))
+        with open(os.path.join(HERE, f"sweep_mastervp_f1_{sym}.csv"), "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fields, restval="", extrasaction="ignore")
+            w.writeheader()
+            w.writerows(sorted(rows, key=lambda r: r["score"], reverse=True))
 
 
 if __name__ == "__main__":

@@ -211,10 +211,13 @@ otherwise the (inert, default-OFF) engine code stays but the `.set` is left unto
 - [ ] **KenKem port** — speculative given mixed VP results; test-only, adopt only if it helps.
 
 ### Feature #2 — volume-node STRUCTURE SL/TP (HVN/LVN shelves instead of blind ATR SL / RR TP)
-- [~] **Monster:** already implemented (`enable_hvn_shelf_sl` + `enable_structural_tp2`, default OFF) →
-      ENABLE + sweep (`sweep_monster_f2.py`, BTC+XAU IN PROGRESS).
-- [ ] **MasterVP:** ADD an equivalent node-shelf SL/TP to `kk::vp` NodeEngine + sweep.
-- [ ] If it helps, add node-structure SL/TP to KenKem too.
+- [x] **Monster BTC → ADOPT** (`sweep_monster_f2.py`): **structural TP2** ON (hvn_sl OFF) is a clean win on
+      EVERY metric — PF 1.617→1.645, net 2740→2901, **DD 293→270 (better)**, **OOS PF 1.676→1.720 (better)**.
+      Params HvnFrac 0.637 / EdgeOff 0.125 / MinRr 1.10 / MaxRr 2.51. Applied to `best_monster_real_btc.set`.
+- [x] **Monster XAU → REJECT** — F2 hurts (PF 1.321→1.284, net down, DD up). `best_monster_real_xau.set` unchanged.
+- [ ] **MasterVP:** ADD an equivalent node-shelf SL/TP to `kk::vp` NodeEngine + sweep (structural TP2 worth a
+      shot given Monster-BTC; HVN-shelf SL underperformed even on Monster).
+- [ ] If it helps broadly, add node-structure SL/TP to KenKem too.
 
 ### DeferredEntry (pullback/limit entry) — pending
 - [ ] Wire the existing `DeferredEntry` module into families as a toggle + C++ sweep-validate.
