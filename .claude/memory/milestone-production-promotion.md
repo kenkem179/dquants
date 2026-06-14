@@ -57,3 +57,12 @@ untouched. NEXT (optional): promote cross-family generics (CopyBuffer reader, ri
 manager) from KenKem/Engine.mqh to KK-Common/Indicators + /Trade so VP family (MasterVP/Monster) reuses;
 then refactor those EAs onto KK-Common. Files left UNTRACKED in kenkem repo for user review (I compile via
 [[mql5-compile-workflow]]).
+
+**LAYER-4 MQL5 CODEBASE BUILT IN DQUANTS (2026-06-14, compiles 0/0, COMMITTED):** user wants the MQL5 saved
+in THIS repo (dquants), clean per common/family/entry. Done at `dquants/mql5/experts/`:
+`KK-Common/{Indicators,Sizing,PositionManager}.mqh` (cross-family generics — risk-correct sizing, stops
+clamp, partial/BE/trail), `KenKem/{Inputs,State,Indicators,Snapshot,Gates,Engine}.mqh`,
+`KenKem/Entries/{E1,E2,E4,E5}.mqh` (ONE file per entry: trigger+gate+SL+RR+mgmt), `KK-KenKem/KK-KenKem.mq5`
+(thin shell). Compiles clean via `scripts/compile_mql5.sh`. Symlinked into wine MT5 as `Experts/dquants`.
+This dquants codebase is now canonical (supersedes the kenkem-repo copy). NEXT: VP family (MasterVP/Monster)
+as siblings reusing KK-Common + their VolumeProfile modules. Final gate: demo forward-test.
