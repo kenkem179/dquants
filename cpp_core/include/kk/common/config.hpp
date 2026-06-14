@@ -74,6 +74,13 @@ struct Params {
     int    net_flip_bars        = 3;
     double net_flip_min         = 0.5;
     int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
+    // ---- node-structure TP (feature #2) — default OFF (inert) ----
+    // Override the final/runner target with the next HVN shelf beyond TP1, clamped in R.
+    bool   enable_struct_tp     = false;
+    double stp_hvn_frac         = 0.66;  // node vol >= frac*maxVol counts as a shelf
+    double stp_edge_off_atr     = 0.20;  // pull the target inside the shelf by this ATR
+    double stp_min_rr           = 1.2;
+    double stp_max_rr           = 3.0;
     // ---- risk ----
     int    risk_unit          = 0;       // 0=%acct,1=USD,2=Min,3=Max
     double risk_usd           = 180.0;
@@ -232,6 +239,11 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNetFlipBars") p.net_flip_bars = I();
     else if (key == "InpNetFlipMin") p.net_flip_min = D();
     else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
+    else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
+    else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();
+    else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();
+    else if (key == "InpStpMinRr") p.stp_min_rr = D();
+    else if (key == "InpStpMaxRr") p.stp_max_rr = D();
     else if (key == "InpRiskUnit") p.risk_unit = I();
     else if (key == "InpRiskUsd") p.risk_usd = D();
     else if (key == "InpRiskAccPct") p.risk_acc_pct = D();

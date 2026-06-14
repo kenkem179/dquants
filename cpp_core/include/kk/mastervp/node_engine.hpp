@@ -72,6 +72,41 @@ public:
 
     NodeState state_at_price(double px, const Params& p) const { return state_at(pick_idx(px), p); }
 
+    // Structural TP (feature #2; default OFF) — port of Monster NodeEngine::structural_tp2.
+    // Place the final/runner target at the next high-volume-node shelf BEYOND tp1, offset by a
+    // buffer, then clamp the resulting reward to [stp_min_rr, stp_max_rr]. Falls back to the
+    // master VAH/VAL, then to `fallback_tp`. Pure read of the decayed buy_/sell_ histogram.
+    double structural_tp(bool is_long, double entry, double risk, double tp1_px, double atr,
+                         double fallback_vah, double fallback_val, double fallback_tp,
+                         const Params& p) const {
+        if (risk <= 0.0 || atr <= 0.0) return fallback_tp;
+        double cand = 0.0;
+        if (m_step_ > 0.0) {
+            double mx = 0.0;
+            for (int b = 0; b < bins_; ++b) mx = std::max(mx, buy_[b] + sell_[b]);
+            if (mx > 0.0) {
+                if (is_long) {
+                    for (int b = 0; b < bins_; ++b) {
+                        const double bpx = m_lo_ + (b + 0.5) * m_step_;
+                        if (bpx <= tp1_px) continue;
+                        if (buy_[b] + sell_[b] >= p.stp_hvn_frac * mx) { cand = bpx - p.stp_edge_off_atr * atr; break; }
+                    }
+                } else {
+                    for (int b = bins_ - 1; b >= 0; --b) {
+                        const double bpx = m_lo_ + (b + 0.5) * m_step_;
+                        if (bpx >= tp1_px) continue;
+                        if (buy_[b] + sell_[b] >= p.stp_hvn_frac * mx) { cand = bpx + p.stp_edge_off_atr * atr; break; }
+                    }
+                }
+            }
+        }
+        if (cand <= 0.0) cand = is_long ? fallback_vah : fallback_val;
+        if (cand <= 0.0) return fallback_tp;
+        const double candR = is_long ? (cand - entry) / risk : (entry - cand) / risk;
+        const double rr = std::min(std::max(candR, p.stp_min_rr), p.stp_max_rr);
+        return is_long ? entry + rr * risk : entry - rr * risk;
+    }
+
 private:
     int bins_ = 0;
     std::vector<double> buy_, sell_, touch_;

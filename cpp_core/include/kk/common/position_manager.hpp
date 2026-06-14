@@ -86,9 +86,14 @@ public:
         // breakout can run; the chandelier trail normally exits first. The backstop is anchored
         // to sig.entry + sig.risk*RunnerRr (TradeManager.mqh:61-64) — the SIGNAL anchor/risk,
         // not the fill — so it is a fixed absolute price the broker holds as TP.
-        tp_backstop_ = (p.trail_runner && sig.risk > 0.0)
-            ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
-            : sig.tp2;
+        // Feature #2: when node-structure TP is on, the final/runner target IS the structural
+        // level (already baked into sig.tp2 by the engine); the chandelier trail still rides and
+        // may exit earlier. Otherwise the usual runner backstop (or fixed rrBrk cap).
+        tp_backstop_ = (p.enable_struct_tp && sig.tp2 > 0.0)
+            ? sig.tp2
+            : ((p.trail_runner && sig.risk > 0.0)
+                ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
+                : sig.tp2);
         tp1_ = sig.tp1;
         tp1_done_ = false; be_applied_ = false;
         mfe_ = 0.0; mae_ = 0.0;
