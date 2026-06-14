@@ -78,3 +78,17 @@ git commit messages with newlines were getting swallowed by the shell — use si
 **MONSTER DONE (2026-06-14, compiles 0/0):** all THREE families now complete in dquants/mql5/experts/, each compile-clean: KK-KenKem (E1/E2/E4/E5), KK-MasterVP, KK-Monster (Config+Signal=4-kind+Engine). Monster signal = faithful transcription of cpp_core monster_signal.hpp (breakout/rev1/rev2/impulse + node-flow + master-POC regime + fresh-cross + multi-TF near-net via CopyRates). Shared: KK-Common (Sizing/PositionManager/Indicators), VP-Common (used by MasterVP; Monster self-contained structs). NOTE: Monster mgmt (TP1 50%/BE/trail) is a reasonable approximation - refine vs cpp_core position_manager if needed. Final gate for all 3: load best_*.set + demo forward-test.
 
 **PARAM SWEEPS (2026-06-14) — user wants C++ sweeps not MT5.** KenKem DONE: added indicator LENGTHS to optimize_kenkem.py (EMA0-4/ADX/RSI, non-overlapping ranges keep stack ordered). RESULT: textbook lengths were suboptimal — BTC tuned EMA 12/23/53/94/210, ADX15, RSI11 -> 2026 OOS PF 1.239->1.377, win 65%, DD 8.6k->2.6k. best_kenkem_btc.set updated (f4386a5). PENDING (next session, context ran out): (1) MasterVP sweep — extend an optimizer over net_win_atr, vp_lookback(50?), atr_len, min/max_atr_pct, RR-vs-trail, brk/rev params (cpp_core mastervp backtester at cpp_core/tools/mastervp/backtester.cpp, .set-driven). (2) Monster sweep — optimize_monster_real.py exists; add net%/atr-window/vp-len/atr-thresholds. (3) DEFERRED ENTRY common module (user-requested, VALIDATED as real = pullback/limit entry): allow entry within x bars(=3) if conditions still hold, at a more favorable limit price; build in KK-Common (C++ kk::common + MQL5 KK-Common) with expiry+invalidation guards.
+
+**NEW R&D PLAN (user, 2026-06-14) — test on MasterVP+Monster FIRST, then port to KenKem ("volume never lies"):**
+1. MULTI-BAR NET VOLUME (toggle): currently net-volume entry decided at one moment; if flow turns against the
+   trade over a few CONTINUOUS bars, exit early (and/or require net to PERSIST N bars before entering). Goal:
+   enter/exit breakouts earlier than competition. NEW work: add a persistence/decay check across last N chart
+   bars to the entry gate + an early-exit on N-bar net flip. (Monster has `enable_early_exit`/`exit_net_min`
+   + `failed_break_check` scaffolding already — extend to multi-bar.)
+2. VOLUME-NODE STRUCTURE SL/TP: stop using blind 2xATR SL / RR 1:3 TP; place SL/TP at HVN/LVN shelf structure
+   from the node histogram + a buffer. **Monster ALREADY HAS THIS (default OFF):** `enable_hvn_shelf_sl`
+   (NodeEngine::hvn_shelf_sl) + `enable_structural_tp2` (NodeEngine::structural_tp2, with stp2_min/max_rr) in
+   cpp_core/monster_signal.hpp + the MQL5 KK-Monster/Signal.mqh transcription. So for Monster = ENABLE + SWEEP
+   those flags/params; for MasterVP = ADD an equivalent node-shelf SL/TP. Then sweep to validate edge gain.
+   If it helps, add node-structure SL/TP to KenKem too.
+PLUS still-pending: wire DeferredEntry.mqh into families as a toggle + C++ sweep-validate it.
