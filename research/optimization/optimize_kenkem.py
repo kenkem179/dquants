@@ -50,6 +50,12 @@ SPACE = [
     ("INPUT_EMA2_PERIOD", 50, 85, True), ("INPUT_EMA3_PERIOD", 90, 130, True),
     ("INPUT_EMA4_PERIOD", 150, 230, True),
     ("ADX_LEN", 8, 20, True), ("RSI_LEN", 8, 20, True),
+    # round 2 — more shape params
+    ("EMA_ALIGNMENT_TOLERANCE_PIPS", 8.0, 32.0, False),
+    ("SIDEWAYS_WARNING_THRESHOLD", 30, 50, True),
+    ("E1_PARTIAL_TP_RATIO", 0.15, 0.5, False), ("E4_PARTIAL_TP_RATIO", 0.15, 0.5, False),
+    ("E5_PARTIAL_TP_RATIO", 0.2, 0.6, False),
+    ("E1_SL_TO_BREAKEVEN_BUFFER", 0.02, 0.15, False),
 ]
 TOGGLES = ["ENABLE_E1_ENTRIES", "ENABLE_E2_ENTRIES", "ENABLE_E4_ENTRIES", "ENABLE_E5_ENTRIES"]
 
