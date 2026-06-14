@@ -29,6 +29,10 @@ void test_defaults() {
     KK_CHECK_NEAR(p.e1_atr_sl_cap, 4.0, 1e-9);
     // per-entry risk ratios derive from COMMON_MAX_RISK_PER_TRADE
     KK_CHECK_NEAR(p.max_loss_ratio_e1, 0.021, 1e-9);
+    // LIVE EMA periods are 10/25/71/97/192 (NOT the round 75/100/200 the enum labels imply)
+    KK_CHECK(p.ema0_period == 10 && p.ema1_period == 25 && p.ema2_period == 71);
+    KK_CHECK(p.ema3_period == 97 && p.ema4_period == 192);
+    KK_CHECK(p.rsi_len == 14 && p.adx_len == 14);
 }
 
 void test_set_loader() {
@@ -60,8 +64,12 @@ void test_specs() {
     KenKemConfig p; p.apply_btcusd_specs();
     KK_CHECK_NEAR(p.contract_size, 1.0, 1e-9);
     KK_CHECK_NEAR(p.value_per_price_per_lot(), 1.0, 1e-9);   // tick_value/tick_size = 0.01/0.01
+    KK_CHECK_NEAR(p.pip_size, 1.0, 1e-9);                    // BTC pip = 1 (EA :159)
+    KK_CHECK_NEAR(p.std_lot, 0.30, 1e-9);                    // 0.15 * 2 BTC override (EA :161)
     KenKemConfig x; x.apply_xauusd_specs();
     KK_CHECK_NEAR(x.value_per_price_per_lot(), 100.0, 1e-9); // 1.00/0.01
+    KK_CHECK_NEAR(x.pip_size, 0.01, 1e-9);                   // gold pip = 0.01 (2-digit)
+    KK_CHECK_NEAR(x.std_lot, 0.15, 1e-9);                    // gold: no multiplier
     KK_CHECK_NEAR(x.normalize_lot(0.153), 0.15, 1e-9);
 }
 

@@ -9,5 +9,7 @@
 - [Parity findings (front-half)](parity-findings-front-half.md) — VP/ADX/trend match to rounding; iADX≠Wilder fix; ATR data-source caveat
 - [Parity findings (trade-level)](parity-findings-trade-level.md) — Level-2/3 result (377/473 exact); baseline.set is WRONG config, pull real inputs from tester logs; min-lot flooredUp bug
 - [Milestone: MT5-confirmed optimization](milestone-mt5-confirmed-optimization.md) — best_btc.set confirmed PF>1 in MT5; full loop closed; refined param directions; Phase-9 still open
+- [KenKem parity traps](kenkem-parity-traps.md) — source-confirmed details that break MT5 parity (EMAs 10/25/71/97/192, BTC pip=1 std×2, ATR shift-0, forming-bar exits); portnotes index
+- [Milestone: production promotion](milestone-production-promotion.md) — end-goal: pick #1 of MasterVP/Monster/KenKem, promote to prod MQL5 from this repo, borrow ../kenkem tooling
 - [Autopilot mode](autopilot-mode.md) — when told "autopilot", run end-to-end, no stopping to ask, just go
 - [ds-study learning track](ds-study-track.md) — user learns DS via ds-study/ notebooks; keep them in sync with development

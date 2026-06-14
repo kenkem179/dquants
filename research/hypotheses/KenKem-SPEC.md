@@ -42,12 +42,19 @@ caught the Monster lookahead bug — replicate the `[1]`-read everywhere and adv
 ## 1. Timeframes, EMAs, indicator handles
 
 ```
-TF0=M1  TF1=M3  TF2=M5  TF3=M15   (INPUT_TF0..3; H1 only used by E3 → skipped)
-EMA1=25  EMA2=75  EMA3=100  EMA4=200   (period indices; all computed per TF)
-ENTRY_SHIFT = 1            pipSize = 0.01 (both XAU & BTC on this feed)
+TF0=M1  TF1=M3  TF2=M5  TF3=M15  TF4=H1(reserved)   (INPUT_TF0..4; NUM_TF=4, NUM_EMA=5)
+EMA0=10 EMA1=25 EMA2=71 EMA3=97 EMA4=192  ← LIVE values (NOT 10/25/75/100/200; enum LABELS are stale)
+ENTRY_SHIFT = 1   pipSize: BTCUSD=1.0 (contract=1, std-lot ×2)  XAUUSD=0.01 (contract=100)  ← per-symbol OnInit override
 ADX_LEN=14  RSI_LEN=14     ATR_PERIOD_FOR_SL=14
 Ichimoku: Tenkan=9 Kijun=26 SenkouB=52  (buffers: 0=SpanA 1=SpanB 2=Tenkan 3=Kijun 4=Chikou; future = shift −26)
 ```
+
+> **Parity traps locked from real source (see research/hypotheses/kenkem-portnotes/):**
+> 1. EMAs are **10/25/71/97/192** — porting 75/100/200 silently diverges.
+> 2. **ATR cache reads shift 0** (forming bar) while ADX/DI/RSI/EMA/Ichimoku read shift 1 — replicate the mismatch.
+> 3. **BTC pip=1, contract=1, std-lot ×2**; gold pip=10⁻ᵈⁱᵍⁱᵗˢ — sizing breaks otherwise.
+> 4. Management early-exits read **forming-bar `iClose/iHigh/iLow(…,0)`** → the tick replay must feed *running* per-bar values, not sealed OHLC, or it leaks the bar outcome.
+> 5. **E4-short uses E4_RR_SHORT(1.8)×0.875**, E4-sideway uses E4_RR_SIDEWAY(1.15) — not E4_RR(2.4).
 
 ### Indicator cache (rebuilt once per new M1 bar — `UpdateIndicatorCache`)
 All reads at `ENTRY_SHIFT=1` unless noted. Field → source:

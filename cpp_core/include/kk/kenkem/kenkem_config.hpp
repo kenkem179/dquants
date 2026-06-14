@@ -206,6 +206,19 @@ struct KenKemConfig {
     int    ichimoku_kijun         = 26;
     int    ichimoku_senkou        = 52;
 
+    // ---- timeframe + EMA/RSI/ADX periods ----
+    // LIVE EMA periods are 10/25/71/97/192 — NOT the round 10/25/75/100/200 the enum LABELS suggest
+    // (GlobalState enum EMA_75/EMA_100/EMA_200 are just index names; RuntimeConfig's CFG.ema* set is
+    // dead code). Values come straight from INPUT_EMA*_PERIOD. See portnotes 01 §3.
+    int    ema0_period            = 10;   // INPUT_EMA0_PERIOD (fast)
+    int    ema1_period            = 25;   // INPUT_EMA1_PERIOD (signal)
+    int    ema2_period            = 71;   // INPUT_EMA2_PERIOD (pullback — label "75" is STALE)
+    int    ema3_period            = 97;   // INPUT_EMA3_PERIOD (bounce  — label "100" is STALE)
+    int    ema4_period            = 192;  // INPUT_EMA4_PERIOD (anchor  — label "200" is STALE)
+    int    rsi_len                = 14;   // RSI_LEN
+    int    adx_len                = 14;   // ADX_LEN
+    // TF map is fixed: TF0=M1, TF1=M3, TF2=M5, TF3=M15, TF4=H1(reserved). NUM_TF=4, NUM_EMA=5.
+
     // ---- sessions (JST server time, HHMM) ----
     int    japan_start = 900,  japan_end = 1230;
     int    london_start = 1400, london_end = 1830;
@@ -224,13 +237,19 @@ struct KenKemConfig {
     double commission_per_lot = 0.0;
     double start_balance      = 10000.0;
 
+    // Per-symbol overrides mirror KenKemExpert.mq5 OnInit (:122-163). Call AFTER load_set() so the
+    // BTC std-lot ×2 override applies on top of the loaded MY_STANDARD_LOT_SIZE, exactly as the EA does.
     void apply_xauusd_specs() {
+        // Gold branch (:122-126): pip = 10^-digits (2-digit Exness gold -> 0.01); contract from broker.
         pip_size = 0.01; contract_size = 100.0; tick_value = 1.00; tick_size = 0.01;
         lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
+        // no std-lot multiplier for gold
     }
     void apply_btcusd_specs() {
-        pip_size = 0.01; contract_size = 1.0; tick_value = 0.01; tick_size = 0.01;
+        // BTCUSD override (:158-162): pipSize=1, contractSize=1, std-lot ×2, minLot=0.01.
+        pip_size = 1.0; contract_size = 1.0; tick_value = 0.01; tick_size = 0.01;
         lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
+        std_lot *= 2.0;   // EA doubles MY_STANDARD_LOT_SIZE for BTCUSD
     }
     double value_per_price_per_lot() const {
         return (tick_value > 0.0 && tick_size > 0.0) ? (tick_value / tick_size) : contract_size;
@@ -435,6 +454,14 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ICHIMOKU_TENKAN") p.ichimoku_tenkan = I();
     else if (key == "ICHIMOKU_KIJUN") p.ichimoku_kijun = I();
     else if (key == "ICHIMOKU_SENKOU") p.ichimoku_senkou = I();
+    // ema / rsi / adx periods
+    else if (key == "INPUT_EMA0_PERIOD") p.ema0_period = I();
+    else if (key == "INPUT_EMA1_PERIOD") p.ema1_period = I();
+    else if (key == "INPUT_EMA2_PERIOD") p.ema2_period = I();
+    else if (key == "INPUT_EMA3_PERIOD") p.ema3_period = I();
+    else if (key == "INPUT_EMA4_PERIOD") p.ema4_period = I();
+    else if (key == "RSI_LEN") p.rsi_len = I();
+    else if (key == "ADX_LEN") p.adx_len = I();
     // sessions
     else if (key == "JAPAN_START") p.japan_start = I();
     else if (key == "JAPAN_END") p.japan_end = I();
