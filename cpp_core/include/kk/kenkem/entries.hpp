@@ -117,9 +117,11 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
 }
 
 // First-match-wins E1->E2->E4, long-before-short. B = forming M1 bar; entry anchor = close[1].
+// CONSUMES the trigger that fires (resets it to -1) so one cross/touch == one entry — mirrors the EA
+// (which clears lastEMACrossing/Touch/IchiCross on a successful build). `tg` is mutated on success.
 inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
                                 const TfBundle::Align& align, const Snapshot& s,
-                                const TriggerState& tg) {
+                                TriggerState& tg) {
     EntrySignal r;
     if (!s.valid) return r;
     const int i1 = align.m1 - 1;
@@ -145,6 +147,12 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c);
             r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c);
             r.risk = std::fabs(r.entry - r.sl);
+            // consume the fired trigger (one cross/touch -> one entry)
+            switch (cd.kind) {
+                case 1: (is_long ? tg.ema_up  : tg.ema_down)  = -1; break;
+                case 2: (is_long ? tg.e75_up  : tg.e75_down)  = -1; break;
+                case 4: (is_long ? tg.ichi_up : tg.ichi_down) = -1; break;
+            }
             return r;
         }
     }

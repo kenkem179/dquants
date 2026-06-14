@@ -70,7 +70,11 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
                         double fill = bar.open + (sig.is_long ? half : -half);
                         double risk = std::fabs(fill - sig.sl);
                         if (risk > 0.0) {
-                            double lot = position_size(balance, sig.kind, risk, cfg);
+                            // Research-mode constant sizing: risk a FIXED fraction of the INITIAL
+                            // balance (not the compounding balance) so the equity curve is additive and
+                            // DD/net measure the edge, not the compounding. Deployment can re-enable
+                            // compounding later.
+                            double lot = position_size(cfg.start_balance, sig.kind, risk, cfg);
                             Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, sig.tp, lot, cfg);
                             // seed pnl with entry commission; balance changes only when the trade closes
                             open.push_back({ p, bar.ts_ms, fill, -lot * cfg.commission_per_lot });
