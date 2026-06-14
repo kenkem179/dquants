@@ -160,3 +160,21 @@ Monster InpXxx names → drops into `kenkem/MQL5/Experts/KK-MasterVP-Monster/`.
 - [!] **Do NOT recreate** `kenkem/MQL5/Experts/KK-MasterVP-Monster/` — it already exists and has evolved
       (NetVolume, StatePersistence, single-instance guard, embedded news; on `origin/KKMasterVPv1`).
       A blind recreate clobbered it once (recovered via git). Deliver `.set` files only, never rewrite code.
+
+## Phase 13 — KenKem "original" multi-entry EA → C++ engine + optimization
+Migrate the big original `KenKemExpert.mq5` (~8k LOC, largest port yet). Active entries **E1/E2/E4** only
+(E3 + E5/SuperBros disabled by default → skipped per user). Spec: `research/hypotheses/KenKem-SPEC.md`.
+Default config makes it tractable: adaptive/news/limit-orders/conservative-mgmt all OFF → port the static path.
+SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/ADX/ATR/RSI/Ichimoku math.
+- [x] **SPEC** — `KenKem-SPEC.md`: full extraction of E1/E2/E4 detection, shared gates (trend-quality /
+      momentum / EMA-align / sideways / conviction / RSI-div / HTF), triggers (EMA-cross / EMA75-touch /
+      Ichi-cloud-cross), indicator cache, dynamic-RR + risk-based sizing, tick-fill trade manager, all param
+      defaults read direct from InputParams.mqh. Port scope + parity caveat documented.
+- [ ] P1 `kenkem_config.hpp` (input schema + `.set` loader) + P2 `indicator_cache.hpp` (M1/M3/M5/M15, `[1]` reads).
+- [ ] P3 `triggers.hpp` (EMA-cross/touch/Ichi-cloud state machine) + P4 `gates.hpp` (trend-quality/momentum/align/conviction/RSI-div).
+- [ ] P5 `entries.hpp` (E1/E2/E4 Detect + SL) + P6 `trade_manager.hpp` (partial/BE/trail/ext/ladder/panic/score-drop).
+- [ ] P7 `kenkem_engine.hpp` (OnTick integrator + sizing) + `kenkem_backtester.cpp` + unit tests + **lookahead audit**.
+- [ ] P8 baseline on BTC/XAU tick Parquet; P9 Optuna optimize per symbol → `best_kenkem_{btc,xau}.set`; MC + rolling robustness.
+- [ ] P10 deliver `.set` into `kenkem/MQL5/Experts/KenKem/Config/` (non-destructive); MT5 demo forward-test (user gate).
+- **NOTE:** no MT5 parity instrumentation exists for this EA → unit-tested + lookahead-audited C++ engine is the
+      source of truth for optimization (Monster precedent), MT5 forward-test is the final gate.
