@@ -198,7 +198,7 @@ MT5 iATR/iADX seeding vs our Wilder seed — discard warmup; (3) news calendar (
 (4) fill model (next-tick vs MT5 bar-open) — match MT5 tester's fill assumptions; (5) the node grid
 *slides* every bar — replicate, don't "fix".
 
-**Level-1 results (BTCUSD M3, 2026-04-09, 480 rows; `cpp_core/tools/validate_parity_py.py`):**
+**Level-1 results (BTCUSD M3, 2026-04-09, 480 rows; `cpp_core/tools/common/validate_parity_py.py`):**
 master VP <0.001, ADX/+DI/-DI <0.005, regime trend **100%**. Two hard-won facts:
 - **`iADX` ≠ Wilder.** MT5's `iADX` handle (what the EA uses, *not* `iADXWilder`) computes per-bar
   `100·DM/TR` then smooths `+DI`/`-DI`/`DX` with **EMA k=2/(n+1)**; DM-zeroing clamps negatives then

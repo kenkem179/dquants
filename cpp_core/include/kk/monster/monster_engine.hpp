@@ -26,9 +26,9 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
-#include "kk/types.hpp"
-#include "kk/execution.hpp"
-#include "kk/filters.hpp"            // kk::utc_parts (UTC decomposition only)
+#include "kk/common/types.hpp"
+#include "kk/common/execution.hpp"
+#include "kk/common/filters.hpp"            // kk::utc_parts (UTC decomposition only)
 #include "kk/monster/monster_config.hpp"
 #include "kk/monster/monster_signal.hpp"
 #include "kk/monster/tf_net.hpp"

@@ -29,7 +29,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 - [x] Regime (trend vs balance) — `kk/regime.hpp`
 - [x] DetectSignal (4 bidirectional signals + SL/TP economics) — `kk/strategy.hpp`
 ### Front-half validation (do BEFORE execution half)
-- [x] Python reference harness `cpp_core/tools/validate_parity_py.py` (bid M3 bars from ticks)
+- [x] Python reference harness `cpp_core/tools/common/validate_parity_py.py` (bid M3 bars from ticks)
 - [x] Level-1 diff vs `parity_BTCUSD-Exnes-0406_PERIOD_M3.csv`: **master VP <0.001, ADX/+DI/-DI
       <0.005, trend agree 100%** (480/480 rows) on BTCUSD M3 2026-04-09
 - [x] Resolved: EA uses MT5 `iADX` (EMA 2/(n+1) of per-bar 100·DM/TR), **not** Wilder iADXWilder
@@ -38,29 +38,29 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       MT5 tester's tick model captures wider intrabar extremes than the exported CSV. VP/ADX are
       robust (window-extreme / ratio based); ATR is not. Perfect ATR parity unattainable from CSV.
 - [x] C++ parity harness driver: Parquet→bars→computation layer per bar → emit `parity_*.csv`.
-      Bridge `tools/export_bars.py` (DuckDB Parquet→bid M3 bars CSV) → `build/parity_driver`
-      (`include/kk/parity_runner.hpp` drives VP+regime+indicators+node+DetectSignal per bar, MT5
-      shift map verified from MQL source) → `tools/diff_parity.py` vs MT5 ref. **Result on the
+      Bridge `tools/common/export_bars.py` (DuckDB Parquet→bid M3 bars CSV) → `build/parity_driver`
+      (`include/kk/mastervp/parity_runner.hpp` drives VP+regime+indicators+node+DetectSignal per bar, MT5
+      shift map verified from MQL source) → `tools/common/diff_parity.py` vs MT5 ref. **Result on the
       480-row BTCUSD M3 2026-04-09 ref: master VP ≤0.001, +DI/-DI/ADX exact (0.000), trend 100%,
       raw sigValid 74/75 (entry exact on both-fired rows). The 1 miss (00:03) + sl/tp deltas are the
       documented ATR-from-CSV spike caveat.**
 ### Execution layer
-- [x] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — `include/kk/position_manager.hpp`,
+- [x] PositionManager (TP1 partial / BE-after-TP1 / runner chandelier trail) — `include/kk/common/position_manager.hpp`,
       port of TradeManager.mqh. Per-tick state machine (broker SL/TP first, then EA TP1→BE→trail; trail only
       ever tightens, anti-churn step). Tracks mfeR/maeR (broker-spec-free) + realized USD (via broker specs).
       4 unit tests cover SL-loss / TP1→trail→SL-win / backstop-TP / trail-tightens-only. `Params` gained broker
       spec fields (tick_value/tick_size/lot_step/min_lot/commission/start_balance) — **awaiting real Exness numbers**.
-- [x] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — `include/kk/risk_manager.hpp`, port of
+- [x] RiskManager (sizing, daily-DD, peak-DD, cooldowns) — `include/kk/common/risk_manager.hpp`, port of
       RiskManager.mqh. Owns balance/peak/day-start/streak/cooldown; budget=balance·riskAccPct%,
       lot=budget/(stop·vppl)·peakDDmult, predictive daily-DD breaker, 22% halt / 15%→×0.55 soft-block,
       3-loss→4h + daily-DD→12h cooldowns (extend-only). 7 unit tests pass.
-- [x] Filters (sessions, news calendar, ATR% band, spread, blocked hours) — `include/kk/filters.hpp`
+- [x] Filters (sessions, news calendar, ATR% band, spread, blocked hours) — `include/kk/common/filters.hpp`
       (port of SessionManager.mqh): sessions (Asia/Ldn/NY UTC), blocked hours (+ranges), max-trades/session
       reset, ATR% band, spread + TP1 cost-clearance gates. 6 unit tests pass. MTF-agree (M15 EMA) + RSI
       veto quality gates now wired in the TickEngine (`quality_ok_`); news calendar inert for v1 parity.
-- [x] ExecutionSimulator (`include/kk/execution.hpp`): market fill model — long buys ask / short sells bid
+- [x] ExecutionSimulator (`include/kk/common/execution.hpp`): market fill model — long buys ask / short sells bid
       on the first tick of the bar after the signal bar; $0 commission; slippage seam (=0 = tester parity).
-- [x] TickEngine (`include/kk/tick_engine.hpp`): the Layer-3 integrator. Precomputes the validated
+- [x] TickEngine (`include/kk/mastervp/tick_engine.hpp`): the Layer-3 integrator. Precomputes the validated
       front-half over the full bar series, then replays ticks reproducing the MT5 OnTick loop —
       per-tick UpdatePeakEquity + ManageOpenPosition, per-new-bar session/day context → force-close →
       DetectSignal (shift-1) → quality gate (MTF/RSI) → safety gate + flat check → spread-vs-TP1 →
@@ -68,11 +68,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
       runner backstop** (TradeManager.mqh:61,99). 3 integration tests (fill model, coherent+balance-
       reconciled trades on the golden fixture, determinism) pass. **Next:** real-tick export + Level-2 diff.
 ### Full validation
-- [x] `backtester` main (`tools/backtester.cpp`) + tick bridge (`tools/export_ticks.py`, DuckDB
-      Parquet→ts_ms,bid,ask) + byte-compatible `trades_*.csv` writer (`include/kk/trade_journal.hpp`).
+- [x] `backtester` main (`tools/mastervp/backtester.cpp`) + tick bridge (`tools/common/export_ticks.py`, DuckDB
+      Parquet→ts_ms,bid,ask) + byte-compatible `trades_*.csv` writer (`include/kk/common/trade_journal.hpp`).
       Streams 30M ticks over the window in ~5s, flat memory.
 - [x] **Level-2 trade diff** vs the 473-trade MT5 reference (BTCUSD M3 2025-08-11..11-29),
-      `tools/diff_trades.py`. **Result: 478 trades vs 473; 377 match by exact entry-timestamp;
+      `tools/common/diff_trades.py`. **Result: 478 trades vs 473; 377 match by exact entry-timestamp;
       dir/rev/regimeTrend/session/entryReason/bodyPct/adx/diSpread/spreadPips EXACT on matched;
       entry meanΔ 0.18, riskPrice meanΔ 15 (ATR-from-CSV caveat), exitTag mismatch 13/377.**
       Residual 96 missed / 101 extra = ATR-feed-extreme cascade (different stops → different exits
@@ -83,7 +83,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash onc
 - [x] Two bugs fixed en route: RiskManager min-lot skip needed the `flooredUp=(rawLot<minLot)`
       precondition (was dropping normal trades); the BTC run uses code-default economics (SlAtrBrk=2.2,
       RrBrk=3, UseMtfAgree=false, MaxSpreadPips=0, MaxPeakDDPct=30), not baseline.set.
-- [x] Golden test (`tests/test_parity_golden.cpp` + frozen `tests/golden/`): replays the bid M3
+- [x] Golden test (`tests/mastervp/test_parity_golden.cpp` + frozen `tests/mastervp/golden/`): replays the bid M3
       warmup slice + MT5 ref day in `make test`; asserts VP/DI/trend/sigValid stay within tolerance.
       Front-half faithfulness is now a regression guard, not a one-off. (Trade-level diff still TODO.)
 

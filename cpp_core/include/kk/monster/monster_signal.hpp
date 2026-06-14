@@ -6,7 +6,7 @@
 // Reuses kk::VPResult from types.hpp. Everything else lives in kk::monster to stay separate from the
 // KK-MasterVP engine.
 #pragma once
-#include "kk/types.hpp"
+#include "kk/common/types.hpp"
 #include "kk/monster/monster_config.hpp"
 #include <vector>
 #include <cmath>

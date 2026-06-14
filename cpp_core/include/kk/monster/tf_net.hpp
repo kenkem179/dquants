@@ -10,7 +10,7 @@
 // Here a TfSeries holds the bars oldest->newest (ts_ms = bar OPEN time) + a per-bar MT5-iATR(14);
 // `shift` maps to array index N-1-shift. ATR uses MT5's iATR seeding (SMA seed then Wilder RMA).
 #pragma once
-#include "kk/types.hpp"
+#include "kk/common/types.hpp"
 #include <vector>
 #include <cmath>
 #include <algorithm>
