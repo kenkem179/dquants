@@ -45,6 +45,8 @@ struct Position {
     double init_lot = 0, lot = 0;          // lot = remaining
     double best = 0;                       // best favorable price (high-water mark)
     bool   partial_done = false;
+    bool   pm_partial_done = false;        // shared ProfitManager one-shot partial
+    int    pm_tp_ext = 0;
     bool   open = false;
 };
 
@@ -102,6 +104,27 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
         if (p.partial_done) {
             double trail = p.best + m.trailing_factor * p.risk;
             if (trail < p.sl) p.sl = trail;
+        }
+    }
+
+    // Shared ProfitManager (kk::common). All toggles default OFF => skipped (inert). Applied after the
+    // distilled partial/trail; a tightened SL is honoured on the NEXT price (as the chandelier trail is).
+    // atr is not tracked per-position here, so tp_extension stays inert; the R-based SL toggles work.
+    if (kk::common::pm_any(c.pm)) {
+        kk::common::PMState st;
+        st.is_long = p.is_long; st.entry = p.entry; st.sl = p.sl; st.tp = p.tp;
+        st.cur_price = price; st.best_price = p.best;
+        st.risk = p.risk; st.atr = 0.0;
+        st.tp_extensions = p.pm_tp_ext;
+        st.partial_done = p.pm_partial_done; st.be_done = p.partial_done;
+        st.structure_level = 0.0; st.trend_weakening = false;
+        const kk::common::PMActions act = kk::common::pm_evaluate(st, c.pm);
+        if (p.is_long ? (act.sl > p.sl) : (act.sl < p.sl)) p.sl = act.sl;
+        if (p.is_long ? (act.tp > p.tp) : (act.tp < p.tp)) { p.tp = act.tp; ++p.pm_tp_ext; }
+        if (act.partial_frac > 0.0 && !p.pm_partial_done) {
+            double q = p.init_lot * act.partial_frac;
+            if (q > 0 && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
+            p.pm_partial_done = true;
         }
     }
 }

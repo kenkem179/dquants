@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include "kk/common/profit_manager.hpp"
 
 namespace kk::monster {
 
@@ -161,6 +162,9 @@ struct MonsterConfig {
     double shelf_near_atr       = 0.5;
     double shelf_far_atr        = 2.5;
     double shelf_buf_atr        = 0.25;
+
+    // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
+    kk::common::PMConfig pm;
 
     // ---- sessions (UTC) ----
     bool   trade_anytime        = true;
@@ -359,6 +363,27 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     else if (key == "InpStp2EdgeOffAtr") p.stp2_edge_off_atr = D();
     else if (key == "InpStp2MinRr") p.stp2_min_rr = D();
     else if (key == "InpStp2MaxRr") p.stp2_max_rr = D();
+    // ---- shared ProfitManager toggles ----
+    else if (key == "InpPmBeProtect") p.pm.be_protect = mbool(val);
+    else if (key == "InpPmBeTriggerR") p.pm.be_trigger_r = D();
+    else if (key == "InpPmBeBufferR") p.pm.be_buffer_r = D();
+    else if (key == "InpPmProgTrail") p.pm.prog_trail = mbool(val);
+    else if (key == "InpPmProgTriggerR") p.pm.prog_trigger_r = D();
+    else if (key == "InpPmProgIncrementR") p.pm.prog_increment_r = D();
+    else if (key == "InpPmProgStepR") p.pm.prog_step_r = D();
+    else if (key == "InpPmGiveback") p.pm.giveback = mbool(val);
+    else if (key == "InpPmGivebackArmR") p.pm.giveback_arm_r = D();
+    else if (key == "InpPmGivebackCapFrac") p.pm.giveback_cap_frac = D();
+    else if (key == "InpPmTpExtension") p.pm.tp_extension = mbool(val);
+    else if (key == "InpPmTpExtProgress") p.pm.tp_ext_progress = D();
+    else if (key == "InpPmTpExtAtrMult") p.pm.tp_ext_atr_mult = D();
+    else if (key == "InpPmTpExtMax") p.pm.tp_ext_max = I();
+    else if (key == "InpPmPreBeStructure") p.pm.pre_be_structure = mbool(val);
+    else if (key == "InpPmPreBeTriggerR") p.pm.pre_be_trigger_r = D();
+    else if (key == "InpPmPreBeBuffer") p.pm.pre_be_buffer = D();
+    else if (key == "InpPmPartialTp") p.pm.partial_tp = mbool(val);
+    else if (key == "InpPmPartialTriggerR") p.pm.partial_trigger_r = D();
+    else if (key == "InpPmPartialFrac") p.pm.partial_frac = D();
     else if (key == "InpEnableHvnShelfSl") p.enable_hvn_shelf_sl = mbool(val);
     else if (key == "InpShelfNearAtr") p.shelf_near_atr = D();
     else if (key == "InpShelfFarAtr") p.shelf_far_atr = D();

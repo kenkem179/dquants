@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
+#include "kk/common/profit_manager.hpp"
 
 namespace kk {
 
@@ -88,6 +89,8 @@ struct Params {
     bool   enable_defer_entry   = false;
     double defer_pullback_atr   = 0.5;
     int    defer_bars           = 3;
+    // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
+    common::PMConfig pm;
     // ---- risk ----
     int    risk_unit          = 0;       // 0=%acct,1=USD,2=Min,3=Max
     double risk_usd           = 180.0;
@@ -254,6 +257,27 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
     else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
     else if (key == "InpDeferBars") p.defer_bars = I();
+    // ---- shared ProfitManager toggles ----
+    else if (key == "InpPmBeProtect") p.pm.be_protect = to_bool(val);
+    else if (key == "InpPmBeTriggerR") p.pm.be_trigger_r = D();
+    else if (key == "InpPmBeBufferR") p.pm.be_buffer_r = D();
+    else if (key == "InpPmProgTrail") p.pm.prog_trail = to_bool(val);
+    else if (key == "InpPmProgTriggerR") p.pm.prog_trigger_r = D();
+    else if (key == "InpPmProgIncrementR") p.pm.prog_increment_r = D();
+    else if (key == "InpPmProgStepR") p.pm.prog_step_r = D();
+    else if (key == "InpPmGiveback") p.pm.giveback = to_bool(val);
+    else if (key == "InpPmGivebackArmR") p.pm.giveback_arm_r = D();
+    else if (key == "InpPmGivebackCapFrac") p.pm.giveback_cap_frac = D();
+    else if (key == "InpPmTpExtension") p.pm.tp_extension = to_bool(val);
+    else if (key == "InpPmTpExtProgress") p.pm.tp_ext_progress = D();
+    else if (key == "InpPmTpExtAtrMult") p.pm.tp_ext_atr_mult = D();
+    else if (key == "InpPmTpExtMax") p.pm.tp_ext_max = I();
+    else if (key == "InpPmPreBeStructure") p.pm.pre_be_structure = to_bool(val);
+    else if (key == "InpPmPreBeTriggerR") p.pm.pre_be_trigger_r = D();
+    else if (key == "InpPmPreBeBuffer") p.pm.pre_be_buffer = D();
+    else if (key == "InpPmPartialTp") p.pm.partial_tp = to_bool(val);
+    else if (key == "InpPmPartialTriggerR") p.pm.partial_trigger_r = D();
+    else if (key == "InpPmPartialFrac") p.pm.partial_frac = D();
     else if (key == "InpRiskUnit") p.risk_unit = I();
     else if (key == "InpRiskUsd") p.risk_usd = D();
     else if (key == "InpRiskAccPct") p.risk_acc_pct = D();

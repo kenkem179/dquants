@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include "kk/common/profit_manager.hpp"
 
 namespace kk::kenkem {
 
@@ -126,6 +127,9 @@ struct KenKemConfig {
     double atr_tp_ext_mult        = 0.035;
     double tp_ext_min_pips        = 7.0;
     double tp_ext_max_pips        = 60.0;
+
+    // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
+    kk::common::PMConfig pm;
 
     // ---- exit toggles (defaults) ----
     bool   panic_exit_e1          = true;
@@ -501,6 +505,27 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "NY_START") p.ny_start = I();
     else if (key == "NY_END") p.ny_end = I();
     else if (key == "IGNORE_VALID_SESSIONS") p.ignore_valid_sessions = kbool(val);
+    // ---- shared ProfitManager toggles ----
+    else if (key == "PM_BE_PROTECT") p.pm.be_protect = kbool(val);
+    else if (key == "PM_BE_TRIGGER_R") p.pm.be_trigger_r = D();
+    else if (key == "PM_BE_BUFFER_R") p.pm.be_buffer_r = D();
+    else if (key == "PM_PROG_TRAIL") p.pm.prog_trail = kbool(val);
+    else if (key == "PM_PROG_TRIGGER_R") p.pm.prog_trigger_r = D();
+    else if (key == "PM_PROG_INCREMENT_R") p.pm.prog_increment_r = D();
+    else if (key == "PM_PROG_STEP_R") p.pm.prog_step_r = D();
+    else if (key == "PM_GIVEBACK") p.pm.giveback = kbool(val);
+    else if (key == "PM_GIVEBACK_ARM_R") p.pm.giveback_arm_r = D();
+    else if (key == "PM_GIVEBACK_CAP_FRAC") p.pm.giveback_cap_frac = D();
+    else if (key == "PM_TP_EXTENSION") p.pm.tp_extension = kbool(val);
+    else if (key == "PM_TP_EXT_PROGRESS") p.pm.tp_ext_progress = D();
+    else if (key == "PM_TP_EXT_ATR_MULT") p.pm.tp_ext_atr_mult = D();
+    else if (key == "PM_TP_EXT_MAX") p.pm.tp_ext_max = I();
+    else if (key == "PM_PRE_BE_STRUCTURE") p.pm.pre_be_structure = kbool(val);
+    else if (key == "PM_PRE_BE_TRIGGER_R") p.pm.pre_be_trigger_r = D();
+    else if (key == "PM_PRE_BE_BUFFER") p.pm.pre_be_buffer = D();
+    else if (key == "PM_PARTIAL_TP") p.pm.partial_tp = kbool(val);
+    else if (key == "PM_PARTIAL_TRIGGER_R") p.pm.partial_trigger_r = D();
+    else if (key == "PM_PARTIAL_FRAC") p.pm.partial_frac = D();
     else return false;
     return true;
 }
