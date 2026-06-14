@@ -13,3 +13,4 @@
 - [Milestone: production promotion](milestone-production-promotion.md) — end-goal: pick #1 of MasterVP/Monster/KenKem, promote to prod MQL5 from this repo, borrow ../kenkem tooling
 - [Autopilot mode](autopilot-mode.md) — when told "autopilot", run end-to-end, no stopping to ask, just go
 - [ds-study learning track](ds-study-track.md) — user learns DS via ds-study/ notebooks; keep them in sync with development
+- [KenKem distilled result](kenkem-distilled-result.md) — distilled to E4-only Ichimoku; BTC OOS PF 1.24 / XAU 1.08, MC 100% profitable
