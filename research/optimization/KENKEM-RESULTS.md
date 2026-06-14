@@ -1,5 +1,14 @@
 # KenKem (distilled) — results
 
+> ⚠️ **CORRECTION (2026-06-15): the PF numbers below are ENGINE-INTERNAL and were NOT confirmed in
+> MT5. They are WRONG / overstated.** When the distilled E5-only port (`KK-KenKem`) was run in the MT5
+> tester on XAUUSD M1 (2025.08→2026.06) it **lost 62–93%** (PF 0.78–0.87), the opposite of the "OOS PF
+> 1.6" claimed here. Root cause: the `kk::kenkem` engine is a **bar-OHLC-walk approximation, never
+> tick-validated**, and Optuna overfit to its blind spot. Meanwhile the **original `KenKemExpert` is
+> profitable in MT5** (+24%, PF 1.62, 143 trades) — the distillation over-trades (2k–6k trades) and
+> destroys the edge. **See `MT5-GROUND-TRUTH.md` for the validated MT5-true numbers.** Treat every PF
+> below as unverified. —Claude
+
 The original `KenKemExpert.mq5` (~9.7k LOC, E1/E2/E4 + many gates/exits) was **distilled** to its
 essential winning core in a separate `kk::kenkem` C++ engine (config → tf-cache → triggers → snapshot →
 gates → entries → trade-manager → engine), not byte-reproduced. Validation = the quant SOP (costs →
