@@ -1,0 +1,13 @@
+- [Project: KenKem Quant OS](project-kenkem-quant-os.md) — what dquants is and the four-layer architecture
+- [Python env: native arm64 kenkem](python-env-kenkem.md) — conda env location, how to activate, Rosetta pitfall
+- [User goal & workflow](user-goal-quant-stack.md) — what the user wants from this stack
+- [BTCUSD data quirks](btcusd-data-quirks.md) — flat-spread years, missing 2025 days, weekend density; read before trusting backtests
+- [Pipeline Phase 3 conventions](pipeline-phase3-conventions.md) — bars on mid, sparse bars, 41 features, triple-barrier labels, output paths
+- [Discovery findings](discovery-findings.md) — Phase 5: no lone-feature edge; Volume Profile + hour + DI dominate; steers Phase 6
+- [REAL TARGET: KenKem strategies](real-target-kenkem-strategies.md) — optimize existing MQL5 VP strategies (KK-MasterVP first); spec written; C++ engine + parity plan
+- [Workflow: commit+push & plan](workflow-commit-and-plan.md) — after each step: test→commit→push origin→tick docs/BUILD-PLAN.md; can't self-run /compact
+- [Parity findings (front-half)](parity-findings-front-half.md) — VP/ADX/trend match to rounding; iADX≠Wilder fix; ATR data-source caveat
+- [Parity findings (trade-level)](parity-findings-trade-level.md) — Level-2/3 result (377/473 exact); baseline.set is WRONG config, pull real inputs from tester logs; min-lot flooredUp bug
+- [Milestone: MT5-confirmed optimization](milestone-mt5-confirmed-optimization.md) — best_btc.set confirmed PF>1 in MT5; full loop closed; refined param directions; Phase-9 still open
+- [Autopilot mode](autopilot-mode.md) — when told "autopilot", run end-to-end, no stopping to ask, just go
+- [ds-study learning track](ds-study-track.md) — user learns DS via ds-study/ notebooks; keep them in sync with development
