@@ -44,6 +44,12 @@ SPACE = [
     ("E5_MIN_MOMENTUM_ADX", 0.0, 26.0, False), ("E5_ATR_SL_CAP_MULTIPLIER", 2.0, 5.0, False),
     ("E5_TRAILING_SL_FACTOR", 0.2, 0.7, False), ("E5_PARTIAL_TP_TRIGGER", 0.4, 0.9, False),
     ("E5_HTF_MIN_ADX", 15.0, 28.0, False),
+    # indicator LENGTHS (the "textbook" values the user wants challenged). Non-overlapping ranges
+    # keep the EMA stack ordered (EMA0<EMA1<EMA2<EMA3<EMA4) by construction.
+    ("INPUT_EMA0_PERIOD", 6, 14, True), ("INPUT_EMA1_PERIOD", 18, 40, True),
+    ("INPUT_EMA2_PERIOD", 50, 85, True), ("INPUT_EMA3_PERIOD", 90, 130, True),
+    ("INPUT_EMA4_PERIOD", 150, 230, True),
+    ("ADX_LEN", 8, 20, True), ("RSI_LEN", 8, 20, True),
 ]
 TOGGLES = ["ENABLE_E1_ENTRIES", "ENABLE_E2_ENTRIES", "ENABLE_E4_ENTRIES", "ENABLE_E5_ENTRIES"]
 
