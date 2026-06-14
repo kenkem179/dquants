@@ -4,7 +4,8 @@
 #   include/kk/common/    shared infra + generic trade-mgmt  (≈ KK-Common)
 #   include/kk/mastervp/  KK-MasterVP signal/strategy logic   (≈ KK-MasterVP)
 #   include/kk/monster/   KK-MasterVP-Monster logic           (≈ KK-MasterVP-Monster)
-# Tests and tools mirror the same common/ mastervp/ monster/ buckets.
+#   include/kk/kenkem/    KenKem original multi-entry EA      (≈ KenKem/E1,E2,E4)
+# Tests and tools mirror the same common/ mastervp/ monster/ kenkem/ buckets.
 #
 # Targets:
 #   make test     build + run all unit tests in tests/**/
@@ -21,7 +22,8 @@ TEST_SRCS := $(wildcard tests/*/*.cpp)
 TEST_BINS := $(patsubst tests/%.cpp,$(BUILD)/%,$(TEST_SRCS))
 HEADERS   := $(wildcard include/kk/common/*.hpp) \
              $(wildcard include/kk/mastervp/*.hpp) \
-             $(wildcard include/kk/monster/*.hpp)
+             $(wildcard include/kk/monster/*.hpp) \
+             $(wildcard include/kk/kenkem/*.hpp)
 PARITY    := $(BUILD)/parity_driver
 BACKTEST  := $(BUILD)/backtester
 MONSTER   := $(BUILD)/monster_backtester
