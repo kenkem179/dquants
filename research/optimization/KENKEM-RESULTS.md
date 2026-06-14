@@ -156,6 +156,16 @@ the strictest quality (5–6)** — selective by design. **E1 stays weakest even
 Artifacts: `best_tuned_<e>_{btc,xau}.json` (frozen per-entry knobs) + `.set`, `best_kenkem_<combo>_{btc,xau}.set`,
 `sweep_kenkem_tuned_{btc,xau}.csv`. Report tool: `report_kenkem.py` + `report_metrics.py`.
 
+## PROMOTED to production MQL5 (2026-06-15) — E5 only
+First full end-to-end dquants deploy. Locked `best_kenkem_{btc,xau}.set` = the tuned E5-only winner.
+Thin EA `mql5/experts/KK-KenKem/KK-KenKem.mq5` (compiles 0 errors / 0 warnings) transcribes the
+`kk::kenkem` engine; defaults baked to the BTC E5 config; per-symbol presets
+`KK-KenKem-E5-{BTCUSD,XAUUSD}.set` (distinct magics 4242410 / 4242411). Reachable in MT5 under a single
+isolated symlink: **Navigator → Experts → dquants → KK-KenKem**. Numbers reproduced from the locked sets:
+BTC OOS PF 1.792 / net +72.9k / DD 2.48k / recovery 29.4 / Sharpe 17.7 / 12.8 tpd; XAU OOS PF 1.619 /
+net +28.4k / DD 1.16k / recovery 24.4 / Sharpe 10.8 / 7.1 tpd. Remaining gate before live: one-off
+MT5-tester↔C++ parity diff + demo forward-test. See `mql5/experts/KK-KenKem/README.md`.
+
 ## Artifacts
 - Engine: `cpp_core/include/kk/kenkem/*.hpp` (8 unit tests, 131 checks).
 - Backtester: `cpp_core/tools/kenkem/backtester.cpp` (loads M1, aggregates M3/M5/M15).
