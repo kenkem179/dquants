@@ -73,10 +73,37 @@ void test_specs() {
     KK_CHECK_NEAR(x.normalize_lot(0.153), 0.15, 1e-9);
 }
 
+// The trust guarantee: a .set may NOT override a param the EA hardcodes (ADX_LEN, RSI_LEN, etc.).
+// Such a key must be ignored and the EA value retained, regardless of what the .set says.
+void test_ea_locked_keys_ignored() {
+    const std::string path = "/tmp/kenkem_locked_test.set";
+    FILE* f = std::fopen(path.c_str(), "w");
+    std::fprintf(f, "ADX_LEN=9\n");                    // EA hardcodes 14 -> must stay 14
+    std::fprintf(f, "RSI_LEN=20\n");                   // EA hardcodes 14 -> must stay 14
+    std::fprintf(f, "USE_CONVICTION_SCORING_E1=false\n"); // EA hardcodes true -> stays true
+    std::fprintf(f, "ICHIMOKU_TENKAN=5\n");            // EA hardcodes 9 -> stays 9
+    std::fprintf(f, "JAPAN_START=100\n");              // EA hardcodes 0 -> stays 0
+    std::fprintf(f, "E1_RR=2.22\n");                   // real input -> applies
+    std::fclose(f);
+
+    KenKemConfig p;
+    int applied = load_set(p, path);
+    KK_CHECK(applied == 1);                            // only E1_RR is honorable
+    KK_CHECK(p.adx_len == 14);                         // locked
+    KK_CHECK(p.rsi_len == 14);                         // locked
+    KK_CHECK(p.use_conviction_e1 == true);             // locked
+    KK_CHECK(p.ichimoku_tenkan == 9);                  // locked
+    KK_CHECK(p.japan_start == 0);                      // locked
+    KK_CHECK_NEAR(p.e1_rr, 2.22, 1e-9);                // honorable input applied
+    KK_CHECK(is_ea_locked_key("ADX_LEN") && is_ea_locked_key("RSI_LEN"));
+    KK_CHECK(!is_ea_locked_key("E1_RR") && !is_ea_locked_key("MIN_TREND_QUALITY_E1"));
+}
+
 void run_all() {
     KK_RUN(test_defaults);
     KK_RUN(test_set_loader);
     KK_RUN(test_specs);
+    KK_RUN(test_ea_locked_keys_ignored);
 }
 
 KK_TEST_MAIN()

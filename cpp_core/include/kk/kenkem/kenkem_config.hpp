@@ -10,6 +10,8 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
+#include <cstdio>
 #include "kk/common/profit_manager.hpp"
 
 namespace kk::kenkem {
@@ -305,9 +307,46 @@ inline std::string ktrim(std::string s) {
 inline bool kbool(const std::string& v) { return v == "true" || v == "1"; }
 }  // namespace detail
 
+// ===========================================================================================
+// EA-LOCKED KEYS — the trust guarantee.
+// These keys correspond to variables the KenKem EA HARDCODES in Config/InputParams.mqh — they are
+// NOT `input`s, so MetaTrader SILENTLY IGNORES any .set value for them. Examples: ADX_LEN(:545)=14,
+// RSI_LEN(:544)=14, ICHIMOKU_*(:132-134), USE_CONVICTION_SCORING_E{1,2,4}(:107/109/117),
+// USE_HTF_VETO_E{1,2,4}(:114/115/119), USE_ICHIMOKU_E{1,2,4}(:124/126/128),
+// IGNORE_VALID_SESSIONS(:550), and the JAPAN/LONDON/NY session windows.
+// The C++ struct defaults already equal the EA's hardcoded values, so honoring a .set OVERRIDE for
+// any of these would make dquants compute on a parameter MT5 can never change — guaranteeing a
+// C++/MT5 divergence and poisoning every sweep that touched it (this is the ADX_LEN/RSI_LEN bug that
+// inverted the KenKem verdict; 51 sweep .sets were contaminated). We therefore REFUSE the override
+// and keep the EA value, warning once per key. Full audit: research/kenkem_parity/PARAM_SURFACE_AUDIT.md
+inline bool is_ea_locked_key(const std::string& k) {
+    static const std::unordered_set<std::string> locked = {
+        "ADX_LEN", "RSI_LEN",
+        "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU",
+        "USE_CONVICTION_SCORING_E1", "USE_CONVICTION_SCORING_E2", "USE_CONVICTION_SCORING_E4",
+        "USE_HTF_VETO_E1", "USE_HTF_VETO_E2", "USE_HTF_VETO_E4",
+        "USE_ICHIMOKU_E1", "USE_ICHIMOKU_E2", "USE_ICHIMOKU_E4",
+        "IGNORE_VALID_SESSIONS",
+        "JAPAN_START", "JAPAN_END", "LONDON_START", "LONDON_END", "NY_START", "NY_END",
+        "JAPAN_SESSION_START", "JAPAN_SESSION_END", "LONDON_SESSION_START", "LONDON_SESSION_END",
+        "NEWYORK_SESSION_START", "NEWYORK_SESSION_END",
+    };
+    return locked.count(k) > 0;
+}
+
 // Apply one KEY=value using the EA's real input variable names. Unknown keys ignored gracefully.
 inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string& val) {
     using detail::kbool;
+    // Refuse EA-hardcoded params: MT5 ignores them, so honoring them here breaks parity. Warn once.
+    if (is_ea_locked_key(key)) {
+        static std::unordered_set<std::string> warned;
+        if (warned.insert(key).second)
+            std::fprintf(stderr,
+                "[kenkem_config] IGNORING .set key '%s=%s' — the EA HARDCODES this (not an input); "
+                "MT5 cannot honor it. Keeping the EA value to preserve parity.\n",
+                key.c_str(), val.c_str());
+        return false;  // not applied: leaves the EA-default in place; load_set won't count it
+    }
     auto D = [&] { return std::stod(val); };
     auto I = [&] { return std::stoi(val); };
     auto H = [&] { return (HtfMode)std::stoi(val); };
