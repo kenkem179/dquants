@@ -121,10 +121,18 @@ int main(int argc, char** argv) {
     if (!out_path.empty()) {
         FILE* f = std::fopen(out_path.c_str(), "w");
         if (f) {
-            std::fprintf(f, "ts_ms,entryTimeUTC,dir,kind,entry,lot,pnlUsd\n");
-            for (const Trade& t : R.list)
-                std::fprintf(f, "%lld,%s,%s,E%d,%.3f,%.2f,%.2f\n", (long long)t.t_in, utc(t.t_in).c_str(),
-                             t.is_long?"L":"S", t.kind, t.entry, t.lot, t.pnl);
+            // Parity schema — column-aligned with KenKem EA Parity/TradeJournal.mqh so the two
+            // ledgers diff 1:1 (entryTimeUTC is the join key). maeR is not tracked here (emit 0).
+            std::fprintf(f, "entryTimeUTC,dir,kind,entry,riskPrice,exitPrice,realizedUsd,mfeR,maeR,exitTag\n");
+            for (const Trade& t : R.list) {
+                const char* tag = (t.exit_tag == 'T') ? "TP"
+                                : (t.exit_tag == 'E') ? "END"
+                                : (t.exit_tag == 'S') ? (t.pnl > 0.0 ? "SL-WIN" : "SL-LOSS")
+                                : "NA";
+                std::fprintf(f, "%s,%s,E%d,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%s\n",
+                             utc(t.t_in).c_str(), t.is_long?"L":"S", t.kind,
+                             t.entry, t.risk, t.exit_price, t.pnl, t.mfe_r, 0.0, tag);
+            }
             std::fclose(f);
             std::fprintf(stderr, "[out] %d trades -> %s\n", R.trades, out_path.c_str());
         }

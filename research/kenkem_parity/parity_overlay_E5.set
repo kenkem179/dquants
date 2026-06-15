@@ -1,0 +1,52 @@
+; ==================================================================
+; KenKem PARITY overlay — STAGE 1 (core entry+exit logic).
+; Appended on top of the tuned best_kenkem_<sym>.set. Neutralizes every
+; EA governor the distilled C++ engine does NOT model, so the MT5
+; reference isolates the CORE E5 logic (triggers/gates + partial/BE/trail
+; + panic) that the C++ DOES model. Stage 2 will port the governors and
+; re-validate with them ON.
+;
+; KEEP ON (modeled by C++ — left at tuned/default values, do not override):
+;   ENABLE_ATR_HIGH_BLOCK, ENABLE_TREND_QUALITY_GATES, USE_ACCELERATION_BONUS,
+;   ENABLE_RSI_DIVERGENCE_VETO, ALLOW_PARTIAL_TP, ENABLE_FAST_ADX_PANIC_EXIT_E5,
+;   E5_USE_ATR_SL_ARBITRATION (=false, matches C++ EMA-based SL).
+; ==================================================================
+
+; --- emit the per-trade parity journal (MQL5/Files/KenKem/trades_<sym>.csv) ---
+InpExportTradeJournal=true
+
+; --- entries: E5 only (match the C++ distilled engine) ---
+ENABLE_E1_ENTRIES=false
+ENABLE_E2_ENTRIES=false
+ENABLE_E3_ENTRIES=false
+ENABLE_E4_ENTRIES=false
+ENABLE_E5_ENTRIES=true
+
+; --- order/news layer (not modeled by C++) ---
+ENABLE_LIMIT_ORDERS=false
+ENABLE_NEWS_FILTER=false
+AVOID_HIGH_IMPACT_NEWS=false
+AVOID_MEDIUM_IMPACT_NEWS=false
+
+; --- risk/recovery/sizing governors (not modeled by C++) ---
+; ratio thresholds set huge so the loss-ratio triggers can never fire
+SIGNAL_ONLY_DURING_PROTECTION=false
+MAX_DAILY_LOSS_RATIO=9.99
+ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN=9.99
+ACCOUNT_DD_RATIO_TO_SOFT_BLOCK=9.99
+RECOVERY_MODE_TRIGGER_RATIO=9.99
+ENABLE_PEAK_BALANCE_DECAY=false
+ENABLE_BLACK_SWAN_PROTECTION=false
+ENABLE_PROFIT_PROTECTION=false
+ENABLE_WIN_STREAK_COOLDOWN=false
+
+; --- exit extras not modeled by the distilled C++ (partial->BE->trail + panic only) ---
+ENABLE_PRE_BE_STRUCTURE_PROTECTION=false
+ALLOW_TP_EXTENSION=false
+USE_DYNAMIC_TP_EXTENSION=false
+USE_DYNAMIC_RR_SCALING=false
+ENABLE_EARLY_CUT_NEAR_SL=false
+ENABLE_ADX_DROP_BASED_EXIT=false
+ENABLE_SIDEWAY_EARLY_EXIT=false
+ENABLE_SCORE_DROP_EXIT_E5=false
+ENABLE_DI_FLIP_FAST_EXIT_E5=false

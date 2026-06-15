@@ -57,6 +57,7 @@ public:
             for (const Fill& f : fills) {
                 const double pts = o.p.is_long ? (f.price - o.p.entry) : (o.p.entry - f.price);
                 o.pnl_acc += f.lot * pts * vppl_ - f.lot * cfg_.commission_per_lot;
+                if (f.reason != 'P') { o.exit_price = f.price; o.exit_tag = f.reason; }  // closing fill
             }
             if (!o.p.open) { realize_(o, t.ts_ms); open_.erase(open_.begin() + k); }
             else ++k;
@@ -77,6 +78,7 @@ public:
             const double pts = o.p.is_long ? (px - o.p.entry) : (o.p.entry - px);
             o.pnl_acc += o.p.lot * pts * vppl_ - o.p.lot * cfg_.commission_per_lot;
             o.p.open = false;
+            o.exit_price = px; o.exit_tag = 'E';   // end-of-test forced close (no MT5 equivalent)
             realize_(o, last_ts_ms);
             open_.erase(open_.begin() + k);
         }
@@ -131,6 +133,9 @@ private:
         balance_ += o.pnl_acc;
         Trade tr; tr.kind = o.p.kind; tr.is_long = o.p.is_long; tr.t_in = o.t_in; tr.t_out = t_out;
         tr.entry = o.entry_anchor; tr.lot = o.p.init_lot; tr.pnl = o.pnl_acc;
+        tr.risk = o.p.risk; tr.exit_price = o.exit_price; tr.exit_tag = o.exit_tag;
+        tr.mfe_r = (o.p.risk > 0.0)
+                 ? (o.p.is_long ? (o.p.best - o.p.entry) : (o.p.entry - o.p.best)) / o.p.risk : 0.0;
         R_.list.push_back(tr);
         if (o.pnl_acc >= 0) { gross_win_ += o.pnl_acc; ++R_.wins; } else { gross_loss_ += -o.pnl_acc; }
         ++R_.trades;

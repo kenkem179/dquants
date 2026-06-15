@@ -21,6 +21,11 @@ struct Trade {
     int    kind = 0; bool is_long = false;
     int64_t t_in = 0, t_out = 0;
     double entry = 0, lot = 0, pnl = 0;     // pnl in account currency, net of costs
+    // Parity fields (populated by the tick engine; default-inert for the bar engine).
+    double risk = 0;                        // |entry - SL| at fill (price)
+    double exit_price = 0;                  // price of the closing fill
+    double mfe_r = 0;                       // max favorable excursion in R (from Position.best)
+    char   exit_tag = '?';                  // 'S' stop/trail/BE, 'T' take-profit, 'E' end-of-test
 };
 
 struct BtResult {
@@ -31,7 +36,8 @@ struct BtResult {
 };
 
 namespace detail {
-struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; ExitState exit_st; };
+struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; ExitState exit_st;
+                 double exit_price = 0; char exit_tag = '?'; };
 }
 
 // Valid-session check (SessionManager): the EA only enters during the JST Japan/London/NY windows.
