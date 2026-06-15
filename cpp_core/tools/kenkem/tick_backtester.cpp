@@ -125,8 +125,9 @@ int main(int argc, char** argv) {
             // ledgers diff 1:1 (entryTimeUTC is the join key). maeR is not tracked here (emit 0).
             std::fprintf(f, "entryTimeUTC,dir,kind,entry,riskPrice,exitPrice,realizedUsd,mfeR,maeR,exitTag\n");
             for (const Trade& t : R.list) {
+                // 'E' session-end + 'X' panic/score-drop both close via DEAL_REASON_EXPERT in MT5 => "EA".
                 const char* tag = (t.exit_tag == 'T') ? "TP"
-                                : (t.exit_tag == 'E') ? "END"
+                                : (t.exit_tag == 'E' || t.exit_tag == 'X') ? "EA"
                                 : (t.exit_tag == 'S') ? (t.pnl > 0.0 ? "SL-WIN" : "SL-LOSS")
                                 : "NA";
                 std::fprintf(f, "%s,%s,E%d,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%s\n",

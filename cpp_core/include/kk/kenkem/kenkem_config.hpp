@@ -228,6 +228,9 @@ struct KenKemConfig {
     double e5_trailing_factor     = 0.38;
     double e5_atr_sl_cap          = 4.0;
     double e5_atr_sl_floor        = 1.2;
+    int    min_tq_e5              = 5;         // MIN_TREND_QUALITY_E5 (Pine v1-stable 5/11; 0 = off)
+    bool   e5_use_atr_sl_arb      = false;     // E5_USE_ATR_SL_ARBITRATION (false => pure EMA200 stop)
+    double e5_min_sl_pips         = 50.0;      // E5_MIN_SL_PIPS — floor on the E5 stop distance
 
     // ---- Ichimoku periods ----
     int    ichimoku_tenkan        = 9;
@@ -333,6 +336,8 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "E5_TRAILING_SL_FACTOR") p.e5_trailing_factor = D();
     else if (key == "E5_ATR_SL_CAP_MULTIPLIER") p.e5_atr_sl_cap = D();
     else if (key == "E5_ATR_SL_FLOOR_MULTIPLIER") p.e5_atr_sl_floor = D();
+    else if (key == "E5_USE_ATR_SL_ARBITRATION") p.e5_use_atr_sl_arb = kbool(val);
+    else if (key == "E5_MIN_SL_PIPS") p.e5_min_sl_pips = D();
     // guards
     else if (key == "MAX_DAILY_LOSS_RATIO") p.max_daily_loss_ratio = D();
     else if (key == "ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN") p.dd_ratio_slowdown = D();
@@ -352,6 +357,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "MIN_TREND_QUALITY_E1") p.min_tq_e1 = I();
     else if (key == "MIN_TREND_QUALITY_E2") p.min_tq_e2 = I();
     else if (key == "MIN_TREND_QUALITY_E4") p.min_tq_e4 = I();
+    else if (key == "MIN_TREND_QUALITY_E5") p.min_tq_e5 = I();
     else if (key == "USE_ICHIMOKU_E1") p.use_ichimoku_e1 = kbool(val);
     else if (key == "USE_ICHIMOKU_E2") p.use_ichimoku_e2 = kbool(val);
     else if (key == "USE_ICHIMOKU_E4") p.use_ichimoku_e4 = kbool(val);

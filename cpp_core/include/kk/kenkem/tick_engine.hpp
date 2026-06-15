@@ -63,10 +63,10 @@ public:
             else ++k;
         }
 
-        // (2) New-bar entries: each bar that just completed fires its signal block, filling at this
-        //     tick's ask/bid. Normally advances by exactly one bar.
+        // (2) New-bar handling per just-completed bar: bar-gated EXITS (session-end / panic / score-drop)
+        //     first, then new-bar ENTRIES. Both use the closed-bar snapshot; fills at this tick's price.
         if (forming != cur_forming_) {
-            for (int f = cur_forming_ + 1; f <= forming; ++f) on_bar_closed_(f, t);
+            for (int f = cur_forming_ + 1; f <= forming; ++f) { per_bar_exits_(f, t); on_bar_closed_(f, t); }
             cur_forming_ = forming;
         }
     }
@@ -96,6 +96,38 @@ private:
     int count_dir_(bool is_long) const {
         int n = 0; for (auto& o : open_) if (o.p.is_long == is_long) ++n; return n; }
 
+    // Bar-gated exits the EA evaluates on the first tick of a new bar using closed-bar values:
+    // CLOSE_ALL_TRADES_AT_SESSION_END, fast-ADX panic, score-drop. Ports engine.hpp step (3) to ticks.
+    // Closes at this tick's exit-side price. Tag 'E' = session-end, 'X' = panic/score-drop (both map to
+    // the MT5 journal's DEAL_REASON_EXPERT = "EA"). Skips a position opened on this same bar.
+    void per_bar_exits_(int f, const kk::Tick& t) {
+        if (open_.empty()) return;
+        const kk::Bar& bar = b_.m1.bars[f];
+        const TfBundle::Align align = b_.align_at(bar.ts_ms);
+        const bool session_ok = in_valid_session(bar.ts_ms, cfg_);
+        Snapshot snap = build_snapshot(b_, cfg_, f, align);
+        for (size_t k = 0; k < open_.size(); ) {
+            detail::OpenPos& o = open_[k];
+            if (o.t_in == bar.ts_ms) { ++k; continue; }     // never exit a just-opened position
+            const double px = o.p.is_long ? t.bid : t.ask;  // exit-side market price
+            bool close = false; char tag = 'E';
+            if (cfg_.close_at_session_end && !session_ok) { close = true; tag = 'E'; }
+            if (!close && snap.valid) {
+                bool pe = panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, px,
+                                              o.p.best, o.p.partial_done, b_, align, cfg_);
+                bool se = !pe && score_drop_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.tp, px,
+                                                     o.p.partial_done, snap, cfg_, o.exit_st);
+                if (pe || se) { close = true; tag = 'X'; }
+            }
+            if (close) {
+                const double pts = o.p.is_long ? (px - o.p.entry) : (o.p.entry - px);
+                o.pnl_acc += o.p.lot * pts * vppl_ - o.p.lot * cfg_.commission_per_lot;
+                o.p.open = false; o.exit_price = px; o.exit_tag = tag;
+                realize_(o, t.ts_ms); open_.erase(open_.begin() + k);
+            } else ++k;
+        }
+    }
+
     void on_bar_closed_(int f, const kk::Tick& t) {
         const kk::Bar& bar = b_.m1.bars[f];
         const TfBundle::Align align = b_.align_at(bar.ts_ms);
@@ -115,7 +147,11 @@ private:
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
-        EntrySignal sig = detect_entry(b_, cfg_, f, align, snap, tg_);
+        // Occupancy: the EA blocks a new (kind,dir) entry while one is already open. Build the mask so
+        // detect_entry blocks-without-consuming, matching CheckOpenPositions / checkOpen{L,S}E{n}==-1.
+        bool occ[6][2] = {};
+        for (const auto& o : open_) if (o.p.kind >= 1 && o.p.kind <= 5) occ[o.p.kind][o.p.is_long ? 0 : 1] = true;
+        EntrySignal sig = detect_entry(b_, cfg_, f, align, snap, tg_, occ);
         if (!sig.detected) return;
         if (cfg_.block_opposite_dir && count_dir_(!sig.is_long) > 0) return;
 

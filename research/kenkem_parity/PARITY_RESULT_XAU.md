@@ -44,6 +44,34 @@ behind the user's concern. Files: `mt5_trades_xau_paritywin.csv` (ref), `cpp_tra
    `kk::common::PositionManager`; KenKem migrates onto it (MasterVP/Monster stay byte-identical).
 4. Re-run this exact diff until trades/geometry/$ match within tolerance; then stage-2 (governors ON).
 
+## Task-#4 progress (iteration 1, 2026-06-15) — SL fixed, exits modeled, entry over-fire remains
+
+Changes (C++ tick engine, all tested — 22 checks pass):
+- **SL geometry FIXED.** Added a dedicated E5 stop path (pure `ema200 ∓ 2·spread`, `E5_MIN_SL_PIPS`
+  floor, ATR-cap only when `E5_USE_ATR_SL_ARBITRATION`). Matched-trade `riskPrice` mean |Δ| **2.52 → 0.15**
+  (e.g. 11.66 vs 11.89). Root cause #2 closed.
+- **Exit mechanisms ported to the tick engine** (it previously ran every trade to SL/TP): session-end
+  flat (`CLOSE_ALL_TRADES_AT_SESSION_END`), fast-ADX panic, score-drop — bar-gated on the closed-bar
+  snapshot, tagged `EA` like the MT5 journal. Win% **77 → 57** (MT5 52), net **−1899 → −951** (MT5 +995).
+- **Entry selectivity wired:** `MIN_TREND_QUALITY_E5=5` gate (was ignored — only `trend_core!=0`), and a
+  one-per-(kind,dir) occupancy guard (EA's `checkOpen{L,S}E5==-1`).
+
+Still open — **entry over-fire ~3×** (C++ 395 vs MT5 136; 5.9 vs 2.2 trades/day). Localized: on
+down-trending days **MT5 takes only shorts; C++ adds counter-trend longs**. `MIN_TREND_QUALITY_E5` is a
+contributor but no integer threshold matches (tq8→325, tq11→36). Remaining suspects, in likely order:
+1. **Multi-TF sideway** — EA blocks E5 via `IsMultiTfSideway` (2/3 of M1/M3/M5 ≥ `E5_SIDEWAYS_BLOCK_THRESHOLD=50`);
+   C++ uses single-TF M1 `sideways_blocked`. Needs M3/M5 sideway scores in the snapshot.
+2. **Deferred-entry gate** — EA defers a sideway-blocked signal, then requires close within `1·ATR` of EMA25.
+3. **Consumed-lock semantics** — EA re-arms only after alignment breaks *while no position open*; C++ re-arms
+   on any fresh onset after close.
+4. **HTF weak-case** — EA allows both dirs when M5 HTF is weak/invalid; C++ `htf_tf_ok` blocks both.
+
+Also: C++ now over-closes via `EA` (252 vs 40) — a symptom of the over-fire + panic/session WHEN-timing.
+
+**Next step (the right tool, not more guessing):** golden per-bar trace — run `kenkem_trace` (C++) at the
+136 MT5 entry bars and at the C++ extra bars to see exactly which gate diverges; port the matching gate;
+re-diff. Build the EA-side trace instrument (deferred half) if the C++ trace alone doesn't localize it.
+
 ## Reproduce
 ```
 # C++ side (already saved):

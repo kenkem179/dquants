@@ -52,8 +52,24 @@ inline double atr_sl_caps(int kind, const KenKemConfig& c, double& floor_mult) {
 }
 
 // Stop loss price (CalculateStopLossWithCustomEMA). currentPrice = entry anchor (close[1]).
+// spread_price = live spread in price (used by the E5 EMA200 stop's 2*spread buffer).
 inline double compute_sl(int kind, bool is_long, double entry, const Snapshot& s,
-                         double recentHi, double recentLo, const KenKemConfig& c) {
+                         double recentHi, double recentLo, const KenKemConfig& c,
+                         double spread_price = 0.0) {
+    // E5 (SuperBros): pure EMA200 stop — Entry5.mqh. rawSL = ema200 -/+ 2*spread; slDist =
+    // max(|entry-rawSL|, E5_MIN_SL_PIPS); ATR cap applied ONLY if E5_USE_ATR_SL_ARBITRATION.
+    // No recentLo/Hi, no SL_EMA_DISTANCE offset (those are the E1/E2/E4 structure stop).
+    if (kind == 5) {
+        const double ema200 = s.emaM1[4];
+        const double rawSL = is_long ? ema200 - 2.0 * spread_price : ema200 + 2.0 * spread_price;
+        const double minSL = c.e5_min_sl_pips * c.pip_size;
+        double slDist = std::max(std::fabs(entry - rawSL), minSL);
+        if (c.e5_use_atr_sl_arb && s.atrM1 > 0.0) {
+            double atrCap = c.e5_atr_sl_cap * s.atrM1;
+            if (atrCap >= minSL && slDist > atrCap) slDist = atrCap;
+        }
+        return is_long ? entry - slDist : entry + slDist;
+    }
     const double emaLevel = custom_ema_level(kind, is_long, s);
     double baseSL = is_long ? std::min(recentLo, emaLevel) : std::max(recentHi, emaLevel);
     double stop   = is_long ? baseSL - c.sl_ema_distance * c.pip_size
@@ -118,6 +134,10 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
         if (!priceOk) return false;
         if (c.e5_require_trend_core && trend_core_score(s, is_long, c) == 0) return false;
         if (c.e5_min_momentum_adx > 0 && s.adx[0] < c.e5_min_momentum_adx) return false;
+        // MIN_TREND_QUALITY_E5 (Entry5.mqh:204-220): GetTrendQualityScore(state,5) — no Ichimoku,
+        // no per-component hard gate, 0-11. The distilled engine omitted this entirely (only checked
+        // trend_core != 0) → a primary cause of E5 over-firing vs the EA. 0 disables.
+        if (c.min_tq_e5 > 0 && trend_quality_score(b, align, s, is_long, 5, c) < c.min_tq_e5) return false;
         return htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
     }
     if (trend_core_score(s, is_long, c) == 0) return false;          // hard gate (E1/E2/E4)
@@ -149,9 +169,12 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
 // First-match-wins E1->E2->E4, long-before-short. B = forming M1 bar; entry anchor = close[1].
 // CONSUMES the trigger that fires (resets it to -1) so one cross/touch == one entry — mirrors the EA
 // (which clears lastEMACrossing/Touch/IchiCross on a successful build). `tg` is mutated on success.
+// `occ[kind][dir]` (dir 0=long,1=short) = a position of that kind+direction is already open. The EA
+// blocks a new entry while one is open (CheckOpenPositions -> checkOpen{L,S}E{n}==-1 in *AllConditions)
+// WITHOUT consuming the trigger, so it re-fires once that slot frees. Pass nullptr to disable (bar engine).
 inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
                                 const TfBundle::Align& align, const Snapshot& s,
-                                TriggerState& tg) {
+                                TriggerState& tg, const bool (*occ)[2] = nullptr) {
     EntrySignal r;
     if (!s.valid) return r;
     const int i1 = align.m1 - 1;
@@ -172,10 +195,11 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             bool is_long = (dir == 0);
             int fired = is_long ? cd.up : cd.down;
             if (fired < 0) continue;
+            if (occ && occ[cd.kind][dir]) continue;    // slot occupied -> block WITHOUT consuming
             if (B - fired > cd.maxage) continue;       // stale trigger
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
             r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry;
-            r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c);
+            r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);
             r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c);
             r.risk = std::fabs(r.entry - r.sl);
             // consume the fired trigger (one cross/touch -> one entry)
