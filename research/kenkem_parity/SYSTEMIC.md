@@ -82,4 +82,35 @@ shared kk::ind EMA/ADX/ATR/RSI are likely fine — but KenKem runs them on MID b
 2. **[BLOCKED on 1 MT5 run]** Golden per-bar diff to localize the residual over-firing (the dominant
    full-window loss). Build the instrumented EA + dquants trace dumper + differ.
 3. **[OPEN]** Port conviction/regime-weighted sizing (PF is size-weighted).
-4. Re-baseline KenKem/MasterVP/Monster on the tick engine (all prior bar-engine numbers are suspect).
+4. **[DONE 2026-06-15 — see below]** Re-baseline on the tick engine over **2026 OOS** (prior numbers suspect).
+
+## 2026-OOS tick re-baseline — KenKem-E5 (2026-06-15) — INVALIDATES the production-promotion numbers
+Built 2026-OOS tick CSVs from `data/processed/ticks_{btc,xau}usd_2026.parquet` (BTC 2026-01-01→06-09 = 15.0M
+ticks; XAU 2026-01-01→05-29 = 46.7M ticks) via `export_ticks.py`. Ran the SAME config + window through both
+engines. Config = the C++-format research sets `research/optimization/best_kenkem_E5_{btc,xau}.set`
+(`--from-ms 1767225600000`, warmup 300, BTC bars = 2025+2026 concat for warmup, XAU =
+`bars_xauusd_2025h2_2026_m1.csv`).
+
+| Config | BAR engine | TICK engine (canonical) |
+|---|---|---|
+| E5 BTC | 750 tr · win 73.9 · **PF 1.339** · **+12,938** · DD 1,746 | 1580 tr · win 70.9 · **PF 0.718** · **−25,981** · DD 26,094 |
+| E5 XAU | 248 tr · win 70.2 · **PF 1.445** · **+6,506** · DD 2,070 |  593 tr · win 67.6 · **PF 0.889** · **−4,261** · DD 7,004 |
+
+**The bar engine flips the SIGN of profitability on the production config too** (PF 1.34/1.45 → 0.72/0.89),
+understates trade count ~2× and drawdown ~10×. The "distilled result" PF 1.24/1.08 that justified promoting
+**KenKem-E5 to production MQL5 is a bar-engine artifact** — on the faithful tick engine the strategy LOSES
+on 2026 OOS. The high win-rate + negative net is the classic small-wins/large-losses (giveback/SL) profile,
+amplified by the unresolved ~30× over-firing (1580 BTC trades in ~5mo vs the real EA's ~10/mo). So this is
+NOT "the underlying strategy is bad" — it is "the dquants port over-fires and is not yet MT5-faithful, and
+no production number derived from the bar engine can be trusted." The golden per-bar diff (plan #2) remains
+the decisive unblock.
+
+### SECONDARY BUG found while re-baselining — the deployed `.set` was silently ignored (0 keys)
+`load_set()` (kenkem_config.hpp) only recognises EA-internal UPPERCASE keys (`ENABLE_E5_ENTRIES`, `E5_RR`,
+`MY_STANDARD_LOT_SIZE`…). The **promoted production set** `mql5/experts/KK-KenKem/KK-KenKem-E5-BTCUSD.set`
+uses MetaTrader `Inp*` names (`InpE5On`, `InpE5Rr`, `InpRiskPerTrade`…) → **`[set] applied 0 keys`**, engine
+ran pure C++ defaults (E1/E2/E4 on, E5 off → 1177 wrong trades). Two `.set` namespaces have always existed
+and never matched. Worse, the deployed `Inp*` set and the validated UPPERCASE set carry **different values**
+(e.g. MIN_MOMENTUM_ADX 21.3 vs InpMinMomentumAdx 13.97; EMAs 8/18/55/122/163 vs 12/23/53/94/210) — the EA in
+production is NOT running the config the engine validated. TODO: (a) teach `load_set` the `Inp*` aliases (or
+add a converter), (b) reconcile the deployed set against the validated one, (c) re-confirm parity.
