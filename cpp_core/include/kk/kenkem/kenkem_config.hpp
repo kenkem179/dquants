@@ -516,6 +516,13 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "NY_START") p.ny_start = I();
     else if (key == "NY_END") p.ny_end = I();
     else if (key == "IGNORE_VALID_SESSIONS") p.ignore_valid_sessions = kbool(val);
+    else if (key == "SERVER_GMT_OFFSET") p.server_gmt_offset = I();
+    else if (key == "JAPAN_SESSION_START") p.japan_start = I();
+    else if (key == "JAPAN_SESSION_END") p.japan_end = I();
+    else if (key == "LONDON_SESSION_START") p.london_start = I();
+    else if (key == "LONDON_SESSION_END") p.london_end = I();
+    else if (key == "NEWYORK_SESSION_START") p.ny_start = I();
+    else if (key == "NEWYORK_SESSION_END") p.ny_end = I();
     // ---- shared ProfitManager toggles ----
     else if (key == "PM_BE_PROTECT") p.pm.be_protect = kbool(val);
     else if (key == "PM_BE_TRIGGER_R") p.pm.be_trigger_r = D();

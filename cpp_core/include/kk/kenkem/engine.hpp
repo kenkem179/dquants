@@ -34,6 +34,17 @@ namespace detail {
 struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; ExitState exit_st; };
 }
 
+// Valid-session check (SessionManager): the EA only enters during the JST Japan/London/NY windows.
+// bar ts_ms is UTC; server_gmt_offset converts to the EA's server clock (JST = UTC+9 for this feed).
+// Windows are HHMM; an *_end of 2400 means "to midnight".
+inline bool in_valid_session(int64_t ts_ms, const KenKemConfig& c) {
+    if (c.ignore_valid_sessions) return true;
+    int srv = (int)(((ts_ms / 60000) % 1440 + (int64_t)c.server_gmt_offset * 60) % 1440);
+    if (srv < 0) srv += 1440;
+    auto inw = [&](int s, int e){ return srv >= (s/100)*60 + s%100 && srv < (e/100)*60 + e%100; };
+    return inw(c.japan_start, c.japan_end) || inw(c.london_start, c.london_end) || inw(c.ny_start, c.ny_end);
+}
+
 inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
                              int warmup_bars = 250, int64_t start_ms = 0, int64_t end_ms = 0) {
     BtResult R;
@@ -80,8 +91,9 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
         // Closed-bar snapshot for this bar — shared by entry selection and the adaptive early-exits.
         Snapshot snap = (B >= warmup_bars) ? build_snapshot(b, cfg, B, align) : Snapshot{};
 
-        // (2) Entry decision (uses closed data); fill at this bar's open.
-        if (B >= warmup_bars && day_cap_ok && (int)open.size() < cfg.max_concurrent_pos) {
+        // (2) Entry decision (uses closed data); fill at this bar's open. Only during valid JST sessions.
+        const bool session_ok = in_valid_session(bar.ts_ms, cfg);
+        if (B >= warmup_bars && day_cap_ok && session_ok && (int)open.size() < cfg.max_concurrent_pos) {
             if (snap.valid && snap.atrM1 > 0.0) {
                 EntrySignal sig = detect_entry(b, cfg, B, align, snap, tg);
                 if (sig.detected) {
@@ -125,8 +137,12 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
         for (size_t k = 0; k < open.size(); ) {
             detail::OpenPos& o = open[k];
             std::vector<Fill> fills;
-            // Adaptive early-exits (panic / score-drop): evaluated once at bar open on the closed-bar
-            // snapshot, BEFORE the OHLC walk. Skip the bar the position opened on (no same-bar exit).
+            // Session-end flat (CLOSE_ALL_TRADES_AT_SESSION_END): close anything still open once we are
+            // outside the valid JST sessions. Then adaptive early-exits (panic / score-drop): evaluated
+            // once at bar open on the closed-bar snapshot, BEFORE the OHLC walk. Skip the open bar.
+            if (cfg.close_at_session_end && !session_ok && o.p.open && o.t_in != bar.ts_ms) {
+                fills.push_back({ bar.open, o.p.lot, 'E' }); o.p.lot = 0; o.p.open = false;
+            }
             if (snap.valid && o.p.open && o.t_in != bar.ts_ms) {
                 bool px = panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, bar.open,
                                               o.p.best, o.p.partial_done, b, align, cfg);

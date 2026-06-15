@@ -49,6 +49,7 @@ static BtResult run_once() {
     cfg.enable_rsi_div_veto = false;
     cfg.enable_atr_high_block = false;
     cfg.max_consec_losses_type = 0;
+    cfg.ignore_valid_sessions = true;   // synthetic ts aren't aligned to JST sessions
     vector<kk::Bar> m1, m3, m5, m15; vector<kk::Tick> ticks;
     build(m1, m3, m5, m15, ticks, 0.02);
     TfBundle b = build_tf_bundle(m1, m3, m5, m15, cfg);

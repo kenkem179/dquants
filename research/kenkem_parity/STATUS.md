@@ -42,21 +42,33 @@ Note: M1 bar count = **439,777 — exactly matches the MT5 report's "Bars 439777
 | Broken (filters ignored) | 3430 | **-23,067** | 0.94 | -11,075 | -11,992 |
 | + entry filters (conv/TQ/RSI) | 2327 | -8,054 | 0.97 | -11,643 | +3,589 |
 | + ATR-high/consec-loss/min-sec | 1659 | -4,657 | 0.98 | -8,838 | +4,181 |
-| + panic/score-drop exits (current) | 1655 | **-1,640** | 0.99 | -7,590 | +5,950 |
+| + panic/score-drop exits | 1655 | -1,640 | 0.99 | -7,590 | +5,950 |
+| + JST session filter (current) | 937 | **-930** | 0.99 | -985 | +55 |
 
-Isolated: **E2-only = +$4,980, PF 1.091** (760 trades) — a working, profitable component.
-**E1-only = -$7,579, PF 0.94** (968 trades) — the remaining bleed.
+Max DD collapsed across the chain: **$31,984 → $5,245**. Isolated (pre-session): E2-only = +$4,980 /
+PF 1.091; E1-only = -$7,579. The session filter is faithful (the EA only trades JST sessions) and cut
+E1's bleed from -7,590 to -985 — but it also removed dquants' out-of-session E2 profit (E2 +5,950 →
++55), i.e. the prior "profit" partly came from trades the EA would never take. System is now near
+breakeven, DD-light, and behaviourally aligned, pending the entry-selectivity work below.
+
+## Timezone resolved (data-driven, not guessed)
+The journal/ground-truth timestamps are **UTC**: ground-truth entry hours map perfectly onto the EA's
+JST sessions with `journal = JST − 9` — Japan(JST 09:00-12:30)→00:00-03:30, London→05:00-09:30,
+NY→12:00-15:00, and every session-boundary gap (04:00, 10-11, 15-23 UTC) is empty in the histogram. The
+dquants tick parquet is **also UTC** (weekend gap: Fri activity to ~21:00, Sun resume ~22:00). So the
+JST windows apply with **SERVER_GMT_OFFSET=9** (JST = UTC+9). Wired in `engine.hpp::in_valid_session`
+plus CLOSE_ALL_TRADES_AT_SESSION_END.
 
 ## Remaining gap to PF 1.39 (see task #6)
-The whole loss is now concentrated in **E1, which over-fires 11× (968 vs the EA's 86)**. E1 intentionally
-runs a LOW conviction threshold (7) and relies on E1-specific gates that are NOT yet wired:
+With sessions on, both entry types now over-trade ~6× (E1 522 vs 86, E2 415 vs 70) at PF≈0.99 — the
+entries are still lower-quality than the EA's 156 @ PF 1.39. Remaining unwired E1/E2 selectivity:
 1. `HasSufficientMomentum` confirmation (E2 deliberately omits this; E1 requires it).
-2. `E1_HTF_TREND_FILTER` strength (E1_HTF_MIN_ADX=18.5, E1_HTF_MIN_DI_SPREAD=4.0) + high-risk-path branch
-   (`potentialLoss >= maxLoss` → stricter momentum gate + per-session high-risk cap).
-3. **Session-window filtering** — the EA only trades JST sessions + closes all at session end; dquants
-   trades 24/5. Needs the tick-data↔JST offset resolved first (derivable by matching the ground-truth
-   ledger's entry timestamps to dquants candidate signals by price).
-4. Audit the E1 EMA-cross trigger frequency vs the EA.
+2. `E1_HTF_TREND_FILTER` strength (E1_HTF_MIN_ADX=18.5, E1_HTF_MIN_DI_SPREAD=4.0) + the high-risk-path
+   branch (`potentialLoss >= maxLoss` → stricter momentum gate + per-session high-risk cap of 5).
+3. Audit the EMA-cross / EMA-touch **trigger frequency** vs the EA (likely the dominant 6× factor) —
+   confirm the cross/touch definitions and consumption match, and that conviction/trend-quality reproduce
+   the EA's integer scores (ichimoku M1 future-cloud is approximated; acceleration uses closed-bar i1).
+4. Daily-loss / drawdown-slowdown / recovery-mode lot governors (affect sizing, not count).
 
 ## Artifacts (research/kenkem_parity/)
 - `winrun.log` — isolated winning KenKemExpert run from the MT5 journal.
