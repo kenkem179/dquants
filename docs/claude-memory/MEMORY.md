@@ -28,6 +28,7 @@
 - [⚠️ BAR engine systemic defect](bar-engine-systemic-defect.md) — dquants bar engine disagrees with MT5 on SIGN of P&L (bar PF0.89 vs tick PF1.12 same config); ALWAYS use the tick engine; bar numbers are research-only
 - [⚠️ KenKem-E5 root cause = exits](kenkem-e5-root-cause-exits.md) — E5 lost on tick engine; over-firing secondary, killer was exit geometry (0.3R wins vs full −1R losses); FIX NOW APPLIED
 - [✅ KenKem-E5 exit fix ADOPTED](kenkem-e5-exit-fix-adopted.md) — one consensus config (maxage1, partial-trigger 0.95, trail 1.2) flips E5 loss→profit on tick (BTC PF 1.07, XAU 1.08), DD crushed; locked into best_kenkem_E5_*.set
+- [⚠️ KenKem executor parity gaps](kenkem-executor-parity-gaps.md) — KenKem C++ executor ≠ its EA TradeManager (trail base, BE=2×spread, no anti-churn); only KenKem rolls its own (MasterVP/Monster share kk::common); user wants ALL unified on ONE configurable common executor
 - [KenKem repo has parallel work](kenkem-repo-has-parallel-work.md) — sibling ../kenkem repo may have concurrent edits; check before assuming state
 - [XAU data gap 2025 H2](xau-data-gap-2025h2.md) — imported XAU ticks miss 2025-07-16→12-31; blocks the configured XAU sweep window
 - [bash 5 in kenkem env](bash5-in-kenkem-env.md) — sweep scripts need bash ≥4; env carries bash 5.2 since macOS has only 3.2
