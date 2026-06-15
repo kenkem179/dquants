@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-15 by Claude (Opus 4.8). Branch `1-reorganize-code`._
+_Last updated: 2026-06-16 by Claude (Opus 4.8). Branch `1-reorganize-code`._
 
 ## 🎯 Goal (user, restated 2026-06-15)
 Make the **dquants tick backtest engines reproduce MT5 "Every tick based on real ticks" exactly** so the
@@ -27,24 +27,32 @@ must act identically across the original MQL5 EA and the dquants C++ engine — 
   added RUN A / RUN B sections to `research/kenkem_parity/RUN_GUIDE_PARITY.md`; this HANDOFF.md +
   CLAUDE.md handoff mandate.
 
-## ⛔ BLOCKED ON USER — two MT5 runs (see `research/kenkem_parity/RUN_GUIDE_PARITY.md` top)
-- **RUN A**: KenKem XAUUSD-Exness-KK, M1, real ticks, `parity_kenkem_xau.set` → produces
-  `trades_*.csv` + `trace_*.csv`. Unblocks the E5 field-by-field diff.
-- **RUN B (path B, user chose)**: clean MasterVP + Monster reference on a correctly-configured XAU symbol
-  (sane lot size, no blow-up) → validates the real strategy, replacing the broker-glitched "2426-Good" oracle.
+## ✅ RUN A DONE (2026-06-16) — diagnosed: KenKem divergence = INDICATOR DRIFT, not gate logic
+MT5 oracle 136 trades (`mt5_trades_xau_runA.csv`); per-bar trace `mt5_trace_xau_runA.csv`. Diff tool
+`cpp_core/tools/kenkem/diff_kenkem_trace.py`. Full writeup: `PARITY_RESULT_XAU.md` iteration 4.
+- Aligned-trade geometry near-perfect (entry Δ0.02, risk Δ0.16). The whole gap = which minute fires + extra longs.
+- **The E5 gate logic MATCHES; the indicator inputs DRIFT.** Pervasive, systematic: C++ ADX runs ~7.8 higher
+  than MT5 on EVERY TF (mid-session, not just seams); DI/RSI off too. EMA micro-drift (~0.22) flips the strict
+  `25>75>100>200` onset → 2-6 min entry lag + spurious longs. Plus rare day-seam bars where C++ reads a wrong
+  bar (05-01 00:00: close 3318.75 vs 3272.02, 46 pts).
 
-## ▶️ NEXT ACTIONS (in order)
-1. **(needs RUN A)** Diff EA `trace_*.csv` vs C++ `trace_xau_paritywin.csv` field-by-field. Hypothesis to
-   test first: the EA's **ADX/session early-`return` at `Entry5.mqh:115-132` happens BEFORE trigger-onset
-   tracking (153-188)** — so on low-ADX bars the EA skips updating `m_prevBullishAligned`, landing its
-   onset on a different bar than the C++ (which evolves triggers every bar). Likely source of the ~3-min
-   entry lag + extra longs. The trace will confirm/refute per-bar.
-2. **(needs RUN B)** Re-diff MasterVP/Monster with `diff_aligned.py`; over-fire should largely close once
-   sizing matches. Then add one-position-at-a-time concurrency to the monster engine.
-3. **ALL-ENTRIES generalization (the user's real goal):** the C++ KenKem engine covers **E1/E2/E4/E5 but
-   NOT E3** (entries.hpp: "First-match-wins E1→E2→E4" + E5). Both trace tools are **E5-only**. To validate
-   all entries: (a) add **E3** to the C++ engine, (b) generalize the per-bar trace (C++ `trace_dumper` AND
-   EA `BarTrace`/`TraceBar`) to emit per-entry gate columns for E1/E2/E3/E4, (c) parity-diff each entry.
+## ⛔ STILL BLOCKED ON USER — RUN B (clean MasterVP/Monster reference)
+`RUN_GUIDE_PARITY.md` → RUN B. Correctly-configured XAU symbol (sane lots, no blow-up), replaces the
+broker-glitched "2426-Good" oracle. Lower priority than the KenKem indicator fix below.
+
+## ▶️ NEXT ACTIONS (in order) — no user needed for #1
+1. **FIX KENKEM C++ INDICATORS (dominant root cause, do now).**
+   a. **ADX/DI/RSI parity** — C++ multi-TF (M1→M3/M5/M15 aggregated) ADX/DI/RSI ≠ MT5 iADX/iRSI; C++ runs
+      systematically higher. MasterVP's single-TF ADX matched MT5 to rounding, so port that validated path
+      + the iADX-as-EMA smoothing fix (same family as `atr_mt5_mode`) into `kk::kenkem`'s aggregated ADX.
+      Re-run RUN A's trace diff until adx mean|Δ| → ~rounding.
+   b. **Day-seam bar construction** — fix the wrong/offset M1 bar at some 00:00 boundaries (tick→M1 bucketing
+      + HTF aggregation across daily gaps).
+   c. Re-diff the trace, then the trades; expect the 136-vs-218 + lag to collapse once indicators match.
+2. **(needs RUN B)** Re-diff MasterVP/Monster with `diff_aligned.py`; add one-position-at-a-time concurrency to monster.
+3. **ALL-ENTRIES generalization (user's real goal):** C++ covers **E1/E2/E4/E5 but NOT E3**; both traces are
+   E5-only. Add E3 to C++; generalize the trace (C++ `trace_dumper` + EA `BarTrace`/`TraceBar`) to per-entry
+   columns for E1/E2/E3/E4; parity-diff each. NOTE: the indicator fix in #1 benefits ALL entries at once.
 
 ## 🔑 Key facts / gotchas
 - Python: use `~/miniforge3/envs/kenkem/bin/python` (NOT system python3, NOT `conda activate`).

@@ -131,6 +131,41 @@ field-by-field). ⚠️ BLOCKER: the KenKem EA parity instrumentation described 
 diverged to MasterVP/Monster work; `KenKemExpert.mq5` is now v1.54). It must be re-created before the
 next MT5 trace run. See the [[kenkem-parity-harness-built]] memory note.
 
+## Task-#4 iteration 4 (2026-06-16) — RUN A trace landed: ROOT CAUSE = indicator drift, NOT gate logic
+
+First per-bar trace diff (EA `BarTrace` vs C++ `trace_dumper`, RUN A: XAUUSD-Exness-KK M1 2025.03.01→05.31,
+`parity_kenkem_xau.set`). MT5 oracle = **136 trades** (matches prior). Files: `mt5_trades_xau_runA.csv`,
+`mt5_trace_xau_runA.csv`. Trace diff tool: `cpp_core/tools/kenkem/diff_kenkem_trace.py`.
+
+**Trade-level:** geometry on aligned trades is near-perfect (entry mean|Δ|=0.02, riskPrice mean|Δ|=0.16 —
+the iter-1 SL fix holds). Only 6/136 align on EXACT timestamp because entries are systematically **2-6 min
+off** (the lag) + extra counter-trend longs. So the divergence is purely WHICH minute fires + extra longs.
+
+**Per-bar trace = the smoking gun. The gate LOGIC matches; the indicator INPUTS drift:**
+- **ADX/DI/RSI drift is PERVASIVE and systematic** (not seam-localized): mid-session mean|Δ| adx_m1=**7.80**,
+  adx_m3=7.85, diP_m1=3.86, rsi=2.38 — essentially identical to the seam-bar drift (8.8/9.2/4.5/4.0). C++
+  ADX runs **consistently HIGHER** than MT5 across ALL timeframes (e.g. mid-session 03-05 05:55: adx_m1
+  cpp 81.5 vs mt5 64.3; adx_m3 43.7 vs 29.6). This shifts the E5 trend-quality score → extra/missing trades.
+- **EMA micro-drift flips the strict alignment onset.** EMAs match closely mid-session (mean|Δ|≈0.22) but the
+  E5 trigger is strict `25>75>100>200`; a 0.1-0.3 nudge flips onset by a bar or two → different trigger age
+  (`L_inage` is the #1 differing gate col, 92/104 cpp-only longs) → the 2-6 min entry lag + spurious longs.
+- **Day-seam bar misalignment (rare, severe).** At some 00:00 bars the C++ reads a DIFFERENT bar entirely —
+  05-01 00:00 cpp close=3318.75 vs mt5 3272.02 (**46 pts**); ema/adx all wrong there. A gap/seam bug in the
+  C++ M1 series + HTF aggregation across day boundaries (≈360 such bars; EMA seam mean|Δ| 0.79 vs 0.22 mid).
+
+**⟹ Fix the indicators, the trades converge.** Root-cause priority for the next agent:
+1. **ADX/DI/RSI parity (dominant).** C++ multi-TF ADX/DI/RSI ≠ MT5 `iADX`/`iRSI`. NOTE: MasterVP's C++ ADX/DI
+   matched MT5 "to rounding" ([[mastervp-tick-engine-mt5-validated]]) — but MasterVP is single-TF M3, KenKem
+   AGGREGATES M1→M3/M5/M15. Suspect the aggregation + the Wilder-vs-MT5-iADX-EMA smoothing trap (same family
+   as the `atr_mt5_mode` fix). Port MasterVP's validated indicator path / iADX-as-EMA into `kk::kenkem`'s
+   multi-TF ADX; re-diff the trace until adx mean|Δ| → ~rounding.
+2. **Day-seam bar construction** — why the C++ M1 series has a wrong/offset bar at some 00:00 boundaries
+   (46-pt close gap). Check tick→M1 bucketing + the M3/M5/M15 aggregation seam across daily gaps.
+3. **EMA micro-drift** — likely shrinks once (1)+(2) land (shared bar source); re-check after.
+
+Minor (non-gate, don't chase): EA trace `high`/`low` come from cache shift-0 (forming bar) while `close` is
+shift-1 — cosmetic, not an E5 input. `tenkan`/`kijun` are 0 (E5 has no M1 Ichimoku, expected).
+
 ## Reproduce
 ```
 # Regenerate inputs (kenkem conda env), if absent:
