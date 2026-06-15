@@ -63,6 +63,7 @@ REQUIRE_ADX_CONFLUENCE=false
 
 ; --- emit the per-trade parity journal (MQL5/Files/KenKem/trades_<sym>.csv) ---
 InpExportTradeJournal=true
+InpExportBarTrace=true
 
 ; --- session clock: now fully UTC on BOTH sides (EA windows converted JST->UTC; ticks are UTC) ---
 SERVER_GMT_OFFSET=0

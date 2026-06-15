@@ -63,6 +63,7 @@ REQUIRE_ADX_CONFLUENCE=false
 
 ; --- emit the per-trade parity journal (MQL5/Files/KenKem/trades_<sym>.csv) ---
 InpExportTradeJournal=true
+InpExportBarTrace=true
 
 ; --- dquants-engine ONLY (the MT5 EA derives this from TimeGMT automatically; harmless in MT5) ---
 ; The tick parquet is UTC; the EA's JST session windows = UTC+9. Without this the C++ compares JST

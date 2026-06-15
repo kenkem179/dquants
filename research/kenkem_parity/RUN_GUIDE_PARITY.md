@@ -1,3 +1,37 @@
+# ⭐ NEXT RUNS (2026-06-15) — two MT5 runs I need from you
+
+Both run on **Every tick based on real ticks**, **commission 0**, deposit **10000 / 1:200**.
+The `.set` files already have the right export toggles ON — just Load and Start.
+
+## RUN A — KenKem E5 per-bar TRACE + trade ledger (one run, gives both)
+The EA is now instrumented with a **per-bar E5 decision trace** (`InpExportBarTrace=true`, already in
+the set) on top of the existing trade journal. ONE run produces both files.
+
+| Setting   | Value |
+|-----------|-------|
+| Expert    | `KenKem\KenKemExpert` (recompiled, 0 errors) |
+| Symbol    | **XAUUSD-Exness-KK** (same symbol the dquants ticks came from) |
+| Timeframe | **M1** |
+| Date      | **2025.03.01 → 2025.05.31** |
+| Inputs    | Load `research/kenkem_parity/parity_kenkem_xau.set` |
+
+Confirm in the Inputs tab that **`InpExportTradeJournal=true` AND `InpExportBarTrace=true`**, then Start.
+Outputs land in `…/MQL5/Files/KenKem/`: `trades_XAUUSD-Exness-KK.csv` (ledger) +
+`trace_XAUUSD-Exness-KK.csv` (per-bar, 61 cols). **Tell me when done** — I diff the trace field-by-field
+against the C++ `trace_xau_paritywin.csv` to pin the residual E5 over-fire (extra counter-trend longs) +
+the ~3-min entry lag to a specific column (indicator value vs trigger age vs a named gate).
+
+## RUN B — CLEAN MasterVP/Monster reference (path B, you chose this)
+The old "2426-Good" oracle was a broker blow-up (tick_value≈0.1 → 10× oversizing). Re-run on a
+**correctly-configured** symbol so we validate the real strategy, not the glitch:
+- Expert `KK-MasterVP\KK-MasterVP`, Symbol **XAUUSD-Exness-KK** (NOT the 2426-Good symbol), M3,
+  real ticks, commission 0, Inputs `MQL5/Presets/KK-MasterVP-parity-xau.set` (InpExportTradeJournal=true).
+- Repeat for `KK-MasterVP-Monster\KK-MasterVP-Monster`.
+- ⚠️ Verify the tester log shows a **sane lot size** (~0.1–0.6, not 6+) and the account does **not**
+  blow up — that confirms the tick value is correct this time. Output → `MQL5/Files/KK-MasterVP/trades_*.csv`.
+
+---
+
 # KenKem MT5 reference run — one-batch guide (you click Start, I diff)
 
 Goal: produce the **missing KenKem MT5 trade ledger** (the oracle). I've instrumented the EA,
