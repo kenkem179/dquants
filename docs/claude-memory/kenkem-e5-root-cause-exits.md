@@ -1,11 +1,15 @@
 ---
 name: kenkem-e5-root-cause-exits
-description: WHY KenKem-E5 loses on the canonical tick engine — over-firing is secondary; the killer is exit-management geometry (tiny partial/BE wins vs full-stop losses). golden trace tool built.
+description: WHY KenKem-E5 lost on the canonical tick engine — over-firing secondary; killer was exit-management geometry (tiny partial/BE wins vs full-stop losses). FIX NOW APPLIED & adopted — see [[kenkem-e5-exit-fix-adopted]].
 metadata: 
   node_type: memory
   type: project
   originSessionId: 98d352eb-3b8a-417c-a4cb-c1076046cc6a
 ---
+
+**STATUS 2026-06-15: FIX APPLIED & ADOPTED.** Swept the four exit knobs × maxage on the tick engine →
+E5 flips loss→profit (BTC PF 0.71→1.07, XAU 0.81→1.08, DD crushed). Adopted config + 9-col table in
+[[kenkem-e5-exit-fix-adopted]]. The diagnosis below is retained as the WHY.
 
 **Root cause of KenKem-E5's tick-engine losses, localized 2026-06-15 from the dquants side alone (no MT5
 run needed). Two compounding defects, in priority order:**

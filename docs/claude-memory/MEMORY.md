@@ -1,3 +1,5 @@
+# Project Memory Index
+
 - [Project: KenKem Quant OS](project-kenkem-quant-os.md) — what dquants is and the four-layer architecture
 - [Python env: native arm64 kenkem](python-env-kenkem.md) — conda env location, how to activate, Rosetta pitfall
 - [User goal & workflow](user-goal-quant-stack.md) — what the user wants from this stack
@@ -18,10 +20,14 @@
 - [R&D volume features](rnd-volume-features.md) — F1 net-volume persistence (engine-specific: helps Monster-BTC, REJECTED on MasterVP); F2 node-structure SL/TP; adopt-only-if-better
 - [Cross-dataset harness](cross-dataset-harness.md) — ready DuckDB multi-broker (OANDA/Exness/Binance) validation tooling in research/validation/; run when data arrives
 - [Perf-table format](perf-table-format.md) — the 9 required columns for EVERY strategy comparison table (incl. recovery factor, Sharpe, trades/day)
-- [NEXT WORK: ProfitManager + Phase-14 todos](phase14-profitmanager-and-todos.md) — START HERE next session: build common toggleable ProfitManager module (extract KenKemExpert profit-mgmt) + sweep BTC/XAU; then C1/C2/C4/C6 risk-exit todos
+- [NEXT WORK: ProfitManager + Phase-14 todos](phase14-profitmanager-and-todos.md) — common toggleable ProfitManager module + sweep BTC/XAU; then C1/C2/C4/C6 risk-exit todos
 - [⚠️ KenKem bar-engine INVALID](kenkem-bar-engine-invalid.md) — KenKem PF numbers are bar-OHLC-engine output that FAILED MT5 (PF 1.62 claimed → 0.85 actual); untrustworthy until a tick engine exists
 - [⚠️ MT5 reality: all 3 fail OOS](mt5-reality-all-three-fail.md) — KenKem blowup, MasterVP −20% on recent OOS (period-dependent), Monster ZERO trades (broken port); dquants numbers overstated, nothing validated until MT5-confirmed on recent OOS
 - [✅ MasterVP tick-engine MT5-VALIDATED](mastervp-tick-engine-mt5-validated.md) — 2026-06-15: signal logic EXACT parity, 7/10 trades, 3 misses = ATR%-cap×spike-ATR; adopt InpAtrMt5Mode; supersedes the two ⚠️ notes above for MasterVP
 - [KenKem "config lie" fixed](kenkem-config-lie-fixed.md) — dquants KenKem parsed-but-ignored the EA filters/exits; now wired (E2 PF 1.09, E1 still over-fires 11x); ground truth + STATUS in research/kenkem_parity/
 - [⚠️ BAR engine systemic defect](bar-engine-systemic-defect.md) — dquants bar engine disagrees with MT5 on SIGN of P&L (bar PF0.89 vs tick PF1.12 same config); ALWAYS use the tick engine; bar numbers are research-only
-- [⚠️ KenKem-E5 root cause = exits](kenkem-e5-root-cause-exits.md) — E5 loses on tick engine; over-firing is secondary, the killer is exit geometry (0.3R wins vs full −1R losses); golden trace_dumper tool built; production PF claims invalidated
+- [⚠️ KenKem-E5 root cause = exits](kenkem-e5-root-cause-exits.md) — E5 lost on tick engine; over-firing secondary, killer was exit geometry (0.3R wins vs full −1R losses); FIX NOW APPLIED
+- [✅ KenKem-E5 exit fix ADOPTED](kenkem-e5-exit-fix-adopted.md) — one consensus config (maxage1, partial-trigger 0.95, trail 1.2) flips E5 loss→profit on tick (BTC PF 1.07, XAU 1.08), DD crushed; locked into best_kenkem_E5_*.set
+- [KenKem repo has parallel work](kenkem-repo-has-parallel-work.md) — sibling ../kenkem repo may have concurrent edits; check before assuming state
+- [XAU data gap 2025 H2](xau-data-gap-2025h2.md) — imported XAU ticks miss 2025-07-16→12-31; blocks the configured XAU sweep window
+- [bash 5 in kenkem env](bash5-in-kenkem-env.md) — sweep scripts need bash ≥4; env carries bash 5.2 since macOS has only 3.2
