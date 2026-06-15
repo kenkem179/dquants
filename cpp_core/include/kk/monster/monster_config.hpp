@@ -10,6 +10,8 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
+#include <cstdio>
 #include "kk/common/profit_manager.hpp"
 
 namespace kk::monster {
@@ -408,10 +410,25 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     return true;
 }
 
-// Load a .set into p. Returns # keys applied (-1 if file missing).
+// Keys the KK-MasterVP-Monster EA HARDCODES in its InputParams.mqh (NOT `input`s) — MT5 ignores any
+// .set value for them, so honoring them in C++ breaks parity. Verified 2026-06-16 against
+// KK-MasterVP-Monster/Config/InputParams.mqh (audit: research/kenkem_parity/PARAM_SURFACE_AUDIT.md).
+// best_monster_*.set were contaminated with InpNodeDecay/NeutralBand/Saturation/TouchAtr overrides.
+inline const std::unordered_set<std::string>& monster_non_input_keys() {
+    static const std::unordered_set<std::string> s = {
+        "InpAtrLen", "InpMasterMult", "InpVaPct", "InpVpFeedMode",
+        "InpNodeDecay", "InpNodeNeutralBand", "InpNodeSaturation", "InpNodeTouchAtr",
+        "InpNetWinAtr", "InpTfNetLook", "InpRevAnchorOffAtr", "InpRevPocSlOffAtr",
+        "InpWHvn", "InpWLvn", "InpWMvn"};
+    return s;
+}
+
+// Load a .set into p. Returns # keys applied (-1 if file missing). EA-hardcoded keys are REFUSED
+// (kept at their EA value) so the engine cannot diverge from MT5 on a param MT5 ignores; warns once.
 inline int load_set(MonsterConfig& p, const std::string& path) {
     std::ifstream f(path);
     if (!f) return -1;
+    static std::unordered_set<std::string> warned;
     int applied = 0;
     std::string line;
     while (std::getline(f, line)) {
@@ -421,7 +438,16 @@ inline int load_set(MonsterConfig& p, const std::string& path) {
         if (line.empty()) continue;
         auto eq = line.find('=');
         if (eq == std::string::npos) continue;
-        if (apply_kv(p, detail::mtrim(line.substr(0, eq)), detail::mtrim(line.substr(eq + 1)))) applied++;
+        std::string key = detail::mtrim(line.substr(0, eq));
+        std::string val = detail::mtrim(line.substr(eq + 1));
+        if (monster_non_input_keys().count(key)) {
+            if (warned.insert(key).second)
+                std::fprintf(stderr, "[monster_config] IGNORING .set key '%s=%s' — EA hardcodes it "
+                             "(not an input); keeping EA value to preserve MT5 parity.\n",
+                             key.c_str(), val.c_str());
+            continue;
+        }
+        if (apply_kv(p, key, val)) applied++;
     }
     return applied;
 }

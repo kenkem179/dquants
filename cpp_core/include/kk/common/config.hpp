@@ -191,12 +191,16 @@ inline std::string trim(std::string s) {
 }
 inline bool to_bool(const std::string& v) { return v == "true" || v == "1"; }
 
-// Keys that are non-input compile-constants in InputParams.mqh (MT5 .set ignores them).
+// Keys that are non-input compile-constants in the KK-MasterVP EA's InputParams.mqh — MT5 SILENTLY
+// IGNORES any .set value for them (they are not `input`s). Honoring them in C++ makes dquants diverge
+// from MT5 on a parameter MT5 can't change. Verified 2026-06-16 against KK-MasterVP/Config/InputParams.mqh
+// (full audit: research/kenkem_parity/PARAM_SURFACE_AUDIT.md). InpAtrLen was the missing one — it is
+// "fixed at 14 for parity" in the EA yet leaked through (best_mastervp_*.set carried InpAtrLen=11/15).
 inline const std::unordered_set<std::string>& non_input_keys() {
     static const std::unordered_set<std::string> s = {
         "InpNodeGateEnabled", "InpUsePriorBarVP", "InpBrkRequireFlow", "InpSfpFlowMin",
         "InpUseAtrPctlGate", "InpRsiLen", "InpRsiMidline", "InpVpFeedMode",
-        "InpVpBins", "InpVaPct", "InpMasterMult"};
+        "InpVpBins", "InpVaPct", "InpMasterMult", "InpAtrLen"};
     return s;
 }
 }  // namespace detail
