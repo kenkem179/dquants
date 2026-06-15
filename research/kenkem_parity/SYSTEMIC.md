@@ -114,3 +114,31 @@ and never matched. Worse, the deployed `Inp*` set and the validated UPPERCASE se
 (e.g. MIN_MOMENTUM_ADX 21.3 vs InpMinMomentumAdx 13.97; EMAs 8/18/55/122/163 vs 12/23/53/94/210) — the EA in
 production is NOT running the config the engine validated. TODO: (a) teach `load_set` the `Inp*` aliases (or
 add a converter), (b) reconcile the deployed set against the validated one, (c) re-confirm parity.
+
+## Over-firing root cause LOCALIZED from the dquants side alone (2026-06-15) — golden trace tool built
+Built `cpp_core/tools/kenkem/trace_dumper.cpp` (`make kenkem_trace`): a read-only per-M1-bar decision trace —
+every shift-1 indicator + the E5 trigger state + each E5 gate sub-decision (sideways / atr-pctile lo+hi /
+price-vs-EMA25 / trend-core / adx-floor / htf) for BOTH directions, plus the raw signal-fire. Schema matches
+what an instrumented MQL5 EA would `FileWrite`, so it doubles as the golden-diff C++ side. Ran a 1-week BTC E5
+window (`trace_E5_btc_wk.csv`, 10,077 bars). The residual over-firing was localized WITHOUT an MT5 run:
+
+1. **Trigger liveness, not loose gates, drives the count.** The gates already filter hard (only ~7–8% of
+   live-trigger bars pass). But the E5 trigger is "live" 21% (long) / 16% (short) of all bars because
+   `E5_MAX_EMA_CROSS_AGE=48` keeps one EMA-alignment onset eligible ~48 minutes. Age-at-pass distribution:
+   **43% of qualifying entries fire at trigger age 33–48** (a late chase ~40 min after onset), only ~11% at the
+   genuine onset (age 0–1). Tightening maxage on the TICK engine (2026 OOS BTC): age 48 → 1580 tr, −$25,981,
+   DD 26k; age 1 → 353 tr, −$5,391, DD 5.5k. The wide window inflates trades ~4.5× and DD ~5×.
+
+2. **But over-firing is SECONDARY — the strategy loses at EVERY maxage (PF 0.70–0.77).** Even pure onset
+   entries (age 1) lose. The killer is **exit-management geometry**: on the 1580-trade run, win 70.9% yet avg
+   win **$59 (~0.3R)** vs avg loss **−$200 (full −1R)** (ratio 0.29); max loss −$202 ≈ avg loss ⇒ nearly every
+   loss is a FULL stop-out, while most "wins" are tiny partial-TP / BE-trail scratches and few reach the RR-1.22
+   TP ($241). Net per trade ≈ 0.71·0.3 − 0.29·1.0 = **−0.08R**. The bar engine HID this: its synthetic 4-point
+   OHLC walk mis-resolves the path-dependent partial→BE→trail sequence favorably (→ fake PF 1.34).
+
+**Fix priority:** (a) **exit management** — the partial-TP/BE/trail scratches winners at ~0.3R while losers run
+to full −1R; this is exactly the ProfitManager (C5) surface (giveback-cap, BE-protect, partial-trigger), now
+validatable on the CANONICAL tick engine instead of the bar engine that masked it; (b) **entry maxage** — drop
+`E5_MAX_EMA_CROSS_AGE` toward 1–3 to cut late-chase trades and ~5× the drawdown. Exit geometry is the dominant
+term. The MQL5-instrumentation + python-differ half of the golden diff (for C++↔MQL5 port parity) is built-ready
+but DEFERRED — the cause was localized on the C++ side alone, so the one MT5 run is no longer the critical path.

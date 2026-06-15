@@ -29,8 +29,9 @@ BACKTEST  := $(BUILD)/backtester
 MONSTER   := $(BUILD)/monster_backtester
 KENKEM    := $(BUILD)/kenkem/backtester
 KENKEMTICK:= $(BUILD)/kenkem/tick_backtester
+KENKEMTRACE:= $(BUILD)/kenkem/trace_dumper
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -61,6 +62,11 @@ $(KENKEMTICK): tools/kenkem/tick_backtester.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+kenkem_trace: $(KENKEMTRACE)
+$(KENKEMTRACE): tools/kenkem/trace_dumper.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 test: $(TEST_BINS)
 	@fail=0; for t in $(TEST_BINS); do echo "==== $$t ===="; $$t || fail=1; done; \
 	 if [ $$fail -eq 0 ]; then echo "ALL TESTS PASSED"; else echo "TESTS FAILED"; fi; exit $$fail
@@ -68,4 +74,4 @@ test: $(TEST_BINS)
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test parity backtester monster kenkem clean
+.PHONY: all test parity backtester monster kenkem kenkem_tick kenkem_trace clean
