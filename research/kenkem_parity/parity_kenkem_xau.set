@@ -34,8 +34,7 @@ INPUT_EMA1_PERIOD=22
 INPUT_EMA2_PERIOD=72
 INPUT_EMA3_PERIOD=96
 INPUT_EMA4_PERIOD=215
-ADX_LEN=14
-RSI_LEN=20
+; ADX_LEN / RSI_LEN removed: EA hardcodes them to 14 (not inputs); engine now ignores any override.
 ENABLE_E1_ENTRIES=false
 ENABLE_E2_ENTRIES=false
 ENABLE_E4_ENTRIES=false

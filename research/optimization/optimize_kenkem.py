@@ -59,6 +59,23 @@ SPACE = [
 ]
 TOGGLES = ["ENABLE_E1_ENTRIES", "ENABLE_E2_ENTRIES", "ENABLE_E4_ENTRIES", "ENABLE_E5_ENTRIES"]
 
+# TRUST GUARD: the KenKem EA HARDCODES these in InputParams.mqh (they are NOT inputs), so MT5 can never
+# honor a swept value. Optimizing them produces a "best" config that loses when run in MT5. The C++ engine
+# now refuses them too (kenkem_config.hpp::is_ea_locked_key). Strip them from the search space so no trial
+# wastes a dimension on an EA-unhonorable param. See research/kenkem_parity/PARAM_SURFACE_AUDIT.md.
+EA_LOCKED = {
+    "ADX_LEN", "RSI_LEN", "ICHIMOKU_TENKAN", "ICHIMOKU_KIJUN", "ICHIMOKU_SENKOU",
+    "USE_CONVICTION_SCORING_E1", "USE_CONVICTION_SCORING_E2", "USE_CONVICTION_SCORING_E4",
+    "USE_HTF_VETO_E1", "USE_HTF_VETO_E2", "USE_HTF_VETO_E4",
+    "USE_ICHIMOKU_E1", "USE_ICHIMOKU_E2", "USE_ICHIMOKU_E4", "IGNORE_VALID_SESSIONS",
+    "JAPAN_START", "JAPAN_END", "LONDON_START", "LONDON_END", "NY_START", "NY_END",
+}
+_dropped = [s[0] for s in SPACE if s[0] in EA_LOCKED] + [t for t in TOGGLES if t in EA_LOCKED]
+if _dropped:
+    print(f"[trust-guard] dropping EA-hardcoded params from search space: {sorted(set(_dropped))}")
+SPACE = [s for s in SPACE if s[0] not in EA_LOCKED]
+TOGGLES = [t for t in TOGGLES if t not in EA_LOCKED]
+
 MIN_TRADES = 400
 
 
