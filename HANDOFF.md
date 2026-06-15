@@ -2,6 +2,32 @@
 
 _Last updated: 2026-06-16 by Claude (Opus 4.8). Branch `1-reorganize-code`._
 
+## 🚨 TRUST CHECK (2026-06-16, latest) — user ran the 3 promoted EAs in MT5; all bad
+User compiled & tested KK-Monster/MasterVP/KenKem in MT5 and called the results "trash / no profit."
+**Correct.** Today's journal (`../kenkem/Tester/.../logs/20260616.log`): KK-KenKem XAU M1 = 1164 entries /
+1 TP / 629 SL (~0%); KK-Monster XAU M1 = 2576 entries / 18% TP (over-fires); MasterVP BTC M3 = 12% TP,
+XAU M1 = 0 trades. Full unspun scorecard: **`research/optimization/HONEST-AUDIT-2026-06-16.md`**.
+**None of the 3 dquants ports is profit-validated. Only the user's ORIGINAL `KenKemExpert` (E1+E2, PF
+1.62) works in MT5.** Compiling ≠ validating. Do not present engine PFs as deployable.
+
+## 🧭 PIPELINE FIX IN PROGRESS (2026-06-16) — spec written, Monster fidelity next
+User: pipeline isn't useless, the **validate→deploy** link is. Plan agreed: (1) spec ✅
+`research/PIPELINE-CONTRACT.md` (engine rule: tick-only; config rule: Class-A only; VALIDATE gate =
+manual-MT5 parity diff; DEPLOY gate = parity PASS + beats original KenKemExpert). (2) Fix engine
+fidelity bugs — **MT5 stays MANUAL for now**. Target = **Monster**.
+- **Stale diagnosis RETIRED:** deployed `KK-Monster/Engine.mqh::MonNearNet` = body-proxy net (port of
+  C++ `tf_net_near_at`), NOT broker volume; it fired 2,576 entries today (not 0). The bug is now
+  **economics**, not signal-firing: engine PF ~1.23 vs MT5 ~18% TP loss.
+- **#1 lead (cost model) — RESOLVED as NOT the cause:** user is on **Exness Pro = COMMISSION-FREE**
+  (web-verified 2026-06-16; cost is in the spread). Engine already models $0 commission + real spread
+  from ticks, so **commission is NOT the Monster divergence.** Commission is now importable anyway
+  (added key `CommissionPerLot`/`InpCommissionPerLot` → `apply_kv`, config.hpp:324; files
+  `cpp_core/tools/commission_{xau,btc}_exness_pro.set` = 0.0, with Raw/Zero refs for account switching;
+  import verified by /tmp test). **→ Pivot: the culprit is exit geometry or a spread mismatch between
+  the engine's tick feed and MT5's modeled spread, NOT costs.**
+- **Next build:** `research/validation/parity_diff.py` to make the manual MT5 run a real gate, then the
+  first Monster trade-level engine-vs-MT5 diff to pinpoint exit-geometry vs spread.
+
 ## 🎯 Goal (user, restated 2026-06-16)
 Make the **dquants tick engines reproduce MT5 "every tick" EXACTLY** so they can be trusted, then run
 **reliable param sweeps** to rank production candidates. User's framing: *"my original EAs are profitable

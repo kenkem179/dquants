@@ -321,6 +321,9 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNewsMinsBefore") p.news_mins_before = I();
     else if (key == "InpNewsMinsAfter") p.news_mins_after = I();
     else if (key == "InpVpFeedMode") p.vp_feed_mode = I();
+    // Account economics (NOT an MQL `input`; MT5 sources commission from the account/symbol). The
+    // engine needs it told so its $ P&L matches the tester. Importable so account type can be swapped.
+    else if (key == "CommissionPerLot" || key == "InpCommissionPerLot") p.commission_per_lot = D();
     else return false;
     return true;
 }
