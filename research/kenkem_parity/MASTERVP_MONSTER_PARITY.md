@@ -54,6 +54,13 @@ exit-family agreement 146/155 = 94%              <- executor exits: largely FAIT
    Secondary: `position already open` = one-position-at-a-time concurrency MT5 enforces that dquants does
    not. So this is NOT a signal-detection gate — it's governor behavior coupled to sizing + concurrency.
 
+   **Confirmed by experiment** (set `InpRiskAccPct` 1.6→16 to mirror MT5's effective 16.5% risk):
+   dquants then took **0 trades** (740 signals), because its daily-DD breaker is **PREDICTIVE**
+   (`is_daily_dd_hit` adds the next trade's worst-case loss → a single 16% trade alone exceeds the 5%
+   daily cap → every entry pre-blocked). MT5 *took* those trades, so MT5's breaker is **REACTIVE** (fires
+   only after a *realized* ≥5% daily loss). That predictive-vs-reactive difference is a concrete parity
+   bug in `kk::common::risk_manager` — invisible at 1.6% risk, decisive at 16%. Path (A) must fix it.
+
 3. **Sizing ~10× (broker tick-value quirk) — the ROOT CAUSE of both $-scale AND the over-fire.** Log:
    `InpRiskUnit=0, InpRiskAccPct=1.6` → budget should be 1.6%·$10k = $160 → ~0.6 lots. But MT5 sized
    **lot=6.34** (≈$1654 = 16.5%), then settled P&L at contract=100 (−1678 = 6.34·2.61·100). So MT5
