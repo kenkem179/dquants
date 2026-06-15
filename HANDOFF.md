@@ -12,7 +12,7 @@ must act identically across the original MQL5 EA and the dquants C++ engine — 
 |---|---|---|
 | **MasterVP** | ✅ Validated (signal-exact; misses = MT5 iATR tick-jitter on a knife-edge gate) | Trustworthy for sweeps now |
 | **Monster** | ✅ Zero-trade bug fixed (`*100` unit fix), engine matches oracle | |
-| **KenKem** | 🔴 C++ inverts verdict (C++ PF 0.90 vs MT5 1.23, XAU/E5). Gap narrowed 394→218 vs MT5 136 | E5 only so far; E3 missing in C++ |
+| **KenKem** | 🟡 Verdict UN-INVERTED (ADX_LEN fix): C++ PF **1.11** (was 0.90) vs MT5 1.23; 150 trades vs MT5 136 | E5 only so far; E3 missing in C++. Residual = ~3-min entry lag (M1 EMA micro-drift) |
 
 ## ✅ What just changed this session (commits)
 - **dquants `a4fe28a`** — Corrected a MIS-diagnosis: the "daily-DD predictive-vs-reactive parity bug"
@@ -23,9 +23,10 @@ must act identically across the original MQL5 EA and the dquants C++ engine — 
 - **kenkem `bbc3301`** — Built the EA-side **per-bar E5 decision trace**: `Parity/BarTrace.mqh` +
   `Entry5::TraceBar()` + 4 hooks in `KenKemExpert.mq5`. Emits the identical 61-col schema as the C++
   `cpp_core/tools/kenkem/trace_dumper`. Behind `InpExportBarTrace` (default off). **Compiles clean.**
-- **dquants (uncommitted as of writing)** — added `InpExportBarTrace=true` to `parity_kenkem_{xau,btc}.set`;
-  added RUN A / RUN B sections to `research/kenkem_parity/RUN_GUIDE_PARITY.md`; this HANDOFF.md +
-  CLAUDE.md handoff mandate.
+- **dquants `28e18cf` + `59929ee` (committed & pushed)** — ADX_LEN=14 fix in `parity_kenkem_{xau,btc}.set`;
+  `InpExportBarTrace=true`; `diff_kenkem_trace.py`; regenerated canonical `trace_xau_paritywin.csv`
+  (87,844 rows = MT5, was stale 82,112); RUN A/B sections in `RUN_GUIDE_PARITY.md`; this HANDOFF.md +
+  CLAUDE.md handoff mandate. **Tree is CLEAN, branch pushed to origin.**
 
 ## ✅ RUN A DONE + ROOT CAUSE FIXED (2026-06-16) — ADX_LEN mismatch; verdict UN-INVERTED
 MT5 oracle 136 trades (`mt5_trades_xau_runA.csv`); per-bar trace `mt5_trace_xau_runA.csv`. Diff tools:
