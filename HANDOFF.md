@@ -2,74 +2,62 @@
 
 _Last updated: 2026-06-16 by Claude (Opus 4.8). Branch `1-reorganize-code`._
 
-## 🎯 Goal (user, restated 2026-06-15)
-Make the **dquants tick backtest engines reproduce MT5 "Every tick based on real ticks" exactly** so the
-engine can be trusted for parameter sweeps. **CRITICAL scope clarification:** ALL entry types **E1–E5**
-must act identically across the original MQL5 EA and the dquants C++ engine — not just one entry.
+## 🎯 Goal (user, restated 2026-06-16)
+Make the **dquants tick engines reproduce MT5 "every tick" EXACTLY** so they can be trusted, then run
+**reliable param sweeps** to rank production candidates. User's framing: *"my original EAs are profitable
+but the C++-optimized configs lose in MT5"* — find & fix why, reproduce ≥ EA profitability. **Don't lie.**
+Mode: autopilot, commit as you go, revert bad code.
 
-## 📍 Where we are (per strategy)
-| Strategy | Tick-engine parity vs MT5 | Notes |
+## 🔑 ROOT CAUSE FOUND & FIXED THIS SESSION — systemic param contamination (all 3 strategies)
+The dquants engines exposed `.set` keys that the EAs **HARDCODE** (not `input`s). MT5 silently ignores
+them, so any sweep that moved one produced a config MT5 can't reproduce → it loses when deployed. **This is
+exactly why the user's optimized configs failed in MT5.** Full audit: `research/kenkem_parity/PARAM_SURFACE_AUDIT.md`.
+
+| Strategy | hardcoded keys exposed | contamination found | fix (committed) |
+|---|---:|---|---|
+| KenKem | 21 (ADX_LEN, RSI_LEN, ICHIMOKU_*, USE_CONVICTION_*, USE_HTF_VETO_*, USE_ICHIMOKU_*, sessions) | **51** best_*.set swept ADX_LEN; 51 swept RSI_LEN; parity sets too | `is_ea_locked_key()` refuses them (`82fb4b9`) |
+| MasterVP | 12 | best_mastervp_*: InpAtrLen=11/15, InpVpBins=21/49, InpVaPct~75 | added `InpAtrLen` to `non_input_keys()` (`ece8f2b`) |
+| Monster | 15 | best_monster_*: InpNodeDecay/NeutralBand/Saturation/TouchAtr | new `monster_non_input_keys()` refuses 15 (`ece8f2b`) |
+
+Engines now **structurally cannot** honor an EA-hardcoded param (warn once + keep EA value). New tests:
+`test_ea_locked_keys_ignored`, `test_monster_locked_keys_ignored`. **ALL C++ TESTS PASS.**
+
+## 📍 Parity state after the fix (per strategy)
+| Strategy | tick parity vs MT5 | evidence |
 |---|---|---|
-| **MasterVP** | ✅ Validated (signal-exact; misses = MT5 iATR tick-jitter on a knife-edge gate) | Trustworthy for sweeps now |
-| **Monster** | ✅ Zero-trade bug fixed (`*100` unit fix), engine matches oracle | |
-| **KenKem** | 🟡 Verdict UN-INVERTED (ADX_LEN fix): C++ PF **1.11** (was 0.90) vs MT5 1.23; 150 trades vs MT5 136 | E5 only so far; E3 missing in C++. Residual = ~3-min entry lag (M1 EMA micro-drift) |
+| **MasterVP** | ✅ validated (signal-exact); InpAtrLen leak now closed | [[mastervp-tick-engine-mt5-validated]] |
+| **Monster** | 🟡 engine matches oracle; best-sets were contaminated, now lockable | re-run needed |
+| **KenKem** | 🟡 **much closer**: RSI lock took XAU E5 **150→139 trades** (MT5 136), net +559/PF 1.10 (MT5 +995/1.23), verdict stays un-inverted, geometry mean\|Δ\|=0.03 | `cpp_trades_xau_locked.csv`, PARITY_RESULT_XAU.md |
 
-## ✅ What just changed this session (commits)
-- **dquants `a4fe28a`** — Corrected a MIS-diagnosis: the "daily-DD predictive-vs-reactive parity bug"
-  is NOT a bug. MT5 `IsDailyDDHit(ComputeRiskBudgetUSD())` is predictive too (RiskManager.mqh:142-147),
-  byte-identical to `kk::common::risk_manager::is_daily_dd_hit`. **Do NOT flip it** — would break parity.
-  The only real MasterVP/Monster divergence is the broker `tick_value≈0.1` glitch. See
-  `research/kenkem_parity/MASTERVP_MONSTER_PARITY.md`.
-- **kenkem `bbc3301`** — Built the EA-side **per-bar E5 decision trace**: `Parity/BarTrace.mqh` +
-  `Entry5::TraceBar()` + 4 hooks in `KenKemExpert.mq5`. Emits the identical 61-col schema as the C++
-  `cpp_core/tools/kenkem/trace_dumper`. Behind `InpExportBarTrace` (default off). **Compiles clean.**
-- **dquants `28e18cf` + `59929ee` (committed & pushed)** — ADX_LEN=14 fix in `parity_kenkem_{xau,btc}.set`;
-  `InpExportBarTrace=true`; `diff_kenkem_trace.py`; regenerated canonical `trace_xau_paritywin.csv`
-  (87,844 rows = MT5, was stale 82,112); RUN A/B sections in `RUN_GUIDE_PARITY.md`; this HANDOFF.md +
-  CLAUDE.md handoff mandate. **Tree is CLEAN, branch pushed to origin.**
+## ⚠️ TWO things still block "100% identical" + "trustworthy sweeps"
+1. **KenKem residuals** (refinements, NOT sign inversions): (a) ~3–6 min **entry lag** — M1 indicator
+   micro-drift flips the strict `25>75>100>200` onset (worst at weekly-open bar seams, e.g. close max\|Δ\|=42
+   at a Sun 22:09 bar — a real bar-construction seam to chase); (b) **exit geometry** — dquants closes via
+   tight `SL-WIN` trail where MT5 closes via `EA`-managed exits → win% 77.7 vs 52, PF 1.10 vs 1.23.
+2. **Sweeps ran on the BAR engine** (`optimize_kenkem.py` BIN=kenkem/backtester) which disagrees with MT5 on
+   P&L sign ([[bar-engine-systemic-defect]]). Trustworthy sweeps MUST use the **tick engine**. The 51+4
+   `best_*` sets are unreliable and must be **regenerated** by a clean tick-engine sweep over CLASS-B
+   (honorable) params only. `optimize_kenkem.py` now strips locked keys from its search space (`6c4ad18`).
 
-## ✅ RUN A DONE + ROOT CAUSE FIXED (2026-06-16) — ADX_LEN mismatch; verdict UN-INVERTED
-MT5 oracle 136 trades (`mt5_trades_xau_runA.csv`); per-bar trace `mt5_trace_xau_runA.csv`. Diff tools:
-`diff_kenkem_trades.py` + new `diff_kenkem_trace.py`. Full writeup: `PARITY_RESULT_XAU.md` iter 4-5.
-- **THE BUG:** parity set had `ADX_LEN=9`; C++ applied it (ADX(9)) but the EA hardcodes `int ADX_LEN=14`
-  (NOT an input) so MT5 always ran ADX(14). ADX(9)>ADX(14) → ~7.8 ADX drift → over-fire + verdict inversion.
-- **FIX = `ADX_LEN=14` in `parity_kenkem_{xau,btc}.set` (+ presets).** Result: ADX drift 7.8→~0.1-2.0;
-  trades 218→**150** (MT5 136); **PF 0.90 (losing) → 1.106 (winning)**, MT5 1.23. Verdict no longer inverted.
-- Also fixed a stale committed trace (was 82,112 rows missing Apr 28-30/May 16; fresh = 87,844 = MT5).
-- **⚠️ SYSTEMIC: dquants exposes params (ADX_LEN…) the EA HARDCODES.** Any sweep that moved them made
-  EA-unhonorable configs → the prior "distilled" PF numbers used a different ADX than the EA. MUST audit:
-  every C++ tunable → a real EA `input`. This is central to "trust the engine."
-- **Residual (smaller):** ~3-min entry lag (M1 EMA micro-drift ~0.16 flips strict alignment onset) +
-  adx_m1 2.06 / M1 DI-RSI / weekly-open (Sun 22:00) EMA-close seams (close max|Δ|42 @ 05-11 22:09).
-
-## ⛔ STILL BLOCKED ON USER — RUN B (clean MasterVP/Monster reference)
-`RUN_GUIDE_PARITY.md` → RUN B. Correctly-configured XAU symbol (sane lots, no blow-up), replaces the
-broker-glitched "2426-Good" oracle. Lower priority than the KenKem indicator fix below.
-
-## ▶️ NEXT ACTIONS (in order) — no user needed for #1-#2
-1. **AUDIT THE PARAM SURFACE (systemic, highest trust-value).** ADX_LEN proved dquants exposes tunables the
-   EA hardcodes. Cross-check EVERY `kk::kenkem` config key (kenkem_config.hpp `apply_key`) against the EA: is
-   there a matching `input`? If the EA hardcodes it (like ADX_LEN), the C++ must LOCK to the EA's value and it
-   must NOT be swept. Produce a table {C++ key → EA input? → value} and fix the locked `.set`s + best_* sets.
-   (RSI_LEN, the ATR periods, sideways thresholds, HTF mins are prime suspects.)
-2. **Close the residual M1 drift** (after #1): the ~3-min entry lag is M1 EMA micro-drift flipping the strict
-   onset; investigate the M1 bar high/low vs MT5 bid bars + the weekly-open (Sun 22:00) seam. To verify bars
-   directly, fix the EA `TraceBar` high/low to shift-1 (currently shift-0, cosmetic) and add tick_count, then
-   one more RUN A gives MT5's true M1 OHLC to diff. Also fix EA trace `adxS/diPS/diMS` to emit the iADX(9)
-   short handle (currently emits the 14-period cache → false 7.8 drift on those 3 cols only).
-3. **(needs RUN B, optional)** Clean MasterVP/Monster reference — LOW priority (MasterVP already validated;
-   see answer to user 2026-06-16: RUN B is largely redundant, only a clean Monster-XAU confirmation remains).
-4. **ALL-ENTRIES (user's real goal):** C++ covers **E1/E2/E4/E5 but NOT E3**; traces are E5-only. Add E3;
-   generalize both traces to per-entry columns; parity-diff each. The #1 param audit + ADX fix help ALL entries.
+## ▶️ NEXT ACTIONS (in order)
+1. **Re-validate MasterVP + Monster** on the tick engine with the cleaned engine (confirm no regression,
+   confirm profitable, diff vs their MT5 oracles). Data: regenerate `bars_xauusd_2425_*.csv` +
+   `ticks_xauusd_2425_window.csv` (see MASTERVP_MONSTER_PARITY.md repro).
+2. **Build a tick-engine sweep harness** (replace bar-engine `optimize_kenkem.py` BIN, or new script) and
+   regenerate the `best_*` candidates honestly. THEN produce the 9-col comparison table → top production pick.
+3. **Close KenKem residuals**: chase the weekly-open M1 bar seam (tick→M1 bucketing across daily gaps) for
+   the entry lag; reconcile the E5 exit path (SL-WIN vs EA-managed) for the win%/PF gap.
+4. **ALL-ENTRIES**: C++ covers E1/E2/E4/E5 but NOT E3; traces are E5-only. Add E3; per-entry parity.
 
 ## 🔑 Key facts / gotchas
-- Python: use `~/miniforge3/envs/kenkem/bin/python` (NOT system python3, NOT `conda activate`).
-- Compile MQL5 here: `bash scripts/compile_mql5.sh <abs path to .mq5>` (wine64 + MetaEditor).
-- MT5 tester output: `kenkem/Tester/Agent-127.0.0.1-3000/MQL5/Files/<strategy>/`. Symbol is
-  `XAUUSD-Exness-KK`, not plain XAUUSD. Confirm export inputs show `true` in the tester log.
+- Python: `~/miniforge3/envs/kenkem/bin/python` (NOT system python3, NOT `conda activate`).
+- Use the **tick engine** (`cpp_core/build/kenkem/tick_backtester`, `cpp_core/build/backtester`,
+  `cpp_core/build/monster_backtester`), NEVER the bar engine, for any P&L / parity claim.
+- This shell is bash 3.2 (no `declare -A`); the kenkem env has bash 5. Some write-loops returned no output —
+  use Edit or awk, not bash assoc-arrays.
+- MT5 tester output: `kenkem/Tester/Agent-127.0.0.1-3000/MQL5/Files/<strategy>/`. XAU symbol = `XAUUSD-Exness-KK`.
 - Adopt a toggle to a locked `.set` ONLY if **net↑ AND drawdown↓**; rank on 2026 OOS; report the 9-col table.
-- Use the **tick engine**, never the bar engine, for any P&L claim (bar engine disagrees on sign).
 
 ## 📚 Durable plan & memory
-`docs/BUILD-PLAN.md` (phase plan, keep ticking) · `~/.claude/.../memory/MEMORY.md` (cross-session facts) ·
-`research/kenkem_parity/` (PARITY_RESULT_XAU.md, MASTERVP_MONSTER_PARITY.md, RUN_GUIDE_PARITY.md).
+`docs/BUILD-PLAN.md` · `~/.claude/.../memory/MEMORY.md` · `research/kenkem_parity/` (PARAM_SURFACE_AUDIT.md =
+the trust artifact; PARITY_RESULT_XAU.md; MASTERVP_MONSTER_PARITY.md; RUN_GUIDE_PARITY.md).
