@@ -49,6 +49,8 @@ struct KenKemConfig {
     int    max_session_losses     = 4;        // MAX_SESSION_LOSSES
     int    max_sltp_per_session   = 7;        // MAX_SLTP_COUNT_PER_SESSION
     int    min_seconds_between    = 60;       // MIN_SECONDS_BETWEEN_ENTRIES
+    int    max_consec_losses_type = 3;        // MAX_CONSECUTIVE_LOSSES_PER_ENTRY_TYPE (0 = off)
+    int    consec_loss_block_mins = 60;       // ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS
     int    max_entries_per_day    = 0;        // hard cap on NEW entries per UTC day (0 = off).
                                               // Robust backstop proxy for the original's per-session
                                               // SLTP caps; prevents over-trading bleed.
@@ -340,6 +342,8 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "MAX_SESSION_LOSSES") p.max_session_losses = I();
     else if (key == "MAX_SLTP_COUNT_PER_SESSION") p.max_sltp_per_session = I();
     else if (key == "MIN_SECONDS_BETWEEN_ENTRIES") p.min_seconds_between = I();
+    else if (key == "MAX_CONSECUTIVE_LOSSES_PER_ENTRY_TYPE") p.max_consec_losses_type = I();
+    else if (key == "ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS") p.consec_loss_block_mins = I();
     else if (key == "MAX_CONCURRENT_POSITIONS_ALLOWED") p.max_concurrent_pos = I();
     else if (key == "BLOCK_OPPOSITE_DIRECTION_ENTRIES") p.block_opposite_dir = kbool(val);
     else if (key == "CLOSE_ALL_TRADES_AT_SESSION_END") p.close_at_session_end = kbool(val);

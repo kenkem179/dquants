@@ -8,6 +8,7 @@
 #pragma once
 #include "kk/kenkem/triggers.hpp"
 #include "kk/kenkem/gates.hpp"
+#include "kk/kenkem/scoring.hpp"
 #include "kk/kenkem/snapshot.hpp"
 #include "kk/kenkem/kenkem_config.hpp"
 #include <algorithm>
@@ -104,6 +105,11 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
     // never wired into the distilled engine — its absence is a primary cause of over-trading in chop.
     // 0 disables. Applies to EVERY entry, including E5.
     if (c.min_entry_atr_pctile > 0.0 && s.atr_pctile < c.min_entry_atr_pctile) return false;
+    // ATR HIGH block (ENABLE_ATR_HIGH_BLOCK / ATR_PERCENTILE_HIGH): the EA blackswan-blocks entries when
+    // current ATR sits in the top of its distribution ("Market volatility is too high"). Previously
+    // parsed-but-ignored. 0 disables.
+    if (c.enable_atr_high_block && c.atr_percentile_high > 0.0 && s.atr_pctile > c.atr_percentile_high)
+        return false;
     const double tol = c.ema_align_tol_pips * c.pip_size;
     // E5 (SuperBros): price on the right side of EMA25 + HTF + ADX floor. The original runs E5 with a
     // trend-quality floor (MIN_TREND_QUALITY_E5), so it is NOT exempt from the hard trend gate.
@@ -115,6 +121,10 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
         return htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
     }
     if (trend_core_score(s, is_long, c) == 0) return false;          // hard gate (E1/E2/E4)
+    // Selectivity filters the EA's .set turns on but the distilled engine parsed-and-ignored: full
+    // 0-11 trend-quality minimum, conviction threshold (E2=10!), and the RSI-divergence veto. Their
+    // absence was the primary cause of the dquants edition over-trading and losing. See scoring.hpp.
+    if (!quality_filters_ok(kind, is_long, b, s, align, c)) return false;
     switch (kind) {
         case 1:  // E1: EMA alignment still holds (M1+M3) + M5 HTF
             if (!emas_ready(b.m1, align.m1 - 1, is_long, true, tol)) return false;

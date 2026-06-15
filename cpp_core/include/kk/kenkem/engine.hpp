@@ -7,6 +7,7 @@
 #pragma once
 #include "kk/kenkem/entries.hpp"
 #include "kk/kenkem/trade_manager.hpp"
+#include "kk/kenkem/exits.hpp"
 #include "kk/kenkem/snapshot.hpp"
 #include "kk/kenkem/triggers.hpp"
 #include "kk/kenkem/tf_cache.hpp"
@@ -30,7 +31,7 @@ struct BtResult {
 };
 
 namespace detail {
-struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; };
+struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; ExitState exit_st; };
 }
 
 inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
@@ -54,6 +55,15 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
     int64_t cur_day = -1;
     int     entries_today = 0;
 
+    // Stateful governors (previously parsed-but-ignored). Keyed by entry kind (1..5) and direction.
+    // Consecutive-loss-per-entry-type block: after MAX_CONSECUTIVE_LOSSES_PER_ENTRY_TYPE losses on a
+    // (kind,dir), that bucket is blocked for ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS. MIN_SECONDS_BETWEEN
+    // throttles new entries. These suppress the post-loss over-trading bleed the EA avoids.
+    auto bucket = [](int kind, bool is_long){ return (kind & 7) * 2 + (is_long ? 0 : 1); };
+    int     consec_loss[16] = {0};
+    int64_t blocked_until[16] = {0};
+    int64_t last_entry_ms = -1;
+
     for (int B = 1; B < N; ++B) {
         const kk::Bar& bar = b.m1.bars[B];
         if (start_ms && bar.ts_ms < start_ms) continue;
@@ -67,13 +77,24 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
         // (1) Triggers from closed bars (<= B-1).
         update_triggers(b, cfg, B, align, tg);
 
+        // Closed-bar snapshot for this bar — shared by entry selection and the adaptive early-exits.
+        Snapshot snap = (B >= warmup_bars) ? build_snapshot(b, cfg, B, align) : Snapshot{};
+
         // (2) Entry decision (uses closed data); fill at this bar's open.
         if (B >= warmup_bars && day_cap_ok && (int)open.size() < cfg.max_concurrent_pos) {
-            Snapshot snap = build_snapshot(b, cfg, B, align);
             if (snap.valid && snap.atrM1 > 0.0) {
                 EntrySignal sig = detect_entry(b, cfg, B, align, snap, tg);
                 if (sig.detected) {
                     bool block = cfg.block_opposite_dir && count_dir(!sig.is_long) > 0;
+                    // MIN_SECONDS_BETWEEN_ENTRIES throttle.
+                    if (cfg.min_seconds_between > 0 && last_entry_ms >= 0 &&
+                        bar.ts_ms - last_entry_ms < (int64_t)cfg.min_seconds_between * 1000) block = true;
+                    // Consecutive-loss-per-entry-type block (auto-expires).
+                    {
+                        int bk = bucket(sig.kind, sig.is_long);
+                        if (blocked_until[bk] > 0 && bar.ts_ms < blocked_until[bk]) block = true;
+                        else if (blocked_until[bk] > 0) { blocked_until[bk] = 0; consec_loss[bk] = 0; }
+                    }
                     if (!block) {
                         double half = 0.5 * bar.spread_mean;
                         double fill = bar.open + (sig.is_long ? half : -half);
@@ -86,8 +107,9 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
                             double lot = position_size(cfg.start_balance, sig.kind, risk, cfg);
                             Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, sig.tp, lot, cfg);
                             // seed pnl with entry commission; balance changes only when the trade closes
-                            open.push_back({ p, bar.ts_ms, fill, -lot * cfg.commission_per_lot });
+                            open.push_back({ p, bar.ts_ms, fill, -lot * cfg.commission_per_lot, ExitState{} });
                             ++entries_today;
+                            last_entry_ms = bar.ts_ms;
                         }
                     }
                 }
@@ -103,6 +125,15 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
         for (size_t k = 0; k < open.size(); ) {
             detail::OpenPos& o = open[k];
             std::vector<Fill> fills;
+            // Adaptive early-exits (panic / score-drop): evaluated once at bar open on the closed-bar
+            // snapshot, BEFORE the OHLC walk. Skip the bar the position opened on (no same-bar exit).
+            if (snap.valid && o.p.open && o.t_in != bar.ts_ms) {
+                bool px = panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, bar.open,
+                                              o.p.best, o.p.partial_done, b, align, cfg);
+                bool sx = !px && score_drop_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.tp, bar.open,
+                                                     o.p.partial_done, snap, cfg, o.exit_st);
+                if (px || sx) { fills.push_back({ bar.open, o.p.lot, 'X' }); o.p.lot = 0; o.p.open = false; }
+            }
             for (int s = 0; s < 4 && o.p.open; ++s) manage_tick(o.p, path[s], cfg, fills);
             for (const Fill& f : fills) {
                 double exit_px = f.price - (o.p.is_long ? half : -half);     // pay spread on exit
@@ -116,6 +147,14 @@ inline BtResult run_backtest(const TfBundle& b, const KenKemConfig& cfg,
                 t.entry = o.entry_anchor; t.lot = o.p.init_lot; t.pnl = o.pnl_acc;
                 R.list.push_back(t);
                 if (o.pnl_acc >= 0) { gross_win += o.pnl_acc; ++R.wins; } else { gross_loss += -o.pnl_acc; }
+                // Consecutive-loss-per-entry-type tracking: arm a timed block after N losses; a win resets.
+                {
+                    int bk = bucket(o.p.kind, o.p.is_long);
+                    if (o.pnl_acc < 0) {
+                        if (++consec_loss[bk] >= cfg.max_consec_losses_type && cfg.max_consec_losses_type > 0)
+                            blocked_until[bk] = bar.ts_ms + (int64_t)cfg.consec_loss_block_mins * 60000;
+                    } else { consec_loss[bk] = 0; }
+                }
                 ++R.trades;
                 if (balance > peak) peak = balance;
                 if (peak - balance > R.max_dd) R.max_dd = peak - balance;

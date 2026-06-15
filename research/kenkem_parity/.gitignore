@@ -1,0 +1,4 @@
+# Large regenerable artifacts (rebuild from the MT5 journal + tick parquet)
+winrun.log
+bars_xauusd_M1_kk.csv
+*.tmp

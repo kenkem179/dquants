@@ -15,6 +15,17 @@ static TfIndicators blank(int n, bool ichi = false) {
 }
 static void bull_emas(TfIndicators& s, int i) { s.ema[1][i]=110; s.ema[2][i]=108; s.ema[3][i]=106; s.ema[4][i]=104; }
 
+// These tests isolate trigger dispatch + SL/TP geometry. The full conviction / trend-quality / RSI-veto
+// selectivity filters are exercised separately in test_kenkem_scoring.cpp; relax them here so the
+// geometry fixtures (which don't populate multi-bar ADX/RSI history) aren't blocked by them.
+static KenKemConfig geom_cfg() {
+    KenKemConfig c; c.pip_size = 0.01;
+    c.min_tq_e1 = c.min_tq_e2 = c.min_tq_e4 = 0;
+    c.use_conviction_e1 = c.use_conviction_e2 = c.use_conviction_e4 = false;
+    c.enable_rsi_div_veto = false;
+    return c;
+}
+
 static Snapshot snap_bull() {
     Snapshot s; s.valid = true;
     for (int t=0;t<4;++t){ s.adx[t]=30; s.diP[t]=28; s.diM[t]=8; }
@@ -33,7 +44,7 @@ static TfBundle bundle_bull(int B, TfBundle::Align a) {
 }
 
 void test_e1_long_fires_with_geometry() {
-    KenKemConfig c; c.pip_size = 0.01;
+    KenKemConfig c = geom_cfg();
     int B = 50; TfBundle::Align a{50,16,10,3};
     TfBundle b = bundle_bull(B, a);
     Snapshot s = snap_bull();
@@ -49,7 +60,7 @@ void test_e1_long_fires_with_geometry() {
 }
 
 void test_stale_trigger_no_fire() {
-    KenKemConfig c; c.pip_size = 0.01;
+    KenKemConfig c = geom_cfg();
     int B = 200; TfBundle::Align a{200,66,40,13};
     TfBundle b = bundle_bull(B, a);
     Snapshot s = snap_bull();
@@ -59,7 +70,7 @@ void test_stale_trigger_no_fire() {
 }
 
 void test_sideways_blocks() {
-    KenKemConfig c; c.pip_size = 0.01;
+    KenKemConfig c = geom_cfg();
     int B = 50; TfBundle::Align a{50,16,10,3};
     TfBundle b = bundle_bull(B, a);
     Snapshot s = snap_bull(); s.sideways = 60;    // above block threshold
@@ -68,7 +79,7 @@ void test_sideways_blocks() {
 }
 
 void test_dispatch_e1_before_e4() {
-    KenKemConfig c; c.pip_size = 0.01;
+    KenKemConfig c = geom_cfg();
     int B = 50; TfBundle::Align a{50,16,10,3};
     TfBundle b = bundle_bull(B, a);
     Snapshot s = snap_bull();
@@ -78,7 +89,7 @@ void test_dispatch_e1_before_e4() {
 }
 
 void test_e4_requires_green_cloud() {
-    KenKemConfig c; c.pip_size = 0.01; c.enable_e1=false; c.enable_e2=false;
+    KenKemConfig c = geom_cfg(); c.enable_e1=false; c.enable_e2=false;
     int B = 50; TfBundle::Align a{50,16,10,3};
     TfBundle b = bundle_bull(B, a);
     Snapshot s = snap_bull(); s.senkouA_M3 = 118; s.senkouB_M3 = 120;   // cloud RED

@@ -13,9 +13,22 @@ static kk::Bar mk(int64_t ts, double mid, double band, double spread) {
     b.spread_mean = spread; b.spread_max = spread; b.tick_count = 20; return b;
 }
 
+// Relax the selectivity filters (conviction / trend-quality / RSI-veto / regime / governors) that need
+// real multi-bar indicator history; these engine-mechanics tests use synthetic ramps. Filter behaviour
+// is covered in test_kenkem_scoring.cpp.
+static void relax_filters(KenKemConfig& cfg) {
+    cfg.min_tq_e1 = cfg.min_tq_e2 = cfg.min_tq_e4 = 0;
+    cfg.use_conviction_e1 = cfg.use_conviction_e2 = cfg.use_conviction_e4 = false;
+    cfg.enable_rsi_div_veto = false;
+    cfg.enable_atr_high_block = false;
+    cfg.min_entry_atr_pctile = 0.0;
+    cfg.max_consec_losses_type = 0;
+}
+
 void test_engine_uptrend_profits() {
     KenKemConfig cfg; cfg.apply_xauusd_specs();
     cfg.max_concurrent_pos = 2;
+    relax_filters(cfg);
     const int N = 1000;
     vector<kk::Bar> m1, m3, m5, m15;
     double price = 250.0;

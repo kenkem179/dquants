@@ -41,7 +41,14 @@ static void build(vector<kk::Bar>& m1, vector<kk::Bar>& m3, vector<kk::Bar>& m5,
 static BtResult run_once() {
     KenKemConfig cfg; cfg.apply_xauusd_specs();
     cfg.max_concurrent_pos = 2;
-    cfg.min_entry_atr_pctile = 0.0;   // disable regime filter so the synthetic trend can trade
+    // Disable the selectivity filters that need real multi-bar indicator history; this test exercises
+    // tick-engine accounting/determinism on a synthetic trend (filters covered in test_kenkem_scoring).
+    cfg.min_entry_atr_pctile = 0.0;
+    cfg.min_tq_e1 = cfg.min_tq_e2 = cfg.min_tq_e4 = 0;
+    cfg.use_conviction_e1 = cfg.use_conviction_e2 = cfg.use_conviction_e4 = false;
+    cfg.enable_rsi_div_veto = false;
+    cfg.enable_atr_high_block = false;
+    cfg.max_consec_losses_type = 0;
     vector<kk::Bar> m1, m3, m5, m15; vector<kk::Tick> ticks;
     build(m1, m3, m5, m15, ticks, 0.02);
     TfBundle b = build_tf_bundle(m1, m3, m5, m15, cfg);
