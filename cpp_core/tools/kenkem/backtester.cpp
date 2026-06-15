@@ -89,7 +89,14 @@ int main(int argc, char** argv) {
 
     BtResult R = run_backtest(bundle, cfg, warmup, from_ms, to_ms);
 
-    std::printf("=== KenKem distilled backtest (%s) ===\n", xau ? "XAUUSD" : "BTCUSD");
+    // The bar engine's synthetic 4-point OHLC walk mis-resolves path-dependent exits and SL-vs-TP
+    // ordering; it DISAGREES WITH MT5 on the sign of P&L (measured: bar PF 0.89 vs tick PF 1.12 on the
+    // same KenKem config/window; tick win% matched the MT5 ground truth, bar did not). Use the tick
+    // backtester for any MT5-faithful conclusion. This path is for fast research signal-shape checks only.
+    std::fprintf(stderr,
+        "\n  !!! BAR ENGINE — NOT MT5-FAITHFUL. Validate on kenkem_tick_backtester (real bid/ask). !!!\n\n");
+
+    std::printf("=== KenKem BAR-engine backtest [research-only, NOT MT5-faithful] (%s) ===\n", xau ? "XAUUSD" : "BTCUSD");
     std::printf("M1 bars: %d   spread: %.3f   warmup: %d\n", (int)m1.size(), spread, warmup);
     std::printf("trades:   %d  (wins %d, win%% %.1f)\n", R.trades, R.wins, 100.0 * R.win_rate);
     std::printf("net:      %.2f USD   (end balance %.2f)\n", R.net, R.end_balance);
