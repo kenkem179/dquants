@@ -54,12 +54,19 @@ exit-family agreement 146/155 = 94%              <- executor exits: largely FAIT
    Secondary: `position already open` = one-position-at-a-time concurrency MT5 enforces that dquants does
    not. So this is NOT a signal-detection gate — it's governor behavior coupled to sizing + concurrency.
 
-   **Confirmed by experiment** (set `InpRiskAccPct` 1.6→16 to mirror MT5's effective 16.5% risk):
-   dquants then took **0 trades** (740 signals), because its daily-DD breaker is **PREDICTIVE**
-   (`is_daily_dd_hit` adds the next trade's worst-case loss → a single 16% trade alone exceeds the 5%
-   daily cap → every entry pre-blocked). MT5 *took* those trades, so MT5's breaker is **REACTIVE** (fires
-   only after a *realized* ≥5% daily loss). That predictive-vs-reactive difference is a concrete parity
-   bug in `kk::common::risk_manager` — invisible at 1.6% risk, decisive at 16%. Path (A) must fix it.
+   **⛔ CORRECTION (2026-06-15, verified against MT5 source — supersedes the "parity bug" claim below).**
+   There is **NO predictive-vs-reactive parity bug.** The MT5 EA (`KK-MasterVP.mq5:132,214`) calls
+   `IsDailyDDHit(riskBudget)` with `riskBudget = ComputeRiskBudgetUSD()` — and `IsDailyDDHit`
+   (`RiskManager.mqh:142-147`) adds `+ riskBudget` to the projection. That is **predictive, byte-identical
+   to the C++ `is_daily_dd_hit`**. The C++ port is FAITHFUL. (MT5 also has the reactive arm at
+   `KK-MasterVP.mq5:170` — `IsDailyDDHit(0.0)` for the cooldown — and the C++ mirrors that too in
+   `maybe_arm_daily_dd_cooldown`.) **The earlier experiment was flawed:** it set `InpRiskAccPct` 1.6→16,
+   which makes the *budget* $1600 (16% of $10k) → predictive add alone breaches the 5% cap → 0 trades,
+   which is the CORRECT predictive response to a genuinely 16%-budget trade. But MT5 ran at
+   `InpRiskAccPct=1.6` (budget $160, harmless predictive add) and only *realized* ~16% losses via the
+   `tick_value≈0.1` sizing quirk (#3). Budget ≠ realized loss — `risk_acc_pct=16` does NOT mirror MT5.
+   So the over-fire is fully explained by #3 alone; **do NOT change `is_daily_dd_hit`** (it would break
+   parity). Path (B) resolves this by replacing the broker-glitched oracle.
 
 3. **Sizing ~10× (broker tick-value quirk) — the ROOT CAUSE of both $-scale AND the over-fire.** Log:
    `InpRiskUnit=0, InpRiskAccPct=1.6` → budget should be 1.6%·$10k = $160 → ~0.6 lots. But MT5 sized
@@ -75,12 +82,10 @@ exit-family agreement 146/155 = 94%              <- executor exits: largely FAIT
    (proper XAU symbol / fixed tick value) and make dquants match that (the strategy we actually want to
    ship). (A) validates the engine; (B) validates the strategy. They need different reference data.
 
-## Next (gated on the #3 A-vs-B decision)
-- **If (A) reproduce MT5 faithfully:** set dquants XAU sizing `tick_value=0.1` (vpppl≈10), add
-  one-position-at-a-time concurrency to the monster engine, re-diff — the daily-DD breaker should then
-  fire on the same bars and the 2× over-fire should largely close. This is the cleanest proof the engine
-  is MT5-faithful, and it's fully doable on existing data.
-- **If (B) validate the strategy:** the user runs a CLEAN MT5 reference (correct XAU tick value) and we
-  match that instead — the current oracle is a broker blow-up and not worth chasing to the cent.
-- Either way then: add concurrency parity, re-diff M1, and apply the same harness to KenKem once an
-  instrumented KenKem MT5 run exists ([[kenkem-parity-instrumentation-missing]]).
+## Next — DECISION MADE: path (B), clean MT5 reference (user, 2026-06-15)
+The current "2426-Good" oracle is a broker blow-up (`tick_value≈0.1`) and not worth chasing to the cent.
+The user will run a CLEAN MT5 reference on a correctly-configured XAU symbol; dquants matches THAT.
+Run spec for the clean reference: see `RUN_GUIDE_PARITY.md` → "Clean MasterVP/Monster reference (B)".
+After the clean CSVs land, re-run `diff_aligned.py`; the over-fire should largely close once sizing
+matches (no tick_value glitch → daily-DD breaker fires on the same bars). Concurrency parity
+(one-position-at-a-time) still to add to the monster engine, then re-diff M1.
