@@ -142,3 +142,45 @@ validatable on the CANONICAL tick engine instead of the bar engine that masked i
 `E5_MAX_EMA_CROSS_AGE` toward 1–3 to cut late-chase trades and ~5× the drawdown. Exit geometry is the dominant
 term. The MQL5-instrumentation + python-differ half of the golden diff (for C++↔MQL5 port parity) is built-ready
 but DEFERRED — the cause was localized on the C++ side alone, so the one MT5 run is no longer the critical path.
+
+## Exit-geometry fix APPLIED & adopted (2026-06-15) — E5 flips loss→profit on the TICK engine
+Acted on the fix priority above. Built `research/optimization/sweep_e5_exits.py` — a parallel sweep of the four
+ProfitManager (C5) exit knobs × entry maxage, **on the canonical TICK engine, 2026 OOS, BTC+XAU**, ranked by OOS
+PF. Grid: `E5_PARTIAL_TP_TRIGGER {0.22,0.45,0.70,0.90} × E5_PARTIAL_TP_RATIO {0.25,0.476,0.70} ×
+E5_SL_TO_BREAKEVEN_BUFFER {0,0.05,0.20} × E5_TRAILING_SL_FACTOR {0.435,0.75,1.2} × E5_MAX_EMA_CROSS_AGE {1,2,3}`
+(324/symbol) + a refinement pass around the edge. Data regenerated reproducibly via
+`cpp_core/tools/common/export_kenkem_oos.py` (BTC baseline reproduced exactly: PF 0.714, 1581 tr, −26,440).
+
+**Surface (clean, monotonic, no lone peaks):**
+- `E5_PARTIAL_TP_TRIGGER` is the dominant lever — PF rises monotonically 0.22→0.95 at every maxage. At 0.22 the
+  partial fires at ~0.28R and the chandelier scratches the runner (avg win ~$59 ≈ 0.3R); pushing it to ~0.95
+  (≈1.22R given RR≈1.28) lets winners ride to TP → avg win ~$206–314 ≈ avg loss. The plateau pt∈{0.93,0.95,0.97}
+  is flat on both symbols (BTC ~1.075, XAU ~1.06–1.09) — robust, not a peak. (A tiny late partial at 0.95 even
+  beats partial-OFF: same PF, *lower* DD.)
+- `E5_MAX_EMA_CROSS_AGE=1` is the necessary amplifier — **only age 1 clears PF>1**; age 2/3 stay ≤1.0 at the same
+  exits with ~1.7× the DD (the late-chase entries are net-negative). Confirms over-firing is secondary but real.
+- ratio / BE-buffer / trail are near-inert once the trigger is late (the partial rarely fires).
+
+**Adopted consensus config (one config wins both symbols → clean MQL5 port):**
+`E5_MAX_EMA_CROSS_AGE=1 · E5_PARTIAL_TP_TRIGGER=0.95 · E5_PARTIAL_TP_RATIO=0.476 · E5_SL_TO_BREAKEVEN_BUFFER=0.05
+· E5_TRAILING_SL_FACTOR=1.2`, locked into `research/optimization/best_kenkem_E5_{btc,xau}.set` (entry params
+untouched). Adoption rule satisfied: **net UP and DD DOWN** on both. Standard 9-column table (TICK engine, 2026 OOS):
+
+| Strategy | Settings | Symbol, TF | Net Profit | Profit Factor | Recovery Factor | Max Drawdown | Sharpe | Trades/day |
+|---|---|---|---|---|---|---|---|---|
+| E5 BEFORE | early partial 0.22/0.23 · tight trail · maxage 48/29 | BTCUSD M1 | -26,440 | 0.714 | -1.00 | 26,440 | -7.10 | 9.9 |
+| E5 AFTER  | partial 0.95 · trail 1.2 · BE 0.05 · maxage 1         | BTCUSD M1 | +2,637 | 1.074 | 0.75 | 3,531 | 1.12 | 2.2 |
+| E5 BEFORE | early partial 0.22/0.23 · tight trail · maxage 48/29 | XAUUSD M1 | -4,564 | 0.806 | -0.83 | 5,480 | -3.26 | 3.5 |
+| E5 AFTER  | partial 0.95 · trail 1.2 · BE 0.05 · maxage 1         | XAUUSD M1 | +897   | 1.080 | 0.37 | 2,420 | 0.84 | 1.0 |
+
+(XAU 2026 window here ends Apr 6 = 34M ticks vs the earlier re-baseline's May 29 = 46.7M, so XAU baseline reads
+PF 0.806 here vs 0.889 there; the BTC reproduction is exact and the fix is directionally identical on both.)
+
+**Honest read:** PF is now *clearly >1 but thin* (1.07–1.08) — E5's edge is small; the fix's real win is the
+sign flip + the DD crush (BTC 7.5×, XAU 2.3×) + Sharpe going positive. **MQL5 fidelity:** all five knobs are real
+EA inputs; `E5_PARTIAL_TP_TRIGGER` maps 1:1 to the EA's *default-active* standard partial path
+(`partialTPTrigger`, `TakePartialProfitAsNeeded`; `ENABLE_CONSERVATIVE_TRADE_MGMT=false` by default so the
+R-ladder is off), so this ports directly. At trigger 0.95 the partial/trail seldom fire, so the dquants
+chandelier-trail vs EA trail divergence shrinks → dquants↔MT5 path-dependence converges. **Remaining for
+promotion:** (1) re-confirm the EA actually runs these UPPERCASE values (the deployed `Inp*` set is silently
+ignored — see the secondary bug above); (2) IS (2025) re-check not yet run — scoped to 2026 OOS per request.

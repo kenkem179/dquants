@@ -1,4 +1,9 @@
 ; KenKem entry-set sweep
+; Exit-geometry fix 2026-06-15 (sweep_e5_exits.py, TICK engine, 2026 OOS): the early partial
+; (trigger 0.22 = ~0.28R) + tight chandelier scratched winners to ~0.3R while losers ran to full -1R
+; (PF 0.71). Push the partial to the plateau edge (0.95 = ~1.22R) so winners ride to TP, widen the
+; post-partial trail (1.2R), cut late-chase over-firing (MAX_EMA_CROSS_AGE 48->1). All real EA inputs.
+; Result: PF 0.714 -> 1.074, net -26,440 -> +2,637, maxDD 26,440 -> 3,531.  net UP & DD DOWN.
 ENABLE_E1_ENTRIES=false
 ENABLE_E2_ENTRIES=false
 ENABLE_E4_ENTRIES=false
@@ -16,10 +21,11 @@ INPUT_EMA4_PERIOD=163
 ADX_LEN=10
 RSI_LEN=8
 E5_RR=1.2821
-E5_MAX_EMA_CROSS_AGE=48
+E5_MAX_EMA_CROSS_AGE=1
 E5_MIN_MOMENTUM_ADX=17.0822
 E5_ATR_SL_CAP_MULTIPLIER=1.7305
-E5_TRAILING_SL_FACTOR=0.4351
-E5_PARTIAL_TP_TRIGGER=0.2209
+E5_TRAILING_SL_FACTOR=1.2
+E5_PARTIAL_TP_TRIGGER=0.95
 E5_PARTIAL_TP_RATIO=0.476
+E5_SL_TO_BREAKEVEN_BUFFER=0.05
 E5_HTF_MIN_ADX=15.5216
