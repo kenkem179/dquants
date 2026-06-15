@@ -250,12 +250,14 @@ struct KenKemConfig {
     int    adx_len                = 14;   // ADX_LEN
     // TF map is fixed: TF0=M1, TF1=M3, TF2=M5, TF3=M15, TF4=H1(reserved). NUM_TF=4, NUM_EMA=5.
 
-    // ---- sessions (JST server time, HHMM) ----
-    int    japan_start = 900,  japan_end = 1230;
-    int    london_start = 1400, london_end = 1830;
-    int    ny_start = 2100,    ny_end = 2400;
+    // ---- sessions (UTC, HHMM) ----
+    // Converted 1:1 from the EA's legacy JST windows (JST = UTC+9) so this engine and the MQL5 EA
+    // share one identical clock. JST 0900/1230/1400/1830/2100/2400 -> UTC 0000/0330/0500/0930/1200/1500.
+    int    japan_start = 0,    japan_end = 330;
+    int    london_start = 500, london_end = 930;
+    int    ny_start = 1200,    ny_end = 1500;
     bool   ignore_valid_sessions  = false;
-    int    server_gmt_offset      = 0;        // broker-server↔JST offset (verify vs ticks)
+    int    server_gmt_offset      = 0;        // ticks are UTC and windows are UTC -> offset 0 (legacy knob)
 
     // ---- symbol/runtime + broker specs (per instrument, not from .set) ----
     double pip_size           = 0.01;

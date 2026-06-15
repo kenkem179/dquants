@@ -23,7 +23,7 @@ static void relax_filters(KenKemConfig& cfg) {
     cfg.enable_atr_high_block = false;
     cfg.min_entry_atr_pctile = 0.0;
     cfg.max_consec_losses_type = 0;
-    cfg.ignore_valid_sessions = true;   // synthetic ts aren't aligned to JST sessions
+    cfg.ignore_valid_sessions = true;   // synthetic ts aren't aligned to UTC sessions
 }
 
 void test_engine_uptrend_profits() {

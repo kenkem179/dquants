@@ -15,10 +15,10 @@
 ; --- emit the per-trade parity journal (MQL5/Files/KenKem/trades_<sym>.csv) ---
 InpExportTradeJournal=true
 
-; --- dquants-engine ONLY (the MT5 EA derives this from TimeGMT automatically; harmless in MT5) ---
-; The tick parquet is UTC; the EA's JST session windows = UTC+9. Without this the C++ compares JST
-; window numbers against raw UTC and gates the wrong hours.
-SERVER_GMT_OFFSET=9
+; --- session clock: now fully UTC on BOTH sides ---
+; The EA's session windows were converted JST->UTC (SessionManager.mqh / InputParams.mqh) and the tick
+; parquet is UTC, so no offset is needed. Left explicit at 0 for clarity (default is already 0).
+SERVER_GMT_OFFSET=0
 
 ; --- entries: E5 only (match the C++ distilled engine) ---
 ENABLE_E1_ENTRIES=false

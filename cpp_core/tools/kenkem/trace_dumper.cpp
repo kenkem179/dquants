@@ -8,7 +8,7 @@
 //
 // This is a READ-ONLY observer: it mirrors engine.hpp's per-bar sequence (update_triggers -> snapshot ->
 // gate) but places NO trades and tracks NO P&L. `sig_fire` = (fresh E5 trigger within max-age) && gate
-// passes && in a valid JST session — the raw signal-level fire, which is exactly where over-firing is
+// passes && in a valid UTC session — the raw signal-level fire, which is exactly where over-firing is
 // born (concurrency/cooldown layers are downstream and intentionally excluded). On a fire the trigger is
 // consumed, mirroring the engine's one-cross-one-entry re-arm semantics.
 //
@@ -65,14 +65,16 @@ struct E5Gate {
     bool price_ok = false;     // close vs EMA25 (emaM1[1])
     int  trendcore = 0;        // trend_core_score (0 = hard-gate trip)
     bool tc_ok = false;        // !require || trendcore>0
+    int  tq = 0;               // graded GetTrendQualityScore(state,5) (0-13)
+    bool tq_ok = false;        // min_tq_e5<=0 || tq >= min_tq_e5  (the #1 over-fire suspect)
     bool adx_ok = false;       // adx[0] >= e5_min_momentum_adx (or floor disabled)
     bool htf_ok = false;       // htf_filter_ok
     bool pass = false;         // overall gate
     bool fire = false;         // in_age && pass (raw signal fire)
 };
 
-static E5Gate eval_e5(bool is_long, int B, const TriggerState& tg, const Snapshot& s,
-                      const KenKemConfig& c) {
+static E5Gate eval_e5(bool is_long, int B, const TfBundle& b, const TfBundle::Align& al,
+                      const TriggerState& tg, const Snapshot& s, const KenKemConfig& c) {
     E5Gate g;
     int fired = is_long ? tg.e5_up : tg.e5_down;
     g.trig_age = (fired >= 0) ? (B - fired) : -1;
@@ -83,9 +85,13 @@ static E5Gate eval_e5(bool is_long, int B, const TriggerState& tg, const Snapsho
     g.price_ok     = is_long ? (s.closeM1 > s.emaM1[1]) : (s.closeM1 < s.emaM1[1]);
     g.trendcore    = trend_core_score(s, is_long, c);
     g.tc_ok        = (!c.e5_require_trend_core) || (g.trendcore > 0);
+    // Graded trend-quality floor — applied by detect_entry (entries.hpp:140) but previously OMITTED here,
+    // so the trace under-modeled the gate. This is the suspected counter-trend-LONG divergence.
+    g.tq           = trend_quality_score(b, al, s, is_long, 5, c);
+    g.tq_ok        = (c.min_tq_e5 <= 0) || (g.tq >= c.min_tq_e5);
     g.adx_ok       = (c.e5_min_momentum_adx <= 0) || (s.adx[0] >= c.e5_min_momentum_adx);
     g.htf_ok       = htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
-    g.pass = !g.sideways_blk && !g.atr_lo_blk && !g.atr_hi_blk && g.price_ok && g.tc_ok && g.adx_ok && g.htf_ok;
+    g.pass = !g.sideways_blk && !g.atr_lo_blk && !g.atr_hi_blk && g.price_ok && g.tc_ok && g.tq_ok && g.adx_ok && g.htf_ok;
     g.fire = g.in_age && g.pass;
     return g;
 }
@@ -127,8 +133,8 @@ int main(int argc, char** argv) {
         "adx_m1,adx_m3,adx_m5,adx_m15,diP_m1,diP_m3,diP_m5,diP_m15,diM_m1,diM_m3,diM_m5,diM_m15,"
         "adxS,diPS,diMS,atr,rsi,close,high,low,tenkan,kijun,senkouA_m3,senkouB_m3,sideways,atr_pctile,"
         "e5up_age,e5dn_age,"
-        "L_inage,L_swblk,L_atrlo,L_atrhi,L_price,L_tcore,L_adx,L_htf,L_pass,L_fire,"
-        "S_inage,S_swblk,S_atrlo,S_atrhi,S_price,S_tcore,S_adx,S_htf,S_pass,S_fire,"
+        "L_inage,L_swblk,L_atrlo,L_atrhi,L_price,L_tcore,L_tq,L_tqok,L_adx,L_htf,L_pass,L_fire,"
+        "S_inage,S_swblk,S_atrlo,S_atrhi,S_price,S_tcore,S_tq,S_tqok,S_adx,S_htf,S_pass,S_fire,"
         "session,fire_dir\n");
 
     TriggerState tg;
@@ -144,8 +150,8 @@ int main(int argc, char** argv) {
         Snapshot s = build_snapshot(B, cfg, b, al);
         if (!s.valid) continue;
 
-        E5Gate L = eval_e5(true,  b, tg, s, cfg);
-        E5Gate S = eval_e5(false, b, tg, s, cfg);
+        E5Gate L = eval_e5(true,  b, B, al, tg, s, cfg);
+        E5Gate S = eval_e5(false, b, B, al, tg, s, cfg);
         bool session = in_valid_session(bar.ts_ms, cfg);
         // Consume on a session-valid fire (long before short), mirroring detect_entry's one-shot semantics.
         int fire_dir = 0;
@@ -160,16 +166,16 @@ int main(int argc, char** argv) {
             "%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,"
             "%.3f,%.3f,%.3f,%.5f,%.3f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d,%.2f,"
             "%d,%d,"
-            "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
-            "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+            "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+            "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
             "%d,%d\n",
             (long long)bar.ts_ms, utc(bar.ts_ms).c_str(),
             s.emaM1[0],s.emaM1[1],s.emaM1[2],s.emaM1[3],s.emaM1[4],
             s.adx[0],s.adx[1],s.adx[2],s.adx[3], s.diP[0],s.diP[1],s.diP[2],s.diP[3], s.diM[0],s.diM[1],s.diM[2],s.diM[3],
             s.adxS,s.diPS,s.diMS, s.atrM1,s.rsiM1, s.closeM1,s.highM1,s.lowM1, s.tenkanM1,s.kijunM1, s.senkouA_M3,s.senkouB_M3, s.sideways,s.atr_pctile,
             e5age(tg.e5_up), e5age(tg.e5_down),
-            L.in_age,L.sideways_blk,L.atr_lo_blk,L.atr_hi_blk,L.price_ok,L.trendcore,L.adx_ok,L.htf_ok,L.pass,L.fire,
-            S.in_age,S.sideways_blk,S.atr_lo_blk,S.atr_hi_blk,S.price_ok,S.trendcore,S.adx_ok,S.htf_ok,S.pass,S.fire,
+            L.in_age,L.sideways_blk,L.atr_lo_blk,L.atr_hi_blk,L.price_ok,L.trendcore,L.tq,L.tq_ok,L.adx_ok,L.htf_ok,L.pass,L.fire,
+            S.in_age,S.sideways_blk,S.atr_lo_blk,S.atr_hi_blk,S.price_ok,S.trendcore,S.tq,S.tq_ok,S.adx_ok,S.htf_ok,S.pass,S.fire,
             session?1:0, fire_dir);
         ++rows;
     }

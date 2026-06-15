@@ -144,7 +144,7 @@ private:
         const bool day_cap_ok = (cfg_.max_entries_per_day <= 0) || (entries_today_ < cfg_.max_entries_per_day);
         if (!day_cap_ok) return;
         if ((int)open_.size() >= cfg_.max_concurrent_pos) return;
-        // Valid-session entry gate (the EA only ENTERS during the JST Japan/London/NY windows). The bar
+        // Valid-session entry gate (the EA only ENTERS during the UTC Japan/London/NY windows). The bar
         // engine gates this; the tick engine was missing it -> entered off-session -> primary over-fire.
         if (!in_valid_session(bar.ts_ms, cfg_)) return;
 

@@ -91,14 +91,67 @@ State now: **236 trades vs MT5 136** (down from 395), net −962, PF 0.91. Resid
 columns from the EA's E5 path) and diff against `trace_xau_paritywin.csv` bar-for-bar. That pins the
 trend-quality scoring + onset-timing divergence exactly; the C++ trace alone can't show the EA's decision.
 
+## Task-#4 iteration 3 (2026-06-15) — JST→UTC unification + trace made faithful; long over-fire localized
+
+**Clock unified to UTC on both sides.** All KenKem session windows converted JST→UTC 1:1 so the EA
+and the dquants engine share one clock (no more `SERVER_GMT_OFFSET=9`). EA side (kenkem repo): JST
+0900/1230/1400/1830/2100/2400 → UTC 0000/0330/0500/0930/1200/1500 in `Config/InputParams.mqh`;
+`SessionManager.mqh` now reads `TimeGMT()` directly (no `+9`, no `+2400` midnight remap — UTC windows
+don't wrap); news window 2120-2145 JST → 1220-1245 UTC. C++ side: `kenkem_config.hpp` defaults to the
+UTC windows, `server_gmt_offset` stays 0, `in_valid_session` end made INCLUSIVE to match the EA's
+`<=`. The conversion is behavior-preserving (identical set of UTC instants), so the existing MT5 oracle
+(`mt5_trades_xau_paritywin.csv`) stays valid. New unit test `test_kenkem_session.cpp` locks the windows.
+
+**Re-diff after unification** (regenerated from committed scripts — `bars_xauusd_2025_m1.csv` +
+`ticks_xauusd_2025_window.csv`): C++ **218 trades** (114 L / 104 S), net −693, PF 0.93, WR 77%.
+MT5 oracle: **136** (53 L / 83 S), +995, PF 1.23. No new divergence class from the UTC change; matched
+trades stay tight (entry max|Δ|=0.12, riskPrice max|Δ|=0.23). Residual = the same known pair: ~3-min
+entry lag (e.g. 05:37→05:40, 14:44→14:50) + extra LONGs.
+
+**Trace made faithful + long over-fire localized.** `trace_dumper.cpp` previously omitted the graded
+`trend_quality_score` floor (`min_tq_e5=5`) that `detect_entry` actually applies — so its `pass`/`fire`
+under-modeled the gate. Fixed: it now computes & emits `L_tq/L_tqok` + `S_tq/S_tqok` and applies the
+floor. Trace fires now match the engine (219 ≈ 218). With the faithful trace:
+- The over-fire is **long-skewed**: C++ 114 L vs MT5 53 L (+61); shorts 104 vs 83 (+21).
+- The extra longs are **NOT marginal**: `L_tq` 7-10 (floor 5), `L_tcore`=6 (max hard gate), high ADX.
+- All 115 long-fires pass C++ HTF (`L_htf=1`) and **none** are sideway-blocked (`L_swblk=0`).
+
+⟹ The C++ considers every extra long a clean strong-bullish-M5 setup, but the EA skips most. The
+divergence is therefore in a gate the C++ marks fully-passing — the remaining suspects, in order:
+1. **M5 HTF indicator drift** — C++ reads M5 as strong-bullish where the EA's `cache.adx[2]`/`diPlus[2]`
+   do not (would set `htfBlockLong=true`). EA `HTF_M5_ONLY` blocks long only when M5 is *valid* (ADX≥27.54
+   AND |DI-spread|≥4) AND bearish; C++ `htf_tf_ok` is actually *stricter* in the weak-HTF case, so the
+   extra longs must be cases where C++ M5 reads strong-bullish — a value-parity question.
+2. **Multi-TF sideway** — EA `IsMultiTfSideway` (2/3 of M1/M3/M5 ≥ threshold) vs C++ single-TF M1.
+3. **Trigger arming / consumed-lock re-fire** — EA re-arms only after alignment breaks while flat.
+
+**This is exactly what the EA per-bar trace would settle** (compare M5 adx/DI, sideway, trigger age
+field-by-field). ⚠️ BLOCKER: the KenKem EA parity instrumentation described in earlier iterations
+(`Parity/TradeJournal.mqh` + hooks) is **absent from every branch/worktree of the kenkem repo** (it has
+diverged to MasterVP/Monster work; `KenKemExpert.mq5` is now v1.54). It must be re-created before the
+next MT5 trace run. See the [[kenkem-parity-harness-built]] memory note.
+
 ## Reproduce
 ```
-# C++ side (already saved):
-cpp_core/build/kenkem/tick_backtester --bars-m1 research/kenkem_parity/bars_xauusd_M1_kk_BID.csv \
-  --ticks <xau-tick-stream> --symbol-xau --set research/kenkem_parity/parity_kenkem_xau.set \
+# Regenerate inputs (kenkem conda env), if absent:
+~/miniforge3/envs/kenkem/bin/python cpp_core/tools/common/export_kenkem_oos.py   # -> bars_xauusd_2025_m1.csv
+~/miniforge3/envs/kenkem/bin/python cpp_core/tools/common/export_ticks.py 2025 raw \
+  2025-03-01 2025-06-01 cpp_core/tools/ticks_xauusd_2025_window.csv xauusd
+
+# C++ ledger:
+make -C cpp_core kenkem_tick
+./cpp_core/build/kenkem/tick_backtester --bars-m1 cpp_core/tools/bars_xauusd_2025_m1.csv \
+  --ticks cpp_core/tools/ticks_xauusd_2025_window.csv --symbol-xau \
+  --set research/kenkem_parity/parity_kenkem_xau.set \
   --from-ms 1740787200000 --to-ms 1748736000000 --out research/kenkem_parity/cpp_trades_xau_paritywin.csv
-# MT5 side: load parity_kenkem_xau.set in tester (see RUN_GUIDE_PARITY.md), commission 0.
-# Diff:
+
+# C++ golden trace (per-bar E5 decision, now with L_tq/S_tq):
+make -C cpp_core kenkem_trace
+./cpp_core/build/kenkem/trace_dumper --bars-m1 cpp_core/tools/bars_xauusd_2025_m1.csv --symbol-xau \
+  --set research/kenkem_parity/parity_kenkem_xau.set \
+  --from-ms 1740787200000 --to-ms 1748736000000 --out research/kenkem_parity/trace_xau_paritywin.csv
+
+# MT5 side: load parity_kenkem_xau.set in tester (see RUN_GUIDE_PARITY.md), commission 0. Diff:
 python cpp_core/tools/kenkem/diff_kenkem_trades.py \
   research/kenkem_parity/cpp_trades_xau_paritywin.csv research/kenkem_parity/mt5_trades_xau_paritywin.csv
 ```
