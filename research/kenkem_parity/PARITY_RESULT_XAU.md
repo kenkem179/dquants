@@ -166,6 +166,40 @@ off** (the lag) + extra counter-trend longs. So the divergence is purely WHICH m
 Minor (non-gate, don't chase): EA trace `high`/`low` come from cache shift-0 (forming bar) while `close` is
 shift-1 — cosmetic, not an E5 input. `tenkan`/`kijun` are 0 (E5 has no M1 Ichimoku, expected).
 
+## Task-#4 iteration 5 (2026-06-16) — ROOT CAUSE FOUND: ADX_LEN period mismatch. VERDICT UN-INVERTED.
+
+Two contaminating artifacts cleared first: (1) the committed C++ trace was STALE (82,112 rows, missing
+Apr 28-30 + May 16) — regenerating from the current binary/bars gives **87,844 rows = exactly MT5's**;
+(2) the per-bar trace diff then isolated a **systematic ADX drift of ~7.8 on EVERY timeframe** while EMA
+matched (~0.16). EMA uses close (matched), ADX uses the period — so it was a **period mismatch**:
+
+**THE BUG: the parity set carried `ADX_LEN=9`. The C++ engine applies it (ADX(9)); the MT5 EA does NOT —
+`ADX_LEN` is a hardcoded global `int ADX_LEN = 14` (InputParams.mqh:545), NOT an `input`, so MT5 silently
+ignores the set and always computes iADX(14).** ADX(9) runs systematically higher than ADX(14) → the 7.8
+offset → inflated trend-quality → over-fire + verdict inversion. Forcing `ADX_LEN=14`:
+
+| metric | ADX_LEN=9 (before) | ADX_LEN=14 (after) | MT5 truth |
+|---|---:|---:|---:|
+| adx_m1 / m3 / m5 / m15 mean\|Δ\| | 7.81 / 7.85 / 7.82 / 8.03 | **2.06 / 0.69 / 0.41 / 0.14** | — |
+| trades | 218 | **150** | 136 |
+| net USD / PF | −1,899 / **0.90 (LOSING)** | **+623 / 1.106 (WINNING)** | +995 / 1.23 |
+
+**The C++ engine no longer inverts the verdict** — it now agrees in sign and is close in magnitude
+(PF 1.11 vs 1.23). Fix applied: `ADX_LEN=14` in `parity_kenkem_{xau,btc}.set` (+ wine Presets).
+
+**⚠️ SYSTEMIC TRUST FINDING (for the all-entries audit):** dquants exposes `ADX_LEN` as a sweepable
+param, but the EA hardcodes it (not an input). So any dquants optimization that moved `ADX_LEN` produced
+configs the EA cannot honor → guaranteed C++/EA divergence, and the prior "distilled" PF numbers were
+computed on a different ADX than the EA runs. **Every C++ tunable must map to a real EA `input`** — audit
+the full param surface (this is exactly the kind of mismatch that makes the engine untrustworthy).
+
+**Residual after the fix (localized, smaller):** (1) **~3-min entry lag** — M1 EMA micro-drift (~0.16)
+flips the *strict* `25>75>100>200` onset by a bar or two; trade count 150 vs 136 + lag = the bulk of the
+remaining gap. (2) **adx_m1 mean 2.06 + M1 DI/RSI + weekly-open (Sun ~22:00) EMA/close seams** (close max
+\|Δ\| 42 at 05-11 22:09) — residual M1 bar-construction / tick-coverage differences, worst at session opens.
+(3) `atr_pctile` drift is downstream of these (EA lookback 32 == C++ — not a separate bug). NEXT: chase the
+M1 bar/tick seam at weekly opens; consider whether the dquants M1 high/low envelope matches MT5's bid bars.
+
 ## Reproduce
 ```
 # Regenerate inputs (kenkem conda env), if absent:

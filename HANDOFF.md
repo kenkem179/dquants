@@ -27,32 +27,39 @@ must act identically across the original MQL5 EA and the dquants C++ engine — 
   added RUN A / RUN B sections to `research/kenkem_parity/RUN_GUIDE_PARITY.md`; this HANDOFF.md +
   CLAUDE.md handoff mandate.
 
-## ✅ RUN A DONE (2026-06-16) — diagnosed: KenKem divergence = INDICATOR DRIFT, not gate logic
-MT5 oracle 136 trades (`mt5_trades_xau_runA.csv`); per-bar trace `mt5_trace_xau_runA.csv`. Diff tool
-`cpp_core/tools/kenkem/diff_kenkem_trace.py`. Full writeup: `PARITY_RESULT_XAU.md` iteration 4.
-- Aligned-trade geometry near-perfect (entry Δ0.02, risk Δ0.16). The whole gap = which minute fires + extra longs.
-- **The E5 gate logic MATCHES; the indicator inputs DRIFT.** Pervasive, systematic: C++ ADX runs ~7.8 higher
-  than MT5 on EVERY TF (mid-session, not just seams); DI/RSI off too. EMA micro-drift (~0.22) flips the strict
-  `25>75>100>200` onset → 2-6 min entry lag + spurious longs. Plus rare day-seam bars where C++ reads a wrong
-  bar (05-01 00:00: close 3318.75 vs 3272.02, 46 pts).
+## ✅ RUN A DONE + ROOT CAUSE FIXED (2026-06-16) — ADX_LEN mismatch; verdict UN-INVERTED
+MT5 oracle 136 trades (`mt5_trades_xau_runA.csv`); per-bar trace `mt5_trace_xau_runA.csv`. Diff tools:
+`diff_kenkem_trades.py` + new `diff_kenkem_trace.py`. Full writeup: `PARITY_RESULT_XAU.md` iter 4-5.
+- **THE BUG:** parity set had `ADX_LEN=9`; C++ applied it (ADX(9)) but the EA hardcodes `int ADX_LEN=14`
+  (NOT an input) so MT5 always ran ADX(14). ADX(9)>ADX(14) → ~7.8 ADX drift → over-fire + verdict inversion.
+- **FIX = `ADX_LEN=14` in `parity_kenkem_{xau,btc}.set` (+ presets).** Result: ADX drift 7.8→~0.1-2.0;
+  trades 218→**150** (MT5 136); **PF 0.90 (losing) → 1.106 (winning)**, MT5 1.23. Verdict no longer inverted.
+- Also fixed a stale committed trace (was 82,112 rows missing Apr 28-30/May 16; fresh = 87,844 = MT5).
+- **⚠️ SYSTEMIC: dquants exposes params (ADX_LEN…) the EA HARDCODES.** Any sweep that moved them made
+  EA-unhonorable configs → the prior "distilled" PF numbers used a different ADX than the EA. MUST audit:
+  every C++ tunable → a real EA `input`. This is central to "trust the engine."
+- **Residual (smaller):** ~3-min entry lag (M1 EMA micro-drift ~0.16 flips strict alignment onset) +
+  adx_m1 2.06 / M1 DI-RSI / weekly-open (Sun 22:00) EMA-close seams (close max|Δ|42 @ 05-11 22:09).
 
 ## ⛔ STILL BLOCKED ON USER — RUN B (clean MasterVP/Monster reference)
 `RUN_GUIDE_PARITY.md` → RUN B. Correctly-configured XAU symbol (sane lots, no blow-up), replaces the
 broker-glitched "2426-Good" oracle. Lower priority than the KenKem indicator fix below.
 
-## ▶️ NEXT ACTIONS (in order) — no user needed for #1
-1. **FIX KENKEM C++ INDICATORS (dominant root cause, do now).**
-   a. **ADX/DI/RSI parity** — C++ multi-TF (M1→M3/M5/M15 aggregated) ADX/DI/RSI ≠ MT5 iADX/iRSI; C++ runs
-      systematically higher. MasterVP's single-TF ADX matched MT5 to rounding, so port that validated path
-      + the iADX-as-EMA smoothing fix (same family as `atr_mt5_mode`) into `kk::kenkem`'s aggregated ADX.
-      Re-run RUN A's trace diff until adx mean|Δ| → ~rounding.
-   b. **Day-seam bar construction** — fix the wrong/offset M1 bar at some 00:00 boundaries (tick→M1 bucketing
-      + HTF aggregation across daily gaps).
-   c. Re-diff the trace, then the trades; expect the 136-vs-218 + lag to collapse once indicators match.
-2. **(needs RUN B)** Re-diff MasterVP/Monster with `diff_aligned.py`; add one-position-at-a-time concurrency to monster.
-3. **ALL-ENTRIES generalization (user's real goal):** C++ covers **E1/E2/E4/E5 but NOT E3**; both traces are
-   E5-only. Add E3 to C++; generalize the trace (C++ `trace_dumper` + EA `BarTrace`/`TraceBar`) to per-entry
-   columns for E1/E2/E3/E4; parity-diff each. NOTE: the indicator fix in #1 benefits ALL entries at once.
+## ▶️ NEXT ACTIONS (in order) — no user needed for #1-#2
+1. **AUDIT THE PARAM SURFACE (systemic, highest trust-value).** ADX_LEN proved dquants exposes tunables the
+   EA hardcodes. Cross-check EVERY `kk::kenkem` config key (kenkem_config.hpp `apply_key`) against the EA: is
+   there a matching `input`? If the EA hardcodes it (like ADX_LEN), the C++ must LOCK to the EA's value and it
+   must NOT be swept. Produce a table {C++ key → EA input? → value} and fix the locked `.set`s + best_* sets.
+   (RSI_LEN, the ATR periods, sideways thresholds, HTF mins are prime suspects.)
+2. **Close the residual M1 drift** (after #1): the ~3-min entry lag is M1 EMA micro-drift flipping the strict
+   onset; investigate the M1 bar high/low vs MT5 bid bars + the weekly-open (Sun 22:00) seam. To verify bars
+   directly, fix the EA `TraceBar` high/low to shift-1 (currently shift-0, cosmetic) and add tick_count, then
+   one more RUN A gives MT5's true M1 OHLC to diff. Also fix EA trace `adxS/diPS/diMS` to emit the iADX(9)
+   short handle (currently emits the 14-period cache → false 7.8 drift on those 3 cols only).
+3. **(needs RUN B, optional)** Clean MasterVP/Monster reference — LOW priority (MasterVP already validated;
+   see answer to user 2026-06-16: RUN B is largely redundant, only a clean Monster-XAU confirmation remains).
+4. **ALL-ENTRIES (user's real goal):** C++ covers **E1/E2/E4/E5 but NOT E3**; traces are E5-only. Add E3;
+   generalize both traces to per-entry columns; parity-diff each. The #1 param audit + ADX fix help ALL entries.
 
 ## 🔑 Key facts / gotchas
 - Python: use `~/miniforge3/envs/kenkem/bin/python` (NOT system python3, NOT `conda activate`).
