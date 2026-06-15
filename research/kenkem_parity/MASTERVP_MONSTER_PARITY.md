@@ -45,27 +45,35 @@ exit-family agreement 146/155 = 94%              <- executor exits: largely FAIT
    MasterVP/Monster — the user's "fix the common executor" lever is mostly already paid here. The
    bigger gaps are elsewhere:
 
-2. **Over-fire ~2× and UNIFORM** (cpp ~45/mo vs ref ~28/mo, every month Jan-Jul; not a late-period
-   blowup artifact — the ref keeps trading steadily). dquants accepts ~160 in-band setups MT5 skips.
-   Ruled OUT as causes: ATR% band (dquants enforces [0.04,0.2]; all cpp trades in-band), daily/peak-DD
-   governors (modeled), spread filter (disabled in this config). ⟹ Remaining cause is a **signal-layer
-   selectivity gate** (breakout-strength / flow / impulse-vs-breakout / anti-churn-between-entries), NOT
-   the executor. Needs a per-bar signal diff (MT5 parity_*.csv-style export) to pin — the log's most
-   common skip reason is "ATR pct below floor" but that's already matched.
+2. **Over-fire ~2× and UNIFORM** (cpp ~45/mo vs ref ~28/mo, every month). dquants accepts ~160 in-band
+   setups MT5 skips. **Root cause found in the run log** — MT5's per-bar skip reasons:
+   `2982 ATR pct below floor` (dquants matches), **`1246 daily DD breaker`**, `103 position already open`.
+   The daily-DD breaker is the dominant suppressor, and it is a **DIRECT CONSEQUENCE of the 10× oversizing
+   in #3**: MT5's huge per-trade risk → frequent ≥5% daily drawdowns → the breaker blocks new entries all
+   year; dquants (correctly sized) sees small DD → breaker rarely fires → it keeps trading → over-fire.
+   Secondary: `position already open` = one-position-at-a-time concurrency MT5 enforces that dquants does
+   not. So this is NOT a signal-detection gate — it's governor behavior coupled to sizing + concurrency.
 
-3. **Sizing ~10× (broker tick-value quirk in MT5 itself).** Log: `InpRiskUnit=0, InpRiskAccPct=1.6` →
-   budget should be 1.6%·$10k = $160 → ~0.6 lots. But MT5 sized **lot=6.34** (≈$1654 risk = 16.5%),
-   then settled P&L at the real contract=100 (−1678 = 6.34·2.61·100). So MT5 **sized at vpppl≈10 but
-   P&L'd at vpppl=100** — i.e. `SYMBOL_TRADE_TICK_VALUE` on "XAUUSD-Exness-2426-Good" is ~$0.1 (not
-   $1), making `ComputeLot` over-risk 10× and ultimately blow the account ($10k→$19 by Dec). dquants
-   sizes "correctly" at vpppl=100 → 10× smaller $. This is a **$-scale only** issue (doesn't change
-   which trades fire) but it must be reproduced for $-level parity. **DECISION NEEDED:** reproduce the
-   MT5 mis-sizing (true tick-parity) vs treat sizing as a fixed-risk config (cleaner research numbers)?
+3. **Sizing ~10× (broker tick-value quirk) — the ROOT CAUSE of both $-scale AND the over-fire.** Log:
+   `InpRiskUnit=0, InpRiskAccPct=1.6` → budget should be 1.6%·$10k = $160 → ~0.6 lots. But MT5 sized
+   **lot=6.34** (≈$1654 = 16.5%), then settled P&L at contract=100 (−1678 = 6.34·2.61·100). So MT5
+   **sized at vpppl≈10 but P&L'd at vpppl=100** — `SYMBOL_TRADE_TICK_VALUE` on "XAUUSD-Exness-2426-Good"
+   is ~$0.1 (not $1), making `ComputeLot` over-risk 10× and blow the account ($10k→$19 by Dec). dquants
+   sizes correctly (vpppl=100). Because the daily-DD breaker (#2) is %-based, this 10× difference makes
+   the breaker fire on completely different bars → it changes WHICH trades fire, not just the $.
 
-## Next
-- Build/locate a per-bar MasterVP/Monster signal trace on BOTH sides to pin the 2× over-fire gate
-  (this is the real systemic logic gap; harness `diff_parity.py` already exists for bar-level).
-- Reconcile sizing per the decision above (set dquants XAU `tick_value=0.1` to mirror the broker, OR
-  switch to fixed-risk and accept $-scale divergence).
-- Then re-diff M1 too; then apply the same harness to KenKem once an instrumented KenKem MT5 run exists
-  ([[kenkem-parity-instrumentation-missing]]).
+   ⚠️ The "2426-Good" oracle is therefore a **broker-misconfigured blow-up run**. **DECISION NEEDED:**
+   (A) reproduce it tick-for-tick (set dquants XAU `tick_value=0.1` so sizing→DD→entry-suppression all
+   match — proves the engine is faithful to MT5, even to the glitch), or (B) get a CLEAN MT5 reference
+   (proper XAU symbol / fixed tick value) and make dquants match that (the strategy we actually want to
+   ship). (A) validates the engine; (B) validates the strategy. They need different reference data.
+
+## Next (gated on the #3 A-vs-B decision)
+- **If (A) reproduce MT5 faithfully:** set dquants XAU sizing `tick_value=0.1` (vpppl≈10), add
+  one-position-at-a-time concurrency to the monster engine, re-diff — the daily-DD breaker should then
+  fire on the same bars and the 2× over-fire should largely close. This is the cleanest proof the engine
+  is MT5-faithful, and it's fully doable on existing data.
+- **If (B) validate the strategy:** the user runs a CLEAN MT5 reference (correct XAU tick value) and we
+  match that instead — the current oracle is a broker blow-up and not worth chasing to the cent.
+- Either way then: add concurrency parity, re-diff M1, and apply the same harness to KenKem once an
+  instrumented KenKem MT5 run exists ([[kenkem-parity-instrumentation-missing]]).
