@@ -41,6 +41,19 @@ SPACE = [
     ("InpEmaFast", 14, 40, True), ("InpEmaSlow", 120, 240, True),
 ]
 
+# TRUST GUARD: the KK-MasterVP EA HARDCODES these in InputParams.mqh (not inputs) — MT5 ignores any swept
+# value, so optimizing them yields a config that loses when deployed. The C++ engine refuses them too
+# (config.hpp::non_input_keys). Strip them from the search space. See research/kenkem_parity/PARAM_SURFACE_AUDIT.md.
+EA_LOCKED = {
+    "InpAtrLen", "InpVpBins", "InpVaPct", "InpMasterMult", "InpRsiLen", "InpRsiMidline",
+    "InpVpFeedMode", "InpNodeGateEnabled", "InpUsePriorBarVP", "InpBrkRequireFlow",
+    "InpSfpFlowMin", "InpUseAtrPctlGate",
+}
+_dropped = [s[0] for s in SPACE if s[0] in EA_LOCKED]
+if _dropped:
+    print(f"[trust-guard] dropping EA-hardcoded params from search space: {sorted(set(_dropped))}")
+SPACE = [s for s in SPACE if s[0] not in EA_LOCKED]
+
 
 def main():
     sym = sys.argv[1] if len(sys.argv) > 1 else "btc"
