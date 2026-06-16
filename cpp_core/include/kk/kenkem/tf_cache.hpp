@@ -40,7 +40,8 @@ struct TfIndicators {
     std::vector<double> adx, diP, diM;        // dmi_adx_mt5(adx_len)
     std::vector<double> adxS, diPS, diMS;     // dmi_adx_mt5(9), built iff has_short
     std::vector<double> atr;                  // atr(14)
-    std::vector<double> rsi;                  // rsi(rsi_len), built iff has_rsi
+    std::vector<double> rsi;                  // rsi(rsi_len), built iff has_rsi (MT5-faithful Wilder)
+    std::vector<double> rsi_ag, rsi_al;       // Wilder avg-gain/avg-loss series (for forming shift-0 step)
     kk::ind::IchimokuBuf ichi;                // built iff has_ichi
     bool has_short = false, has_rsi = false, has_ichi = false;
 
@@ -89,7 +90,10 @@ inline TfIndicators build_tf_indicators(std::vector<kk::Bar> bars, const KenKemC
         const kk::ind::DMI d9 = kk::ind::dmi_adx_mt5(H, L, C, KENKEM_ADX_SHORT_PERIOD);
         s.adxS = d9.adx; s.diPS = d9.plus_di; s.diMS = d9.minus_di; s.has_short = true;
     }
-    if (want_rsi) { s.rsi = kk::ind::rsi(C, cfg.rsi_len); s.has_rsi = true; }
+    if (want_rsi) {
+        const kk::ind::RSIWilder rw = kk::ind::rsi_wilder_mt5(C, cfg.rsi_len);
+        s.rsi = rw.rsi; s.rsi_ag = rw.ag; s.rsi_al = rw.al; s.has_rsi = true;
+    }
     if (want_ichi) {
         s.ichi = kk::ind::ichimoku(H, L, C, cfg.ichimoku_tenkan, cfg.ichimoku_kijun, cfg.ichimoku_senkou);
         s.has_ichi = true;

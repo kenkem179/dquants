@@ -82,6 +82,43 @@ inline vector<double> rsi(const vector<double>& c, int n) {
     return out;
 }
 
+// MT5-faithful iRSI: Wilder smoothing seeded with the SMA of the first `n` gains/losses at index n
+// (matching MetaTrader's RSI OnCalculate). Exposes avg-gain/avg-loss so callers can take ONE more
+// Wilder step for the forming (shift-0) bar — the EA reads iRSI at shift 0 inside GetRSIAverage.
+struct RSIWilder { vector<double> rsi, ag, al; };
+inline RSIWilder rsi_wilder_mt5(const vector<double>& c, int n) {
+    const size_t N = c.size();
+    RSIWilder o; o.rsi.assign(N, 50.0); o.ag.assign(N, 0.0); o.al.assign(N, 0.0);
+    if (N == 0 || (int)N <= n) return o;
+    vector<double> g(N, 0.0), l(N, 0.0);
+    for (size_t i = 1; i < N; ++i) {
+        const double d = c[i] - c[i - 1];
+        g[i] = d > 0 ? d : 0.0;
+        l[i] = d < 0 ? -d : 0.0;
+    }
+    double sg = 0.0, sl = 0.0;
+    for (int i = 1; i <= n; ++i) { sg += g[i]; sl += l[i]; }
+    double ag = sg / n, al = sl / n;
+    o.ag[n] = ag; o.al[n] = al;
+    o.rsi[n] = (al == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + ag / al);
+    for (size_t i = n + 1; i < N; ++i) {
+        ag = (ag * (n - 1) + g[i]) / n;
+        al = (al * (n - 1) + l[i]) / n;
+        o.ag[i] = ag; o.al[i] = al;
+        o.rsi[i] = (al == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + ag / al);
+    }
+    return o;
+}
+
+// One additional Wilder RSI step for the forming bar (shift-0): given the last CLOSED bar's avg
+// gain/loss and the forming bar's close (=open at first tick), return the shift-0 RSI value.
+inline double rsi_wilder_step(double ag, double al, double prev_close, double cur_close, int n) {
+    const double d = cur_close - prev_close;
+    const double g = d > 0 ? d : 0.0, lo = d < 0 ? -d : 0.0;
+    const double nag = (ag * (n - 1) + g) / n, nal = (al * (n - 1) + lo) / n;
+    return (nal == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + nag / nal);
+}
+
 // Returns adx, +di, -di (all Wilder-smoothed, [0,100]).
 struct DMI { vector<double> adx, plus_di, minus_di; };
 

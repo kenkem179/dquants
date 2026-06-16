@@ -96,13 +96,51 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         s.diP[t] = TfIndicators::get(tf[t]->diP, j);
         s.diM[t] = TfIndicators::get(tf[t]->diM, j);
     }
-    s.adxS = TfIndicators::get(b.m1.adxS, i1);
-    s.diPS = TfIndicators::get(b.m1.diPS, i1);
-    s.diMS = TfIndicators::get(b.m1.diMS, i1);
-    for (int e = 0; e < 5; ++e) s.emaM1[e] = TfIndicators::get(b.m1.ema[e], i1);
-    s.atrM1 = TfIndicators::get(b.m1.atr, i1);
-    s.rsiM1 = b.m1.has_rsi ? TfIndicators::get(b.m1.rsi, i1) : 50.0;
-    s.closeM1 = b.m1.bars[i1].close; s.highM1 = b.m1.bars[i1].high; s.lowM1 = b.m1.bars[i1].low;
+    // adxS/diPS/diMS: the EA's E5 trace mirrors the M1 ADX(14) into these columns (they are NOT
+    // separate-period gate inputs), so mirror M1 here for parity rather than computing ADX(9).
+    s.adxS = s.adx[0]; s.diPS = s.diP[0]; s.diMS = s.diM[0];
+
+    // FAITHFUL SHIFTS (decoded from KenKemExpert.mq5 — see research/kenkem_parity/INDICATOR_PARITY_SPEC.md):
+    //  - EMA: GetEMA(...,ENTRY_SHIFT) reads a NON-series CopyBuffer(...,0,ENTRY_SHIFT+3) at index 1,
+    //    which lands 2 closed bars behind `close` (empirically ema[i] == EMA(close)[i-2]). → i1-2.
+    //  - close: iClose(...,ENTRY_SHIFT) = last CLOSED bar = i1.
+    //  - ATR/RSI/high/low: read at shift 0 (the FORMING bar) — at the first tick of a new bar
+    //    O=H=L=C=open, so model the forming bar as a single point at its open (no lookahead).
+    for (int e = 0; e < 5; ++e) s.emaM1[e] = TfIndicators::get(b.m1.ema[e], i1 - 2);
+
+    const int fi = align.m1;                      // forming-bar index (shift 0)
+    const bool has_form = (fi >= 0 && fi < b.m1.size());
+    const double open_f = has_form ? b.m1.bars[fi].open : b.m1.bars[i1].close;
+    const double prevC  = b.m1.bars[i1].close;
+
+    // ATR shift-0: one Wilder (SMMA) step from the closed-bar ATR using the forming-bar TR.
+    // Forming bar at first tick has H=L=open, so TR = |open - prevClose|.
+    {
+        const double atr_closed = TfIndicators::get(b.m1.atr, i1);
+        const double tr_form = std::fabs(open_f - prevC);
+        const int n = KENKEM_CACHE_ATR_PERIOD;
+        s.atrM1 = (atr_closed > 0.0) ? (atr_closed * (n - 1) + tr_form) / n : atr_closed;
+    }
+
+    // RSI: GetRSIAverage(TF0, RSI_LEN, 5) = mean of iRSI over shifts 0..4 (forming + 4 closed),
+    // counting only values > 0. Forming (shift 0) uses one Wilder step on the gap open-prevClose.
+    if (b.m1.has_rsi) {
+        const int n = cfg.rsi_len;
+        double rsi_form = kk::ind::rsi_wilder_step(
+            TfIndicators::get(b.m1.rsi_ag, i1), TfIndicators::get(b.m1.rsi_al, i1), prevC, open_f, n);
+        double vals[5] = { rsi_form,
+                           TfIndicators::get(b.m1.rsi, i1),
+                           TfIndicators::get(b.m1.rsi, i1 - 1),
+                           TfIndicators::get(b.m1.rsi, i1 - 2),
+                           TfIndicators::get(b.m1.rsi, i1 - 3) };
+        double sum = 0.0; int cnt = 0;
+        for (double v : vals) if (v > 0.0) { sum += v; ++cnt; }
+        s.rsiM1 = cnt > 0 ? sum / cnt : 0.0;
+    } else s.rsiM1 = 50.0;
+
+    // close = last closed bar; high/low = forming bar (shift 0) which is a single point at its open.
+    s.closeM1 = prevC;
+    s.highM1 = open_f; s.lowM1 = open_f;
     if (b.m1.has_ichi) { s.tenkanM1 = TfIndicators::get(b.m1.ichi.tenkan, i1); s.kijunM1 = TfIndicators::get(b.m1.ichi.kijun, i1); }
     if (b.m3.has_ichi) {
         int j3 = align.m3 - 1;
