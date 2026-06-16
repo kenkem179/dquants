@@ -49,7 +49,26 @@ Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, 
   `.set`, validate parity vs a **KK-KenKem** run. The lock was only right for the hardcoded original.
   Goal pipeline: (1) baseline-equivalence (KK-KenKem@orig-config ≈ KenKemExpert PF 1.62) + engine↔KK-KenKem
   parity; (2) sweep KK-KenKem's real inputs in C++ (costed/OOS/MC); (3) promote any config that beats PF 1.62
-  → KK-KenKem `.set` → demo. **NEXT ACTION below.**
+  → KK-KenKem `.set` → demo.
+
+### 🔬 engine↔KK-KenKem scoping DONE (2026-06-16) — they diverged; a strategic fork
+- **Aligned:** same entries E1/E2/E4/E5 (neither has E3); triggers + SL/TP math identical. KK-KenKem.mq5
+  header self-describes as "faithful transcription of the dquants kk::kenkem engine."
+- **Diverged (the crux):** the **C++ engine is STRICTLY MORE SELECTIVE.** Its `entry_gate_ok`
+  (`cpp_core/include/kk/kenkem/entries.hpp:116-167`) applies trend-quality(0-11)/conviction/RSI-div-veto/
+  ATR-percentile filters that KK-KenKem's `GateOk` (`KK-Common/KenKem/Engine.mqh:213-238`) **dropped**.
+  Same params => different trades. Also: C++ `apply_kv` reads ORIGINAL `KenKemExpert` key names, NOT `Inp*`
+  (needs a name-translation layer); per-entry `e*_rr_sideway` vs KK-KenKem's single `InpRrSidewayAll`;
+  different exit/position manager.
+- **Reality:** KK-KenKem LOSES. Today's MT5 runs blew up (BTC->$48, XAU -73%, E5-only config); its own best
+  self-reported OOS = PF 1.145 BTC / 1.132 XAU — both < the **PF 1.63** original baseline (captured:
+  `kenkem/MQL5/Profiles/Tester/v17620ReportTester-227922402.html`, XAU M1, +$2456, 260 tr).
+- **KEY INSIGHT:** KK-KenKem looks **over-distilled** — it deleted the engine's selectivity gates (likely the
+  edge). The real fork: **(A)** dumb the engine down to KK-KenKem (disable gates -> parity -> sweep), vs
+  **(B, recommended)** keep the gated engine as the research asset, verify it's competitive on recent OOS in
+  C++ (no MT5 needed), then **add the gate params as inputs to the KK-KenKem EA** so the EA inherits the edge.
+- **AWAITING USER:** pick Path A vs B. Then NEXT ACTION = (B) run gated C++ tick engine on recent OOS vs the
+  PF 1.63 baseline; or (A) build the parity profile that disables C++-only filters + the key-name translation.
 
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level
