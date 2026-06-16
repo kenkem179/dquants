@@ -29,9 +29,16 @@ Latest `KenKemExpert.mq5` @ shipped defaults · **XAUUSD M1** · every-tick **re
   **`research/kenkem_parity/REFERENCE_RUN_RECIPE.md`**.
 - Diff gate: `research/validation/parity_diff.py` ([[parity-gate-built]]).
 
-## ⛔ BLOCKED ON: user MT5 run
-User to run the recipe → hand back `trades_<sym>.csv` + `trace_<sym>.csv` + tester report + inputs echo.
-THEN: parity_diff → localize FIRST divergence → fix module-by-module against KenKemExpert.mq5.
+## ✅ Anchor #1 received + DIAGNOSED (2026-06-16) → `research/kenkem_parity/ANCHOR1_FINDINGS_2026-02.md`
+MT5 run landed (`kenkem/Tester/Agent-127.0.0.1-3000/MQL5/Files/KenKem/{trades,trace}_XAUUSD-Exness-KK.csv`).
+- **MT5 9 trades (E4×7,E1×1,E2×1) vs C++ 49 (E1×21,E2×16,E4×12); 0/9 matched.** Wholesale divergence.
+- Bar-trace diff: **close EXACT** (parquet==MT5 feed), **EMA/ADX formulas EXACT** but EMA series 2 bars
+  misaligned vs close/ADX (tf_cache bug); **ATR Δ0.43 + RSI Δ2.18 = real formula diffs** (ATR shift-0/
+  Wilder; RSI Wilder per [[kenkem-parity-traps]]).
+- **ROOT CAUSE = the engine was deliberately DISTILLED** (`snapshot.hpp:5-6` says so) — revoked mandate.
+  Keep bar loader + EMA/ADX formulas + harness; **rewrite the strategy layer faithfully from the EA.**
+- NOW IN **Stage 1**: lock ONE ENTRY_SHIFT=1 convention (close+ema+adx+atr+rsi all align to MT5 trace at
+  same shift), fix ATR/RSI formulas, re-diff bar trace to ~0 BEFORE touching entries.
 
 ## ▶️ Next actions (staged program — tasks #1-5 in tracker)
 1. **(done)** Lock anchor + export reference window.
