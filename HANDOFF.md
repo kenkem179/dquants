@@ -42,10 +42,14 @@ Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, 
   parity sets strip them ("EA hardcodes to 14" — true for KenKemExpert, FALSE for KK-KenKem). So pinning won't
   fix it; the lock must be revisited. Also flagged (verify): latest XAU `KK-KenKem.set` may carry BTC-tuned
   values (wrong-file load, not drift).
-- **✅ RESOLVED (user, 2026-06-16): target = original `KenKemExpert`.** C++ lock (ADX/RSI=14) is CORRECT —
-  no engine change; against KenKemExpert there is **no confirmed drift**. ⚠️ The recent `KK-KenKem.*` MT5 runs
-  (ADX 15/RSI 11) are OFF-TARGET — **do NOT use any `KK-KenKem.*` file as a KenKem parity reference**; pull
-  reference data from a `KenKem\KenKemExpert.ex5` tester run only.
+- **✅ RESOLVED (user, 2026-06-16, CORRECTED — supersedes the first call): two EAs, two ROLES.**
+  `KenKemExpert.ex5` = baseline-to-beat (PF 1.62, hardcoded). `dquants\KK-KenKem.ex5` = the **parameterized
+  Layer-4 deploy vehicle** (same E1/E2/E4/E5 logic, ADX/RSI/EMA/RR are genuine inputs) → **this is what we
+  tune & ship.** ⟹ re-point the C++ engine at KK-KenKem: **UN-LOCK** ADX/RSI/EMA, pin them in the parity
+  `.set`, validate parity vs a **KK-KenKem** run. The lock was only right for the hardcoded original.
+  Goal pipeline: (1) baseline-equivalence (KK-KenKem@orig-config ≈ KenKemExpert PF 1.62) + engine↔KK-KenKem
+  parity; (2) sweep KK-KenKem's real inputs in C++ (costed/OOS/MC); (3) promote any config that beats PF 1.62
+  → KK-KenKem `.set` → demo. **NEXT ACTION below.**
 
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level

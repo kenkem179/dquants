@@ -68,13 +68,20 @@ which values the XAU run actually used before drawing any parity conclusion.**
 
 ---
 
-## ✅ DECISION (user, 2026-06-16): target = **original `KenKemExpert`**
-- The C++ engine lock (ADX_LEN/RSI_LEN = 14, refused via `is_ea_locked_key()`) is **CORRECT** — keep it.
-  No engine change. Against `KenKemExpert` there is **no confirmed drift** (ADX/RSI = 14 on both sides).
-- The recent `dquants\KK-KenKem\KK-KenKem.ex5` runs (ADX 15 / RSI 11) are a **different experiment** and are
-  **OFF-TARGET** for KenKem parity. **Do NOT diff the C++ engine against any `KK-KenKem.*` reference.**
-  KenKem parity reference data must come from a **`KenKem\KenKemExpert.ex5`** tester run.
-- The flagged "XAU set carries BTC values" concern was specific to `KK-KenKem.set` → now moot for parity.
+## ✅ DECISION (user, 2026-06-16, CORRECTED): two EAs, two ROLES — tune `KK-KenKem`, beat `KenKemExpert`
+The first decision ("target = KenKemExpert, lock correct") was made on a misframing and is **superseded**.
+Clarified user goal: *produce a BETTER KenKem via the dquants pipeline and ship it.* The two EAs are not
+either/or — they are baseline vs deploy vehicle:
+- **`KenKem\KenKemExpert.ex5`** = the **baseline to beat** (PF 1.62; ADX/RSI/EMA hardcoded). Stays the bar.
+- **`dquants\KK-KenKem\KK-KenKem.ex5`** = the **Layer-4 promotion vehicle** — same E1/E2/E4/E5 logic
+  (`KK-Common/KenKem/Engine.mqh`, toggles `InpE1On…InpE5On`) but ADX/RSI/EMA/RR exposed as **genuine
+  inputs** (~96 inputs across `Inputs.mqh` + `CommonInputs.mqh`). This is what we **tune and deploy**.
+- **Implication for the lock:** `is_ea_locked_key()` refusing ADX_LEN/RSI_LEN is correct ONLY for the
+  hardcoded original. Against `KK-KenKem` those are real inputs → tuning them is legitimate & reproducible.
+  The engine must be re-pointed at `KK-KenKem`: **un-lock** ADX/RSI/EMA, pin them in the parity `.set`,
+  and validate parity against a **`KK-KenKem`** run (NOT KenKemExpert). KK-KenKem *expands* the tunable
+  surface — it dissolves the old "contamination" problem rather than causing it.
+- The "XAU set carries BTC values" flag is now a real to-check (it's the deploy vehicle's `.set`).
 
 ---
 
