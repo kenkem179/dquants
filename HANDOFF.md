@@ -42,9 +42,10 @@ Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, 
   parity sets strip them ("EA hardcodes to 14" — true for KenKemExpert, FALSE for KK-KenKem). So pinning won't
   fix it; the lock must be revisited. Also flagged (verify): latest XAU `KK-KenKem.set` may carry BTC-tuned
   values (wrong-file load, not drift).
-- **⏳ BLOCKED ON USER DECISION:** which EA is the KenKem parity/production target — original `KenKemExpert`
-  (keep lock, ADX/RSI=14 both sides) or distilled `KK-KenKem` (un-lock ADX_LEN/RSI_LEN + pin them, OR set MT5
-  InpAdxLen/InpRsiLen back to 14)? Comparison is apples-to-oranges until settled.
+- **✅ RESOLVED (user, 2026-06-16): target = original `KenKemExpert`.** C++ lock (ADX/RSI=14) is CORRECT —
+  no engine change; against KenKemExpert there is **no confirmed drift**. ⚠️ The recent `KK-KenKem.*` MT5 runs
+  (ADX 15/RSI 11) are OFF-TARGET — **do NOT use any `KK-KenKem.*` file as a KenKem parity reference**; pull
+  reference data from a `KenKem\KenKemExpert.ex5` tester run only.
 
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level

@@ -68,14 +68,13 @@ which values the XAU run actually used before drawing any parity conclusion.**
 
 ---
 
-## Decision required (KenKem) — which EA is the parity / production target?
-1. **Original `KenKemExpert`** (the proven-profitable PF 1.62 baseline; ADX/RSI hardcoded 14). Then the C++
-   lock is correct and the recent KK-KenKem 15/11 runs are a different experiment — keep ADX/RSI=14 both sides.
-2. **Distilled `KK-KenKem`** (what MT5 most recently ran; ADX/RSI are genuine inputs). Then the C++ lock is
-   wrong for this target → either un-lock `ADX_LEN`/`RSI_LEN` in the engine and pin them in the parity set,
-   OR set MT5's `InpAdxLen`/`InpRsiLen` back to 14 so both match the engine.
-
-Until this is settled the KenKem parity comparison is apples-to-oranges.
+## ✅ DECISION (user, 2026-06-16): target = **original `KenKemExpert`**
+- The C++ engine lock (ADX_LEN/RSI_LEN = 14, refused via `is_ea_locked_key()`) is **CORRECT** — keep it.
+  No engine change. Against `KenKemExpert` there is **no confirmed drift** (ADX/RSI = 14 on both sides).
+- The recent `dquants\KK-KenKem\KK-KenKem.ex5` runs (ADX 15 / RSI 11) are a **different experiment** and are
+  **OFF-TARGET** for KenKem parity. **Do NOT diff the C++ engine against any `KK-KenKem.*` reference.**
+  KenKem parity reference data must come from a **`KenKem\KenKemExpert.ex5`** tester run.
+- The flagged "XAU set carries BTC values" concern was specific to `KK-KenKem.set` → now moot for parity.
 
 ---
 
