@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
             (long long)bar.ts_ms, utc(bar.ts_ms).c_str(),
             s.emaM1[0],s.emaM1[1],s.emaM1[2],s.emaM1[3],s.emaM1[4],
             s.adx[0],s.adx[1],s.adx[2],s.adx[3], s.diP[0],s.diP[1],s.diP[2],s.diP[3], s.diM[0],s.diM[1],s.diM[2],s.diM[3],
-            s.adxS,s.diPS,s.diMS, s.atrM1,s.rsiM1, s.closeM1,s.highM1,s.lowM1, s.tenkanM1,s.kijunM1, s.senkouA_M3,s.senkouB_M3, s.sideways,s.atr_pctile,
+            s.adxS,s.diPS,s.diMS, s.atrM1,s.rsiM1_avg5, s.closeM1,s.highM1,s.lowM1, s.tenkanM1,s.kijunM1, s.senkouA_M3,s.senkouB_M3, s.sideways,s.atr_pctile,
             e5age(tg.e5_up), e5age(tg.e5_down),
             L.in_age,L.sideways_blk,L.atr_lo_blk,L.atr_hi_blk,L.price_ok,L.trendcore,L.tq,L.tq_ok,L.adx_ok,L.htf_ok,L.pass,L.fire,
             S.in_age,S.sideways_blk,S.atr_lo_blk,S.atr_hi_blk,S.price_ok,S.trendcore,S.tq,S.tq_ok,S.adx_ok,S.htf_ok,S.pass,S.fire,

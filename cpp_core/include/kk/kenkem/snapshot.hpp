@@ -23,8 +23,9 @@ struct Snapshot {
     double adxS = 0, diPS = 0, diMS = 0;
     // M1 EMA0..4 at shift 1 (for SL structure + sideways).
     double emaM1[5] = {0,0,0,0,0};
-    double atrM1 = 0;        // M1 ATR(14) shift 1
-    double rsiM1 = 50;       // M1 RSI(14) shift 1
+    double atrM1 = 0;        // M1 ATR(14) shift 0 (forming bar)
+    double rsiM1 = 50;       // M1 RSI(14) RAW at shift 1 — GetRSIValue (conviction/sideways logic)
+    double rsiM1_avg5 = 50;  // M1 mean of RSI shifts 0..4 — GetRSIAverage (the trace `rsi` column only)
     double closeM1 = 0, highM1 = 0, lowM1 = 0;   // M1 bar shift 1 OHLC
     // Ichimoku: current cloud = TK lines (EA buffer 0/1); real Senkou cloud (buffer 2/3) for E4 quality.
     double tenkanM1 = 0, kijunM1 = 0;
@@ -122,9 +123,12 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         s.atrM1 = (atr_closed > 0.0) ? (atr_closed * (n - 1) + tr_form) / n : atr_closed;
     }
 
-    // RSI: GetRSIAverage(TF0, RSI_LEN, 5) = mean of iRSI over shifts 0..4 (forming + 4 closed),
-    // counting only values > 0. Forming (shift 0) uses one Wilder step on the gap open-prevClose.
+    // RSI: TWO distinct reads in the EA, kept separate here.
+    //  - LOGIC (conviction C3, sideways): GetRSIValue(TF0,14,ENTRY_SHIFT) = RAW iRSI at shift 1 = rsi[i1].
+    //  - TRACE column only: GetRSIAverage(TF0,RSI_LEN,5) = mean of iRSI shifts 0..4 (forming + 4 closed),
+    //    counting only values > 0. Forming (shift 0) uses one Wilder step on the gap open-prevClose.
     if (b.m1.has_rsi) {
+        s.rsiM1 = TfIndicators::get(b.m1.rsi, i1);
         const int n = cfg.rsi_len;
         double rsi_form = kk::ind::rsi_wilder_step(
             TfIndicators::get(b.m1.rsi_ag, i1), TfIndicators::get(b.m1.rsi_al, i1), prevC, open_f, n);
@@ -135,8 +139,8 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
                            TfIndicators::get(b.m1.rsi, i1 - 3) };
         double sum = 0.0; int cnt = 0;
         for (double v : vals) if (v > 0.0) { sum += v; ++cnt; }
-        s.rsiM1 = cnt > 0 ? sum / cnt : 0.0;
-    } else s.rsiM1 = 50.0;
+        s.rsiM1_avg5 = cnt > 0 ? sum / cnt : 0.0;
+    } else { s.rsiM1 = 50.0; s.rsiM1_avg5 = 50.0; }
 
     // close = last closed bar; high/low = forming bar (shift 0) which is a single point at its open.
     s.closeM1 = prevC;
