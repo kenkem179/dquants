@@ -104,16 +104,28 @@ flips ON to match the engine. Validate each with **one MT5 run** against the eng
 After each: engine export + MT5 run + `parity_diff.py` must show entries 1:1 (≤1-bar lag on ≤5%), exit
 reasons match, net P&L Δ ≤ ~1%. Only then is that feature "parity-locked."
 
-## Closed this session (C++ side, headless-testable)
+## Closed this session
+**C++ engine (committed `68a5a79`):**
 - **C1** partial-lot step-rounding + min-lot guard in `manage_tick` (now byte-equal to the EA's `MathFloor(q/step)*step; q>=min`).
 - **C2** broker `stops_level_price` modeled on BE/trail SL moves (default 0 ⇒ inert for Exness; faithful for any nonzero-stops broker).
 - Regression test `test_kenkem_trade_manager.cpp` extended to lock both.
 
+**EA reconciliation step 1 — SESSIONS (A1+B2), ported + compiles 0/0 (UNCOMMITTED in kenkem `KKMasterVPv1`, for user review):**
+- `KK-Common/KenKem/Inputs.mqh`: new `InpUseSessionFilter` (master, **default false = unchanged 24h**),
+  `InpSessionGmtOffset` (hours → UTC frame), JP/LN/NY HHMM windows, `InpCloseAtSessionEnd`.
+- `KK-Common/KenKem/Engine.mqh`: `InSession()` byte-mirrors `engine.hpp in_valid_session` (min-of-day +
+  offset, end-inclusive windows); `CloseAllForSessionEnd()` mirrors `per_bar_exits_` session branch;
+  `TryEnter` gated; `OnTick` flattens off-session **before** entries; `UpdateTriggers` still runs every bar.
+- ⏳ **VALIDATION (needs user MT5 run):** load the current KK-KenKem `.set`, set `InpUseSessionFilter=true`
+  **and `InpSessionGmtOffset` to the broker→UTC offset** (else windows shift, parity breaks). Run XAU M1
+  recent OOS; expect trade count to DROP toward the engine's session-gated count; then `parity_diff.py`
+  vs the engine export (engine has sessions ON by default) should converge.
+
 ## Status board (update as rows close)
 | Group | Rows | State |
 |---|---|---|
-| A entry gates | A1–A7 | OPEN (P) — A8 faithful |
-| B exits | B2–B4 | OPEN (P) — B1 faithful |
-| C mgmt formula | C1, C2 | ✅ CLOSED this session · C3/C4 faithful |
+| A entry gates | A1 | 🟡 PORTED (compiles 0/0) — awaiting MT5 validation · A2–A7 OPEN (P) · A8 faithful |
+| B exits | B2 | 🟡 PORTED with A1 — awaiting MT5 validation · B3–B4 OPEN (P) · B1 faithful |
+| C mgmt formula | C1, C2 | ✅ CLOSED (committed) · C3/C4 faithful |
 | D guards | D3 | OPEN (P) · D4/D5 blocked on engine-side C2 |
 | E sizing | E2 | OPEN (F-minor) · E1/E3 faithful |

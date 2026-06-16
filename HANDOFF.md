@@ -180,6 +180,14 @@ Did a full line-by-line read of the kk::kenkem engine (truth) vs the **deployed 
   tests (30 checks). Full `make test` green.
 - **Reconciliation direction = Path B (bring EA UP to engine), already user-endorsed.** Each row adds an EA
   `input` defaulting OFF (so all-OFF == today's EA), then flips ON; each needs ONE MT5 run + `parity_diff.py`.
+- **✅ STEP 1 DONE — SESSIONS (ledger A1+B2) ported into KK-KenKem, compiles 0/0** (UNCOMMITTED in kenkem
+  `KKMasterVPv1`, left for user review — branch has parallel uncommitted MasterVP work; KK-KenKem edits are
+  separate files). New `InpUseSessionFilter` (default false = unchanged 24h), `InSession()` byte-mirrors
+  `engine.hpp in_valid_session`, session-end flatten mirrors `per_bar_exits_`, entry gated in `TryEnter`.
+  **⏳ NEEDS USER MT5 RUN to validate:** load current KK-KenKem `.set`, set `InpUseSessionFilter=true` +
+  `InpSessionGmtOffset` to the broker→UTC offset, run XAU M1 OOS → trade count should drop toward the
+  engine's session-gated count → `parity_diff.py` vs engine export should converge. THEN move to step 2
+  (quality suite A4–A7). Ledger = `research/kenkem_parity/CPP_EA_PARITY_LEDGER.md`.
 
 ## ▶️ Next actions (full detail in `docs/BUILD-PLAN.md` → LIVE WORK L1–L4)
 0. **L4-parity (NEW critical path):** execute the ledger reconciliation in order — (1) sessions A1+B2,
