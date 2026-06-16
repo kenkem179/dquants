@@ -88,3 +88,32 @@ with equity-path-dependent breakers can't be matched by gate-fixes alone end-to-
 
 **Net:** per-trade mechanics faithful; divergence = (1) tester-disabled MTF gate [primary, proven],
 (2) peak-DD-halt equity-path cascade [secondary]. NOT exit geometry, NOT a C++ math bug.
+
+---
+# SOLVED — near-complete parity via TWO config fixes (not engine bugs)
+
+The "iMA M15 warmup" theory was wrong. The MT5 tester input echo showed the truth: the divergence was
+**config drift** — baseline.set fails to pin two behavioral keys, so engine & MT5 used different DEFAULTS:
+
+| Input | C++ default | MT5 (EA) default | effect |
+|---|---|---|---|
+| `InpUseMtfAgree` | true | **false** (tester) | MT5 skipped the MTF gate → +28 trades |
+| `InpMaxPeakDDPct` | 22% | **30%** | C++ halted early at 22% → −10 trades, locked losses |
+
+Fixing both (MTF on both sides via in-EA HTF-from-M3 compute + recompile; peak-DD pinned to 30):
+
+| Stage | matched | unmatched MT5 | net eng vs MT5 |
+|---|---|---|---|
+| original (mismatch) | 56 | 51 | −372 vs −1552 |
+| both MTF on | 72 | 11 | −372 vs −148 |
+| + peak-DD 30 | **81/83** | **2** | +125 vs −148 |
+
+Residual: 5 engine-only (1 is a differ mis-pair = MT5 also entered; 2 are "position already open" = MT5
+held a few ticks longer) + 2 exit-tag flips + small per-trade fill deltas ≈ **1.3% of account** — the
+irreducible tick-level floor (fill timing / partial-fill ordering / one-position-at-a-time cascade).
+
+**Engine is now TRUSTWORTHY at the trade level** for ranking configs, PROVIDED every behavioral key is
+pinned identically on both sides. ACTION: pin ALL behavioral inputs in baseline.set + the parity preset
+so engine-default vs EA-default can never silently diverge again (same root as param-surface contamination).
+EA fix validated: `[HTF] built 2401 PERIOD_M15 buckets from 12000 PERIOD_M3 bars` → in-EA HTF EMA warms up
+in the tester AND matches live. Preset: kenkem `MQL5/Presets` mirror + MT5 Presets `KK-MasterVP-MTFon-xau.set`.

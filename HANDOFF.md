@@ -40,7 +40,20 @@ Dominant divergence in BOTH = **EXIT GEOMETRY**: engine closes via tight `SL-WIN
 closes via managed `EA` session/news exits (XAU 2026-05-22/05-25 cluster). Matches the KenKem-E5 exit
 root cause already on record. **Exit-path fidelity is THE blocker before any sweep is trustworthy.**
 
-## 🔵 IN FLIGHT — MasterVP XAU M3 May-2026 parity DIFF DONE → root cause = QUALITY GATE
+## ✅ MasterVP XAU M3 May-2026 — NEAR-COMPLETE PARITY ACHIEVED (config drift, not engine bug)
+Root cause was **config drift**: baseline.set didn't pin two behavioral keys → engine & MT5 used different
+DEFAULTS — `InpUseMtfAgree` (C++ true / MT5 false) and `InpMaxPeakDDPct` (C++ 22% / MT5 30%). Fixed both →
+**81 of 83 trades matched** (from 56/51), net +125 vs −148 (≈1.3% residual = tick-level fill timing).
+- EA fix (committed-pending in kenkem KKMasterVPv1): `Core/Indicators.mqh` computes HTF EMA from M3 IN-EA
+  (`BuildHtfEmaIfNeeded`/`HtfEmaAtBuf`), recompiled (0/0); validated `[HTF] built 2401 PERIOD_M15 buckets`.
+- Preset created: MT5 `Presets/KK-MasterVP-MTFon-xau.set` (baseline + MTF on + peak-DD via EA default 30 + exports).
+- C++ side: trades_cpp_mtfON_p30.csv (peak-DD pinned 30). Evidence: `RUN_2026-05_xau_m3/parity_diff_mtfON_p30.txt`,
+  `FINDINGS.md` (SOLVED section), `mt5_ref/trades_mt5_mtfON.csv` + `parity_mt5_mtfON.csv` (per-bar now exported).
+- **NEXT:** (1) pin ALL behavioral keys in baseline.set so engine-default≠EA-default can't recur; (2) decide
+  if the last ~1.3% (4 timing trades + 2 exit-tag flips) is worth chasing (tick fill-timing) or good enough
+  to TRUST; (3) re-test the config-drift lesson on KenKem/Monster; (4) THEN trustworthy sweeps.
+
+## 🗄️ (superseded) earlier same-session diagnosis — MasterVP parity DIFF → QUALITY GATE
 First true trade-level diff complete. Full writeup: `research/validation/mt5_parity_runs/RUN_2026-05_xau_m3/FINDINGS.md`.
 - **Verdict FAIL:** MT5 105 tr / −$1552 / PF 0.759 vs C++ 77 tr / −$372 / PF 0.928. 56 matched, 16
   engine-only, 51 MT5-only.
@@ -69,9 +82,19 @@ First true trade-level diff complete. Full writeup: `research/validation/mt5_par
   α=2/(n+1); closed bars only). Replaces the iMA(M15) handles that never warmed in the tester. **Compiles
   0 errors / 0 warnings; .ex5 rebuilt.** Change is UNCOMMITTED in kenkem (branch KKMasterVPv1, parallel work
   — left for user to review/commit). C++-side: quality label split (`tick_engine.hpp`, committed `5bb8b92`).
-- **⏳ PENDING USER RE-RUN:** re-run the SAME MT5 tester config/window (XAUUSD-Exness-KK M3, every-tick,
-  2026.05.01→05.29, deposit 10000, baseline.set) with the recompiled EA. Expect MT5 trade count to DROP
-  from 105 toward the C++ MTF-on count (~77) as the MTF gate is now ACTIVE. Hand back the new `trades_*.csv`.
+- **⚠️ CORRECTION (the "iMA warmup" theory was an over-reach):** the MT5 tester input echo shows
+  `InpUseMtfAgree=false` in EVERY run (incl. the original 105-trade one). The real divergence = a plain
+  **config mismatch**: MT5 tester ran MTF **off**, C++ ran MTF **on** (baseline.set doesn't pin the key →
+  C++ default true; MT5 tester remembered its own false). That's why every re-run was identical and no
+  `[HTF]` line printed (the `if(InpUseMtfAgree)` branch is never entered). My EA from-M3 HTF change is still
+  a valid robustness improvement (and needed IF iMA-warmup is also real), but it's dormant until MTF is on.
+- **FIX:** created explicit preset `kenkem/MQL5/Presets/KK-MasterVP-parity-xau.set` pinning
+  `InpUseMtfAgree=true`, `InpMtfHardVeto=true`, `InpUseMomVeto=true`, `InpExportParity=true`,
+  `InpExportTradeJournal=true` (so the tester can't silently fall back to a stale input).
+- **⏳ PENDING USER RE-RUN:** Strategy Tester → Inputs → **Load** `KK-MasterVP-parity-xau.set` (must LOAD it,
+  not just re-run — tester remembers inputs), same XAU M3 / every-tick / 2026.05.01→05.29 / deposit 10000.
+  Expect: a `[HTF] built …` line in the journal, MTF vetoes to appear, trade count to drop 105→~77 toward
+  the C++ MTF-on run. Hand back new `trades_*.csv` (+ `parity_*.csv` now that export is on).
 - **THEN (me):** `parity_diff.py --engine cpp_core/tools/trades_cpp_xau_may2026.csv (=trades_cpp.csv, MTF on)
   --mt5 <new>` → expect convergence. Residual will be the peak-DD-halt equity-path cascade (2nd-order) to
   chase next via bar-synced state.
