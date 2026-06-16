@@ -67,8 +67,16 @@ Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, 
   edge). The real fork: **(A)** dumb the engine down to KK-KenKem (disable gates -> parity -> sweep), vs
   **(B, recommended)** keep the gated engine as the research asset, verify it's competitive on recent OOS in
   C++ (no MT5 needed), then **add the gate params as inputs to the KK-KenKem EA** so the EA inherits the edge.
-- **AWAITING USER:** pick Path A vs B. Then NEXT ACTION = (B) run gated C++ tick engine on recent OOS vs the
-  PF 1.63 baseline; or (A) build the parity profile that disables C++-only filters + the key-name translation.
+- **✅ USER CHOSE PATH B.** Gated-engine OOS measured (tick engine; full table in
+  `research/kenkem_parity/PATHB_GATED_ENGINE_OOS.md`): **E5-only = PF 1.143 in BOTH 2025 Feb–May AND 2026
+  Jan–May** (stable real edge, but = KK-KenKem's own ~1.13 ceiling). **E2 loses both periods; E1 regime-
+  dependent** (+709 2025 / −792 2026) → at engine-default params, adding E1+E2 HURTS (PF→0.938 in 2026).
+  ⟹ engine does NOT yet beat PF 1.63 — but comparison is unfair on two counts.
+- **NEXT ACTION (both doable WITHOUT MT5):** (1) export **Sep–Nov 2025 XAU ticks** from
+  `data/processed/ticks_xauusd_2025.parquet` (the 1.63 baseline's exact window) → run engine like-for-like;
+  (2) extract the **original KenKemExpert's proven E1/E2 hardcoded params** and load into the engine (today's
+  E1/E2 use engine DEFAULTS, not the proven config) → re-test. THEN judge if the gated engine reproduces ~1.63.
+  In parallel, the **E5 core (PF ~1.14) is solid** and could be a first KK-KenKem candidate.
 
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level
