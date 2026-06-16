@@ -63,11 +63,18 @@ First true trade-level diff complete. Full writeup: `research/validation/mt5_par
   the **tester runs a more permissive strategy than deploys live** (live has M15 history). Replicating
   inert-MTF in C++ (`InpUseMtfAgree=false`): matched 56→65, engine-only 16→2, P&L Δ 91%→70%; residual 42
   now block on **peak DD halt (36)** = equity-path breaker cascade (2nd-order). Per-trade mechanics faithful.
-- **DECISION NEEDED (user):** (A) match tester (disable MTF in C++) — but tester≠live; (B) fix the tester to
-  be faithful to live (preload M15 history, or compute HTF EMA from M3 inside the EA instead of `iMA`) so
-  tester+C++ both apply MTF and converge — RIGHT long-term fix, likely explains project-wide "optimized
-  configs lose live"; (C) drop the MTF gate entirely. Code this session: quality label split
-  (`tick_engine.hpp`, built+working); `--symbol-xau` on `parity_driver.cpp` (unbuilt).
+- **DECISION: user chose (B) fix the EA to be faithful to live.** IMPLEMENTED: `KK-MasterVP/Core/Indicators.mqh`
+  now computes the HTF EMA from base-TF (M3) closes IN-EA (`BuildHtfEmaIfNeeded`/`HtfEmaAtBuf`), mirroring
+  the C++ `build_htf_m15_` byte-for-byte (HTF close = last base-TF close in bucket; EMA seed = first value,
+  α=2/(n+1); closed bars only). Replaces the iMA(M15) handles that never warmed in the tester. **Compiles
+  0 errors / 0 warnings; .ex5 rebuilt.** Change is UNCOMMITTED in kenkem (branch KKMasterVPv1, parallel work
+  — left for user to review/commit). C++-side: quality label split (`tick_engine.hpp`, committed `5bb8b92`).
+- **⏳ PENDING USER RE-RUN:** re-run the SAME MT5 tester config/window (XAUUSD-Exness-KK M3, every-tick,
+  2026.05.01→05.29, deposit 10000, baseline.set) with the recompiled EA. Expect MT5 trade count to DROP
+  from 105 toward the C++ MTF-on count (~77) as the MTF gate is now ACTIVE. Hand back the new `trades_*.csv`.
+- **THEN (me):** `parity_diff.py --engine cpp_core/tools/trades_cpp_xau_may2026.csv (=trades_cpp.csv, MTF on)
+  --mt5 <new>` → expect convergence. Residual will be the peak-DD-halt equity-path cascade (2nd-order) to
+  chase next via bar-synced state.
 
 ## ▶️ Next actions (full detail in `docs/BUILD-PLAN.md` → LIVE WORK L1–L4)
 1. **L3a (NOW the critical path)** Reconcile the engine **exit path** with the EA-managed exits
