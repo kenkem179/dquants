@@ -180,14 +180,25 @@ Did a full line-by-line read of the kk::kenkem engine (truth) vs the **deployed 
   tests (30 checks). Full `make test` green.
 - **Reconciliation direction = Path B (bring EA UP to engine), already user-endorsed.** Each row adds an EA
   `input` defaulting OFF (so all-OFF == today's EA), then flips ON; each needs ONE MT5 run + `parity_diff.py`.
-- **✅ STEP 1 DONE — SESSIONS (ledger A1+B2) ported into KK-KenKem, compiles 0/0** (UNCOMMITTED in kenkem
-  `KKMasterVPv1`, left for user review — branch has parallel uncommitted MasterVP work; KK-KenKem edits are
-  separate files). New `InpUseSessionFilter` (default false = unchanged 24h), `InSession()` byte-mirrors
-  `engine.hpp in_valid_session`, session-end flatten mirrors `per_bar_exits_`, entry gated in `TryEnter`.
-  **⏳ NEEDS USER MT5 RUN to validate:** load current KK-KenKem `.set`, set `InpUseSessionFilter=true` +
-  `InpSessionGmtOffset` to the broker→UTC offset, run XAU M1 OOS → trade count should drop toward the
-  engine's session-gated count → `parity_diff.py` vs engine export should converge. THEN move to step 2
-  (quality suite A4–A7). Ledger = `research/kenkem_parity/CPP_EA_PARITY_LEDGER.md`.
+- **🚨 SESSIONS PORT WENT TO THE WRONG FILE — reverted.** I edited the kenkem repo's
+  `KK-Common/KenKem/{Engine,Inputs}.mqh`, but **MT5 runs `dquants/mql5/experts/` via a symlink**
+  (`MT5/.../Experts/dquants -> ~/Workspace/KEM/dquants/mql5/experts`). The real deploy EA is
+  **`dquants/mql5/experts/KenKem/`** (THIS repo; modular Engine/Gates/Snapshot/Entries). The kenkem
+  KK-Common copy is a dead parallel version → my edits there were reverted. **RULE now in memory
+  [[deploy-ea-is-dquants-mql5-symlinked]]: all EA ports go in `dquants/mql5/experts/KenKem/`.**
+- **📥 User MT5 run loaded:** `research/kenkem_parity/mt5_runs/RUN_2026-06-16_kkkenkem_e5_xau/` (inputs,
+  result, gz log, FINDINGS). KK-KenKem **E5-only**, XAU M1, 2026.01–05.29 → **−73% blow-up ($2,689/$10k)**,
+  unchanged (it ran the old 08:04 `.ex5`; no session inputs in the echo). **Engine proof on that exact
+  config:** deploy `.set` → **0 trades** (engine keeps ATR-pctile≥65 + E5 trend-quality≥5 + E5 trend-core);
+  same config with those 3 filters removed (= what the EA does) → **357 trades / −$4,070**. ⟹ the E5
+  blow-up is **missing entry selectivity (ledger A2+A7+E5 trend-core), NOT sessions.**
+- **▶️ CORRECTED next step:** port **A2 (ATR-pctile floor) + E5 trend-core + A7 (`min_tq_e5`)** into
+  `dquants/mql5/experts/KenKem/` (the deploy tree; `AtrPct`/`TrendCore` already there), then sessions
+  (A1/B2) in the same tree → recompile `dquants/KK-KenKem/KK-KenKem.mq5` (symlink auto-delivers) →
+  reload `KK-KenKem-E5-XAUUSD.set` → re-run → expect the E5 junk trades to collapse toward the engine's.
+- **✅ C++ loaders landed (commit pending):** engine now reads MT5's **UTF-16** `.set` AND the **`Inp*`**
+  deploy schema (ledger **G1**) — without these the engine silently ran on struct DEFAULTS (0 keys
+  applied), so no `parity_diff` was ever valid. Tests added (config 62 checks). Broker = **UTC+0**.
 
 ## ▶️ Next actions (full detail in `docs/BUILD-PLAN.md` → LIVE WORK L1–L4)
 0. **L4-parity (NEW critical path):** execute the ledger reconciliation in order — (1) sessions A1+B2,

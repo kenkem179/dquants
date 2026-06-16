@@ -99,11 +99,79 @@ void test_ea_locked_keys_ignored() {
     KK_CHECK(!is_ea_locked_key("E1_RR") && !is_ea_locked_key("MIN_TREND_QUALITY_E1"));
 }
 
+// Ledger G1: the engine must also load the DEPLOY-VEHICLE schema (Inp* keys, MT5 ||-delimited values),
+// so ONE .set drives both the engine and the KK-KenKem EA — the precondition for any parity_diff.
+void test_inp_deploy_schema_loader() {
+    const std::string path = "/tmp/kenkem_inp_test.set";
+    FILE* f = std::fopen(path.c_str(), "w");
+    std::fprintf(f, "InpRiskPerTrade=0.02||0.02||0.002||0.2||N\n");   // MT5 ||-format -> stod stops at |
+    std::fprintf(f, "InpE1On=false||false||0||true||N\n");
+    std::fprintf(f, "InpE1Rr=1.9||1.9||0.19||19.0||N\n");
+    std::fprintf(f, "InpMinMomentumAdx=13.9663\n");
+    std::fprintf(f, "InpSidewaysBlock=48\n");
+    std::fprintf(f, "InpE4HtfMode=4\n");                              // -> HTF_M5_OR_M15
+    std::fprintf(f, "InpAdxLen=15\n");                                // KK-KenKem UN-LOCKS this (genuine input)
+    std::fprintf(f, "InpEma4=192\n");
+    std::fprintf(f, "InpRrSidewayAll=1.2\n");                         // sets all four e*_rr_sideway
+    std::fprintf(f, "InpUseSessionFilter=true\n");                    // -> ignore_valid_sessions=false
+    std::fprintf(f, "InpNyEnd=1500\n");
+    std::fclose(f);
+
+    KenKemConfig p;
+    int applied = load_set(p, path);
+    KK_CHECK(applied == 11);
+    // single-risk EA model -> every per-entry ratio takes InpRiskPerTrade
+    KK_CHECK_NEAR(p.max_loss_ratio_e1, 0.02, 1e-9);
+    KK_CHECK_NEAR(p.max_loss_ratio_e5, 0.02, 1e-9);
+    KK_CHECK(!p.enable_e1);
+    KK_CHECK_NEAR(p.e1_rr, 1.9, 1e-9);
+    KK_CHECK_NEAR(p.min_momentum_adx, 13.9663, 1e-9);
+    KK_CHECK(p.sideways_block_thr == 48);
+    KK_CHECK(p.e4_htf_filter == HTF_M5_OR_M15);
+    KK_CHECK(p.adx_len == 15);                       // honored on the Inp* path (un-locked for KK-KenKem)
+    KK_CHECK(p.ema4_period == 192);
+    KK_CHECK_NEAR(p.e1_rr_sideway, 1.2, 1e-9);       // RrSidewayAll fans out to every entry
+    KK_CHECK_NEAR(p.e4_rr_sideway, 1.2, 1e-9);
+    KK_CHECK(!p.ignore_valid_sessions);              // session filter ON => engine enforces sessions
+    KK_CHECK(p.ny_end == 1500);
+    // OFF must restore 24h trading (ignore sessions) — the all-OFF == today's-EA guarantee.
+    KenKemConfig q;
+    apply_kv(q, "InpUseSessionFilter", "false");
+    KK_CHECK(q.ignore_valid_sessions);
+    // The ORIGINAL-name lock is unaffected: ADX_LEN (original schema) still refused.
+    KenKemConfig r;
+    KK_CHECK(!apply_kv(r, "ADX_LEN", "9") && r.adx_len == 14);
+}
+
+// Ledger G1: MT5 EXPORTS .set as UTF-16 LE (BOM + CRLF). The loader must decode it, else every key is
+// mangled -> 0 keys applied -> engine silently runs on DEFAULTS (the silent parity trap).
+void test_utf16_set_loader() {
+    const std::string path = "/tmp/kenkem_utf16_test.set";
+    FILE* f = std::fopen(path.c_str(), "wb");
+    auto put16 = [&](const std::string& s) {                 // write ASCII as UTF-16 LE
+        for (char ch : s) { unsigned char lo = (unsigned char)ch, hi = 0; std::fwrite(&lo,1,1,f); std::fwrite(&hi,1,1,f); }
+    };
+    unsigned char bom[2] = {0xFF, 0xFE}; std::fwrite(bom, 1, 2, f);   // UTF-16 LE BOM
+    put16("InpE1Rr=2.5||2.5||0.25||25||N\r\n");               // MT5 ||-format + CRLF
+    put16("InpSidewaysBlock=48\r\n");
+    put16("InpUseSessionFilter=true\r\n");
+    std::fclose(f);
+
+    KenKemConfig p;
+    int applied = load_set(p, path);
+    KK_CHECK(applied == 3);                                   // decoded, not 0
+    KK_CHECK_NEAR(p.e1_rr, 2.5, 1e-9);
+    KK_CHECK(p.sideways_block_thr == 48);
+    KK_CHECK(!p.ignore_valid_sessions);
+}
+
 void run_all() {
     KK_RUN(test_defaults);
     KK_RUN(test_set_loader);
     KK_RUN(test_specs);
     KK_RUN(test_ea_locked_keys_ignored);
+    KK_RUN(test_inp_deploy_schema_loader);
+    KK_RUN(test_utf16_set_loader);
 }
 
 KK_TEST_MAIN()

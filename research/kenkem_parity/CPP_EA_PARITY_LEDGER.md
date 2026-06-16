@@ -31,6 +31,12 @@ different strategies wearing the same name, and any sweep result is unsafe to de
 
 ---
 
+## G. CONFIG INTEROP — the foundational blocker (under everything else)
+| # | Aspect | Engine | EA | Sev | Fix |
+|---|---|---|---|---|---|
+| G1 | **`.set` key names** | `apply_kv` reads the ORIGINAL KenKemExpert names (`E1_RR`, `MIN_MOMENTUM_ADX_REQUIRED`, …) (`kenkem_config.hpp:338`) | KK-KenKem `.set` uses `Inp*` names (`InpE1Rr`, `InpMinMomentumAdx`, …) | **F (blocker)** | ✅ **FIXED this session** — engine now also accepts the `Inp*` schema (full `Inputs.mqh` map), so ONE `.set` drives both. Until this, the engine ran the deploy config on struct DEFAULTS ⇒ any "parity" diff was engine-defaults-vs-EA-config, i.e. meaningless. **No `parity_diff.py` is valid without it.** |
+| G2 | `Inp*` un-locks ADX/RSI/EMA | engine `is_ea_locked_key` blocks `ADX_LEN`/`RSI_LEN` (right for KenKemExpert) | KK-KenKem makes `InpAdxLen`/`InpRsiLen` genuine inputs | (resolved by G1) | the `Inp*` path honors `InpAdxLen`/`InpRsiLen`/`InpEma*` (correct for the deploy vehicle; the lock still guards the ORIGINAL names) |
+
 ## A. ENTRY GATES — engine is a strict SUPERSET of the EA
 The engine's `entry_gate_ok` (`entries.hpp:116-167`) applies filters the EA's `GateOk`
 (`Engine.mqh:213-238`) never received. **Same params ⇒ the EA fires MORE trades** (over-trades chop). This
@@ -110,22 +116,26 @@ reasons match, net P&L Δ ≤ ~1%. Only then is that feature "parity-locked."
 - **C2** broker `stops_level_price` modeled on BE/trail SL moves (default 0 ⇒ inert for Exness; faithful for any nonzero-stops broker).
 - Regression test `test_kenkem_trade_manager.cpp` extended to lock both.
 
-**EA reconciliation step 1 — SESSIONS (A1+B2), ported + compiles 0/0 (UNCOMMITTED in kenkem `KKMasterVPv1`, for user review):**
-- `KK-Common/KenKem/Inputs.mqh`: new `InpUseSessionFilter` (master, **default false = unchanged 24h**),
-  `InpSessionGmtOffset` (hours → UTC frame), JP/LN/NY HHMM windows, `InpCloseAtSessionEnd`.
-- `KK-Common/KenKem/Engine.mqh`: `InSession()` byte-mirrors `engine.hpp in_valid_session` (min-of-day +
-  offset, end-inclusive windows); `CloseAllForSessionEnd()` mirrors `per_bar_exits_` session branch;
-  `TryEnter` gated; `OnTick` flattens off-session **before** entries; `UpdateTriggers` still runs every bar.
-- ⏳ **VALIDATION (needs user MT5 run):** load the current KK-KenKem `.set`, set `InpUseSessionFilter=true`
-  **and `InpSessionGmtOffset` to the broker→UTC offset** (else windows shift, parity breaks). Run XAU M1
-  recent OOS; expect trade count to DROP toward the engine's session-gated count; then `parity_diff.py`
-  vs the engine export (engine has sessions ON by default) should converge.
+**G1 (config interop) — engine now loads MT5 UTF-16 `.set` + the `Inp*` deploy schema.** Without this the
+engine ran the deploy config on struct DEFAULTS (0 keys applied), so any "parity" diff was meaningless.
+Tests added (config 62 checks). Broker confirmed **UTC+0**.
+
+**⚠️ SESSIONS (A1+B2) port was applied to the WRONG file and REVERTED.** It went into the kenkem repo's
+`KK-Common/KenKem/`, but MT5 runs **`dquants/mql5/experts/KenKem/`** (symlinked; see memory
+`deploy-ea-is-dquants-mql5-symlinked`). **All EA ports must target `dquants/mql5/experts/KenKem/` in THIS repo.**
+
+**Evidence the priority is A2/A7, NOT sessions** (`mt5_runs/RUN_2026-06-16_kkkenkem_e5_xau/`): the E5-only
+deploy config → engine **0 trades** (ATR-pctile≥65 + E5 trend-quality≥5 + E5 trend-core block it) vs the
+EA **357 trades / −$4,070 / −73%** (no such filters). Port those filters into the deploy tree first.
 
 ## Status board (update as rows close)
 | Group | Rows | State |
 |---|---|---|
-| A entry gates | A1 | 🟡 PORTED (compiles 0/0) — awaiting MT5 validation · A2–A7 OPEN (P) · A8 faithful |
-| B exits | B2 | 🟡 PORTED with A1 — awaiting MT5 validation · B3–B4 OPEN (P) · B1 faithful |
+| G config interop | G1, G2 | ✅ CLOSED — UTF-16 + `Inp*` loaders (engine reads the real deploy `.set`) |
+| A entry gates | **A2, A7** | 🔴 NEXT (the E5 blow-up driver) · A1 reverted (wrong file) · A3–A6 OPEN (P) · A8 faithful |
+| B exits | B2–B4 | OPEN (P) — B2 reverted (wrong file) · B1 faithful |
 | C mgmt formula | C1, C2 | ✅ CLOSED (committed) · C3/C4 faithful |
 | D guards | D3 | OPEN (P) · D4/D5 blocked on engine-side C2 |
 | E sizing | E2 | OPEN (F-minor) · E1/E3 faithful |
+
+**Target tree for ALL EA ports: `dquants/mql5/experts/KenKem/` (symlinked into MT5; recompile `dquants/KK-KenKem/KK-KenKem.mq5`).**

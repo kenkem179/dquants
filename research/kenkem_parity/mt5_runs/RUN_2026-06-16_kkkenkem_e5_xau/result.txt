@@ -1,0 +1,9 @@
+# MT5 run extract — KK-KenKem E5-only XAU (2026-06-16 21:01)
+21:01:00.299	History	XAUUSD-Exness-KK,M1: history cache allocated for 505397 bars and contains 353081 bars from 2025.01.01 23:05 to 2025.12.31 21:57
+21:01:00.299	History	XAUUSD-Exness-KK,M1: history begins from 2025.01.01 23:05
+21:01:00.340	Tester	XAUUSD-Exness-KK,M1 (Exness-MT5Trial17): generating based on real ticks
+21:01:00.340	Tester	XAUUSD-Exness-KK,M1: testing of Experts\dquants\KK-KenKem\KK-KenKem.ex5 from 2026.01.01 00:00 to 2026.05.29 00:00 started with inputs:
+21:01:00.419	History	XAUUSD-Exness-KK,M15: history cache allocated for 33771 bars and contains 23616 bars from 2025.01.01 23:00 to 2025.12.31 21:45
+21:01:00.419	History	XAUUSD-Exness-KK,M15: history begins from 2025.01.01 23:00
+21:01:00.420	KK-KenKem (XAUUSD-Exness-KK,M1)	2026.01.01 00:00:00   [KK-KenKem] init pip=0.00100 vppl=100.00000  E1=0 E2=0 E4=0 E5=1
+21:01:03.158	KK-KenKem (XAUUSD-Exness-KK,M1)	2026.01.01 23:15:00   CTrade::OrderSend: market buy 0.50 XAUUSD-Exness-KK sl: 4327.058 tp: 4335.954 [done at 4331.058]

@@ -8,6 +8,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <iterator>
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
@@ -596,20 +597,152 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "PM_PARTIAL_TP") p.pm.partial_tp = kbool(val);
     else if (key == "PM_PARTIAL_TRIGGER_R") p.pm.partial_trigger_r = D();
     else if (key == "PM_PARTIAL_FRAC") p.pm.partial_frac = D();
+    // =====================================================================================
+    // DEPLOY-VEHICLE SCHEMA (Inp*) — the KK-KenKem EA exposes a DIFFERENT key set than the original
+    // KenKemExpert (KK-Common/KenKem/Inputs.mqh). Accepting it here lets ONE .set drive BOTH the engine
+    // and the EA — the precondition for any meaningful parity_diff (ledger G1). The KK-KenKem EA un-locks
+    // ADX/RSI/EMA periods (genuine inputs), so these are honored here (the lock still guards the ORIGINAL
+    // names). MT5 .set lines look like `InpE1Rr=1.9||1.9||..||N`; std::stod/stoi stop at the first `|`.
+    else if (key == "InpRiskPerTrade") {           // EA sizes every entry off ONE risk fraction
+        p.common_max_risk = p.max_loss_ratio_e1 = p.max_loss_ratio_e2
+            = p.max_loss_ratio_e4 = p.max_loss_ratio_e5 = D();
+    }
+    else if (key == "InpMaxConcurrent") p.max_concurrent_pos = I();
+    else if (key == "InpBlockOpposite") p.block_opposite_dir = kbool(val);
+    // shared gates / SL
+    else if (key == "InpMinMomentumAdx") p.min_momentum_adx = D();
+    else if (key == "InpAdxHighThreshold") p.adx_high_threshold = D();
+    else if (key == "InpSidewaysBlock") p.sideways_block_thr = I();
+    else if (key == "InpSidewaysWarn") p.sideways_warning_thr = I();
+    else if (key == "InpSlEmaDistance") p.sl_ema_distance = I();
+    else if (key == "InpRangeLookback") p.range_hilo_lookback = I();
+    else if (key == "InpEmaAlignTolPips") p.ema_align_tol_pips = D();
+    // E1
+    else if (key == "InpE1On") p.enable_e1 = kbool(val);
+    else if (key == "InpE1Rr") p.e1_rr = D();
+    else if (key == "InpE1MaxAge") p.e1_max_cross_age = I();
+    else if (key == "InpE1HtfMode") p.e1_htf_filter = H();
+    else if (key == "InpE1HtfMinAdx") p.e1_htf_min_adx = D();
+    else if (key == "InpE1HtfMinDi") p.e1_htf_min_di_spread = D();
+    else if (key == "InpE1AtrSlCap") p.e1_atr_sl_cap = D();
+    else if (key == "InpE1AtrSlFloor") p.e1_atr_sl_floor = D();
+    else if (key == "InpE1PartTrig") p.e1_partial_tp_trigger = D();
+    else if (key == "InpE1PartRatio") p.e1_partial_tp_ratio = D();
+    else if (key == "InpE1Be") p.e1_be_buffer = D();
+    else if (key == "InpE1Trail") p.e1_trailing_factor = D();
+    // E2
+    else if (key == "InpE2On") p.enable_e2 = kbool(val);
+    else if (key == "InpE2Rr") p.e2_rr = D();
+    else if (key == "InpE2MaxAge") p.e2_max_touch_age = I();
+    else if (key == "InpE2HtfMode") p.e2_htf_filter = H();
+    else if (key == "InpE2HtfMinAdx") p.e2_htf_min_adx = D();
+    else if (key == "InpE2HtfMinDi") p.e2_htf_min_di_spread = D();
+    else if (key == "InpE2AtrSlCap") p.e2_atr_sl_cap = D();
+    else if (key == "InpE2AtrSlFloor") p.e2_atr_sl_floor = D();
+    else if (key == "InpE2PartTrig") p.e2_partial_tp_trigger = D();
+    else if (key == "InpE2PartRatio") p.e2_partial_tp_ratio = D();
+    else if (key == "InpE2Be") p.e2_be_buffer = D();
+    else if (key == "InpE2Trail") p.e2_trailing_factor = D();
+    // E4
+    else if (key == "InpE4On") p.enable_e4 = kbool(val);
+    else if (key == "InpE4Rr") p.e4_rr = D();
+    else if (key == "InpE4RrShort") p.e4_rr_short = D();
+    else if (key == "InpE4MaxAge") p.e4_max_cross_age = I();
+    else if (key == "InpE4HtfMode") p.e4_htf_filter = H();
+    else if (key == "InpE4HtfMinAdx") p.e4_htf_min_adx = D();
+    else if (key == "InpE4HtfMinDi") p.e4_htf_min_di_spread = D();
+    else if (key == "InpE4MinMomAdx") p.e4_min_momentum_adx = D();
+    else if (key == "InpE4MinCloudThickAtr") p.e4_min_cloud_thick_atr = D();
+    else if (key == "InpE4ReqCloud") p.e4_require_tenkan_kijun = kbool(val);
+    else if (key == "InpE4AtrSlCap") p.e4_atr_sl_cap = D();
+    else if (key == "InpE4AtrSlFloor") p.e4_atr_sl_floor = D();
+    else if (key == "InpE4PartTrig") p.e4_partial_tp_trigger = D();
+    else if (key == "InpE4PartRatio") p.e4_partial_tp_ratio = D();
+    else if (key == "InpE4Be") p.e4_be_buffer = D();
+    else if (key == "InpE4Trail") p.e4_trailing_factor = D();
+    // E5
+    else if (key == "InpE5On") p.enable_e5 = kbool(val);
+    else if (key == "InpE5Rr") p.e5_rr = D();
+    else if (key == "InpE5MaxAge") p.e5_max_ema_cross_age = I();
+    else if (key == "InpE5HtfMode") p.e5_htf_filter = H();
+    else if (key == "InpE5HtfMinAdx") p.e5_htf_min_adx = D();
+    else if (key == "InpE5HtfMinDi") p.e5_htf_min_di_spread = D();
+    else if (key == "InpE5MinMomAdx") p.e5_min_momentum_adx = D();
+    else if (key == "InpE5AtrSlCap") p.e5_atr_sl_cap = D();
+    else if (key == "InpE5AtrSlFloor") p.e5_atr_sl_floor = D();
+    else if (key == "InpE5PartTrig") p.e5_partial_tp_trigger = D();
+    else if (key == "InpE5PartRatio") p.e5_partial_tp_ratio = D();
+    else if (key == "InpE5Be") p.e5_be_buffer = D();
+    else if (key == "InpE5Trail") p.e5_trailing_factor = D();
+    // periods / misc — KK-KenKem un-locks these (genuine inputs), so honor them here
+    else if (key == "InpEma0") p.ema0_period = I();
+    else if (key == "InpEma1") p.ema1_period = I();
+    else if (key == "InpEma2") p.ema2_period = I();
+    else if (key == "InpEma3") p.ema3_period = I();
+    else if (key == "InpEma4") p.ema4_period = I();
+    else if (key == "InpAdxLen") p.adx_len = I();
+    else if (key == "InpRsiLen") p.rsi_len = I();
+    else if (key == "InpAtrLen") p.atr_period_for_sl = I();
+    else if (key == "InpIchiTenkan") p.ichimoku_tenkan = I();
+    else if (key == "InpIchiKijun") p.ichimoku_kijun = I();
+    else if (key == "InpIchiSenkou") p.ichimoku_senkou = I();
+    else if (key == "InpRrSidewayAll") {           // EA uses ONE sideway RR for every entry
+        p.e1_rr_sideway = p.e2_rr_sideway = p.e4_rr_sideway = p.e5_rr_sideway = D();
+    }
+    // session filter (ledger A1/B2) — InpUseSessionFilter OFF => engine trades 24h (ignore sessions)
+    else if (key == "InpUseSessionFilter") p.ignore_valid_sessions = !kbool(val);
+    else if (key == "InpSessionGmtOffset") p.server_gmt_offset = I();
+    else if (key == "InpJapanStart") p.japan_start = I();
+    else if (key == "InpJapanEnd") p.japan_end = I();
+    else if (key == "InpLondonStart") p.london_start = I();
+    else if (key == "InpLondonEnd") p.london_end = I();
+    else if (key == "InpNyStart") p.ny_start = I();
+    else if (key == "InpNyEnd") p.ny_end = I();
+    else if (key == "InpCloseAtSessionEnd") p.close_at_session_end = kbool(val);
     else return false;
     return true;
 }
 
-// Load a .set into p. Returns # keys applied (-1 if file missing).
+// Decode raw .set bytes to an ASCII string. MetaTrader EXPORTS .set files as UTF-16 LE with a BOM and
+// CRLF line endings; reading those as bytes mangles every key (interleaved NULs) -> 0 keys applied -> the
+// engine silently runs on struct DEFAULTS instead of the deploy config. That made any "parity" diff
+// compare engine-defaults vs EA-config — a silent, severe trap. We detect the BOM and fold UTF-16 (LE/BE)
+// down to its ASCII bytes (set keys/values are all ASCII), and also strip a UTF-8 BOM. CRLF handled below.
+inline std::string decode_set_bytes(const std::string& raw) {
+    if (raw.size() >= 2 && (unsigned char)raw[0] == 0xFF && (unsigned char)raw[1] == 0xFE) {  // UTF-16 LE
+        std::string out;
+        for (size_t i = 2; i + 1 < raw.size(); i += 2)
+            if (raw[i + 1] == 0) out.push_back(raw[i]);   // ASCII low byte, high byte 0
+        return out;
+    }
+    if (raw.size() >= 2 && (unsigned char)raw[0] == 0xFE && (unsigned char)raw[1] == 0xFF) {  // UTF-16 BE
+        std::string out;
+        for (size_t i = 2; i + 1 < raw.size(); i += 2)
+            if (raw[i] == 0) out.push_back(raw[i + 1]);
+        return out;
+    }
+    if (raw.size() >= 3 && (unsigned char)raw[0] == 0xEF && (unsigned char)raw[1] == 0xBB
+        && (unsigned char)raw[2] == 0xBF)                                                     // UTF-8 BOM
+        return raw.substr(3);
+    return raw;
+}
+
+// Load a .set into p. Returns # keys applied (-1 if file missing). Accepts ASCII/UTF-8/UTF-16 .set files
+// (MT5 exports UTF-16) and both LF and CRLF line endings.
 inline int load_set(KenKemConfig& p, const std::string& path) {
-    std::ifstream f(path);
+    std::ifstream f(path, std::ios::binary);
     if (!f) return -1;
+    std::string raw((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    const std::string text = decode_set_bytes(raw);
     int applied = 0;
-    std::string line;
-    while (std::getline(f, line)) {
+    size_t start = 0;
+    while (start <= text.size()) {
+        size_t nl = text.find('\n', start);
+        std::string line = text.substr(start, nl == std::string::npos ? std::string::npos : nl - start);
+        start = (nl == std::string::npos) ? text.size() + 1 : nl + 1;
         auto semic = line.find(';');
         if (semic != std::string::npos) line = line.substr(0, semic);
-        line = detail::ktrim(line);
+        line = detail::ktrim(line);   // ktrim also strips a trailing '\r' (CRLF)
         if (line.empty()) continue;
         auto eq = line.find('=');
         if (eq == std::string::npos) continue;
