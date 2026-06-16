@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
     std::string set_path;
     std::string out_path = "tools/parity_cpp_btcusd_M3.csv";
     bool mimic = false;
+    bool symbol_xau = false;
 
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -27,12 +28,13 @@ int main(int argc, char** argv) {
         else if (a == "--set")  set_path  = next();
         else if (a == "--out")  out_path  = next();
         else if (a == "--mimic-mt5-noninput") mimic = true;
+        else if (a == "--symbol-xau") symbol_xau = true;
         else if (a == "--symbol-btc") { /* default */ }
         else { std::fprintf(stderr, "unknown arg: %s\n", a.c_str()); return 2; }
     }
 
     kk::Params p;
-    p.apply_btcusd_specs();   // parity reference instrument; XAU via a future --symbol-xau
+    if (symbol_xau) p.apply_xauusd_specs(); else p.apply_btcusd_specs();
     if (!set_path.empty()) {
         const int n = kk::load_set(p, set_path, mimic);
         if (n < 0) { std::fprintf(stderr, "could not read .set: %s\n", set_path.c_str()); return 1; }

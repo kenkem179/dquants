@@ -40,6 +40,35 @@ Dominant divergence in BOTH = **EXIT GEOMETRY**: engine closes via tight `SL-WIN
 closes via managed `EA` session/news exits (XAU 2026-05-22/05-25 cluster). Matches the KenKem-E5 exit
 root cause already on record. **Exit-path fidelity is THE blocker before any sweep is trustworthy.**
 
+## 🔵 IN FLIGHT — MasterVP XAU M3 May-2026 parity DIFF DONE → root cause = QUALITY GATE
+First true trade-level diff complete. Full writeup: `research/validation/mt5_parity_runs/RUN_2026-05_xau_m3/FINDINGS.md`.
+- **Verdict FAIL:** MT5 105 tr / −$1552 / PF 0.759 vs C++ 77 tr / −$372 / PF 0.928. 56 matched, 16
+  engine-only, 51 MT5-only.
+- **🔑 ROOT CAUSE (overturns exit-geometry hypothesis):** matched trades are parity-CLEAN (0/56 exit-tag
+  mismatch; entry/SL/exit mechanics port faithfully). The divergence is **which trades fire**. Of the 51
+  MT5-only trades, **42 (82%) my engine blocks on `quality (MTF/RSI)`**; MT5's MasterVP run has ZERO
+  quality-gate blocks. Both sides have the gate ON with identical params (MtfAgree/HardVeto/MomVeto all
+  true, EMA 24/194, HTF M15, RSI 14/50) → the gate's **COMPUTATION** diverges, not its config.
+- Prime suspect: **C++ M15 HTF-EMA build** (`tick_engine.hpp build_htf_m15_`, bucket-M3→last-close then
+  ema 24/194) vs MT5 native `iMA(M15,…)` — likely EMA-194 seeding/series mismatch flips htf_bull/bear for
+  long stretches. Secondary: RSI(14) near midline (label lumps both). daily-DD/cooldown skips are cascade.
+- Evidence files in RUN dir: `parity_diff_report.txt`, `cpp_gate_log.txt` (C++ per-bar BLOCK reasons via
+  `KKVP_DBG_FROM/TO` env), `mt5_ref/trades_mt5.csv`, `cpp_out/trades_cpp.csv`, `logs/tester_20260616.log`.
+- Added `--symbol-xau` to `parity_driver.cpp` (uncommitted, unbuilt — build was declined; use the tick
+  `backtester` gate-log path instead, which is what produced the diagnosis).
+- **✅ RESOLVED — it's the MT5 TESTER, not a C++ bug.** Split the C++ quality label → all 42 are MTF (zero
+  RSI). MT5 journal logs 22 RSI vetoes but ZERO MTF vetoes ⇒ EA guard `if(hf>0&&hs>0)` ⇒ `iMA(M15,194)`
+  never warms up in the tester ⇒ **MTF higher-TF filter is silently DISABLED for the whole backtest.**
+  Independent M15-EMA-from-ticks blocks 42/42 (= C++) ⇒ C++ M15 EMA is CORRECT; MT5 isn't running it. So
+  the **tester runs a more permissive strategy than deploys live** (live has M15 history). Replicating
+  inert-MTF in C++ (`InpUseMtfAgree=false`): matched 56→65, engine-only 16→2, P&L Δ 91%→70%; residual 42
+  now block on **peak DD halt (36)** = equity-path breaker cascade (2nd-order). Per-trade mechanics faithful.
+- **DECISION NEEDED (user):** (A) match tester (disable MTF in C++) — but tester≠live; (B) fix the tester to
+  be faithful to live (preload M15 history, or compute HTF EMA from M3 inside the EA instead of `iMA`) so
+  tester+C++ both apply MTF and converge — RIGHT long-term fix, likely explains project-wide "optimized
+  configs lose live"; (C) drop the MTF gate entirely. Code this session: quality label split
+  (`tick_engine.hpp`, built+working); `--symbol-xau` on `parity_driver.cpp` (unbuilt).
+
 ## ▶️ Next actions (full detail in `docs/BUILD-PLAN.md` → LIVE WORK L1–L4)
 1. **L3a (NOW the critical path)** Reconcile the engine **exit path** with the EA-managed exits
    (tight-trail vs `EA` session/news/managed close) until MasterVP XAU+BTC **PASS** `parity_diff.py`.

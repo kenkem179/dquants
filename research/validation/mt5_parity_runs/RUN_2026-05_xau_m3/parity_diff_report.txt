@@ -1,0 +1,148 @@
+========================================================================
+PARITY DIFF — MasterVP XAU M3 2026-05
+========================================================================
+window           : 2026.05.01 02:12 → 2026.05.25 00:51
+engine trades    : 72  (file had 77 before window-filter)
+MT5 trades       : 107
+matched pairs    : 56
+unmatched engine : 16   unmatched MT5 : 51
+lag (>0 bars)    : 3/107 = 2.8%  (tol ≤ 5%)
+exit-tag mismatch: 0/56
+========================================================================
+net P&L USD               engine           MT5        Δ%
+                         -132.50      -1510.22    91.23%
+profit factor              0.973         0.761
+========================================================================
+per-matched-trade:
+  mt5 time          dir  lagB      entryΔ       slΔ       exit(e/m)      pnlΔ
+  2026.05.01 02:12    L     0      -0.067    -0.022   SL-WIN/SL-WIN      2.18
+  2026.05.01 02:21    L     0       0.000    -0.088 SL-LOSS/SL-LOSS     -1.90
+  2026.05.01 03:33    L     0      -0.059     0.189 SL-LOSS/SL-LOSS      8.68
+  2026.05.01 15:15    L     1       0.799     0.347   SL-WIN/SL-WIN      3.33
+  2026.05.01 15:48    L     0       0.229     1.463   SL-WIN/SL-WIN     -3.62
+  2026.05.04 07:00    S     0       0.000     0.026   SL-WIN/SL-WIN      6.52
+  2026.05.04 07:51    S     0       0.000     0.192   SL-WIN/SL-WIN      5.35
+  2026.05.04 09:51    S     0      -0.066     0.399           TP/TP     29.39
+  2026.05.04 15:15    S     0       0.000     0.588   SL-WIN/SL-WIN      9.64
+  2026.05.05 14:24    L     1       1.976    -0.323 SL-LOSS/SL-LOSS     -1.93
+  2026.05.06 00:00    L     0       0.000     0.708 SL-LOSS/SL-LOSS      5.42
+  2026.05.06 00:18    L     0       0.000     0.138   SL-WIN/SL-WIN    -47.05
+  2026.05.06 07:48    L     0       0.000    -0.238   SL-WIN/SL-WIN     -0.80
+  2026.05.06 09:00    L     0       0.000    -0.211 SL-LOSS/SL-LOSS     -4.75
+  2026.05.06 09:12    L     0       0.000    -1.783   SL-WIN/SL-WIN     -5.51
+  2026.05.07 01:12    L     0      -0.069     0.084   SL-WIN/SL-WIN      0.94
+  2026.05.07 01:21    L     0       0.062    -0.221 SL-LOSS/SL-LOSS     -5.85
+  2026.05.07 01:36    L     0       0.000    -1.068   SL-WIN/SL-WIN     -3.44
+  2026.05.07 02:48    L     0       0.000     0.243 SL-LOSS/SL-LOSS      0.54
+  2026.05.07 07:06    L     0       0.206    -2.257   SL-WIN/SL-WIN      8.60
+  2026.05.08 01:51    L     0       0.000     0.203   SL-WIN/SL-WIN      3.00
+  2026.05.08 03:09    L     0       0.000    -0.774   SL-WIN/SL-WIN      4.90
+  2026.05.08 05:57    L     0       0.000    -0.478 SL-LOSS/SL-LOSS      9.20
+  2026.05.08 13:36    L     0       0.000    -0.107   SL-WIN/SL-WIN     -0.71
+  2026.05.11 00:39    S     0       0.000    -1.252   SL-WIN/SL-WIN     40.54
+  2026.05.11 04:03    S     0       0.000     0.738   SL-WIN/SL-WIN      4.40
+  2026.05.11 07:48    S     0       0.000     0.534 SL-LOSS/SL-LOSS     -4.64
+  2026.05.12 00:00    L     0       0.140    -0.041   SL-WIN/SL-WIN      4.06
+  2026.05.12 00:24    L     0       0.000    -0.898 SL-LOSS/SL-LOSS     -6.23
+  2026.05.12 13:15    S     0       0.064    -0.872 SL-LOSS/SL-LOSS    -84.95
+  2026.05.13 00:24    L     0       0.000    -0.626 SL-LOSS/SL-LOSS    -84.83
+  2026.05.13 04:00    S    -1      -1.168     0.521 SL-LOSS/SL-LOSS     -0.47
+  2026.05.14 02:51    S     0       0.000     0.562 SL-LOSS/SL-LOSS      0.89
+  2026.05.14 03:42    S     0       0.000    -0.022   SL-WIN/SL-WIN     -0.53
+  2026.05.14 04:03    S     0       0.000     0.197 SL-LOSS/SL-LOSS     -2.32
+  2026.05.15 00:00    S     0       0.000    -1.485 SL-LOSS/SL-LOSS    -10.53
+  2026.05.15 07:00    S     0       0.000     0.995 SL-LOSS/SL-LOSS    -91.22
+  2026.05.15 09:00    S     0       0.000     0.438 SL-LOSS/SL-LOSS    -77.90
+  2026.05.15 09:06    S     0       0.000     0.451   SL-WIN/SL-WIN      1.74
+  2026.05.15 09:51    S     0       0.000     0.335 SL-LOSS/SL-LOSS     -9.83
+  2026.05.15 13:00    S     0       0.000     0.142   SL-WIN/SL-WIN      0.67
+  2026.05.15 13:12    S     0       0.000    -0.223 SL-LOSS/SL-LOSS     -7.15
+  2026.05.15 15:54    S     0       0.000     1.371 SL-LOSS/SL-LOSS     -6.16
+  2026.05.18 00:06    S     0       0.000    -0.481   SL-WIN/SL-WIN     35.21
+  2026.05.19 02:57    S     0       0.001     0.427 SL-LOSS/SL-LOSS     -5.30
+  2026.05.19 04:12    S     0       0.000     0.222 SL-LOSS/SL-LOSS     -8.34
+  2026.05.19 05:24    S     0       0.000     0.304 SL-LOSS/SL-LOSS     -8.37
+  2026.05.19 13:06    S     0       0.000    -0.156 SL-LOSS/SL-LOSS     -6.33
+  2026.05.20 01:30    S     0       0.000    -0.516   SL-WIN/SL-WIN     -0.63
+  2026.05.21 01:21    L     0      -0.064    -0.290   SL-WIN/SL-WIN     -0.29
+  2026.05.21 13:21    S     0       0.208    -0.966   SL-WIN/SL-WIN     -0.69
+  2026.05.22 07:48    S     0       0.000     0.448 SL-LOSS/SL-LOSS     -7.77
+  2026.05.22 09:30    S     0       0.000     0.188 SL-LOSS/SL-LOSS    -10.74
+  2026.05.22 13:51    S     0       0.000     0.088   SL-WIN/SL-WIN     23.93
+  2026.05.25 00:30    L     0       0.000    -0.560   SL-WIN/SL-WIN     -0.61
+  2026.05.25 00:51    L     0       0.000     0.094 SL-LOSS/SL-LOSS    -12.17
+
+MT5 trades with NO engine match (51):
+  2026.05.01 04:45 S entry=4611.302 pnl=28.08 exit=SL-WIN
+  2026.05.01 07:45 S entry=4583.229 pnl=228.24 exit=SL-WIN
+  2026.05.01 12:30 L entry=4597.755 pnl=-160.22 exit=SL-LOSS
+  2026.05.01 13:54 L entry=4625.218 pnl=28.41 exit=SL-WIN
+  2026.05.04 00:18 S entry=4606.967 pnl=-151.17 exit=SL-LOSS
+  2026.05.04 01:06 S entry=4599.784 pnl=28.61 exit=SL-WIN
+  2026.05.04 01:33 S entry=4598.815 pnl=-154.70 exit=SL-LOSS
+  2026.05.04 02:21 S entry=4598.460 pnl=28.28 exit=SL-WIN
+  2026.05.05 00:48 L entry=4527.591 pnl=299.30 exit=SL-WIN
+  2026.05.05 05:36 L entry=4549.540 pnl=-192.49 exit=SL-LOSS
+  2026.05.05 07:03 L entry=4552.667 pnl=32.95 exit=SL-WIN
+  2026.05.05 09:00 L entry=4554.976 pnl=31.41 exit=SL-WIN
+  2026.05.05 12:30 L entry=4567.278 pnl=66.74 exit=SL-WIN
+  2026.05.07 12:42 L entry=4751.744 pnl=-194.60 exit=SL-LOSS
+  2026.05.08 07:27 S entry=4706.529 pnl=-176.27 exit=SL-LOSS
+  2026.05.08 15:18 S entry=4708.771 pnl=34.30 exit=SL-WIN
+  2026.05.08 15:45 S entry=4708.586 pnl=-184.42 exit=SL-LOSS
+  2026.05.11 00:12 S entry=4682.945 pnl=32.93 exit=SL-WIN
+  2026.05.11 00:21 S entry=4685.585 pnl=-170.02 exit=SL-LOSS
+  2026.05.11 09:33 S entry=4656.865 pnl=-165.89 exit=SL-LOSS
+  2026.05.12 03:57 S entry=4720.037 pnl=-185.76 exit=SL-LOSS
+  2026.05.12 04:57 S entry=4713.924 pnl=11.58 exit=SL-WIN
+  2026.05.13 02:09 S entry=4702.569 pnl=32.70 exit=SL-WIN
+  2026.05.13 03:51 S entry=4698.250 pnl=15.65 exit=SL-WIN
+  2026.05.13 09:18 S entry=4690.391 pnl=16.09 exit=SL-WIN
+  2026.05.13 09:24 S entry=4690.154 pnl=-85.68 exit=SL-LOSS
+  2026.05.13 12:30 S entry=4680.748 pnl=-89.08 exit=SL-LOSS
+  2026.05.13 13:36 S entry=4675.446 pnl=-87.42 exit=SL-LOSS
+  2026.05.14 00:18 L entry=4700.794 pnl=-89.01 exit=SL-LOSS
+  2026.05.14 07:33 L entry=4712.979 pnl=18.03 exit=SL-WIN
+  2026.05.14 07:39 L entry=4712.716 pnl=-95.76 exit=SL-LOSS
+  2026.05.14 12:33 L entry=4708.560 pnl=-82.86 exit=SL-LOSS
+  2026.05.15 04:45 S entry=4606.756 pnl=515.17 exit=EA
+  2026.05.15 13:36 S entry=4529.545 pnl=12.15 exit=SL-WIN
+  2026.05.18 12:42 L entry=4569.588 pnl=16.15 exit=SL-WIN
+  2026.05.18 13:00 L entry=4567.406 pnl=16.54 exit=SL-WIN
+  2026.05.18 13:30 L entry=4573.866 pnl=-90.55 exit=SL-LOSS
+  2026.05.18 13:48 L entry=4576.632 pnl=15.72 exit=SL-WIN
+  2026.05.20 00:42 L entry=4505.349 pnl=-82.07 exit=SL-LOSS
+  2026.05.20 01:48 S entry=4482.766 pnl=69.67 exit=SL-WIN
+  2026.05.20 09:03 L entry=4486.086 pnl=-89.65 exit=SL-LOSS
+  2026.05.20 12:39 L entry=4501.893 pnl=-85.11 exit=SL-LOSS
+  2026.05.20 14:57 L entry=4531.678 pnl=11.58 exit=SL-WIN
+  2026.05.20 15:39 L entry=4538.517 pnl=-82.70 exit=SL-LOSS
+  2026.05.21 03:54 S entry=4528.421 pnl=-79.20 exit=SL-LOSS
+  2026.05.21 04:00 S entry=4532.837 pnl=-77.74 exit=SL-LOSS
+  2026.05.21 05:18 S entry=4526.211 pnl=15.66 exit=SL-WIN
+  2026.05.21 07:15 S entry=4520.267 pnl=9.99 exit=SL-WIN
+  2026.05.22 00:54 S entry=4530.107 pnl=12.44 exit=SL-WIN
+  2026.05.22 01:33 S entry=4524.593 pnl=12.45 exit=SL-WIN
+  2026.05.22 05:57 S entry=4511.334 pnl=-75.57 exit=SL-LOSS
+
+engine trades with NO MT5 match (16):
+  2026.05.01 07:57 S entry=4578.401 pnl=142.18 exit=SL-WIN
+  2026.05.04 05:42 S entry=4598.774 pnl=57.34 exit=EA
+  2026.05.06 09:27 L entry=4700.147 pnl=252.43 exit=EA
+  2026.05.07 07:15 L entry=4746.919 pnl=-204.68 exit=SL-LOSS
+  2026.05.11 00:27 S entry=4683.769 pnl=-186.35 exit=SL-LOSS
+  2026.05.11 04:27 S entry=4671.893 pnl=-188.49 exit=SL-LOSS
+  2026.05.12 13:30 S entry=4688.008 pnl=-166.16 exit=SL-LOSS
+  2026.05.13 05:30 S entry=4696.741 pnl=-89.91 exit=SL-LOSS
+  2026.05.13 09:33 S entry=4692.473 pnl=-90.54 exit=SL-LOSS
+  2026.05.14 12:57 L entry=4704.888 pnl=-86.27 exit=SL-LOSS
+  2026.05.14 13:39 S entry=4673.695 pnl=15.81 exit=SL-WIN
+  2026.05.14 13:42 S entry=4676.730 pnl=-91.43 exit=SL-LOSS
+  2026.05.14 13:45 S entry=4686.114 pnl=17.60 exit=SL-WIN
+  2026.05.15 00:21 S entry=4645.960 pnl=742.27 exit=TP
+  2026.05.15 05:30 S entry=4576.596 pnl=263.21 exit=EA
+  2026.05.20 02:48 S entry=4465.015 pnl=18.02 exit=SL-WIN
+========================================================================
+VERDICT: FAIL  — trade-count mismatch (16 engine-only, 51 MT5-only); net P&L Δ 91.23% > 1.0%
+→ This is an engine-fidelity bug. Fix the engine to match MT5; do NOT promote.
+========================================================================

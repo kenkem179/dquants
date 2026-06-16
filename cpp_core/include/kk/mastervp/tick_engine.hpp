@@ -262,25 +262,26 @@ private:
     }
 
     // QualityGateOk (EntryVP.mqh:33): MTF-agree (M15 EMA) + RSI veto. ATR-pctl gate is off.
-    bool quality_ok_(bool is_long, int sig_bar, int64_t now_ms) const {
+    bool quality_ok_(bool is_long, int sig_bar, int64_t now_ms, const char** why = nullptr) const {
+        auto fail = [&](const char* w) { if (why) *why = w; return false; };
         if (p_.use_mtf_agree) {
             const auto [hf, hs] = htf_emas_(now_ms);
             if (hf > 0.0 && hs > 0.0) {
                 const bool htf_bull = hf > hs, htf_bear = hf < hs;
                 if (p_.mtf_hard_veto) {
-                    if (is_long && !htf_bull) return false;
-                    if (!is_long && !htf_bear) return false;
+                    if (is_long && !htf_bull) return fail("quality:MTF");
+                    if (!is_long && !htf_bear) return fail("quality:MTF");
                 } else {
-                    if (is_long && htf_bear) return false;
-                    if (!is_long && htf_bull) return false;
+                    if (is_long && htf_bear) return fail("quality:MTF");
+                    if (!is_long && htf_bull) return fail("quality:MTF");
                 }
             }
         }
         if (p_.use_mom_veto) {
             const double r = rsi_[sig_bar];
             if (r > 0.0) {
-                if (is_long && r < p_.rsi_midline) return false;
-                if (!is_long && r > p_.rsi_midline) return false;
+                if (is_long && r < p_.rsi_midline) return fail("quality:RSI");
+                if (!is_long && r > p_.rsi_midline) return fail("quality:RSI");
             }
         }
         return true;
@@ -318,7 +319,8 @@ private:
                        trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", why); };
 
         // Supplementary quality gate (before the main safety gate, as in OnTick).
-        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms)) { blk("quality (MTF/RSI)"); return; }
+        const char* qwhy = "quality";
+        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms, &qwhy)) { blk(qwhy); return; }
 
         // Feature #1: require net volume to PERSIST with the trade for N closed bars before entry.
         if (p_.enable_net_persist
