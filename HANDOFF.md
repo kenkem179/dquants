@@ -160,10 +160,37 @@ First true trade-level diff complete. Full writeup: `research/validation/mt5_par
   --mt5 <new>` → expect convergence. Residual will be the peak-DD-halt equity-path cascade (2nd-order) to
   chase next via bar-synced state.
 
+## ✅ This session (2026-06-16, Opus 4.8) — C++⇄EA PARITY LEDGER built + first fidelity fixes
+User reframed the priority: **C++→EA fidelity (zero surprises, not even tiny) ABOVE chasing baseline PF.**
+Did a full line-by-line read of the kk::kenkem engine (truth) vs the **deployed KK-KenKem EA**
+(`kenkem/.../KK-Common/KenKem/{Engine,Inputs}.mqh`; the `.mq5` is an 18-line include shim).
+- **🔑 KEY FINDING — the EA header LIES.** `Engine.mqh:4` calls itself a "faithful transcription of the
+  kk::kenkem engine," but it is the *distilled subset*. The engine is a strict SUPERSET: the EA dropped
+  the **valid-session entry gate** (engine trades only UTC JP/LN/NY; EA trades 24h), the **ATR-percentile
+  floor + ATR-high block**, the **full 0–11 trend-quality min / conviction / RSI-divergence** entry
+  filters, the **fast-ADX panic** + **score-drop** exits, **session-end close**, and all **portfolio/DD
+  guards**. Same params ⇒ EA over-fires ⇒ this is *why KK-KenKem over-trades & lost/blew up in MT5.*
+- **NEW canonical artifact: `research/kenkem_parity/CPP_EA_PARITY_LEDGER.md`** — every divergence with
+  file:line on BOTH sides, severity (F formula / P port / M broker-modelable / I irreducible), and the
+  exact reconciliation. This is the zero-surprise contract; close every (F)/(P) row → engine PF predicts MT5 PF.
+- **Fixed NOW (C++ side, headless-testable, committed):** **C1** `manage_tick` partial slice now floors to
+  the broker volume step + requires ≥min_lot (byte-equal to EA `MathFloor(q/step)*step; q>=mn`), latching
+  `partial_done` even on a sub-min slice; **C2** modeled broker `stops_level_price` (default 0 ⇒ inert for
+  Exness; faithful for nonzero-stops brokers) on BE/trail SL moves. `test_kenkem_trade_manager.cpp` +3
+  tests (30 checks). Full `make test` green.
+- **Reconciliation direction = Path B (bring EA UP to engine), already user-endorsed.** Each row adds an EA
+  `input` defaulting OFF (so all-OFF == today's EA), then flips ON; each needs ONE MT5 run + `parity_diff.py`.
+
 ## ▶️ Next actions (full detail in `docs/BUILD-PLAN.md` → LIVE WORK L1–L4)
-1. **L3a (NOW the critical path)** Reconcile the engine **exit path** with the EA-managed exits
-   (tight-trail vs `EA` session/news/managed close) until MasterVP XAU+BTC **PASS** `parity_diff.py`.
-   This is the same exit-geometry bug seen on KenKem-E5 → fix once, benefits all three.
+0. **L4-parity (NEW critical path):** execute the ledger reconciliation in order — (1) sessions A1+B2,
+   (2) quality suite A4–A7, (3) ATR regime A2+A3, (4) panic/score-drop B3+B4, (5) guards D3 (+D4/D5 after
+   the engine grows DD breakers, BUILD-PLAN C2), (6) sizing E2. Port each into KK-KenKem `Engine.mqh`/
+   `Inputs.mqh` default-OFF, then validate vs the engine export with `parity_diff.py`. **Cannot self-test
+   MQL5 here — each step needs a user MT5 run.** Ledger = `research/kenkem_parity/CPP_EA_PARITY_LEDGER.md`.
+1. **L3a** Reconcile the engine **exit path** with the EA-managed exits (tight-trail vs `EA` session/news/
+   managed close) until MasterVP XAU+BTC **PASS** `parity_diff.py`. Same exit-geometry family as KenKem;
+   note KenKem's manage_tick↔EA `Manage()` are now byte-equal after C1/C2 (only MasterVP `TradeManager.mqh`
+   uses a *different* ATR-distance trail — audit that one next).
 2. **L3b** Then run the §4 loop on **Monster** (recent OOS): engine export + manual MT5 + `parity_diff.py`
    → first real Monster trade-level diff. Cost is ruled out (Exness Pro commission-free); expect exit/spread.
 3. **L1** Re-validate MasterVP + Monster on the cleaned tick engine (regen data, confirm profitable).

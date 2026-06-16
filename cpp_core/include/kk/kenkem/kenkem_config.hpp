@@ -271,6 +271,11 @@ struct KenKemConfig {
     double broker_max_lot     = 100.0;
     double commission_per_lot = 0.0;
     double start_balance      = 10000.0;
+    // Broker minimum stop distance = max(SYMBOL_TRADE_STOPS_LEVEL, FREEZE_LEVEL) * point, IN PRICE.
+    // The EA refuses to move a SL (BE/trail) closer than this to the market price (Engine.mqh:343-344,
+    // 351-352). Default 0 = Exness XAU/BTC (stops level 0) ⇒ inert ⇒ no behavior change. Set per-broker
+    // to keep the engine's managed exits byte-faithful to MT5 on brokers with a nonzero stops level.
+    double stops_level_price  = 0.0;
 
     // Per-symbol overrides mirror KenKemExpert.mq5 OnInit (:122-163). Call AFTER load_set() so the
     // BTC std-lot ×2 override applies on top of the loaded MY_STANDARD_LOT_SIZE, exactly as the EA does.

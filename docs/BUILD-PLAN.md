@@ -1,307 +1,119 @@
-# KK-MasterVP Port — Build Plan & Progress Tracker
+# KenKem Quant OS — Build Plan & Progress Tracker
 
-Living checklist for porting the **KK-MasterVP** MQL5 strategy into the headless C++ tick backtester
-and optimizing it. Source of truth = MQL5 (`kenkem/MQL5/Experts/KK-MasterVP/`). Spec =
-`research/hypotheses/KK-MasterVP-SPEC.md`. Each step: build → `make -C cpp_core test` → commit → push.
+Living checklist. Source of truth = MQL5 (`kenkem/MQL5/Experts/`). Pipeline rules = `research/PIPELINE-CONTRACT.md`.
+Each step: build → `make -C cpp_core test` → commit → push. Legend: `[x]` done · `[~]` in progress · `[ ]` todo.
 
-Legend: `[x]` done · `[~]` in progress · `[ ]` todo. "commit" = short hash once landed.
-
-> **Completed phases are archived** in [`BUILD_PLAN_ARCHIVED.md`](BUILD_PLAN_ARCHIVED.md) to keep this
-> tracker small (it is read into context each session): **Data pipeline (Phase 1–5), Phase 6, Phase 7
-> (C++ tick engine + parity), Phase 8 (optimization), Phase 9 (light WFA/MC), Phase 11 (original-Monster).**
-> This file tracks only live/open work.
-
-## 🛑 Phase 13 — MT5 REALITY CHECK (2026-06-15) — READ FIRST
-The user ran all three dquants-promoted EAs in the MT5 tester. **All failed the recent OOS window.**
-This invalidated the optimistic PF tables; see **`research/optimization/MT5-GROUND-TRUTH.md`** (the
-authoritative numbers, reconstructed from MT5's own deal stream by `research/validation/mt5_log_truth.py`).
-
-Done this session:
-- [x] Honest re-baseline: MT5-true 9-col metrics for every run; reconstruction validated vs reported
-      final balance. KenKem E5-only −62/−93%, MasterVP BTC M3 −19%, **Monster 0 trades**.
-- [x] Root cause (KenKem): distilled engine was a **bar-OHLC walk** (lies about path-dependent exits)
-      AND dropped the original's selectivity (conviction, session caps, cooldowns, ATR-pctile gate).
-- [x] **KenKem tick engine** (`cpp_core/include/kk/kenkem/tick_engine.hpp`, make `kenkem_tick`),
-      VALIDATED vs MT5: ungated E5 → PF 0.855 (MT5 0.85). Use it for ALL KenKem P&L now.
-- [x] Wired dropped governors (min_entry_atr_pctile, max_entries_per_day, e5_require_trend_core).
-- [x] Monster: confirmed **engine/MQL5 parity divergence** (engine 150–184 trades PF 1.65, MQL5 0) —
-      net-volume keyed off broker VOLUME=0 on feed. Documented in MONSTER-FINDINGS.md.
-- [x] Corrected PROMOTION-SPEC.md + KENKEM-RESULTS.md. **Production pick = ORIGINAL `KenKemExpert`
-      (E1+E2, MT5 +24% PF1.62)**; config saved `research/optimization/ORIGINAL_kenkem_xau_WINNING.set`.
-
-Open (needs the user / next session):
-- [ ] **Confirm in MT5:** any new dquants config must be run in the tester on the recent OOS window
-      before it is trusted. The tick engine is necessary but the MT5 tester is the gate.
-- [ ] Faithful port of the original's selectivity to `kk::kenkem` (conviction 6-component score,
-      session-window caps, cooldowns, RSI veto) — full spec extracted; large, do deliberately.
-- [ ] Monster: fix net-volume parity (engine price-delta vs MQL5 volume) OR formally drop.
-- [ ] MasterVP: ~breakeven/period-dependent (parity-valid, no robust edge) — decide keep/drop.
-
-## Phase 12 — REAL Monster C++ engine + optimization (the user's actual 4-kind EA)
-Faithful C++ port of the user's evolved Monster (`SignalCore_Monster.mqh`, 779 LOC): breakout +
-impulse-thrust + 4-variant mean-reversion, multi-TF near-net (M1/M5/M15), predicted/aged master VP,
-POC-slope regime + stability/overhead/HTF gates, per-strategy TP1 split. SEPARATE `kk::monster` engine
-(KK-MasterVP engine untouched), inherits the reusable VP/node math. Winning `.set` uses the REAL
-Monster InpXxx names → drops into `kenkem/MQL5/Experts/KK-MasterVP-Monster/`.
-- [x] P1 `monster_config.hpp` (147-input schema + .set loader, Pine defaults).
-- [x] P2 `monster_signal.hpp` (SignalCore_Monster port — 4 kinds + arbitration + all gates/edge-cands).
-- [x] P3 `tf_net.hpp` (multi-TF near-net, per-TF MT5-iATR, `[1]`-read) + P4 M1/M5 bar export (BTC/XAU).
-- [x] P5 `monster_engine.hpp` (interleaved OnTick integrator, gap-aware fills, TP1-split mgmt) +
-      P6 `monster_backtester.cpp` + `test_monster_engine` (22 checks).
-- [x] **CRITICAL: caught + fixed a one-bar LOOKAHEAD** (bar-advance `<=`→`<`). Inflated baseline PF
-      1.83 (OOS>IS, net-gate-insensitive) → realistic **PF 0.915 BTC / 0.751 XAU** (losing baseline,
-      like KK-MasterVP pre-opt). Deterministic; all tests green. This is the verification that makes
-      the engine trustworthy for optimization.
-- [~] P7 optimize the REAL Monster (`optimize_monster_real.py`, 31-param + 3-toggle, reversion ON):
-      BTC + XAU 400-trial runs IN PROGRESS.
-- [ ] Plateau + MC + rolling robustness per symbol; write `best_monster_real_{btc,xau}.set`.
-- [ ] Map winners onto the EA's InputParams (read-only) + deliver as non-destructive `.set` files in
-      `kenkem/MQL5/Experts/KK-MasterVP-Monster/Config/`; demo forward-test in MT5.
-
-## Phase 10 — Promote (revised: the Monster EA ALREADY EXISTS on the user's side)
-- [!] **Do NOT recreate** `kenkem/MQL5/Experts/KK-MasterVP-Monster/` — it already exists and has evolved
-      (NetVolume, StatePersistence, single-instance guard, embedded news; on `origin/KKMasterVPv1`).
-      A blind recreate clobbered it once (recovered via git). Deliver `.set` files only, never rewrite code.
-
-## Phase 13 — KenKem "original" multi-entry EA → C++ engine + optimization
-Migrate the big original `KenKemExpert.mq5` (~8k LOC, largest port yet). Active entries **E1/E2/E4** only
-(E3 + E5/SuperBros disabled by default → skipped per user). Spec: `research/hypotheses/KenKem-SPEC.md`.
-Default config makes it tractable: adaptive/news/limit-orders/conservative-mgmt all OFF → port the static path.
-SEPARATE `kk::kenkem` engine (mastervp/monster untouched), reusing common EMA/ADX/ATR/RSI/Ichimoku math.
-- [x] **SPEC** — `KenKem-SPEC.md`: full extraction of E1/E2/E4 detection, shared gates (trend-quality /
-      momentum / EMA-align / sideways / conviction / RSI-div / HTF), triggers (EMA-cross / EMA75-touch /
-      Ichi-cloud-cross), indicator cache, dynamic-RR + risk-based sizing, tick-fill trade manager, all param
-      defaults read direct from InputParams.mqh. Port scope + parity caveat documented.
-- [x] **Port-note specs** from real source (`research/hypotheses/kenkem-portnotes/01-04`, 1640 lines, exact
-      line refs) + 5 parity traps locked (EMAs 10/25/71/97/192; BTC pip=1/contract=1/std-lot×2; ATR cache
-      shift-0; Ichimoku buffer-mislabel ⇒ E4 trigger is a Tenkan/Kijun cross; E4-short uses E4_RR_SHORT×0.875).
-      EA snapshot pinned sha256 `61bc702b`. See [[kenkem-parity-traps]].
-- [x] P1 `kenkem_config.hpp` (full input schema + `.set` loader, real defaults) — 33 checks.
-- [x] P2 `tf_cache.hpp` (per-TF M1/M3/M5/M15 buffers + open-time alignment, shift-1 reads; shift-0 forming
-      bar deferred to engine) — 20 checks. `indicators.hpp` Ichimoku primitive — 12 checks.
-- [x] P3 `triggers.hpp` (EMA-stack cross + EMA200/EMA75 touch + Ichi **TK** cross state machines) — 12 checks.
-- [x] P4 `snapshot.hpp` + `gates.hpp` (trend-quality hard-gate / sideways / HTF) — 18 checks.
-- [x] P5 `entries.hpp` (E1/E2/E4 detect + SL/TP) — 10 checks. P6 `trade_manager.hpp` (risk-correct sizing +
-      partial/BE/trail) — 18 checks. [Distilled: dropped ladder/TP-ext/panic/score-drop/DI-flip per user.]
-- [x] P7 `engine.hpp` + `tools/kenkem/backtester.cpp` (8 checks; loads M1, aggregates M3/M5/M15). Fixed
-      trigger-consume + fixed-base research sizing. **No lookahead** (detect on closed bars, fill at open).
-- [~] **PIVOT (user directive):** distill KenKem to its essential winning core; validate via the quant SOP
-      (costs→optimize→OOS→MC), NOT MT5 byte-parity (the distillation makes byte-parity moot). Parity module
-      deferred to an optional future cross-check.
-- [x] P9 `optimize_kenkem.py` (Optuna, train/test consistency) → P10 `best_kenkem_{btc,xau}.set`.
-      **Result: optimizer disabled E1/E2 — winner is E4-only (Ichimoku TK cross).** BTC 2025 PF 1.270 /
-      **2026 true-OOS PF 1.239** (MC 100% prof, P5 1.164, spread-robust to $6); XAU 2025 1.207 / OOS 1.083.
-      See `research/optimization/KENKEM-RESULTS.md`.
-- [x] **P11 / PROMOTION:** recommended **KenKem-E4 as #1** (most rigorous OOS + best robustness + simplest
-      logic) over Monster-XAU / MasterVP. Delivered production EA `kenkem/MQL5/Experts/KK-KenKemE4/`
-      (single-file, CTrade-based) + README. **Final gate = user compiles (`make compile`) + MT5 demo
-      forward-test.** Spec: `research/optimization/PROMOTION-SPEC.md`.
-
-## R&D — "volume never lies" features (test on VP engines first, then port to KenKem)
-Adoption rule (user): **only commit better results.** A feature is adopted into a locked `.set` ONLY if
-its sweep strictly beats the feature-OFF baseline (PF↑ AND net↑, DD not materially worse, OOS not degraded);
-otherwise the (inert, default-OFF) engine code stays but the `.set` is left untouched.
-
-### Feature #1 — multi-bar net-volume persistence-entry + N-bar flip-exit
-- [x] **Monster (prior session):** persistence-entry helped BTC **PF 1.299→1.618**; XAU restored; flip-exit OFF.
-- [x] **MasterVP engine** (`kk::vp` TickEngine): per-bar volume-weighted net flow + persistence gate + flip-exit,
-      default OFF/inert. Tests green; OFF reproduces baselines exactly (BTC PF 1.204, XAU PF 1.737). `311b09e`.
-- [x] **MasterVP sweep → REJECT both symbols** (`sweep_mastervp_f1.py`). BTC: PF 1.204→1.239 but net flat (+$22),
-      **DD +32%** (1119→1474), **OOS PF 1.044→1.016** + best params degenerate (persist bars=1/min≈0 ⇒ gate inert) =
-      noise, not edge. XAU: strictly worse, **PF 1.737→1.520, net halved**. → F1 is **engine-specific** (helps
-      Monster-BTC, hurts MasterVP). `.set` files UNCHANGED. Code kept inert for possible cross-broker revisit.
-- [ ] **KenKem port** — SKIPPED: F1 only helped Monster-BTC (1 of 5 combos) and KenKem is a trend
-      (Ichimoku-E4) strategy where net-volume persistence is a weak fit. Low EV; revisit if data motivates.
-
-### Feature #2 — volume-node STRUCTURE SL/TP (HVN/LVN shelves instead of blind ATR SL / RR TP)
-- [x] **Monster BTC → ADOPT** (`sweep_monster_f2.py`): **structural TP2** ON (hvn_sl OFF) is a clean win on
-      EVERY metric — PF 1.617→1.645, net 2740→2901, **DD 293→270 (better)**, **OOS PF 1.676→1.720 (better)**.
-      Params HvnFrac 0.637 / EdgeOff 0.125 / MinRr 1.10 / MaxRr 2.51. Applied to `best_monster_real_btc.set`.
-- [x] **Monster XAU → REJECT** — F2 hurts (PF 1.321→1.284, net down, DD up). `best_monster_real_xau.set` unchanged.
-- [x] **MasterVP → REJECT both** (`sweep_mastervp_f2.py`; added `NodeEngine::structural_tp`, inert default OFF,
-      `67a470b`). BTC PF 1.204→1.201 (flat; higher net is just +trades at lower quality, DD+OOS worse); XAU
-      PF 1.737→1.551 (worse). MasterVP's chandelier trail already exits well — a fixed structural TP cuts
-      winners short. `.set` files unchanged. **F2 net: 1 win / 4 combos (Monster-BTC only).**
-- [ ] KenKem node-structure TP — skipped: F2 only helped 1 of 4 VP combos, so low expected value on a
-      trend (Ichimoku-E4) strategy. Revisit only if cross-broker data motivates it.
-
-### DeferredEntry (pullback/limit entry) — REJECT (risk-adjusted)
-- [x] Ported `KK-Common/DeferredEntry.mqh` → C++ `kk::vp` TickEngine (arm virtual limit at entry∓
-      pullback*ATR, fill within defer_bars per tick, else expire), default OFF/inert (`ec44fd4`).
-- [x] **Sweep → REJECT both** (`sweep_mastervp_defer.py`). BTC: PF 1.204→1.239, net +38% ($4325→$5984),
-      OOS better — BUT **DD +62%** (1119→1809), so risk-adjusted net/DD 3.86→3.31 (WORSE); the gain is
-      inflated lot size (keep-SL-price design shrinks per-trade risk → bigger lots), not a cleaner edge.
-      XAU: outright worse (PF 1.737→1.667, net down). `.set` files unchanged. **Possible refinement (not
-      pursued):** a keep-RISK-constant variant (move SL with entry) would give better R without size inflation.
-
-## Cross-dataset robustness harness (DuckDB, multi-broker) — DONE
-- [x] `research/validation/ingest_dataset.py` — normalise any broker export (mt5_tab/bidask_csv/price_csv/
-      binance_aggtrades/binance_klines) → canonical Parquet + M1/M3/M5 bid bars + ticks CSV. DuckDB does the
-      multi-GB read. Smoke-tested on synthetic mt5_tab + klines feeds.
-- [x] `research/validation/cross_validate.py` — replay one `.set` across many datasets → PF/net/maxDD per
-      dataset + consistency summary; dispatches mastervp/monster/kenkem. Smoke-tested across all 3 engines.
-- [x] `datasets.example.json` (OANDA/Exness/Binance × BTC/XAU) + `make kenkem` rule. `3301505`.
-- [ ] **AWAITING USER DATA** — drop broker files under `data/external/<broker>/`, copy spec to datasets.json,
-      run ingest + cross_validate to confirm each locked edge holds broker-to-broker.
-
-## Phase 14 — Risk/exit machinery audit + adaptive trailing + walk-forward (user concerns 2026-06-14)
-Same discipline as the R&D round: add tunable MODES default-OFF/inert, sweep, **adopt only if it beats the
-baseline on net AND drawdown** (risk-adjusted). Audit findings traced through the live code below.
-
-### C1 — Blocked-hours: kill-switch + data-driven retune (cheap)
-Today: MasterVP `InpBlockedHoursStr="8,10,11,16"` (baked from 2025, used via `Sessions::is_blocked_hour`, **never
-tuned**); Monster `""`; KenKem none. Kill-switch ALREADY exists (empty string).
-- [ ] Add an "hour-of-day expectancy" report over the LATEST dataset (per-hour PF/net/n) — replace the past-biased
-      hardcode with empirically-blocked hours, OR none.
-- [ ] Sweep blocked-hours as a choice {none / empirical-from-latest / current} per symbol; A/B vs the hardcode.
-
-### C2 — DD / softblock / loss-streak cooldown: WIRE into KenKem + validate (don't return-optimize)
-Today: implemented+wired in MasterVP (`RiskManager`) & Monster (own copy: softblock lot-mult, daily/peak-DD,
-loss-streak + daily-DD cooldowns) but **none are in any optimizer space** (run at defaults; Monster ships most OFF).
-**KenKem (production pick #1) has ZERO drawdown breakers** — top-priority safety gap.
-- [ ] Add a unified risk controller (softblock micro-lot, daily/peak-DD halt, loss-streak + wait-hours cooldown)
-      to the `kk::kenkem` engine.
-- [ ] Instrument backtests to COUNT cooldown/halt/softblock activations — confirm they actually fire (else inert).
-- [ ] Tune limits on a **secondary objective** (minimise tail-DD / maximise Calmar) with a guardrail that net
-      drops <X%; validate OOS + cross-dataset. **Do NOT return-optimize risk limits** (overfits to "dodge the 2025
-      bad streak"); treat as exogenous risk policy lightly validated.
-
-### C3 — TP1 level + percentile: ✅ already tuned in all three (Mvp Tp1R/ClosePct, Monster per-kind, KenKem per-entry). No action; confirmed.
-
-### C4 — TP2 / trailing-TP2
-Today: final target tuned everywhere (RunnerRr / Brk-Rr / E*_RR). The adopted Monster-BTC `stp2_*` params live ONLY
-in the one-off F2 sweep.
-- [ ] Fold `stp2_*` (+ enable flag) into Monster's MAIN optimizer space so re-opts co-tune them.
-- [ ] Trailing/ratcheting TP2 → delivered by C5's ProfitManager `tp_extension` toggle (don't build separately).
-
-### C5 — Common ProfitManager module (SUPERSEDES "adaptive trailing"; absorbs C4 trailing-TP2)
-The naive fixed-multiple chandelier (dist = const×ATR for Mvp/Monster, const×risk for KenKem) donates a fixed slab on
-big runners (observed 3R→gave back 2R). Rather than a per-engine trail-mode, EXTRACT the proven profit-mgmt toolkit
-the user already built in `../kenkem` KenKemExpert into ONE shared, **toggleable** module any strategy includes.
-Two layers (mirrors the architecture): **`kk::common::ProfitManager` (C++, PURE — validation source of truth)** +
-**`KK-Common/ProfitManager.mqh` (MQL5, thin — does PositionModify + stops/freeze clamp)**. Interface: TradeState
-(entry/SL/TP/is_long/best_price(MFE)/current/origRisk/ATR/barsHeld + optional structureLevel + trendWeakening) +
-toggle config → returns actions (newSL/newTP/partialFrac). Each behavior an INDEPENDENT ON/OFF toggle:
-- [ ] `be_protect` — R-multiple → SL to entry+buffer (port `ApplyRMultipleSLProtection`). PURE.
-- [ ] `progressive_trail` — R-milestone stepped SL tightening = accelerating trail (port `ApplyConservativeTradeManagement` / `ApplyLadderStage`). PURE.
-- [ ] `giveback_cap` — once peak MFE ≥ thresh, stop may not retreat >X% of peak (port `HasSignificantRetrace`). PURE. **Most direct fix for the 3R→2R giveback.**
-- [ ] `tp_extension` — extend TP while trend persists, capped (port `ExtendTPAsNeeded`). Needs a `trendWeakening` flag from the engine (falling ADX / flattening EMA-slope).
-- [ ] `pre_be_structure` — tighten to BOS/swing before BE (port `ApplyPreBEStructureProtection`). Needs a prior-swing structure level from the engine.
-- [ ] `partial_tp` — R-trigger partial (port `TakePartialProfitAsNeeded`). PURE.
-- [x] Wire into kk::vp / kk::monster / kk::kenkem engines (additive, default OFF/inert; baselines byte-exact, parity
-      golden green). `kk::common::profit_manager.hpp` + tests; `InpPm*`/`PM_*` keys in all three apply_kv.
-- [x] **Round-1 sweep — giveback_cap + progressive_trail (PURE SL toggles), MasterVP+Monster, BTC+XAU** (`sweep_pm_sl.py`,
-      140 trials each). Pattern across ALL four: net↑ and PF↑ (giveback lets runners run), but absolute maxDD ticks up —
-      a real Calmar gain, not a DD reduction. Under the strict net↑∧DD↓ rule:
-      - **MasterVP-BTC → ADOPT** `giveback` arm=2.2 cap=0.38: net 4325→5740 (+33%), DD 1119→1075 (−4%), PF 1.204→1.254,
-        OOS test net 289→845 (+192%). Narrow but real DD↓ plateau (arm 2.18–2.3 / cap 0.36–0.40). Locked into
-        `best_mastervp_btc.set`.
-      - **MasterVP-XAU → REJECT** (0/134 trials achieve DD↓; net-up needs +DD). `.set` unchanged.
-      - **Monster-BTC → REJECT** (0/135; best net +3% raises DD). `.set` unchanged.
-      - **Monster-XAU → REJECT** (1/134 marginal: net +1.9%/DD −0.3% but OOS net dropped — within noise). `.set` unchanged.
-- [ ] Round-2: sweep `be_protect` / `partial_tp` (PURE) on the rejected engines; then `tp_extension` / `pre_be_structure`
-      once a trend-weakening + prior-swing structure feed is wired from each engine. Then port adopted toggles to MQL5 KK-Common.
-
-### C6 — Adaptive params / dynamic .set — via WALK-FORWARD (the principled answer; also Phase 9)
-Honest stance: an EA that re-optimizes its own ALPHA params online is the #1 cause of live-vs-backtest divergence
-(the half-baked KenKemExpert attempt — user switched it off, correctly: it is structurally *unvalidatable*). Safe
-"adaptation": vol-normalisation (mostly done), regime-conditioned param sets (selected by rule, frozen per regime),
-and **rolling offline walk-forward re-opt** that writes a guarded dynamic `.set` the EA loads from `MQL5/Files/`.
-Online updates ONLY for slow descriptive stats (ATR%-bands, session profile, spread cost), never alpha.
-- [ ] Build a true **walk-forward harness**: optimize `[t−N,t]` → freeze → trade OOS `[t,t+M]` → roll → stitch OOS
-      curve. Metric = **Walk-Forward Efficiency** (OOS/IS return; >~0.5–0.6 = not overfit). Compare WFA-OOS vs static
-      `.set` OOS, then re-confirm via the cross-dataset harness.
-- [ ] If WFE passes: scheduled offline re-opt → guarded dynamic `.set` (deploy only if OOS Calmar≥thresh + params in
-      bounds); MQL5 loads it on init/refresh. Regime-conditioned sets as the middle-ground fallback.
-
-### C7 — Common AdaptiveState module (the "self-tuning / smart EA" ask, done SAFELY) — user concern 2026-06-14
-User question: should the EAs do adaptive learning / ML to self-tune key params and persist them across restart?
-**Verdict: yes, but reframed.** "Let the EA learn its own alpha online" is rejected (unvalidatable; = the dead
-KenKemExpert path). Instead deliver adaptiveness as a THIRD common toggleable module, mirroring ProfitManager:
-PURE Layer-2 logic, MQL5 thin adapter, **default OFF / inert**, adopted into a locked `.set` only if net↑ AND
-drawdown↓ (risk-adjusted), validated by C6's walk-forward + cross-dataset harness. Three tiers, lowest-risk first:
-
-- **Tier 0 — vol normalisation (highest EV, lowest risk; mostly already in engines):** express SL/TP/trail/size as
-  multiples of current ATR / EWMA realised vol so params are dimensionless w.r.t. regime. NOT learning — a units
-  fix. Audit all 3 engines; make every absolute price/lot knob vol-relative where it isn't.
-- **Tier 1 — regime-conditioned FROZEN param sets (the "smart" feel, still safe):** offline, bucket into a SMALL
-  set of robust observable regimes (ATR%-band × session, optional ADX trend/range). Walk-forward-optimise each
-  bucket; ship a frozen lookup table. EA selects the pre-validated set per bar by rule — deterministic, parity-able.
-- **Tier 2 — true online learning (bandits/RL/online re-opt): explicitly DEFERRED / out of scope.** Overkill for a
-  retail scalping book, silent failure mode, brutal to validate. Do not build until Tier 0/1 exhausted.
-
-Module shape (mirror `kk::common::ProfitManager`):
-- [ ] `kk::common::AdaptiveState` (C++, PURE = validation source of truth) — holds slow estimators {EWMA realised
-      vol, rolling spread, session/hour profile, regime counts}; `update(bar)` advances them; `select(...)` maps
-      current regime → frozen param set (Tier 1) and/or vol-scale factor (Tier 0). NO broker calls. Clamp every
-      output to offline-validated bounds.
-- [ ] `KK-Common/AdaptiveState.mqh` (MQL5, thin) — ports 1:1; **persists estimators (not opaque tuned params)** to
-      `MQL5/Files/` as versioned JSON/CSV on deinit; reloads on init.
-- [ ] **Persistence safeguards (load-bearing):** versioned schema; max-staleness guard (ignore state older than N
-      days); missing/corrupt/stale → fall back to the offline-validated COLD-START default, never a wild value.
-      A degraded state file must reproduce the frozen baseline, so backtests of the OFF path stay byte-identical.
-- [ ] **Validation = validate the MECHANISM, not the moving params.** The adaptive rule is a meta-strategy with its
-      own hyperparams (EWMA half-life, regime thresholds, clamp bounds). A/B in the C++ engine on identical ticks:
-      static baseline vs adaptive → compare OOS PF / Calmar / MaxDD with Monte Carlo, BTC & XAU. Adopt only if it
-      beats the frozen baseline OOS under the standard risk-adjusted gate; else keep inert.
+> **Completed phases are archived** in [`BUILD_PLAN_ARCHIVED.md`](BUILD_PLAN_ARCHIVED.md): data pipeline (Phase
+> 1–5), Phase 6, Phase 7 (MasterVP tick engine + parity), Phase 8 (optimization), Phase 9 (light WFA/MC),
+> Phase 11 (MasterVP-Monster), Phase 12 (real-Monster engine), Phase 13 (KenKem engine), R&D F1/F2/DeferredEntry,
+> ProfitManager round-1. This file tracks only **live + deferred** work.
 
 ---
 
-## C8 — Missing-sweep program & under-tested logic (user concern 2026-06-15)
-Full plan file: `~/.claude/plans/deep-jingling-fountain.md`. Audits confirmed three gaps: ATR=14 (textbook
-daily) never swept on Monster/KenKem; news avoidance not implemented in any C++ engine (so never sweepable);
-Monster's near-price volume verdict is an OHLC-proxy read once per CLOSED bar with no reliability check.
-**Approved scope: full staged build. Both Monster fixes (persistence + tick-rule reliability). News: port
-2025 + source 2026.** Standing rules everywhere: new param/feature defaults to current value or OFF (parity-
-safe, with an all-OFF==prior unit test); adopt into a locked `.set` only if **net↑ AND DD↓**; sweep on 2025
-(67/33), rank on **2026 true-OOS**; prefer plateaus; report the **standard 9-column table** (`report_metrics.py`).
+## 🎯 The one goal
+Make the **dquants tick engines reproduce MT5 "every tick" exactly**, then run **trustworthy sweeps** to rank a
+production candidate that ≥ the user's profitable original `KenKemExpert`. Mode: autopilot, commit as you go,
+revert bad code, **don't lie** (every PF names the engine+binary that produced it).
 
-### C8.1 — Phase 1: sweep never-tested params that are ALREADY tunable (no code)
-- [ ] **ATR length (headline):** add `InpAtrLen` to `optimize_monster_real.py` (range 5–16) and
-      `ATR_PERIOD_FOR_SL` to `sweep_kenkem_tuned.py` per-entry SPACE (5–16). MasterVP already swept — re-confirm
-      its `atr_len` sits on a plateau (6–16), not a peak.
-- [ ] **Monster net-verdict thresholds:** sweep `InpBrkNetMinM3`/`InpBrkNetMin`/`InpBrkOppMax`/`InpRevNetMin`/
-      `InpRevOppMax` (all 0.80, never swept) over ~0.5–0.95; sweep `vp_lookback` (30–90).
-- [ ] **Monster persistence (cheap reliability):** enable + sweep `enable_net_persist` × `net_persist_bars` (2–5)
-      × `net_persist_min` (0.3–0.7).
-- [ ] **KenKem lookbacks:** add `ICHIMOKU_TENKAN/KIJUN/SENKOU` (E4), `ATR_PERCENTILE_LOOKBACK`, `RSI_DIV_LOOKBACK`,
-      `RANGE_HI_LOW_LOOK_BACK_BARS` to the per-entry SPACE.
-- [ ] **MasterVP:** add `adx_len`, `rsi_len` (both fixed 14, both tunable) to `optimize_mastervp.py`, range 6–20.
-- [ ] Deliverable: refreshed candidate `.set` + 9-column before/after on 2026 OOS; promote only on net↑∧DD↓.
+## 🚨 Trust state (2026-06-16) — READ FIRST
+- **None of the 3 dquants ports (MasterVP/Monster/KenKem) is MT5-profit-validated.** The user ran all three in
+  MT5; all bad. Only the ORIGINAL `KenKemExpert` (E1+E2, PF 1.62) works. See `research/optimization/HONEST-AUDIT-2026-06-16.md`.
+- **Root cause found & FIXED this session — systemic param contamination:** the engines exposed `.set` keys the
+  EAs *hardcode* (not `input`s); MT5 silently ignored them, so any sweep that moved one produced a config MT5
+  can't reproduce → it lost when deployed. Engines now **structurally refuse** EA-locked keys (`is_ea_locked_key`
+  / `monster_non_input_keys`; tests `test_ea_locked_keys_ignored`, `test_monster_locked_keys_ignored`). Audit:
+  `research/kenkem_parity/PARAM_SURFACE_AUDIT.md`. Commits `82fb4b9`, `ece8f2b`, `6c4ad18`.
+- **Consequence:** every existing `best_*.set` was swept under contamination and/or on the bar engine → **all
+  untrusted, must be regenerated** by a clean tick-engine sweep over Class-A (honorable `input`) params only.
 
-### C8.2 — Phase 2: promote high-value hardcoded constants to params, then sweep
-- [ ] **Monster:** promote `node_decay` (0.94→`InpNodeDecay`), `net_win_atr` (1.5→`InpNetWinAtr`),
-      `tf_net_look` (50→`InpTfNetLook`), `brk_overhead_look` (200), `brk_rr_lookback_bars` (25) — add `apply_kv`
-      key + MQL5 `input`, default unchanged (inert). These shape the near-price window the verdict reads.
-- [ ] **MasterVP:** confirm which VP node knobs (`node_touch_atr`/`node_decay`/`node_neutral_band`/`node_saturation`)
-      are not yet keys; promote the VP-shaping ones.
-- [ ] Add one-line parity unit test per promotion (default reproduces prior trades); extend Phase-1 sweeps to
-      include the newly-exposed keys.
+---
 
-### C8.3 — Phase 3A: news avoidance (build it, then sweep ON/OFF × entry combos)
-- [ ] **Data:** port `../kenkem/.../HighImpactNews_USD.csv` (2025) → `data/external/news_usd_2025.csv`; source 2026
-      high-impact USD events (preferred: MQL5 `CalendarValueHistory` export script for one-time user run; fallback
-      public calendar). Normalize to `ts_ms,impact` UTC.
-- [ ] **Engine:** shared `kk::common::news.hpp` + `news_active_(utc)` — replace Monster's `return false` stub
-      (`monster_engine.hpp:650`), add to MasterVP + KenKem; blocks **entry** within `[mins_before,mins_after]`
-      (+ optional force-close). Add `avoid_news`/`news_mins_*` to KenKem config + all three `apply_kv`. Default OFF.
-- [ ] **Backtester:** add `--news <csv>` to `tools/{mastervp,monster,kenkem}/backtester.cpp` (load once, binary-search per bar).
-- [ ] **Sweep:** news ON/OFF Optuna toggle × entry combos, tune `news_mins_before/after` (0–30); 9-column ON-vs-OFF on 2026 OOS.
-- [ ] Unit test: entry in a known event window blocked when ON, allowed when OFF; OFF reproduces current trades exactly.
+## 🔴 LIVE WORK (in priority order)
 
-### C8.4 — Phase 3B: Monster near-price volume RELIABILITY (the world-class push)
-- [ ] **Richer bar export:** extend `cpp_core/tools/common/export_bars.py` (DuckDB) to emit, per M3 bar, from raw
-      bid/ask ticks: `tr_net` = tick-rule signed-volume (mid-price upticks−downticks)/(total), and `tr_reliab` =
-      intra-bar stability (fraction of ticks whose running cumulative sign matched the bar's final sign). Append
-      two columns after `tick_count`; C++ bar struct gains two optional fields (default 0 → inert if absent).
-- [ ] **Engine gate (default inert):** Monster keys `use_tr_verdict` (false), `tr_net_min`, `tr_reliab_min`; when ON
-      require `|tr_net|≥tr_net_min` AND `tr_reliab≥tr_reliab_min` in the net gate (`monster_signal.hpp:335-351`).
-- [ ] **Sweep:** `use_tr_verdict` ON/OFF × `tr_net_min` (0.3–0.9) × `tr_reliab_min` (0.4–0.95), BTC & XAU M3, 2026
-      OOS. Aim: fewer, higher-quality entries (PF/recovery↑). New `research/optimization/sweep_monster_reliab.py`.
-- [ ] Unit test: `tr_reliab=0` / absent column leaves Monster trades unchanged; spot-check `tr_net` sign vs OHLC proxy.
+### L1 — Re-validate MasterVP + Monster on the cleaned tick engine
+- [ ] Regenerate data (`bars_xauusd_2425_*.csv` + `ticks_xauusd_2425_window.csv`, see `MASTERVP_MONSTER_PARITY.md`).
+- [ ] Re-run both on the tick engine post-contamination-fix; confirm no regression vs their MT5 oracles, confirm
+      profitable. MasterVP signal-logic is already MT5-validated ([[mastervp-tick-engine-mt5-validated]]) — verify
+      the `InpAtrLen` leak closure didn't move it.
 
-### C8.5 — Verification & wrap
-- [ ] After each code phase: `make -C cpp_core test` green + re-run locked `best_*` through `report_*` → identical
-      numbers (proves new dims inert).
-- [ ] Final cross-engine 9-column bake-off (Monster-reliab & news-tuned vs promoted KenKem-E5) → reconfirm the #1
-      production pick. Commit+push each step; tick these boxes; do NOT touch locked `.set` files without net↑∧DD↓.
+### L2 — Build a TICK-ENGINE sweep harness + regenerate `best_*` honestly
+- [ ] Replace the bar-engine `optimize_kenkem.py` BIN (or new script) so all sweeps run on the tick engine
+      ([[bar-engine-systemic-defect]]: the bar engine disagrees with MT5 on the **sign** of P&L).
+- [ ] Regenerate the `best_*` candidates over Class-A params only (`optimize_kenkem.py` already strips locked keys
+      from its search space, `6c4ad18`; do the same for MasterVP/Monster sweeps).
+- [ ] Produce the standard **9-column** comparison table ([[perf-table-format]]) → top production pick.
+
+### L3 — Monster economics divergence (engine PF ~1.23 vs MT5 ~18% TP loss)
+- [ ] Signal-firing is NOT the bug (engine fires 2,576 entries, not 0). Costs are NOT the bug (Exness Pro is
+      **commission-free**; engine models $0 commission + real spread from ticks; commission now importable anyway
+      via `CommissionPerLot`/`InpCommissionPerLot`, config.hpp:324). **Suspect = exit geometry OR a spread mismatch
+      between the engine's tick feed and MT5's modeled spread.**
+- [ ] Build `research/validation/parity_diff.py` to turn the manual MT5 run into a real gate, then run the first
+      Monster trade-level engine-vs-MT5 diff to pinpoint exit-geometry vs spread.
+
+### L4 — Close KenKem tick-parity residuals (refinements, NOT sign inversions)
+State after the RSI/ADX_LEN lock: XAU E5 150→139 trades (MT5 136), net +559/PF 1.10 (MT5 +995/1.23), verdict
+un-inverted, geometry mean|Δ|=0.03. Evidence: `cpp_trades_xau_locked.csv`, `research/kenkem_parity/PARITY_RESULT_XAU.md`.
+
+> **⭐ NEW critical-path artifact (2026-06-16): `research/kenkem_parity/CPP_EA_PARITY_LEDGER.md`.** Full
+> line-by-line C++ engine (truth) ⇄ deployed **KK-KenKem EA** divergence map. The EA is the *distilled
+> subset*, not the "faithful transcription" its header claims — it dropped the session gate, ATR-percentile/
+> quality/conviction/RSI-div entry filters, panic + score-drop exits, session-end close, and DD guards.
+> Reconciliation = Path B (bring the EA UP to the engine, each row default-OFF then ON, one MT5 run each).
+- [x] **C++ manage_tick ⇄ EA `Manage()` byte-parity (C1+C2, done 2026-06-16):** partial slice now floors to
+      the broker volume step + requires ≥min_lot (mirrors EA `MathFloor(q/step)*step`); broker
+      `stops_level_price` modeled on BE/trail SL moves (default 0 = inert for Exness). +3 regression tests.
+- [ ] **Ledger reconciliation (EA → engine):** sessions (A1/B2) → quality suite (A4–A7) → ATR regime (A2/A3)
+      → panic/score-drop (B3/B4) → guards (D3) → sizing (E2). Each: port into KK-KenKem default-OFF, MT5 run,
+      `parity_diff.py` PASS. **Sessions first — biggest trade-count lever** (engine trades JP/LN/NY only; EA 24h).
+- [ ] **Entry lag (~3–6 min):** M1 indicator micro-drift flips the strict `25>75>100>200` onset, worst at
+      weekly-open bar seams (close max|Δ|=42 at a Sun 22:09 bar). Chase tick→M1 bucketing across daily gaps.
+- [ ] **Exit geometry:** dquants closes via tight `SL-WIN` trail; MT5 closes via EA-managed exits → win% 77.7 vs
+      52, PF 1.10 vs 1.23. Reconcile the E5 exit path ([[kenkem-e5-root-cause-exits]]). (KenKem manage_tick↔EA
+      now byte-equal post-C1/C2; residual is the dropped panic/score-drop/session exits — ledger B2–B4.)
+- [ ] **E3 coverage:** C++ covers E1/E2/E4/E5 but NOT E3; traces are E5-only. Add E3; per-entry parity.
+      Harness is built and waiting on a user MT5 run ([[kenkem-parity-harness-built]]).
+
+---
+
+## 🟡 DEFERRED BACKLOG — unlock ONLY after L1–L4 (engines reproduce MT5)
+These are real, still-open concerns, but they are **premature**: a sweep is meaningless until the engine it runs
+on reproduces MT5. Standing rules when they unlock: new param/feature defaults to current value or OFF (parity-safe
++ all-OFF==prior unit test); adopt into a locked `.set` only if **net↑ AND DD↓**; sweep 2025, rank on 2026 OOS;
+prefer plateaus; report the 9-column table. Full C8 plan: `~/.claude/plans/deep-jingling-fountain.md`.
+
+- [ ] **C2 — KenKem drawdown breakers (SAFETY GAP, highest priority of this group):** the production pick #1 has
+      ZERO DD breakers. Add a unified risk controller (softblock micro-lot, daily/peak-DD halt, loss-streak +
+      wait-hours cooldown) to `kk::kenkem`; instrument backtests to COUNT activations; tune on a secondary
+      objective (min tail-DD / max Calmar) with a net-drop guardrail. **Do NOT return-optimize risk limits.**
+- [ ] **C1 — Blocked-hours retune:** MasterVP `InpBlockedHoursStr` is baked from 2025, never tuned. Add an
+      hour-of-day expectancy report over the latest data; sweep {none / empirical / current} per symbol.
+- [ ] **C4 — TP2 / trailing-TP2:** fold Monster's `stp2_*` (the F2-adopted params) into the MAIN optimizer space
+      so re-opts co-tune them. Trailing TP2 comes from C5's `tp_extension`.
+- [ ] **C5 — ProfitManager round-2:** sweep `be_protect` / `partial_tp` (PURE) on the round-1 rejects; then
+      `tp_extension` / `pre_be_structure` once a trend-weakening + prior-swing feed is wired from each engine.
+      Then port adopted toggles to MQL5 `KK-Common/ProfitManager.mqh`. (Round-1: only MasterVP-BTC giveback adopted.)
+- [ ] **C6 — Walk-forward harness:** optimize `[t−N,t]` → freeze → trade OOS `[t,t+M]` → roll → stitch; metric =
+      Walk-Forward Efficiency (>~0.5–0.6 = not overfit). Compare WFA-OOS vs static `.set` OOS. If it passes:
+      scheduled offline re-opt → guarded dynamic `.set` the EA loads from `MQL5/Files/`.
+- [ ] **C7 — AdaptiveState module (the "self-tuning EA" ask, done safely):** PURE Layer-2 `kk::common::AdaptiveState`
+      + thin MQL5 adapter, default OFF. Tier 0 vol-normalisation (units fix, mostly done) → Tier 1 regime-conditioned
+      FROZEN param sets (offline-validated lookup table) → **Tier 2 online learning DEFERRED/out-of-scope** (the dead
+      KenKemExpert self-tuning path — unvalidatable). Persist *estimators*, never opaque tuned params; stale/corrupt
+      → cold-start default. Validate the MECHANISM (A/B static vs adaptive on identical ticks), not moving params.
+- [ ] **C8 — Missing-sweep program** (only ALREADY-tunable, then promote constants, then build):
+  - [ ] C8.1 Sweep never-tested tunables: Monster `InpAtrLen`(5–16) + net-verdict thresholds + persistence;
+        KenKem `ATR_PERIOD_FOR_SL`/Ichimoku/lookbacks; MasterVP `adx_len`/`rsi_len`. (ATR=14 textbook daily never swept.)
+  - [ ] C8.2 Promote high-value hardcoded constants to params (Monster `node_decay`/`net_win_atr`/`tf_net_look`;
+        MasterVP VP-node knobs), each with a default-reproduces-prior unit test, then extend the sweeps.
+  - [ ] C8.3 **News avoidance** (not implemented in ANY C++ engine → never sweepable): port 2025
+        `HighImpactNews_USD.csv` + source 2026; shared `kk::common::news.hpp`; `--news` backtester flag; sweep ON/OFF.
+  - [ ] C8.4 Monster near-price volume RELIABILITY: tick-rule signed-volume `tr_net` + intra-bar stability
+        `tr_reliab` from raw ticks (richer bar export); gate `use_tr_verdict`; sweep for fewer/higher-quality entries.
+
+## ⏸️ Awaiting user input (not blocked on us)
+- [ ] **Cross-dataset robustness:** harness is BUILT ([[cross-dataset-harness]], `research/validation/`). Drop broker
+      files under `data/external/<broker>/`, copy spec to `datasets.json`, run `ingest` + `cross_validate` to confirm
+      each locked edge holds broker-to-broker. **AWAITING USER DATA.**
+- [ ] **MT5 confirmation:** any regenerated config must be run in the MT5 tester on the recent OOS window before it
+      is trusted (the tick engine is necessary but the MT5 tester is the gate — PIPELINE-CONTRACT VALIDATE gate).

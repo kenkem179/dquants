@@ -116,3 +116,55 @@ evolved 4-kind Monster EA. Params don't map to the real Monster schema (44/79 ov
       MC 99.9% profitable; all 5 months positive. XAU wants `UseMomVeto=ON` (opposite of BTC).
 - [x] **`MONSTER-FINDINGS.md`** documents both symbols + cross-symbol takeaways.
 - [→] vol-RR engine support (ComputeRrScale) — optional; MQL5 already has `InpEnableVolRR` (default off). Not pursued.
+
+## Phase 12 — REAL Monster C++ engine (the user's 4-kind EA) — engine DONE
+Faithful C++ port of the evolved Monster (`SignalCore_Monster.mqh`, 779 LOC): breakout + impulse-thrust +
+4-variant mean-reversion, multi-TF near-net, predicted/aged master VP, POC-slope regime + gates, per-strategy
+TP1 split. SEPARATE `kk::monster` engine, inherits the reusable VP/node math.
+- [x] P1 `monster_config.hpp` (147-input schema + .set loader). P2 `monster_signal.hpp` (4 kinds + arbitration
+      + gates). P3 `tf_net.hpp` (multi-TF near-net, per-TF MT5-iATR, `[1]`-read) + P4 M1/M5 bar export.
+- [x] P5 `monster_engine.hpp` (interleaved OnTick, gap-aware fills, TP1-split) + P6 `monster_backtester.cpp`
+      + `test_monster_engine` (22 checks).
+- [x] **CRITICAL: caught + fixed a one-bar LOOKAHEAD** (bar-advance `<=`→`<`). Inflated PF 1.83 → realistic
+      **PF 0.915 BTC / 0.751 XAU** (losing baseline). Deterministic; tests green. This is what makes the engine
+      trustworthy for optimization.
+- [!] The Phase-12 `best_monster_real_*` sweeps were run BEFORE the param-contamination fix → **untrusted**;
+      regenerate on the cleaned tick engine (see live BUILD-PLAN).
+- [!] Phase 10 promote note: **Do NOT recreate** `kenkem/MQL5/Experts/KK-MasterVP-Monster/` — it already exists
+      and has evolved (on `origin/KKMasterVPv1`). A blind recreate clobbered it once. Deliver `.set` files only.
+
+## Phase 13 — KenKem "original" multi-entry EA → C++ engine — port DONE
+Migrated `KenKemExpert.mq5` (~8k LOC) into SEPARATE `kk::kenkem` engine. Spec: `KenKem-SPEC.md` + portnotes
+`research/hypotheses/kenkem-portnotes/01-04` (1640 lines, exact line refs). 5 parity traps locked (EMAs
+10/25/71/97/192; BTC pip=1/contract=1/std-lot×2; ATR cache shift-0; Ichimoku buffer-mislabel ⇒ E4 trigger is
+a Tenkan/Kijun cross; E4-short uses E4_RR_SHORT×0.875). EA snapshot pinned sha256 `61bc702b`.
+- [x] P1 config (33 checks) · P2 tf_cache + indicators (Ichimoku) · P3 triggers (EMA cross/touch + Ichi TK) ·
+      P4 snapshot + gates · P5 entries (E1/E2/E4) · P6 trade_manager (risk sizing + partial/BE/trail) ·
+      P7 engine + backtester. No lookahead (detect closed bars, fill at open).
+- [x] **Tick engine** (`tick_engine.hpp`, make `kenkem_tick`) VALIDATED vs MT5: ungated E5 → PF 0.855 (MT5 0.85).
+      Replaced the invalid bar-OHLC walk. Wired dropped governors (atr-pctile, max-entries/day, e5-require-trend).
+- [x] P9 `optimize_kenkem.py` → P10 `best_kenkem_{btc,xau}.set`. **Optimizer disabled E1/E2 — winner was
+      E4-only (Ichimoku TK cross)**, but those numbers came from the BAR engine and the .set was param-
+      contaminated → **untrusted**; KENKEM-RESULTS.md PFs are NOT MT5-valid.
+- [x] P11 delivered production EA `kenkem/MQL5/Experts/KK-KenKemE4/` — but it FAILED MT5 (see reality check).
+      Production pick reverted to ORIGINAL `KenKemExpert` (E1+E2). Config: `ORIGINAL_kenkem_xau_WINNING.set`.
+
+## R&D — "volume never lies" features — CONCLUDED (verdicts captured in [[rnd-volume-features]])
+Adoption rule: commit a feature into a locked `.set` ONLY if it strictly beats feature-OFF (PF↑ AND net↑,
+DD not worse, OOS not degraded). Engine code kept inert/default-OFF otherwise.
+- [x] **F1 multi-bar net-volume persistence:** Monster-BTC PF 1.299→1.618 (ADOPT); MasterVP REJECT both
+      (BTC noise/DD+32%, XAU strictly worse); KenKem SKIPPED (weak fit). Engine-specific. `.set` unchanged where rejected.
+- [x] **F2 volume-node STRUCTURE SL/TP:** Monster-BTC structural-TP2 ADOPT (PF 1.617→1.645, DD better, OOS
+      better; applied to `best_monster_real_btc.set` — now superseded by the regen requirement). Monster-XAU
+      REJECT, MasterVP REJECT both, KenKem SKIPPED. Net: 1 win / 4 combos.
+- [x] **DeferredEntry (pullback/limit):** REJECT both MasterVP symbols (BTC net+38% but DD+62% → risk-adj
+      worse; XAU outright worse). Code inert (`ec44fd4`). Possible future: keep-RISK-constant variant.
+
+## ProfitManager Round-1 sweep — DONE (module built, one adopt)
+`kk::common::profit_manager.hpp` wired into all 3 engines (additive, default OFF/inert; baselines byte-exact,
+parity golden green). `InpPm*`/`PM_*` keys in all three `apply_kv`.
+- [x] Round-1 sweep — giveback_cap + progressive_trail (PURE SL toggles), MasterVP+Monster × BTC+XAU
+      (`sweep_pm_sl.py`, 140 trials each). Pattern: net↑ and PF↑ but absolute maxDD ticks up (Calmar gain, not
+      DD reduction). Under strict net↑∧DD↓: **MasterVP-BTC ADOPT** giveback arm=2.2 cap=0.38 (net 4325→5740,
+      DD 1119→1075, PF 1.204→1.254, OOS net +192%) → into `best_mastervp_btc.set`. MasterVP-XAU / Monster-BTC /
+      Monster-XAU all REJECT. (Note: this `.set` edit predates the regen requirement; re-confirm post-regen.)

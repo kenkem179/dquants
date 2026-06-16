@@ -65,6 +65,23 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
     if (!p.open) return;
     const MgmtParams m = mgmt_for(p.kind, c);
 
+    // Broker partial-close slice: floor to the volume step and require >= min_lot, EXACTLY as the EA
+    // does (Engine.mqh:337-338 `q=vol*ratio; MathFloor(q/step)*step; if(q>=mn && q<vol)`). Without this
+    // the engine closed a fractional slice the broker can never fill -> a different runner size and a
+    // silent per-trade P&L drift. `partial_done` still latches on the trigger even if the slice is
+    // sub-min (EA sets g_posTp1Done regardless), so BE/trail engage on the full runner just like MT5.
+    auto partial_slice = [&]() -> double {
+        double q = p.init_lot * m.partial_ratio;
+        if (c.lot_step > 0.0) q = std::floor(q / c.lot_step) * c.lot_step;
+        return q;
+    };
+    // Broker min-stop-distance clamp on a SL move (BE/trail): the EA refuses a modify within
+    // stops_level_price of the market (Engine.mqh okDist). Default 0 -> always allowed (Exness).
+    auto sl_move_ok = [&](double cand) -> bool {
+        if (c.stops_level_price <= 0.0) return true;
+        return p.is_long ? (price - cand >= c.stops_level_price) : (cand - price >= c.stops_level_price);
+    };
+
     if (p.is_long) {
         if (price > p.best) p.best = price;
         // Full SL.
@@ -75,17 +92,17 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
         if (!p.partial_done) {
             double trig = p.entry + m.partial_trigger * (p.tp - p.entry);
             if (price >= trig && c.allow_partial_tp) {
-                double q = p.init_lot * m.partial_ratio;
-                if (q > 0 && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
+                double q = partial_slice();
+                if (q >= c.min_lot && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
                 p.partial_done = true;
                 double be = p.entry + m.be_buffer * p.risk;
-                if (be > p.sl) p.sl = be;
+                if (be > p.sl && sl_move_ok(be)) p.sl = be;
             }
         }
         // Chandelier trail (raise-only) once partial taken.
         if (p.partial_done) {
             double trail = p.best - m.trailing_factor * p.risk;
-            if (trail > p.sl) p.sl = trail;
+            if (trail > p.sl && sl_move_ok(trail)) p.sl = trail;
         }
     } else {
         if (price < p.best) p.best = price;
@@ -94,16 +111,16 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
         if (!p.partial_done) {
             double trig = p.entry - m.partial_trigger * (p.entry - p.tp);
             if (price <= trig && c.allow_partial_tp) {
-                double q = p.init_lot * m.partial_ratio;
-                if (q > 0 && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
+                double q = partial_slice();
+                if (q >= c.min_lot && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
                 p.partial_done = true;
                 double be = p.entry - m.be_buffer * p.risk;
-                if (be < p.sl) p.sl = be;
+                if (be < p.sl && sl_move_ok(be)) p.sl = be;
             }
         }
         if (p.partial_done) {
             double trail = p.best + m.trailing_factor * p.risk;
-            if (trail < p.sl) p.sl = trail;
+            if (trail < p.sl && sl_move_ok(trail)) p.sl = trail;
         }
     }
 
