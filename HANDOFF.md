@@ -72,11 +72,17 @@ Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, 
   Jan–May** (stable real edge, but = KK-KenKem's own ~1.13 ceiling). **E2 loses both periods; E1 regime-
   dependent** (+709 2025 / −792 2026) → at engine-default params, adding E1+E2 HURTS (PF→0.938 in 2026).
   ⟹ engine does NOT yet beat PF 1.63 — but comparison is unfair on two counts.
-- **NEXT ACTION (both doable WITHOUT MT5):** (1) export **Sep–Nov 2025 XAU ticks** from
-  `data/processed/ticks_xauusd_2025.parquet` (the 1.63 baseline's exact window) → run engine like-for-like;
-  (2) extract the **original KenKemExpert's proven E1/E2 hardcoded params** and load into the engine (today's
-  E1/E2 use engine DEFAULTS, not the proven config) → re-test. THEN judge if the gated engine reproduces ~1.63.
-  In parallel, the **E5 core (PF ~1.14) is solid** and could be a first KK-KenKem candidate.
+- **✅ LIKE-FOR-LIKE DONE — the gap is EXITS, not gates/entries.** Exported the baseline's exact window
+  (Sep 1–Nov 15 2025) from parquet → `cpp_core/tools/{ticks,bars}_xauusd_2025_sepnov*.csv` and ran the tick
+  engine: E1+E2+E5 gated = **250 trades / PF 1.082 / +$1,245** vs the original's **260 trades / PF 1.63 /
+  +$2,456**. Near-identical trade count + ALL entries positive (E1 +302, E2 +385, E5 +557) ⟹ **entries &
+  gates are faithful; the engine just earns half per trade via its tight native trail vs the original's
+  managed/laddered exits.** Re-confirms [[kenkem-e5-root-cause-exits]] / [[parity-gate-built]] from a fresh angle.
+- **NEXT ACTION:** port the original `KenKemExpert`'s managed exit geometry (TP-ladder/partials/trail/
+  profit-protection hardcoded params) into the C++ engine `trade_manager.hpp`; re-run the Sep–Nov 2025
+  like-for-like; watch PF climb toward 1.63. THEN the engine is a faithful, better base to sweep + promote
+  into KK-KenKem. E5 core (PF ~1.14 across 3 windows) can ship as a first KK-KenKem candidate in parallel.
+  Full evidence: `research/kenkem_parity/PATHB_GATED_ENGINE_OOS.md`.
 
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level

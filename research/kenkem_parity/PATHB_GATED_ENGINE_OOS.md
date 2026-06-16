@@ -31,9 +31,26 @@ flips the entry toggles on (E1/E2 then run engine DEFAULT params — NOT the ori
    hardcoded+tuned E1/E2 params. **Extract those from the original EA source and load them into the engine**,
    then re-test. Only then does "E1/E2 lose" mean anything about the strategy vs the config.
 
-## Recommendation
-Before any sweep: (1) export the Sep–Nov 2025 ticks, (2) port the original's proven E1/E2 params into the
-engine, (3) re-run the matched like-for-like vs 1.63. If the engine reproduces ~1.63 there, the edge is real
-and Path B (port gates → EA, then sweep) is justified. If it can't, the prerequisite is fixing engine↔original
-param/logic fidelity for E1/E2 — the E5 core (PF ~1.14) is already solid and could ship as a first KK-KenKem
-candidate in parallel.
+## ⭐ LIKE-FOR-LIKE on the baseline's EXACT window (added 2026-06-16) — the gap is EXITS
+Exported the baseline window from `data/processed/ticks_xauusd_2025.parquet` →
+`cpp_core/tools/{ticks_xauusd_2025_sepnov.csv, bars_xauusd_2025_sepnov_m1.csv}` (Sep 1–Nov 15 2025,
+21.6M ticks) and ran the tick engine on it:
+
+| run | trades | win% | net USD | PF | by-entry net |
+|---|---:|---:|---:|---:|---|
+| **Original KenKemExpert** (baseline, `v17620ReportTester`) | 260 | — | **+2,456** | **1.63** | (E1+E2) |
+| dquants engine E1+E2+E5 (gated, DEFAULT params) | 250 | 62.4 | +1,245 | **1.082** | E1 +302 · E2 +385 · E5 +557 |
+| dquants engine E5 only (gated) | 127 | 76.4 | +380 | 1.079 | E5 +380 |
+
+**🔑 CONCLUSION: the engine reproduces the ENTRIES well — near-identical trade count (250 vs 260) and ALL
+entries positive on the baseline window — but earns HALF the money at PF 1.08 vs 1.63. The edge gap is
+EXIT GEOMETRY, not entries and not the selectivity gates.** The engine closes via its tight native SL/trail;
+the original rides winners via managed/laddered exits. This independently re-confirms the standing root cause
+([[parity-gate-built]], [[kenkem-e5-root-cause-exits]]).
+
+## Recommendation (revised by the like-for-like)
+The real lever is the **exit model**, not the gates. Port the original `KenKemExpert`'s managed exit geometry
+(TP ladder / partials / trail / profit-protection — its hardcoded exit params) into the C++ engine's
+`trade_manager.hpp`, re-run the Sep–Nov 2025 like-for-like, and watch PF move toward 1.63. Only then is the
+engine a faithful, *better-able* base to sweep. The E5 core (stable PF ~1.14 across 3 windows) is already a
+solid first KK-KenKem candidate to ship in parallel while the exit work proceeds.
