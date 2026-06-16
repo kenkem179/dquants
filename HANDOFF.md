@@ -49,9 +49,15 @@ DEFAULTS — `InpUseMtfAgree` (C++ true / MT5 false) and `InpMaxPeakDDPct` (C++ 
 - Preset created: MT5 `Presets/KK-MasterVP-MTFon-xau.set` (baseline + MTF on + peak-DD via EA default 30 + exports).
 - C++ side: trades_cpp_mtfON_p30.csv (peak-DD pinned 30). Evidence: `RUN_2026-05_xau_m3/parity_diff_mtfON_p30.txt`,
   `FINDINGS.md` (SOLVED section), `mt5_ref/trades_mt5_mtfON.csv` + `parity_mt5_mtfON.csv` (per-bar now exported).
-- **NEXT:** (1) pin ALL behavioral keys in baseline.set so engine-default≠EA-default can't recur; (2) decide
-  if the last ~1.3% (4 timing trades + 2 exit-tag flips) is worth chasing (tick fill-timing) or good enough
-  to TRUST; (3) re-test the config-drift lesson on KenKem/Monster; (4) THEN trustworthy sweeps.
+- **✅ DONE — keys pinned (2026-06-16):** added the 13 C++-read-AND-EA-input keys missing from baseline.set
+  (incl. `InpUseMtfAgree=true`, `InpMaxPeakDDPct=22` [true EA default — the 30 was a stale tester value]).
+  Verified: pinned baseline reproduces the original 77-trade C++ run IDENTICALLY (pinning is non-destructive).
+  The 39 EA-locked Pm*/Stp*/Net* keys are correctly refused by C++ / not MT5 inputs → not a drift risk.
+  Regenerated MT5 preset `Presets/KK-MasterVP-MTFon-xau.set` from the fully-pinned baseline (pins peak-DD=22
+  + MTF on + exports) so the tester cannot drift. baseline.set edit is UNCOMMITTED in kenkem (KKMasterVPv1).
+- **NEXT:** (1) OPTIONAL final confirm: re-run MT5 with the regenerated preset (peak-DD now 22, not stale 30)
+  → both sides halt at 22 → expect even tighter parity (~77 vs 77) than the 81/83@30 run; (2) re-test the
+  config-drift lesson on KenKem/Monster (likely same unpinned-key mismatches); (3) THEN trustworthy sweeps.
 
 ## 🗄️ (superseded) earlier same-session diagnosis — MasterVP parity DIFF → QUALITY GATE
 First true trade-level diff complete. Full writeup: `research/validation/mt5_parity_runs/RUN_2026-05_xau_m3/FINDINGS.md`.
