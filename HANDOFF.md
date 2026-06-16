@@ -29,6 +29,23 @@ keys (`is_ea_locked_key` / `monster_non_input_keys`; warn once + keep EA value).
 | **Monster** | 🟡 fires (2,576 entries, not 0) but **economics** lose | culprit = exit geometry OR engine-vs-MT5 spread mismatch, NOT costs (Exness Pro = commission-free) |
 | **KenKem** | 🟡 much closer, un-inverted | XAU E5 150→139 trades (MT5 136), net +559/PF 1.10 (MT5 +995/1.23); residuals = entry lag + exit geometry; C++ lacks E3 |
 
+## 🔍 Config-drift audit DONE (2026-06-16) — `research/kenkem_parity/CONFIG_DRIFT_AUDIT_KENKEM_MONSTER.md`
+Re-ran the MasterVP unpinned-key lesson on KenKem + Monster (2 parallel agents, findings verified by hand).
+- **Monster = ✅ CLEAN.** Every genuine EA-input key C++ reads has C++ default == EA default → unpinned keys
+  agree by construction. 0 drift keys (`InpUseMtfAgree` absent; `InpMaxPeakDDPct` 0==0). **One minor lock-set
+  gap:** 2 EA-hardcoded plain vars (`InpBrkRrLookbackBars`=25, `InpMaxTradesPerSession`=50) are read by
+  `apply_kv` but missing from `monster_non_input_keys()` → add them (safe now, low urgency).
+- **KenKem = ⚠️ CONFIRMED divergence + target-EA mismatch.** TWO EAs run in MT5: original
+  `KenKem\KenKemExpert.ex5` (ADX/RSI hardcoded 14) vs the **current** `dquants\KK-KenKem\KK-KenKem.ex5`
+  (most recent runs, 2026-06-16). In KK-KenKem, ADX/RSI len are **genuine inputs** (`KK-Common/KenKem/Inputs.mqh:54`)
+  and MT5 ran **ADX=15 / RSI=11**. The C++ engine models KenKemExpert → **locks** ADX_LEN/RSI_LEN to 14 and
+  parity sets strip them ("EA hardcodes to 14" — true for KenKemExpert, FALSE for KK-KenKem). So pinning won't
+  fix it; the lock must be revisited. Also flagged (verify): latest XAU `KK-KenKem.set` may carry BTC-tuned
+  values (wrong-file load, not drift).
+- **⏳ BLOCKED ON USER DECISION:** which EA is the KenKem parity/production target — original `KenKemExpert`
+  (keep lock, ADX/RSI=14 both sides) or distilled `KK-KenKem` (un-lock ADX_LEN/RSI_LEN + pin them, OR set MT5
+  InpAdxLen/InpRsiLen back to 14)? Comparison is apples-to-oranges until settled.
+
 ## ✅ This session (2026-06-16, Opus 4.8) — user chose "fix parity first, then sweep"
 **Parity GATE BUILT: `research/validation/parity_diff.py` (commit `267f6d0`)** — the §4 trade-level
 engine-vs-MT5 check. stdlib-only; window-aligns engine `trades_*.csv` vs MT5 `trades_mt5.csv`, greedy

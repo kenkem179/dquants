@@ -419,7 +419,9 @@ inline const std::unordered_set<std::string>& monster_non_input_keys() {
         "InpAtrLen", "InpMasterMult", "InpVaPct", "InpVpFeedMode",
         "InpNodeDecay", "InpNodeNeutralBand", "InpNodeSaturation", "InpNodeTouchAtr",
         "InpNetWinAtr", "InpTfNetLook", "InpRevAnchorOffAtr", "InpRevPocSlOffAtr",
-        "InpWHvn", "InpWLvn", "InpWMvn"};
+        "InpWHvn", "InpWLvn", "InpWMvn",
+        // hidden spec consts (plain int, NOT inputs) — InputParams.mqh L119/L230; audit 2026-06-16
+        "InpBrkRrLookbackBars", "InpMaxTradesPerSession"};
     return s;
 }
 
