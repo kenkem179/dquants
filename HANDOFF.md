@@ -1,6 +1,28 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-17 by Claude (Opus 4.8) — faithful E1/E2 done; ATR wall ratified; over-fire is next. Branch `1-reorganize-code`. Build GREEN, tests pass._
+_Last updated: 2026-06-17 by Claude (Opus 4.8) — **BAR PARITY SOLVED**: M1 bit-exact vs MT5, ATR
+"residual" was a join bug + missing tick days. Branch `1-reorganize-code` @ `c022217`. Build GREEN._
+
+## 🚨 SUPERSEDES "THE WALL": bars are bit-exact; the ATR mismatch was NOT tick-fidelity
+The prior "~2% / 0.31 ATR tick-completeness residual" conclusion was WRONG. Proof + tools committed:
+`research/kenkem_parity/DATA_HEALTH_AND_BAR_PARITY.md`, `cpp_core/tools/common/{build_bars,verify_bars_vs_trace}.py`.
+- M1 BID OHLC matches the MT5 trace to **0.000000** (82,048 bars) at the join `my_open == trace_ts−60000`.
+  The old residual came from joining at the wrong offset (ATR is smooth → fake "right" while close drifts).
+- ATR(14) median|Δ| = **3e-6**. The only ATR spikes are the first ~28 bars after a **multi-day hole in
+  the exported XAU ticks** (price gaps the missing days → one huge TR Wilder carries). Data, not formula.
+- **XAU tick export is missing whole trading days MT5 has**: 2025-04-28..30 (PROVEN via trace), 05-16,
+  06-03, 06-30; 2024 near-total Nov-19..Dec-20; plus Good-Friday holidays (legit). BTC is complete.
+- **Feb-2026 anchor window is CLEAN** → anchor parity needs NO new ticks. M3/M5/M15 = exact aggregation
+  of bit-exact M1 (MT5-faithful). `verify_bars_vs_trace.py` is the regression gate.
+
+### ⛔ BLOCKED ON USER (the MT5 manual run I flagged): anchor ground-truth CSVs were DELETED
+`kenkem/Tester/.../MQL5/Files/KenKem/{trace,trades}_XAUUSD-Exness-KK.csv` (the 9-trade Feb-2026 anchor)
+are GONE from the kenkem repo. To verify the C++ pipeline end-to-end I need them re-exported (a fresh
+KenKem Feb-2026 backtest at the locked anchor config). Until then, only `trace_xau_paritywin.csv`
+(2025-H1 E5 run, intact) is available — usable for engine-ATR checks on clean bars but not the anchor.
+
+_(below = prior handoff, still valid for the entry-layer/over-fire work once ground truth is back)_
+
 
 ## 🎯 Goal (CLEAN-SLATE RESET — autopilot, 3 strategies)
 User was "super disappointed" by the distilled KK-KenKem and ordered a faithful rewrite, then expanded
