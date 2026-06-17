@@ -32,3 +32,32 @@ exact via close+adx).
 3. `rsi` column: read 1.8.154 GetRSIAverage — is it 0 by design? adjust the trace expectation.
 4. sideways + atr_pctile: port GetSidewaysScore + the percentile reference to 1.8.154; re-diff.
 5. Then config: the engine fired 0 signals (default xau specs ≠ 1.8.154 inputs) — align inputs, then trade-level diff vs `trades.csv` (47-col schema → adapt `diff_kenkem_trades.py`).
+
+---
+## Progress (2026-06-17, committed): indicator fixes + over-fire localized
+**FIXED (committed `d1f0129`):**
+- **EMA bit-exact** — `GetEMA(...,1)` = series-shift 2 = `i1-1` (was `i1-2`). All 5 EMAs now 0.00000
+  vs trace (periods 10/25/71/97/192). This was a real engine bug affecting every EMA-based gate.
+- **ATR-percentile reference** = forming `s.atrM1` (EA `cache.atrM1` shift-0), not closed. atr_pctile
+  mean|Δ| 12.8→10.8.
+
+**Indicator status vs trace:** close/ema0-4/adx_m1/adx_m3 **bit-exact**. atr forming residual ~0.19
+(2%) = MT5 `cache.atrM1` is an INTRA-BAR read unreachable from M1 bars (engine Wilder is provably exact
+vs Python, 0.00000) → atr_pctile inherits ~rank noise. The real, now-understood ATR-percentile wall.
+RSI trace col = 0 on 99.6% of bars (EA `GetRSIAverage` lazy-handle bug in tester) → sideways RSI
+component is effectively 0 in the EA; engine must mirror that.
+
+**Engine TRADES fine** (not 0 — trace_dumper's "signal-fires" counter is unwired): Feb-2026 default
+config = **45 trades, PF 1.225** (E1 18, E2 13, E4 14). EA executed ~15-20 (E1/E4 only; ALL E2 SKIPPED).
+
+**OVER-FIRE localized (the next lever):** of 45 engine trades only **6 match an EA signal** (same
+min+dir); **39 are engine-only** — gates passing where the EA's don't. Biggest chunk: engine fires
+**13 E2 trades but the EA executes ZERO E2** (all 20 E2 signals SKIPPED by risk/limiter). So:
+1. Engine E2 gate too loose AND/OR missing the limiter that skips every E2.
+2. Engine lacks faithful downstream limiters (MAX_SESSION_LOSSES=4, MAX_SLTP_COUNT_PER_SESSION=7,
+   MAX_HIGH_RISK_TRADES_PER_SESSION=5, one-entry-per-bar, min-seconds, max_concurrent, day cap).
+3. Engine also MISSES most EA entries (only 6 overlap) → E1/E4 gate thresholds differ too.
+
+**Next:** port the 1.8.154 Entry1/Entry2/Entry4 gate conditions + RiskManager skip rules verbatim;
+diff engine trades vs the EA signal list (trades.csv incl. SKIPPED) until entry selection matches,
+then limiters, then geometry/exits. The trades.csv carries per-signal indicator values to localize each.
