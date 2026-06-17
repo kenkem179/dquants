@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-17 by Claude (Opus 4.8). Branch `1-reorganize-code`._
+_Last updated: 2026-06-17 by Claude (Opus 4.8) — faithful E1/E2 + ATR-pctile wall. Branch `1-reorganize-code`._
 
 ## 🎯 Goal (CLEAN-SLATE RESET — autopilot, 3 strategies)
 User was "super disappointed" by the distilled KK-KenKem and ordered a faithful rewrite, then expanded
@@ -49,19 +49,37 @@ over-fire is **gate COMPUTATION**, not config.
   Tenkan/Kijun (snapshot.tenkanM3/kijunM3) × atrM3; the "TK-align" check is real SenkouA>SenkouB
   (snapshot.senkouA/B_M3). Verify the same swap in MasterVP/Monster.
 
-### ▶️ NEXT ACTION (resume here)
-Current: tick engine **45 trades (E1 17/E2 16/E4 12) vs MT5 9; 1/9 matched.** E1/E2 over-fire is the
-big remaining pollution (also occupies concurrency slots + opposite-block, starving the other 6 E4s).
-1. **Build an entry-decision trace** (per-bar, per-entry trigger-age + each gate flag + conviction/
-   trend-quality scores, mirroring `detect_entry`) — same instrument that cracked Stage 1. Diff at the
-   9 MT5 entry bars to localize which gate diverges instead of guessing.
-2. **Faithful E1/E2 gates** per `SPEC_E1_E2.md`: E1 add `HasSufficientMomentum` (ADX≥20 confluence + DI
-   M1/M3/M5) + ADX≥19.5 floor + E1 HTF = block-counter-only (not require); E2 verify M15-strong-require.
-   Check conviction/trend-quality scoring shifts (scoring.hpp reads acceleration at i1; EA uses shift-0).
-3. Then concurrency/cooldown faithfulness (MAX_SESSION_LOSSES=4 not modeled; one-per-bar; min_seconds
-   off last SUCCESSFUL entry) → then SL/TP + managed exits ("EA" tag) to match exitPrice/realizedUsd.
-4. Re-diff each step: `tick_backtester` → `research/validation/parity_diff.py`. Target 9/9.
-5. Then **Stage 5** KK-KenKem regen; then **MasterVP**, then **MonsterEdition** (read Pine).
+### ✅ DONE this session (commit `2d7117a`)
+- **Faithful E1/E2 gates** ported 1:1 from `Entry1.mqh`/`Entry2.mqh` (ADX floor, HTF block-counter for
+  E1 / require-aligned for E2, MTF m1&((m3&m5dir)||extremeDI), price-vs-EMA25, HasSufficientMomentum).
+  **Gate EMA reads now use the GetEMA(...,1) non-series entry shift `align.tf-3`** (was raw shift-1 →
+  off by 2). New helpers in `gates.hpp`.
+- **ATR-percentile recipe** fixed: distribution = closed ATR shifts **1..32** (was off-by-one), ref =
+  **closed-bar ATR** (= MT5 `cache.atrM1`, proven by trace; first-tick forming model was ~7% low).
+- **New tool `tools/kenkem/entry_trace_dumper.cpp`** (`build/kenkem/entry_trace`) — per-bar E1/E2/E4
+  gate-decision trace (first failing gate + scores). The localizer that cracked this.
+
+### 🧱 THE WALL (decision needed) — ATR-percentile gate is tick-fidelity-limited
+`detect_entry` runs **once per bar at the new-bar's first tick** (KenKemExpert.mq5:2494). The dominant
+entry filter is **MIN_ENTRY_ATR_PERCENTILE=65 + ATR_HIGH_BLOCK>90** (RiskManager.mqh:284-308, under
+`ENABLE_BLACK_SWAN_PROTECTION=true`). At all 9 MT5 entries the MT5 percentile sits 68-88 (passes); my
+percentile swings wildly and wrongly blocks ~3 of them. **Root cause:** percentile *ranking* is
+hypersensitive to the irreducible ±0.2/bar ATR noise between the exported ticks and MT5's internal tick
+stream. My M1 bars are ALREADY tick-accurate (tick-built ATR == my bar ATR to 4 dp) → **NOT fixable by
+rebuilding**. Proof: disabling the 2 ATR gates lifts matched pairs **1→4** (engine 47→129 trades).
+→ **Options to put to user:** (a) accept gate as parity-limited; (b) disable ATR-pctile gate for the
+parity-validation run only, validate the rest exactly, re-enable for production; (c) replace with a
+more robust regime proxy. Recommend (b) for the validation contract.
+
+### ▶️ NEXT ACTIONS (resume here)
+Tick engine now **47 vs MT5 9; 1/9 matched** (ATR gate noise blocks 3 real ones; disabling → 4/9 but
+129 trades). Two fronts:
+1. **Resolve the ATR-pctile wall** per the decision above (likely option b for validation).
+2. **Over-fire** (37→9 needed even with ATR gates on): downstream limiters — **MAX_SESSION_LOSSES=4
+   NOT modeled**, verify one-entry-per-bar (`lastEntryBarIndex`), min-seconds-off-last-SUCCESS,
+   block-opposite, day cap. Use `entry_trace` at the 35 engine-only bars to see what should block.
+3. Then SL/TP + managed exits ("EA" tag) → exitPrice/realizedUsd. Re-diff each step. Target 9/9.
+4. Then **Stage 5** KK-KenKem regen; then **MasterVP**, then **MonsterEdition** (read Pine).
 
 ⚠️ EXITS caveat: `SPEC_EXITS.md` was mapped for the E5 path; our config is E1/E2/E4 — re-verify the
 E1/E2/E4 exit toggles (panic/score-drop/session-end) before porting exits.
