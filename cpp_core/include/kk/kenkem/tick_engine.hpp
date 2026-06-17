@@ -47,6 +47,12 @@ public:
         int forming = cur_forming_;
         while (forming + 1 < N_ && t.ts_ms >= b_.m1.bars[forming + 1].ts_ms) ++forming;
 
+        // (0) Session-counter reset at the new-bar event, BEFORE managing closes — matches the EA, where
+        //     OnTick's new-bar block (UpdateSessionTracking) runs before ProcessAllTrades/DetectNewEntry.
+        //     So a position closing on a new session's first tick increments the NEW session's counters.
+        if (forming != cur_forming_)
+            for (int f = cur_forming_ + 1; f <= forming; ++f) update_session_(b_.m1.bars[f].ts_ms);
+
         // (1) Manage every open position with this tick (exit-side price), BEFORE any new entry so a
         //     position opened on this tick is not managed until the next tick (MT5 OnTick order).
         for (size_t k = 0; k < open_.size(); ) {
@@ -57,7 +63,8 @@ public:
             for (const Fill& f : fills) {
                 const double pts = o.p.is_long ? (f.price - o.p.entry) : (o.p.entry - f.price);
                 o.pnl_acc += f.lot * pts * vppl_ - f.lot * cfg_.commission_per_lot;
-                if (f.reason != 'P') { o.exit_price = f.price; o.exit_tag = f.reason; }  // closing fill
+                if (f.reason == 'P') o.partial_taken = true;                            // real partial slice
+                else { o.exit_price = f.price; o.exit_tag = f.reason; }                  // closing fill
             }
             if (!o.p.open) { realize_(o, t.ts_ms); open_.erase(open_.begin() + k); }
             else ++k;
@@ -79,7 +86,7 @@ public:
             o.pnl_acc += o.p.lot * pts * vppl_ - o.p.lot * cfg_.commission_per_lot;
             o.p.open = false;
             o.exit_price = px; o.exit_tag = 'E';   // end-of-test forced close (no MT5 equivalent)
-            realize_(o, last_ts_ms);
+            realize_(o, last_ts_ms, /*count_session=*/false);   // not a real EA close -> no counter bump
             open_.erase(open_.begin() + k);
         }
     }
@@ -95,6 +102,30 @@ public:
 private:
     int count_dir_(bool is_long) const {
         int n = 0; for (auto& o : open_) if (o.p.is_long == is_long) ++n; return n; }
+
+    // Trading-session identity (SessionManager::GetCurrentSession): 1=ASIA/Japan, 2=EU/London, 3=US/NY,
+    // 0=NONE. Uses the SAME UTC windows as in_valid_session, with if/else-if precedence (Japan, then
+    // London, then NY) so it mirrors the EA's GetCurrentSession ladder. The session counters
+    // (sessionLossCount, tradeSLTPCountInSession) reset whenever this id changes to a new non-zero value
+    // (UpdateSessionTracking: `newSession != currentSession && newSession != "NONE"`).
+    int session_id_(int64_t ts_ms) const {
+        if (cfg_.ignore_valid_sessions) return 1;  // always "in session" -> single bucket, never resets
+        int srv = (int)(((ts_ms / 60000) % 1440 + (int64_t)cfg_.server_gmt_offset * 60) % 1440);
+        if (srv < 0) srv += 1440;
+        auto inw = [&](int s, int e){ return srv >= (s/100)*60 + s%100 && srv <= (e/100)*60 + e%100; };
+        if (inw(cfg_.japan_start, cfg_.japan_end))   return 1;
+        if (inw(cfg_.london_start, cfg_.london_end)) return 2;
+        if (inw(cfg_.ny_start,    cfg_.ny_end))      return 3;
+        return 0;
+    }
+    // Reset the per-session caps when a new named session begins (mirrors UpdateSessionTracking, which
+    // runs at the new-bar event BEFORE ProcessAllTrades/DetectNewEntry).
+    void update_session_(int64_t ts_ms) {
+        const int id = session_id_(ts_ms);
+        if (id != 0 && id != cur_session_) {
+            cur_session_ = id; session_losses_ = 0; session_sltp_ = 0;
+        }
+    }
 
     // Bar-gated exits the EA evaluates on the first tick of a new bar using closed-bar values:
     // CLOSE_ALL_TRADES_AT_SESSION_END, fast-ADX panic, score-drop. Ports engine.hpp step (3) to ticks.
@@ -147,6 +178,11 @@ private:
         // Valid-session entry gate (the EA only ENTERS during the UTC Japan/London/NY windows). The bar
         // engine gates this; the tick engine was missing it -> entered off-session -> primary over-fire.
         if (!in_valid_session(bar.ts_ms, cfg_)) return;
+        // Per-session hard stops checked at the top of every Entry's Detect() (Entry1/2/4.mqh:81-90):
+        //   sessionLossCount >= MAX_SESSION_LOSSES   -> block (>=, so the Nth loss blocks)
+        //   tradeSLTPCountInSession > MAX_SLTP_COUNT  -> block (>, so up to N closes allowed)
+        if (cfg_.max_session_losses > 0 && session_losses_ >= cfg_.max_session_losses) return;
+        if (cfg_.max_sltp_per_session > 0 && session_sltp_ > cfg_.max_sltp_per_session) return;
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
@@ -168,7 +204,18 @@ private:
         ++entries_today_;
     }
 
-    void realize_(detail::OpenPos& o, int64_t t_out) {
+    void realize_(detail::OpenPos& o, int64_t t_out, bool count_session = true) {
+        // Update the per-session caps exactly as BrokerHelpers::HandleClosedTrade does on every close:
+        //   tradeSLTPCountInSession++ on EVERY close; sessionLossCount++ only on a real (non-breakeven)
+        //   loss. isLoss = hitSL ? (pnl<=0) : (pnl<0); breakeven = SL-moved-to-BE && hitSL && no partial.
+        //   (hitSL = exit tag 'S' = stop/trail/BE; 'T'=TP, 'E'/'X'=expert-close are not SL hits.)
+        if (count_session) {
+            ++session_sltp_;
+            const bool hit_sl = (o.exit_tag == 'S');
+            const bool is_loss = hit_sl ? (o.pnl_acc <= 0.0) : (o.pnl_acc < 0.0);
+            const bool is_be   = o.p.partial_done && hit_sl && !o.partial_taken;
+            if (is_loss && !is_be) ++session_losses_;
+        }
         balance_ += o.pnl_acc;
         Trade tr; tr.kind = o.p.kind; tr.is_long = o.p.is_long; tr.t_in = o.t_in; tr.t_out = t_out;
         tr.entry = o.entry_anchor; tr.lot = o.p.init_lot; tr.pnl = o.pnl_acc;
@@ -191,6 +238,9 @@ private:
     int N_ = 0, cur_forming_ = 0;
     int64_t cur_day_ = -1;
     int entries_today_ = 0;
+    int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
+    int session_losses_ = 0;    // sessionLossCount  (real losses this session)
+    int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
     TriggerState tg_;
     std::vector<detail::OpenPos> open_;
     BtResult R_;

@@ -37,7 +37,8 @@ struct BtResult {
 
 namespace detail {
 struct OpenPos { Position p; int64_t t_in; double entry_anchor; double pnl_acc; ExitState exit_st;
-                 double exit_price = 0; char exit_tag = '?'; };
+                 double exit_price = 0; char exit_tag = '?';
+                 bool partial_taken = false; };  // a real partial slice filled (hasTakenPartialProfit)
 }
 
 // Valid-session check (SessionManager): the EA only enters during the Japan/London/NY windows.
