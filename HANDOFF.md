@@ -71,15 +71,27 @@ rebuilding**. Proof: disabling the 2 ATR gates lifts matched pairs **1→4** (en
 parity-validation run only, validate the rest exactly, re-enable for production; (c) replace with a
 more robust regime proxy. Recommend (b) for the validation contract.
 
-### ▶️ NEXT ACTIONS (resume here)
-Tick engine now **47 vs MT5 9; 1/9 matched** (ATR gate noise blocks 3 real ones; disabling → 4/9 but
-129 trades). Two fronts:
-1. **Resolve the ATR-pctile wall** per the decision above (likely option b for validation).
-2. **Over-fire** (37→9 needed even with ATR gates on): downstream limiters — **MAX_SESSION_LOSSES=4
-   NOT modeled**, verify one-entry-per-bar (`lastEntryBarIndex`), min-seconds-off-last-SUCCESS,
-   block-opposite, day cap. Use `entry_trace` at the 35 engine-only bars to see what should block.
+### ✅ DECISION RATIFIED (user, 2026-06-17): disable MIN_ENTRY_ATR_PERCENTILE + ATR_HIGH for the parity
+diff ONLY. ⚠️ User says this ATR-regime filter is a PROFITABILITY lever for MasterVP/Monster — never
+delete it; keep + sweep once parity holds. Validation set: `/tmp/noatr.set` (MIN_ENTRY_ATR_PERCENTILE=0,
+ENABLE_ATR_HIGH_BLOCK=false). See [[atr-percentile-parity-wall]].
+
+### ▶️ NEXT ACTIONS (resume here) — commit `45d0722`, build GREEN, validation config = **4/9 matched, 129 trades**
+The 5 still-missed MT5 trades (ATR off) are ALL a **1-point acceleration gap**: 3 E4 trend-quality 8-vs-9,
+1 E2 conviction 9-vs-10. Cause = EA reads iADX **shift-0 (forming)** in HasTrendAcceleration; first-tick
+model is right for M1 but wrong for M3/M5 (partial bar) and HURT parity → reverted to closed-bar window.
+1. **OVER-FIRE is the big lever** (129→9): downstream limiters not faithfully modeled — verify in
+   `engine.hpp`/`tick_engine.hpp`: **MAX_SESSION_LOSSES=4**, one-entry-per-bar (`lastEntryBarIndex`),
+   min-seconds-off-last-SUCCESSFUL-entry, block-opposite, max_concurrent=2, day cap, MAX_SLTP_COUNT=7.
+   Use `build/kenkem/entry_trace` at the 103 engine-only bars to see which limiter SHOULD block.
+2. **Acceleration gap** (optional, for the last ~4 trades): model M3/M5 forming bars by aggregating M1
+   bars in the current HTF bucket up to decision time (reuse `kk::ind::dmi_adx_mt5_form`), then feed
+   {forming,closed,closed-1} to `kk_trend_accel`/`kk_adx_accel`. Non-trivial; do AFTER over-fire.
 3. Then SL/TP + managed exits ("EA" tag) → exitPrice/realizedUsd. Re-diff each step. Target 9/9.
 4. Then **Stage 5** KK-KenKem regen; then **MasterVP**, then **MonsterEdition** (read Pine).
+
+**Tooling:** `cpp_core/tools/kenkem/entry_trace_dumper.cpp` (`build/kenkem/entry_trace`) — per-bar
+E1/E2/E4 first-failing-gate + tq component breakdown (stderr in `--only` mode). The Stage-2 localizer.
 
 ⚠️ EXITS caveat: `SPEC_EXITS.md` was mapped for the E5 path; our config is E1/E2/E4 — re-verify the
 E1/E2/E4 exit toggles (panic/score-drop/session-end) before porting exits.
