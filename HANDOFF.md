@@ -15,11 +15,26 @@ The prior "~2% / 0.31 ATR tick-completeness residual" conclusion was WRONG. Proo
 - **Feb-2026 anchor window is CLEAN** → anchor parity needs NO new ticks. M3/M5/M15 = exact aggregation
   of bit-exact M1 (MT5-faithful). `verify_bars_vs_trace.py` is the regression gate.
 
-### ⛔ BLOCKED ON USER (the MT5 manual run I flagged): anchor ground-truth CSVs were DELETED
-`kenkem/Tester/.../MQL5/Files/KenKem/{trace,trades}_XAUUSD-Exness-KK.csv` (the 9-trade Feb-2026 anchor)
-are GONE from the kenkem repo. To verify the C++ pipeline end-to-end I need them re-exported (a fresh
-KenKem Feb-2026 backtest at the locked anchor config). Until then, only `trace_xau_paritywin.csv`
-(2025-H1 E5 run, intact) is available — usable for engine-ATR checks on clean bars but not the anchor.
+### ⏳ AWAITING USER (decisions taken 2026-06-17): re-anchor on EA 1.8.154 + re-export XAU ticks
+The old Feb-2026 anchor CSVs were DELETED and the EA advanced 1.8.15→1.8.154. User chose: **re-anchor
+on 1.8.154**, **I re-add the trace hook**, **user re-exports complete XAU ticks**. Status of each:
+
+1. ✅ **EA instrumented.** kenkem branch **`parity-trace-1.8.154`** (commits `3e8d12f`,`0e12256`,
+   compiles `✓ OK`): additive per-bar parity trace (`input InpExportParityTrace`) emitting the C++
+   trace schema from the cache, + `ENABLE_CSV_EXPORT` promoted to an input for the trade ledger.
+   **Run recipe: `research/kenkem_parity/RUN_ANCHOR_1.8.154.md`** (XAUUSD M1, every-tick, Feb-2026,
+   both toggles on). `fire_dir` is a TODO (always 0); wire a global in DetectNewEntry if needed.
+2. ⏳ **User runs that backtest** → `parity_trace_XAUUSD.csv` + `<YYYYMM>_KenKem_XAUUSD_*_trades.csv`
+   (under `kenkem/Tester/Agent-127.0.0.1-3000/MQL5/Files/`). ⚠️ The 1.8.154 trade CSV is a **47-col
+   analytics schema** (NOT the old parity ledger) → `diff_kenkem_trades.py` needs an adapter.
+3. ⏳ **User re-exports XAU ticks** — missing whole trading days; ranges in
+   `research/kenkem_parity/XAU_TICK_REFETCH_LIST.md` (Feb-2026 anchor is clean, so not blocking it).
+
+**When CSVs land:** diff C++ engine trace vs `parity_trace_XAUUSD.csv` (same-ts join), port 1.8.15→
+1.8.154 logic deltas, then trades. NOTE the snapshot.hpp:172-177 atr_pctile reference (forming vs
+closed / first-tick vs mid-bar) is the prime suspect for entry-gate wobble — resolve it against the
+fresh `atr_pctile` column. The intact `trace_xau_paritywin.csv` (2025-H1 E5) stays usable for clean-bar
+indicator checks.
 
 _(below = prior handoff, still valid for the entry-layer/over-fire work once ground truth is back)_
 
