@@ -116,16 +116,12 @@ inline double compute_tp(int kind, bool is_long, double entry, double sl, const 
 inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snapshot& s,
                           const TfBundle::Align& align, const KenKemConfig& c) {
     if (sideways_blocked(s, c)) return false;
-    // Universal regime filter (MIN_ENTRY_ATR_PERCENTILE): the original EA only trades when current
-    // ATR sits in the top (100 - thr)% of its recent distribution. This was DEFINED in config but
-    // never wired into the distilled engine — its absence is a primary cause of over-trading in chop.
-    // 0 disables. Applies to EVERY entry, including E5.
-    if (c.min_entry_atr_pctile > 0.0 && s.atr_pctile < c.min_entry_atr_pctile) return false;
-    // ATR HIGH block (ENABLE_ATR_HIGH_BLOCK / ATR_PERCENTILE_HIGH): the EA blackswan-blocks entries when
-    // current ATR sits in the top of its distribution ("Market volatility is too high"). Previously
-    // parsed-but-ignored. 0 disables.
-    if (c.enable_atr_high_block && c.atr_percentile_high > 0.0 && s.atr_pctile > c.atr_percentile_high)
-        return false;
+    // NOTE (B1): the ATR-percentile regime filters (MIN_ENTRY_ATR_PERCENTILE / ENABLE_ATR_HIGH_BLOCK)
+    // are NOT applied here. The EA evaluates them at EXECUTE (GetEntryBlockReason), AFTER detection has
+    // already committed the bar's single slot to one entry type — so an ATR-failing E2 still SUPPRESSES
+    // E4 on that bar instead of letting E4 fire. Applying them per-candidate inside detection (the old
+    // behaviour) changed the E1->E2->E4 priority. The check now lives in risk_exec.hpp::entry_blocked_by_atr,
+    // called once on the single detected candidate by the engine's execute stage.
     const double tol = c.ema_align_tol_pips * c.pip_size;
     // E5 (SuperBros): price on the right side of EMA25 + HTF + ADX floor. The original runs E5 with a
     // trend-quality floor (MIN_TREND_QUALITY_E5), so it is NOT exempt from the hard trend gate.

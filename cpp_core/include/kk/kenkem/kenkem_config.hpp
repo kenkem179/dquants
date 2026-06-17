@@ -61,6 +61,27 @@ struct KenKemConfig {
     bool   block_opposite_dir     = true;
     bool   close_at_session_end   = true;
 
+    // ---- execute-stage high-risk routing (HandleHighRiskEntry / getMaxLossUSD) ----
+    // A detected trade whose worst-case loss (riskDist * lot * contractSize) >= getMaxLossUSD(type) is
+    // routed to the high-risk path (accept flag + per-session cap + sideway veto + momentum check). The
+    // EA routes essentially every wide-SL E2 here; most fail the strict M1&M3 momentum gate and SKIP.
+    bool   enable_black_swan      = true;     // ENABLE_BLACK_SWAN_PROTECTION (gates ATR low/high blocks)
+    bool   accept_high_risk_e1    = true;     // ACCEPT_HIGH_RISK_E1_ENTRIES
+    bool   accept_high_risk_e2    = true;     // ACCEPT_HIGH_RISK_E2_ENTRIES
+    bool   accept_high_risk_e4    = true;     // ACCEPT_HIGH_RISK_E4_ENTRIES
+    bool   accept_high_risk_e5    = true;     // ACCEPT_HIGH_RISK_E5_ENTRIES
+    int    hr_momentum_e1         = 3;        // HIGH_RISK_E1_MOMENTUM_CHECK (3 = M1_AND_M3)
+    int    hr_momentum_e2         = 3;        // HIGH_RISK_E2_MOMENTUM_CHECK (3 = M1_AND_M3)
+    int    hr_momentum_e4         = 11;       // HIGH_RISK_E4_MOMENTUM_CHECK (11 = E1_ACCEL_M1_AND_M3)
+    double e1_hr_min_adx          = 19.5;     // E1_HIGH_RISK_MIN_ADX (E4 reuses this — EA Entry4 cfg)
+    double e1_hr_min_di_spread    = 4.0;      // E1_HIGH_RISK_MIN_DI_SPREAD
+    double e2_hr_min_adx          = 21.5;     // E2_HIGH_RISK_MIN_ADX
+    double e2_hr_min_di_spread    = 5.0;      // E2_HIGH_RISK_MIN_DI_SPREAD
+    int    max_high_risk_per_session = 5;     // MAX_HIGH_RISK_TRADES_PER_SESSION
+    double hr_tp_mult_asia        = 0.65;     // HIGH_RISK_TP_MULTIPLIER_ASIA
+    double hr_tp_mult_eu          = 0.65;     // HIGH_RISK_TP_MULTIPLIER_EU
+    double hr_tp_mult_us          = 0.70;     // HIGH_RISK_TP_MULTIPLIER_US
+
     // ---- trend-quality scoring ----
     bool   enable_tq_gates        = true;     // ENABLE_TREND_QUALITY_GATES
     int    min_tq_e1              = 6;
@@ -437,6 +458,23 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_ATR_HIGH_BLOCK") p.enable_atr_high_block = kbool(val);
     else if (key == "MIN_ENTRY_ATR_PERCENTILE") p.min_entry_atr_pctile = D();
     else if (key == "ATR_PERCENTILE_LOOKBACK") p.atr_percentile_lookback = I();
+    else if (key == "ENABLE_BLACK_SWAN_PROTECTION") p.enable_black_swan = kbool(val);
+    // execute-stage high-risk routing
+    else if (key == "ACCEPT_HIGH_RISK_E1_ENTRIES") p.accept_high_risk_e1 = kbool(val);
+    else if (key == "ACCEPT_HIGH_RISK_E2_ENTRIES") p.accept_high_risk_e2 = kbool(val);
+    else if (key == "ACCEPT_HIGH_RISK_E4_ENTRIES") p.accept_high_risk_e4 = kbool(val);
+    else if (key == "ACCEPT_HIGH_RISK_E5_ENTRIES") p.accept_high_risk_e5 = kbool(val);
+    else if (key == "HIGH_RISK_E1_MOMENTUM_CHECK") p.hr_momentum_e1 = I();
+    else if (key == "HIGH_RISK_E2_MOMENTUM_CHECK") p.hr_momentum_e2 = I();
+    else if (key == "HIGH_RISK_E4_MOMENTUM_CHECK") p.hr_momentum_e4 = I();
+    else if (key == "E1_HIGH_RISK_MIN_ADX") p.e1_hr_min_adx = D();
+    else if (key == "E1_HIGH_RISK_MIN_DI_SPREAD") p.e1_hr_min_di_spread = D();
+    else if (key == "E2_HIGH_RISK_MIN_ADX") p.e2_hr_min_adx = D();
+    else if (key == "E2_HIGH_RISK_MIN_DI_SPREAD") p.e2_hr_min_di_spread = D();
+    else if (key == "MAX_HIGH_RISK_TRADES_PER_SESSION") p.max_high_risk_per_session = I();
+    else if (key == "HIGH_RISK_TP_MULTIPLIER_ASIA") p.hr_tp_mult_asia = D();
+    else if (key == "HIGH_RISK_TP_MULTIPLIER_EU") p.hr_tp_mult_eu = D();
+    else if (key == "HIGH_RISK_TP_MULTIPLIER_US") p.hr_tp_mult_us = D();
     // rsi div
     else if (key == "ENABLE_RSI_DIVERGENCE_VETO") p.enable_rsi_div_veto = kbool(val);
     else if (key == "RSI_DIV_LOOKBACK") p.rsi_div_lookback = I();

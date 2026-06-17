@@ -48,6 +48,11 @@ static BtResult run_once() {
     cfg.use_conviction_e1 = cfg.use_conviction_e2 = cfg.use_conviction_e4 = false;
     cfg.enable_rsi_div_veto = false;
     cfg.enable_atr_high_block = false;
+    cfg.enable_black_swan = false;      // no ATR-percentile regime block on synthetic (low-variance) ATR
+    // Force the NORMAL execute path (not high-risk): big per-entry risk ceilings make potentialLoss <
+    // getMaxLossUSD, so this synthetic accounting/determinism test isn't gated by the high-risk momentum
+    // check (high-risk routing itself is validated empirically against the MT5 deal stream).
+    cfg.max_loss_ratio_e1 = cfg.max_loss_ratio_e2 = cfg.max_loss_ratio_e4 = 1.0;
     cfg.max_consec_losses_type = 0;
     cfg.ignore_valid_sessions = true;   // synthetic ts aren't aligned to UTC sessions
     vector<kk::Bar> m1, m3, m5, m15; vector<kk::Tick> ticks;

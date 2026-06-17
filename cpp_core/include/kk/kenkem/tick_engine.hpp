@@ -14,6 +14,7 @@
 // chandelier trail. Fills realize at the real tick price.
 #pragma once
 #include "kk/kenkem/engine.hpp"   // BtResult, Trade, detail::OpenPos, helpers
+#include "kk/kenkem/risk_exec.hpp" // execute-stage risk routing (high-risk path + ATR block)
 #include "kk/common/types.hpp"
 #include <vector>
 #include <cmath>
@@ -129,7 +130,7 @@ private:
     void update_session_(int64_t ts_ms) {
         const int id = session_id_(ts_ms);
         if (id != 0 && id != cur_session_) {
-            cur_session_ = id; session_losses_ = 0; session_sltp_ = 0;
+            cur_session_ = id; session_losses_ = 0; session_sltp_ = 0; high_risk_count_ = 0;
         }
     }
 
@@ -202,16 +203,50 @@ private:
         for (const auto& o : open_) if (o.p.kind >= 1 && o.p.kind <= 5) occ[o.p.kind][o.p.is_long ? 0 : 1] = true;
         EntrySignal sig = detect_entry(b_, cfg_, f, align, snap, tg_, occ);
         if (!sig.detected) return;
-        if (cfg_.block_opposite_dir && count_dir_(!sig.is_long) > 0) return;
+
+        // ---- EXECUTE STAGE (DetectNewEntry post-detection): faithful risk routing (risk_exec.hpp) ----
+        // Lot + routing are computed from the detection ANCHOR (entry=close[1], sl) exactly as the EA;
+        // the position then FILLS at the live tick. riskDist = |anchorEntry - sl| (EA |stopLoss-entryPrice|).
+        const double anchorEntry = sig.entry;
+        const double riskDist = sig.risk;
+        if (riskDist <= 0.0) return;
+        double lot = process_lot(sig.kind, balance_, riskDist, anchorEntry, cfg_);
+        const double potentialLossUSD = riskDist * lot * cfg_.contract_size;
+        const double entryMaxLoss = entry_max_loss_usd(sig.kind, balance_, cfg_);
+        const bool min_sec_blocked = (last_entry_ms_ > 0) &&
+            ((t.ts_ms - last_entry_ms_) < (int64_t)cfg_.min_seconds_between * 1000);
+        double tp = sig.tp;
+
+        if (potentialLossUSD >= entryMaxLoss) {
+            // HandleHighRiskEntry. CanCreateNewEntry()==GetEntryBlockReason()=="" (ATR + min-seconds
+            // subset ported), then opposing-dir, accept-flag, per-session cap, sideway warning, momentum.
+            if (entry_blocked_by_atr(snap, cfg_)) return;
+            if (min_sec_blocked) return;
+            if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
+            if (!accept_high_risk(sig.kind, cfg_)) return;
+            if (high_risk_count_ >= cfg_.max_high_risk_per_session) return;
+            if (snap.sideways >= cfg_.sideways_warning_thr &&
+                snap.sideways <  cfg_.sideways_block_thr) return;      // IsInSidewayRange(10)
+            const int level = hr_momentum_level(sig.kind, cfg_);
+            if (!check_momentum_for_level(sig.kind, sig.is_long, level, b_, align, snap, cfg_)) return;
+            lot = high_risk_lot(sig.kind, balance_, riskDist, cfg_);   // resize to ~maxLoss*0.98
+            const double tpDist = std::fabs(sig.tp - anchorEntry);
+            const double tpm = high_risk_tp_mult(session_id_(bar.ts_ms), cfg_);
+            tp = sig.is_long ? anchorEntry + tpDist * tpm : anchorEntry - tpDist * tpm;
+            ++high_risk_count_;
+        } else {
+            // Normal path: opposing-dir, then GetEntryBlockReason (ATR regime + min-seconds).
+            if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
+            if (entry_blocked_by_atr(snap, cfg_)) return;
+            if (min_sec_blocked) return;
+        }
 
         // Fill at THIS tick's real ask (long) / bid (short) — spread is in the price, no synthetic add.
         const double fill = sig.is_long ? t.ask : t.bid;
-        const double risk = std::fabs(fill - sig.sl);
-        if (risk <= 0.0) return;
-        const double lot = position_size(cfg_.start_balance, sig.kind, risk, cfg_);
-        Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, sig.tp, lot, cfg_);
+        Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, tp, lot, cfg_);
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
+        last_entry_ms_ = t.ts_ms;
     }
 
     void realize_(detail::OpenPos& o, int64_t t_out, bool count_session = true) {
@@ -252,6 +287,8 @@ private:
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
+    int high_risk_count_ = 0;   // highRiskTradesInSession (reset per session)
+    int64_t last_entry_ms_ = 0; // lastEntryTime (for MIN_SECONDS_BETWEEN_ENTRIES)
     TriggerState tg_;
     std::vector<detail::OpenPos> open_;
     BtResult R_;
