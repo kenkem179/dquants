@@ -19,6 +19,14 @@ struct Snapshot {
     double adx[4]  = {0,0,0,0};
     double diP[4]  = {0,0,0,0};
     double diM[4]  = {0,0,0,0};
+    // FORMING-bar (shift-0) ADX/DI per TF — the value MT5's iADX returns at buffer index 0 on the M1
+    // detection tick (HasTrendAcceleration / IsAccelerating read shift 0). For M1 this is the first-tick
+    // H=L=C=open bar; for M3/M5/M15 it is the partially-accumulated current-bucket bar (aggregated from
+    // the CLOSED M1 bars in the bucket). Acceleration checks read {forming, shift1, shift2}. Defaults to
+    // the shift-1 closed value so an un-set TF degrades to the old closed-window behaviour.
+    double adxF[4] = {0,0,0,0};
+    double diPF[4] = {0,0,0,0};
+    double diMF[4] = {0,0,0,0};
     // M1 ADX(9) "short".
     double adxS = 0, diPS = 0, diMS = 0;
     // M1 EMA0..4 at shift 1 (for SL structure + sideways).
@@ -119,6 +127,34 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
     const bool has_form = (fi >= 0 && fi < b.m1.size());
     const double open_f = has_form ? b.m1.bars[fi].open : b.m1.bars[i1].close;
     const double prevC  = b.m1.bars[i1].close;
+
+    // FORMING-bar (shift-0) ADX/DI per TF — what MT5's iADX returns at buffer index 0 on the M1 detection
+    // tick, used by HasTrendAcceleration / IsAccelerating (read {shift0,1,2}). Default to the shift-1
+    // closed value, then overwrite with one Wilder forming step where history allows. For M1 the bucket is
+    // its own first-tick (H=L=C=open_f); for M3/M5/M15 the forming bar = the CLOSED M1 bars accumulated in
+    // the current HTF bucket (+ the first tick), so the partial bar is reconstructed WITHOUT lookahead
+    // (it never reads the complete b.m{3,5,15} bar at align.tf, which already contains future M1 data).
+    for (int t = 0; t < 4; ++t) { s.adxF[t] = s.adx[t]; s.diPF[t] = s.diP[t]; s.diMF[t] = s.diM[t]; }
+    {
+        const int alignTf[4] = { align.m1, align.m3, align.m5, align.m15 };
+        for (int t = 0; t < 4; ++t) {
+            const TfIndicators& T = *tf[t];
+            const int fIdx = alignTf[t];          // forming HTF bar index (the bucket containing t_F)
+            const int ci   = fIdx - 1;            // last CLOSED HTF bar (the Wilder step's prev state)
+            if (ci < 1 || fIdx >= T.size()) continue;
+            const int64_t bucketOpen = T.bars[fIdx].ts_ms;
+            double fH = open_f, fL = open_f;      // include the forming M1 first tick (= open_f)
+            for (int j = i1; j >= 0; --j) {       // accumulate CLOSED M1 bars in this bucket
+                if (b.m1.bars[j].ts_ms < bucketOpen) break;
+                fH = std::max(fH, b.m1.bars[j].high);
+                fL = std::min(fL, b.m1.bars[j].low);
+            }
+            const kk::ind::DmiStep st = kk::ind::dmi_adx_mt5_form_bar(
+                T.bars[ci].high, T.bars[ci].low, T.bars[ci].close,
+                T.diP[ci], T.diM[ci], T.adx[ci], fH, fL, open_f, cfg.adx_len);
+            s.adxF[t] = st.adx; s.diPF[t] = st.plus_di; s.diMF[t] = st.minus_di;
+        }
+    }
 
     // ATR shift-0: one Wilder (SMMA) step from the closed-bar ATR using the forming-bar TR.
     // Forming bar at first tick has H=L=open, so TR = |open - prevClose|.

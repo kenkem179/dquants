@@ -193,6 +193,34 @@ inline DmiStep dmi_adx_mt5_form(double prevHigh, double prevLow, double prevClos
     return r;
 }
 
+// General forming-bar (shift-0) step of dmi_adx_mt5, given the forming bar's FULL OHLC (H/L/C). Used for
+// HTF (M3/M5) where the shift-0 bar at the M1 detection instant is the partially-accumulated bucket bar
+// (NOT a first-tick H=L=C=open bar). prev* = the last CLOSED HTF bar's H/L/C + pd/nd/adx. Same DM-zeroing
+// and TR (= max(H,prevClose) - min(L,prevClose)) as the dmi_adx_mt5 kernel.
+inline DmiStep dmi_adx_mt5_form_bar(double prevHigh, double prevLow, double prevClose,
+                                    double prev_pdi, double prev_mdi, double prev_adx,
+                                    double fHigh, double fLow, double fClose, int n) {
+    (void)fClose;
+    double plus_dm  = fHigh - prevHigh;
+    double minus_dm = prevLow - fLow;
+    if (plus_dm < 0.0)  plus_dm  = 0.0;
+    if (minus_dm < 0.0) minus_dm = 0.0;
+    if (plus_dm > minus_dm)       minus_dm = 0.0;
+    else if (minus_dm > plus_dm)  plus_dm  = 0.0;
+    else { plus_dm = 0.0; minus_dm = 0.0; }
+    const double tr = std::max(fHigh, prevClose) - std::min(fLow, prevClose);
+    double pd = 0.0, nd = 0.0;
+    if (tr != 0.0) { pd = 100.0 * plus_dm / tr; nd = 100.0 * minus_dm / tr; }
+    const double k = 2.0 / (n + 1.0);
+    DmiStep r;
+    r.plus_di  = prev_pdi + k * (pd - prev_pdi);
+    r.minus_di = prev_mdi + k * (nd - prev_mdi);
+    const double s = r.plus_di + r.minus_di;
+    const double dx = s != 0.0 ? 100.0 * std::fabs(r.plus_di - r.minus_di) / s : 0.0;
+    r.adx = prev_adx + k * (dx - prev_adx);
+    return r;
+}
+
 inline DMI dmi_adx(const vector<double>& h, const vector<double>& l,
                    const vector<double>& c, int n) {
     const size_t N = h.size();

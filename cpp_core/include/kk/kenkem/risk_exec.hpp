@@ -115,17 +115,26 @@ inline bool has_momentum_strict(const Snapshot& s, int tf, bool is_long, double 
 // codebase convention for the EA's shift-0 forming read; see scoring.hpp).
 inline bool has_early_trend_momentum(const TfBundle& b, const TfBundle::Align& align, const Snapshot& s,
                                      int tf, bool is_long, const KenKemConfig& c) {
-    if (s.adx[tf] < c.e1_min_momentum_adx) return false;
+    // HasMomentumForTrend(checkAccel=true): Check1 ADX>=min (CLOSED cache); Check2 ADX accelerating
+    // (FORMING window, shift 0); Check3 DI spread>=1.75 (CLOSED cache); Check4 DI spread widening (FORMING
+    // window). lookback M1=5/M3=3/M5=2.
+    if (s.adx[tf] < c.e1_min_momentum_adx) return false;                          // Check1 (closed)
     const TfIndicators& ind = (tf == 1) ? b.m3 : (tf == 2) ? b.m5 : (tf == 3) ? b.m15 : b.m1;
     const int an = (tf == 1) ? align.m3 : (tf == 2) ? align.m5 : (tf == 3) ? align.m15 : align.m1;
     const int idx = an - 1;
     const int lookback = (tf == 0) ? 5 : (tf == 1) ? 3 : 2;
-    if (!kk_adx_accel(ind, idx, lookback)) return false;
+    // Check2 (ADX accelerating) + Check4 (DI spread widening): forming-bar window when enabled, else the
+    // older closed {shift1,2,..} window. Check1/Check3 thresholds always read the closed cache.
+    const bool fm = c.use_forming_accel;
+    if (!(fm ? kk_adx_accel_f(s.adxF[tf], ind, idx, lookback) : kk_adx_accel(ind, idx, lookback)))
+        return false;                                                            // Check2
     const double sp0 = is_long ? (s.diP[tf] - s.diM[tf]) : (s.diM[tf] - s.diP[tf]);
-    if (sp0 < 1.75) return false;
-    // IsAccelerating on the directional DI-spread window.
-    auto SP = [&](int k){ double p = TfIndicators::get(ind.diP, idx - k),
-                                 m = TfIndicators::get(ind.diM, idx - k); return is_long ? p - m : m - p; };
+    if (sp0 < 1.75) return false;                                                // Check3 (closed)
+    // Check4: IsAccelerating on the directional DI-spread window.
+    const double fSP = is_long ? (s.diPF[tf] - s.diMF[tf]) : (s.diMF[tf] - s.diPF[tf]);
+    auto SP = [&](int k){ int sh = fm ? (k - 1) : k; if (fm && k == 0) return fSP;
+        double p = TfIndicators::get(ind.diP, idx - sh), m = TfIndicators::get(ind.diM, idx - sh);
+        return is_long ? p - m : m - p; };
     if (idx < lookback - 1) return false;
     if (!(SP(0) > SP(1) && SP(0) > SP(lookback - 1))) return false;
     int rising = 0;

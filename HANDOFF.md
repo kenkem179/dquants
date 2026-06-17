@@ -4,7 +4,35 @@ _Last updated: 2026-06-17 by Claude (Opus 4.8) — **execute-stage risk routing 
 pushed). New wall = detection TIMING (engine fires 1–11 bars EARLY), NOT limiters/ATR/concurrency.**
 dquants branch `1-reorganize-code`. Build GREEN, all 28 C++ checks pass._
 
-## ⭐⭐ CURRENT STATE (2026-06-17, post-routing) — read `research/kenkem_parity/PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`
+## ⭐⭐⭐ LATEST (2026-06-17) — forming-bar acceleration LANDED (C1), match 0/9 → 2/9
+Commit on dquants `1-reorganize-code` (build GREEN, 28 checks pass). Ported the EA's shift-0 (FORMING bar)
+acceleration reads — the C1 audit bug — for trend-quality (M1 comp3 / M3 comp6), conviction (M1 ADX accel),
+and the high-risk E1-accel momentum. New `snapshot.adxF/diPF/diMF[4]` = forming ADX/DI per TF: M1 = first-
+tick (H=L=C=open); M3/M5 = the CURRENT BUCKET reconstructed from its CLOSED M1 bars (no lookahead — never
+reads the complete b.m{3,5} bar at align.tf). New `dmi_adx_mt5_form_bar` (full-OHLC forming Wilder step).
+Gated by **`USE_FORMING_ACCEL` (default true)**; OFF reproduces the prior 19-trade run bit-for-bit (A/B knob
+— prior forming attempts used a WRONG first-tick model for M3/M5 and were reverted; this uses the correct
+bucket aggregate and IMPROVES match, unlike those).
+
+**Effect:** tq_e4 8→9 at both pure-miss bars; **02.17 03:28 + 02.17 13:20 now MATCH (0/9 → 2/9)**; phantom
+E2 → 0. Trades 19→12. (Interim PF is poor — 7 EA bars still missed, see below — that's parity-convergence,
+not the end state.) The remaining 7 misses decompose as:
+- **4 bars (02.04 07:45, 02.06 12:07, 02.09 14:32, 02.16 09:02)** — engine's OWN atr_pctile is WRONG
+  (46.9/62.5/96.9/21.9 vs MT5 68–88 at offset 0) ⇒ execute-stage ATR block. **NOW the top lever.**
+- **3 bars (02.16 13:29 S-E1, 02.18 02:10 L-E4, 02.23 07:38 S-E4)** — detection PASSES but execution is
+  suppressed by an early phantom fire (trigger consumed / opposite-dir open). Needs trigger-timing (B3).
+
+### ▶️ NEXT ACTIONS (resume here)
+1. **atr_pctile production fidelity** (unlocks 4 bars). Engine uses forming `s.atrM1` for the percentile
+   ref + a 32-bar distribution; MT5 uses intra-bar `cache.atrM1`. Re-derive the percentile so the engine
+   value matches MT5's at the 9 bars (offset-0 oracle proves the target). NB: oracle alone was 0/9 on the
+   OLD over-firing engine, but with routing+forming the phantoms are largely gone, so correct pctile should
+   now actually pass these bars. Re-test `--pctile-oracle /tmp/oracle0.csv` on THIS build first to confirm.
+2. **Trigger timing (B3)** — ichi/EMA75/EMA-cross fire on closed-bar reads; align to the EA's forming-bar
+   evaluation so the cross is detected on the SAME bar (kills the −1/−2 early fires that consume the trigger).
+3. EMA-stack shift (B2): `emas_ready_entry` reads align.tf−3; truth is align.tf−2.
+
+## ⭐⭐ post-routing diagnosis — read `research/kenkem_parity/PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`
 **Done this session (commit `976fb34`):** ported the EA's EXECUTE stage that the distilled engine never had.
 `cpp_core/include/kk/kenkem/risk_exec.hpp` (new) = faithful lot-sizing (std-lot cap, confirmed vs MT5
 ledger), **B1** (ATR gate moved from per-candidate detection → execute, once, on the chosen candidate),

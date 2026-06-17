@@ -49,6 +49,29 @@ inline bool kk_adx_accel(const TfIndicators& tf, int idx, int n) {
     return rising > (n - 1) / 2;
 }
 
+// FORMING-bar variants (the faithful shift map). The EA reads iADX buffer index 0 = the FORMING bar at
+// the M1 detection tick (HasTrendAcceleration / IsAccelerating), so the window is {forming, closed-1,
+// closed-2, ...}. fA = snapshot.adxF[tf] (forming ADX); fSP = forming directional DI spread. A(k>=1) and
+// the closed DI spreads come from the last closed bar `idx` (= align.tf-1). See snapshot.hpp forming-DMI.
+inline bool kk_trend_accel_f(double fA, double fSP, const TfIndicators& tf, int idx, bool is_long) {
+    if (idx < 1) return false;
+    auto A  = [&](int k){ return k == 0 ? fA : TfIndicators::get(tf.adx, idx - (k - 1)); };
+    auto SP = [&](int k){ if (k == 0) return fSP;
+        double p = TfIndicators::get(tf.diP, idx - (k - 1)), m = TfIndicators::get(tf.diM, idx - (k - 1));
+        return is_long ? p - m : m - p; };
+    bool adxRising = (A(0) > A(1)) && (A(1) > A(2));
+    bool spAccel   = (SP(0) > SP(1)) && (SP(1) > SP(2));
+    return adxRising && spAccel && (SP(0) > 0.5);
+}
+inline bool kk_adx_accel_f(double fA, const TfIndicators& tf, int idx, int n) {
+    if (idx < n - 2) return false;
+    auto A = [&](int k){ return k == 0 ? fA : TfIndicators::get(tf.adx, idx - (k - 1)); };
+    if (!(A(0) > A(1) && A(0) > A(n - 1))) return false;
+    int rising = 0;
+    for (int i = 0; i < n - 1; ++i) if (A(i) > A(i + 1)) ++rising;
+    return rising > (n - 1) / 2;
+}
+
 // Count of close>open over the last `n` closed M1 bars ending at idx (for bullish/bearish price action).
 inline int kk_dir_bar_count(const TfIndicators& m1, int idx, int n, bool bullish) {
     int cnt = 0, start = std::max(0, idx - n + 1);
@@ -117,7 +140,8 @@ inline int conviction_score(const TfBundle& b, const TfBundle::Align& align, con
     {
         int ap = 0;
         if (s.adx[0] >= 23.0) ap += 1; else if (s.adx[0] < 15.0) ap -= 1;
-        if (kk_adx_accel(b.m1, i1, 3)) ap += 1;
+        bool acc = c.use_forming_accel ? kk_adx_accel_f(s.adxF[0], b.m1, i1, 3) : kk_adx_accel(b.m1, i1, 3);
+        if (acc) ap += 1;
         score += std::max(0, std::min(2, ap));
     }
 
@@ -179,11 +203,18 @@ inline int trend_quality_score(const TfBundle& b, const TfBundle::Align& align, 
     // 2. DI spread (0-2).
     double sp = is_long ? (s.diP[0] - s.diM[0]) : (s.diM[0] - s.diP[0]);
     int spreadPts = (sp >= 3.0) ? 2 : (sp >= 1.0) ? 1 : 0;
-    // 3. M1 acceleration (0-2).
+    // 3. M1 acceleration (0-2). The EA's HasTrendAcceleration checks only buffer [0],[1],[2] regardless
+    // of lookback, so accel(5)==accel(3) ⇒ 2 points if accelerating, else 0. Forming-bar window.
     int accelPts = 0;
     if (c.use_acceleration_bonus) {
-        if (kk_trend_accel(b.m1, i1, is_long, 5)) accelPts = 2;
-        else if (kk_trend_accel(b.m1, i1, is_long, 3)) accelPts = 1;
+        bool m1acc;
+        if (c.use_forming_accel) {
+            const double spF = is_long ? (s.diPF[0] - s.diMF[0]) : (s.diMF[0] - s.diPF[0]);
+            m1acc = kk_trend_accel_f(s.adxF[0], spF, b.m1, i1, is_long);
+        } else {
+            m1acc = kk_trend_accel(b.m1, i1, is_long, 3);
+        }
+        if (m1acc) accelPts = 2;   // EA: accel(5)==accel(3) ⇒ 2 points (never 1)
     }
     // 4. MTF alignment (0-2): M1/M3/M5 DI direction agreement.
     auto agree = [&](int tf){ return is_long ? (s.diP[tf] > s.diM[tf]) : (s.diM[tf] > s.diP[tf]); };
@@ -199,8 +230,13 @@ inline int trend_quality_score(const TfBundle& b, const TfBundle::Align& align, 
     int dirCnt = kk_dir_bar_count(b.m1, i1, 5, is_long);
     if (dirCnt >= 4 || kk_has_engulf(b.m1, i1, 5, is_long)) score += 1;
     (void)bull;
-    // 6. M3 acceleration (0-1).
-    if (j3 >= 0 && kk_trend_accel(b.m3, j3, is_long, 3)) score += 1;
+    // 6. M3 acceleration (0-1). Forming-bar M3 (current-bucket aggregate) — see snapshot.hpp.
+    if (j3 >= 0) {
+        const double spF3 = is_long ? (s.diPF[1] - s.diMF[1]) : (s.diMF[1] - s.diPF[1]);
+        bool m3acc = c.use_forming_accel ? kk_trend_accel_f(s.adxF[1], spF3, b.m3, j3, is_long)
+                                         : kk_trend_accel(b.m3, j3, is_long, 3);
+        if (m3acc) score += 1;
+    }
     // 7. Ichimoku cloud (0-2, only if enabled for the entry).
     score += kk_ichimoku_points(b, align, s, is_long, entryNum, c);
     // 8. ATR health (0-1).

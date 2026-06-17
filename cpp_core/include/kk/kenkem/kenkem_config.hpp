@@ -91,6 +91,12 @@ struct KenKemConfig {
     bool   use_ichimoku_e2        = false;
     bool   use_ichimoku_e4        = false;
     bool   use_acceleration_bonus = true;
+    // Read the FORMING bar (shift 0) for the acceleration checks (trend-quality M1/M3 accel, conviction
+    // ADX accel, high-risk E1-accel momentum), matching the EA's iADX buffer[0] reads. M3/M5 forming bars
+    // are reconstructed from the current bucket's CLOSED M1 bars (snapshot.hpp). Off = the older closed
+    // {shift1,2,3} window (one bar stale). Default on (faithful). A/B knob — prior forming attempts that
+    // used a wrong first-tick model for M3/M5 were reverted; this uses the correct bucket aggregate.
+    bool   use_forming_accel      = true;
 
     // ---- conviction scoring ----
     bool   use_conviction_e1      = true;
@@ -430,6 +436,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "USE_ICHIMOKU_E2") p.use_ichimoku_e2 = kbool(val);
     else if (key == "USE_ICHIMOKU_E4") p.use_ichimoku_e4 = kbool(val);
     else if (key == "USE_ACCELERATION_BONUS") p.use_acceleration_bonus = kbool(val);
+    else if (key == "USE_FORMING_ACCEL") p.use_forming_accel = kbool(val);
     // conviction
     else if (key == "USE_CONVICTION_SCORING_E1") p.use_conviction_e1 = kbool(val);
     else if (key == "CONVICTION_THRESHOLD_E1") p.conviction_thr_e1 = I();
