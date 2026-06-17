@@ -20,6 +20,8 @@
 #include <cmath>
 #include <cstdint>
 #include <unordered_map>
+#include <cstdio>
+#include <cstdlib>
 
 namespace kk::kenkem {
 
@@ -266,6 +268,8 @@ private:
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
         last_entry_ms_ = t.ts_ms;
+        if (emit_age_) std::fprintf(stderr, "AGEFIRE,%lld,%c,E%d,%d\n",
+                                    (long long)bar.ts_ms, sig.is_long ? 'L' : 'S', sig.kind, sig.age);
     }
 
     // UpdateLosingStreak (RiskManager.mqh:20-110). Global escalating block + per-(kind,dir) 60-min block
@@ -344,6 +348,7 @@ private:
     int64_t cur_day_ = -1;
     int entries_today_ = 0;
     const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
+    const bool emit_age_ = std::getenv("KK_EMIT_AGE") != nullptr;         // diagnostic: per-fire age to stderr
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)

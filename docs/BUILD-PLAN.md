@@ -42,16 +42,48 @@ right type/direction 1–11 bars early, consuming the one-cross trigger). Diagno
   (engine 02.17 13:18 S-E4 vs EA 13:20; 02.04 07:44 L-E2 vs 07:45). Re-run, re-diff.
 - [ ] **A2 — EMA-stack gate shift (B2).** `emas_ready_entry` reads `align.tf−3`; verified snapshot truth
   is `align.tf−2` near crossovers. Fix and re-diff.
-- [~] **A3 — E1 phantom over-detection (3.4×: 624 eng vs 183 MT5).** ROOT CAUSE localized (2026-06-18):
-  armed E1 trigger fires LATE within its 80-bar window — `E1_MAX_CROSS_AGE` sweep is the lever (80→576,
-  1→154≈MT5). Engine arms ~7289× (cross 3806 + touch 3687) vs MT5 far fewer. RULED OUT: ATR (binds),
-  conviction (0% rej in MT5 too), trend-quality, pip_size, AND the B2 EMA-shift (tested align-2 on trigger
-  AND gate → worsened match 155→130, reverted). MT5 rejection histogram (tester.log): E1 HTF 58%, MTF/EMA
-  31% — but engine HTF is redundant with MTF (insensitive to threshold). **LEAD (trace diff):** engine's
-  `trend_core` HARD GATE passes where MT5's fails (over-fire bar 2024-01-15 05:50: `L_tcore` cpp=6 mt5=0,
-  `L_pass` cpp=1 mt5=0). Trace shows DI |Δ|~3 but `dmi_adx_mt5` is validated <0.005 vs MT5 — so verify the
-  DI trace-column SHIFT before assuming a formula bug; the robust signal is the gate disagreement. MT5's
-  trend_core=0 there isn't explained by its own bullish logged DI → find the shift/input. See HANDOFF.md.
+- [~] **A3 — E1 over-fire (3.4×: 624 eng vs 183 MT5) = an ARMING/FIRING problem, NOT a gate/indicator one.**
+  Re-diagnosed 2026-06-18 (corrects the prior "DI/trend_core" lead, which was a MISREAD).
+  - **CONFIRMED LEVER (E1-specific, robust):** the `E1_MAX_CROSS_AGE` sweep — 80→576 fires, 20→502, 5→341,
+    **1→154 ≈ MT5 183**. So almost all the excess fires happen at trigger age > 1: the engine fires LATE
+    within the 80-bar window where MT5 doesn't. Engine arm-counter: ~7289× (cross 3806 + EMA200-touch 3687).
+  - **DROPPED — the `trend_core`/DI-drift lead is dead (proven, do not re-chase):** the prior trace diff used
+    the **E5** decision trace (`trace_dumper`/`diff_kenkem_trace.py` = "per-bar E5 trace"; cols `e5up_age`,
+    `L_inage`, `L_tcore`, `L_pass` are E5-context). E5 deliberately SKIPS the trend-quality hard gate
+    (`entryNum != 5`, TrendIdentifier.mqh:200), so cpp logs raw core=6 while MT5 logs `L_tcore`=0 — a KNOWN
+    semantic skip, not an E1 bug (it disagrees 466k×). At the cited over-fire bar 2024-01-15 05:50 MT5's DI
+    is fat & bullish on ALL 3 TFs (M1 spread **10.47**, M3 13.5, M5 7.6; adx 35.57) → `GetTrendQualityScore`
+    MUST return 6, and indeed `L_tqok` (real pass/fail) AGREES on both sides. DI drift (diP_m1 |Δ|~3, real)
+    never flips an E1 gate — every E1 bar's spread is far above the 1.0/3.0 thresholds. **STOP investigating
+    DI / trend_core / the "hidden shift/input" for the E1 over-fire.** (DI drift logged as a side note: A3b.)
+  - **ALSO already RULED OUT:** ATR (binds), conviction (0% rej in MT5 too), pip_size, B2 EMA-shift on the
+    GATE (align-2 worsened 155→130). EMA200-touch arming (level-triggered, `==-1` guard) and the expiry
+    reset (−1 at age>max, Entry1.mqh:105) both MATCH the EA 1:1 in `triggers.hpp`/`entries.hpp` — not the bug.
+  - **TWO LIVE SUB-HYPOTHESES (test with the new E1 instrument below):** (a) **over-arming** — engine
+    `emas_ready`/touch arming evaluates TRUE on more bars than the EA's `isEMAsReadyForEntry`, creating more
+    armed windows; (b) **late-fire gate leniency** — on age>1 bars the engine's *E1* gates pass where MT5's
+    `CheckE1EntryConditions_Internal` rejects. The MT5 "armed 00:07, never re-armed all day → engine fired
+    05:50" anecdote favors (a), but is a single day.
+  - **GAP to close:** MT5's true full-period E1 arm-count and fire-AGE distribution were never measured (only
+    one day). Mine `[E1]` arm/expire/blocked lines from `tester.log.gz` to get both — that alone tells us
+    whether the fix target is (a) arm-frequency or (b) per-bar gate leniency. **Do this before any code change.**
+- [~] **A3-INSTR — E1 per-fire age + arm-bar mining (DONE 2026-06-18; resolves (a)-vs-(b) → (a)).**
+  Built `KK_EMIT_AGE=1` (per-fire `AGEFIRE,ts,dir,kind,age`) + mined MT5 `tester.log.gz` (UTF-16) arm events.
+  Findings: (i) over-fire is **NOT late-fire leniency (b)** — MATCHED engine E1 skew HIGH age (median 24),
+  OVERFIRE skew LOW age (median 7); MT5 itself fires late (median touch-arm age 40). (ii) It IS an
+  **arming/selection desync (a)** — 86 matched / 97 MISSED / 538 OVERFIRE; overfire net-losing (40% win).
+  (iii) MT5 arms E1 **~78% via EMA200-TOUCH** (7987 logged, UTC+0), ~22% cross; engine UNDER-touch-arms
+  (3687 vs 7987) and over-cross-arms (3806). MT5 touch-arm bars saved → `…/RUN_…/mt5_e1_touch_arms_utc.csv`.
+  **NEXT:** tag the engine's touch/cross arm source per bar (consumption-aware) and bar-diff vs the MT5 file;
+  prime suspect = EMA200-touch read SHIFT (`triggers.hpp:86–98` reads ema200+low/high at series-shift1; EA
+  reads ema200 via `GetEMA` trap=series-shift2). Judge fixes by matched+missed+overfire+pnl, NOT count.
+- [x] **A3-AGE — E1_MAX_CROSS_AGE 80→28 (user directive, both codebases).** Set in kenkem_config.hpp:193 +
+  anchor.set + original EA InputParams.mqh:303. C++ effect small (E1 624→561; faster expiry re-arms more).
+  Reference run is age=80 → STALE; needs fresh MT5 run at 28 to re-validate E1 parity.
+- [ ] **A3b — DI drift (side issue, deprioritized).** diP_m1/diM_m1 mean|Δ|~3 vs MT5 (EMAs bit-exact, ADX
+  ~exact). Harmless to E1/E2/E4 gates today (spreads clear thresholds), but track it — likely M1 bar
+  HIGH/LOW (wick) differences feeding TR, or a 1-bar trace-column shift. Resolve only if a future gate
+  proves DI-magnitude-sensitive; do NOT block A3 on it.
 - [~] **A4 — Skip-rule fidelity.** Loss cooldowns PORTED (`UpdateLosingStreak`: global escalating +
   per-(kind,dir) 60-min) in `tick_engine.hpp`, behind `ENABLE_LOSS_COOLDOWNS` (default OFF — depends on
   per-trade win/loss; exits not yet faithful (A7), so currently blocks real matches too: 155→137). Re-enable

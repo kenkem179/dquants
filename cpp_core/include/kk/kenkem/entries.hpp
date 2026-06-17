@@ -21,6 +21,7 @@ struct EntrySignal {
     bool   is_long  = false;
     int    kind     = 0;          // 1 (E1) / 2 (E2) / 4 (E4)
     double entry = 0, sl = 0, tp = 0, risk = 0;
+    int    age      = -1;         // DIAGNOSTIC: bars since the fired trigger was armed (B - fired)
 };
 
 // EA short-RR asymmetry factors (E1/E4 = 0.875, E2 = 0.867).
@@ -285,7 +286,7 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
                 continue;
             }
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
-            r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry;
+            r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry; r.age = B - fired;
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);
             r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c);
             r.risk = std::fabs(r.entry - r.sl);

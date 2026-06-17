@@ -190,7 +190,7 @@ struct KenKemConfig {
     double e1_htf_min_adx         = 18.5;
     double e1_htf_min_di_spread   = 4.0;
     double e1_min_momentum_adx    = 19.5;
-    int    e1_max_cross_age       = 80;
+    int    e1_max_cross_age       = 28;   // capped 80->28 (align with E5; cut E1 late-fire over-trading)
     int    e1_momentum_bypass     = 1;
     double e1_rr                  = 1.9;
     double e1_rr_sideway          = 1.2;
