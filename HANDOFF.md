@@ -24,9 +24,18 @@ on 1.8.154**, **I re-add the trace hook**, **user re-exports complete XAU ticks*
    trace schema from the cache, + `ENABLE_CSV_EXPORT` promoted to an input for the trade ledger.
    **Run recipe: `research/kenkem_parity/RUN_ANCHOR_1.8.154.md`** (XAUUSD M1, every-tick, Feb-2026,
    both toggles on). `fire_dir` is a TODO (always 0); wire a global in DetectNewEntry if needed.
-2. ⏳ **User runs that backtest** → `parity_trace_XAUUSD.csv` + `<YYYYMM>_KenKem_XAUUSD_*_trades.csv`
-   (under `kenkem/Tester/Agent-127.0.0.1-3000/MQL5/Files/`). ⚠️ The 1.8.154 trade CSV is a **47-col
-   analytics schema** (NOT the old parity ledger) → `diff_kenkem_trades.py` needs an adapter.
+2. ✅ **User ran it (2026-06-17).** Ground truth captured: `research/kenkem_parity/mt5_runs/
+   RUN_2026-06-17_1.8.154_xau_feb/{parity_trace,trades}.csv` (27,379 bars, 108 trade rows). Gotcha
+   that cost 3 reruns: the Strategy Tester profile `kenkem/MQL5/Profiles/Tester/KenKemExpert.set`
+   OVERRIDES source defaults — the export toggles must be `true` THERE (now patched). ⚠️ The 1.8.154
+   trade CSV is a **47-col analytics schema** (Timestamp,EntryType,Status,EntryPrice,SL,TP,... incl.
+   SKIPPED rows) → `diff_kenkem_trades.py` needs an adapter.
+
+   **FIRST DIFF DONE** (`PARITY_1.8.154_DIFF.md`): **bars PERFECT again** (close 99.9% / adx_m1 99.9% /
+   adx_m3 100% exact, engine vs trace). Remaining = pure engine **1.8.15→1.8.154 PORTING**: EMA read
+   shift (~0.3), Ichimoku tenkan/senkou **column-swap** (values match, labels permuted), `sideways`
+   (53 vs 33), `atr_pctile` (84 vs 78), `rsi` trace col = 0 in EA (renamed/unused?), and the engine
+   fired **0 signals** (default xau specs ≠ 1.8.154 inputs). NONE are data. Port order in the diff doc.
 3. ⏳ **User re-exports XAU ticks** — missing whole trading days; ranges in
    `research/kenkem_parity/XAU_TICK_REFETCH_LIST.md` (Feb-2026 anchor is clean, so not blocking it).
 
