@@ -18,6 +18,7 @@
 #include <vector>
 #include <cmath>
 #include <cstdint>
+#include <unordered_map>
 
 namespace kk::kenkem {
 
@@ -90,6 +91,11 @@ public:
             open_.erase(open_.begin() + k);
         }
     }
+
+    // DIAGNOSTIC ONLY: feed MT5's per-bar logged atr_pctile (from the bar trace) as an oracle, joined
+    // by bar.ts_ms-60000 == mt5_ts. Isolates whether the ATR-percentile gate is the SOLE parity blocker:
+    // run with ATR gates ON but the percentile taken from MT5. Never used in production.
+    void set_pctile_oracle(const std::unordered_map<int64_t, double>* m) { pctile_oracle_ = m; }
 
     const BtResult& result() {
         R_.end_balance = balance_;
@@ -186,6 +192,10 @@ private:
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
+        if (pctile_oracle_) {   // diagnostic: replace engine percentile with MT5's logged value
+            auto it = pctile_oracle_->find(bar.ts_ms);   // tick-engine bars share MT5 trace's ts grid
+            if (it != pctile_oracle_->end()) snap.atr_pctile = it->second;
+        }
         // Occupancy: the EA blocks a new (kind,dir) entry while one is already open. Build the mask so
         // detect_entry blocks-without-consuming, matching CheckOpenPositions / checkOpen{L,S}E{n}==-1.
         bool occ[6][2] = {};
@@ -238,6 +248,7 @@ private:
     int N_ = 0, cur_forming_ = 0;
     int64_t cur_day_ = -1;
     int entries_today_ = 0;
+    const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)

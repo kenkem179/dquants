@@ -48,7 +48,7 @@ static std::string utc(int64_t ts_ms) {
 }
 
 int main(int argc, char** argv) {
-    std::string m1_path, ticks_path, set_path, out_path;
+    std::string m1_path, ticks_path, set_path, out_path, oracle_path;
     bool xau = false;
     double spread = -1.0;
     int warmup = 250;
@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
         else if (a == "--warmup")     warmup = std::stoi(next());
         else if (a == "--from-ms")    from_ms = std::stoll(next());
         else if (a == "--to-ms")      to_ms = std::stoll(next());
+        else if (a == "--pctile-oracle") oracle_path = next();
     }
     if (m1_path.empty() || ticks_path.empty()) { std::fprintf(stderr, "need --bars-m1 AND --ticks\n"); return 2; }
 
@@ -86,6 +87,22 @@ int main(int argc, char** argv) {
     TfBundle bundle = build_tf_bundle(m1, m3, m5, m15, cfg);
 
     TickEngine eng(bundle, cfg, warmup, from_ms, to_ms);
+
+    // Optional diagnostic: load MT5's per-bar atr_pctile (ts_ms,atr_pctile CSV) and feed it as an oracle.
+    std::unordered_map<int64_t, double> pctile_oracle;
+    if (!oracle_path.empty()) {
+        std::FILE* fo = std::fopen(oracle_path.c_str(), "rb");
+        if (!fo) { std::fprintf(stderr, "cannot open oracle %s\n", oracle_path.c_str()); return 1; }
+        char ln[256]; bool fst = true;
+        while (std::fgets(ln, sizeof(ln), fo)) {
+            if (fst) { fst = false; if (ln[0] < '0' || ln[0] > '9') continue; }
+            long long ts; double pc;
+            if (std::sscanf(ln, "%lld,%lf", &ts, &pc) == 2) pctile_oracle[(int64_t)ts] = pc;
+        }
+        std::fclose(fo);
+        std::fprintf(stderr, "[oracle] loaded %zu atr_pctile rows from %s\n", pctile_oracle.size(), oracle_path.c_str());
+        eng.set_pctile_oracle(&pctile_oracle);
+    }
 
     // Stream ticks (ts_ms,bid,ask). Skip a header line if present.
     std::FILE* fi = std::fopen(ticks_path.c_str(), "rb");
