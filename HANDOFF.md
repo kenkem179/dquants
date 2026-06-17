@@ -1,10 +1,42 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-17 by Claude (Opus 4.8) — **CORRECTED DIAGNOSIS: it's DETECTION, not limiters.**
-Branch `parity-trace-1.8.154`. Build GREEN, 28 checks pass. Full writeup:
-`research/kenkem_parity/PARITY_1.8.154_DETECTION_DIAGNOSIS.md`._
+_Last updated: 2026-06-17 by Claude (Opus 4.8) — **execute-stage risk routing LANDED (commit `976fb34`,
+pushed). New wall = detection TIMING (engine fires 1–11 bars EARLY), NOT limiters/ATR/concurrency.**
+dquants branch `1-reorganize-code`. Build GREEN, all 28 C++ checks pass._
 
-## ⭐ ORACLE-VALIDATED diagnosis (2026-06-17) — over-fire/selection, NOT ATR, NOT broken detection
+## ⭐⭐ CURRENT STATE (2026-06-17, post-routing) — read `research/kenkem_parity/PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`
+**Done this session (commit `976fb34`):** ported the EA's EXECUTE stage that the distilled engine never had.
+`cpp_core/include/kk/kenkem/risk_exec.hpp` (new) = faithful lot-sizing (std-lot cap, confirmed vs MT5
+ledger), **B1** (ATR gate moved from per-candidate detection → execute, once, on the chosen candidate),
+**D1** (high-risk routing: potentialLoss≥getMaxLossUSD ⇒ accept-flag + MAX_HIGH_RISK/session + sideway
+veto + CheckMomentumForLevel + lot resize + session TP shrink; else normal path + ATR block). +18 config
+keys. Effect: **45 trades → 19** (E1 18→6, E2 13→6, E4 14→7).
+
+**The match did NOT improve (1/9→0/9) and we now know precisely why — three blockers RULED OUT:**
+- atr_pctile: offset-0 ORACLE (engine `bar.ts_ms`==MT5 `ts_ms`; all 9 EA bars then in [65,90]) ⇒ still 0/9.
+- max-concurrent crowding: cap=20 ⇒ unchanged (16 trades, 0/9).
+- limiters (session-loss/SLTP/min-sec): rarely bind on this window.
+
+**ROOT CAUSE = detection TIMING.** The engine fires the RIGHT type+direction **1–11 bars too EARLY**,
+consuming the one-cross-one-entry trigger and/or opening an opposite-dir position, so the EA's actual bar
+is empty. Proof: engine **02.17 13:18 S-E4** vs EA **13:20 S-E4** (−2, same type, trigger consumed);
+engine **02.04 07:44 L-E2** vs EA **07:45 L-E1** (−1). Plus 2 pure detection misses **02.17 03:28 /
+02.23 07:38 S-E4 tq=8 vs 9** (the documented C1 forming-accel 1-pt gap). It is the SAME trade at the
+WRONG bar, not extra trades crowding slots.
+
+### ▶️ NEXT ACTIONS (resume here) — detection-input fidelity (forming-bar), priority order
+1. **C1 forming-bar acceleration** for trend-quality + conviction + high-risk E1-accel momentum: build a
+   FORMING M3/M5 bar (aggregate M1 in the current bucket to decision time, reuse `kk::ind::dmi_adx_mt5_form`)
+   and feed {forming,closed-1,closed-2} to `kk_trend_accel`/`kk_adx_accel`. Recovers the two tq=8 misses
+   and re-times early fires.
+2. **Trigger timing (B3)**: align ichi-cross / EMA75-touch / EMA-cross triggers to the EA's forming-bar
+   evaluation so the cross is detected on the SAME bar (kills the −1/−2 early fires).
+3. **EMA-stack gate shift (B2)**: `emas_ready_entry` reads align.tf−3; snapshot truth is align.tf−2.
+4. atr_pctile production fidelity (oracle-disproven as blocker; lowest priority).
+Full per-bar table + repro in `PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`.
+
+---
+## (prior) ORACLE-VALIDATED diagnosis (2026-06-17) — over-fire/selection, NOT ATR, NOT broken detection
 Full writeup: `research/kenkem_parity/PARITY_1.8.154_DETECTION_DIAGNOSIS.md`. Reconciled with the
 parallel session's oracle. Hard numbers (config = `anchor_1.8.154.set`, Feb window):
 - baseline (ATR on): **45 trades, 1/9** exact-bar match to the EA's 9 executed.
