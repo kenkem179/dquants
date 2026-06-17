@@ -30,8 +30,9 @@ MONSTER   := $(BUILD)/monster_backtester
 KENKEM    := $(BUILD)/kenkem/backtester
 KENKEMTICK:= $(BUILD)/kenkem/tick_backtester
 KENKEMTRACE:= $(BUILD)/kenkem/trace_dumper
+KENKEMENTRY:= $(BUILD)/kenkem/entry_trace
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE) $(KENKEMENTRY)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -67,6 +68,12 @@ $(KENKEMTRACE): tools/kenkem/trace_dumper.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+# Per-bar E1/E2/E4 gate-decision localizer (the Stage-2 parity tool). See PARITY_1.8.154_DETECTION_DIAGNOSIS.md.
+kenkem_entry: $(KENKEMENTRY)
+$(KENKEMENTRY): tools/kenkem/entry_trace_dumper.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 test: $(TEST_BINS)
 	@fail=0; for t in $(TEST_BINS); do echo "==== $$t ===="; $$t || fail=1; done; \
 	 if [ $$fail -eq 0 ]; then echo "ALL TESTS PASSED"; else echo "TESTS FAILED"; fi; exit $$fail
@@ -74,4 +81,4 @@ test: $(TEST_BINS)
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all test parity backtester monster kenkem kenkem_tick kenkem_trace clean
+.PHONY: all test parity backtester monster kenkem kenkem_tick kenkem_trace kenkem_entry clean

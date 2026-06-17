@@ -1,7 +1,47 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-17 by Claude (Opus 4.8) — **BAR PARITY SOLVED**: M1 bit-exact vs MT5, ATR
-"residual" was a join bug + missing tick days. Branch `1-reorganize-code` @ `c022217`. Build GREEN._
+_Last updated: 2026-06-17 by Claude (Opus 4.8) — **CORRECTED DIAGNOSIS: it's DETECTION, not limiters.**
+Branch `parity-trace-1.8.154`. Build GREEN, 28 checks pass. Full writeup:
+`research/kenkem_parity/PARITY_1.8.154_DETECTION_DIAGNOSIS.md`._
+
+## 🚨 SUPERSEDES the "port limiters / over-fire" plan below
+With the EXACT 1.8.154 config (`research/kenkem_parity/anchor_1.8.154.set`, built from the run's logged
+inputs) the engine fires **45 trades but matches only 1 of the EA's 9 EXECUTED trades on the same bar.**
+Limiters only *remove* engine trades — they can't recover the 8 EA trades the engine never detects.
+Proof: with ALL volatility gates OFF the engine still recovers only 3/9. **So the entry DETECTION
+diverged from 1.8.154; fix detection FIRST, limiters last.** The 8 missed EA trades decompose:
+- **4 = ATR-percentile wall** (engine `atr_pctile` median |Δ| 6.25pt vs EA, 30% exact). Recipe is
+  correctly ported; residual = (a) forming ref `s.atrM1` ~7% off MT5 `cache.atrM1` [minor], (b)
+  **closed-ATR rank order ~2/32 off → engine builds bars on MID, MT5 iATR uses BID.** Real fix =
+  rebuild M1 ATR on **bid**; otherwise ~irreducible. Confirms the old "ATR wall" with the bid/mid lever.
+- **2 = trend-quality 1-pt gap** (tqS_e4 = 8, need 9): EA reads accel helpers at shift-0 forming; engine
+  reads closed (reading forming net-hurt before). Needs the forming-HTF-ADX model (M1→M3/M5 aggregate).
+- **2 = E2 over-detection**: engine detects **49 E2 vs EA 20** (EMA75-touch trigger is byte-identical,
+  gate order faithful → divergence is in the indicator INPUTS the gate reads: HTF M5/M15 ADX/DI, EMAs,
+  or E1↔E2 priority coupling). Phantom E2 also **suppresses real E4** via priority (e.g. 02.18 02:10).
+
+### ▶️ REVISED NEXT ACTIONS (resume here)
+1. **E2 detection fidelity** (highest leverage, no ATR dep). Use `build/kenkem/entry_trace` (now a
+   Makefile target: `make kenkem_entry`) at the engine-only E2 bars; diff the gate's INPUTS
+   (htf M5/M15 adx/di, emas_ready, trend-quality) vs the EA `trades.csv` per-signal columns. Target:
+   engine E2 → ~20 and the 02.18 02:10 L-E4 reappears.
+2. **Faithful-limiter GAP (confirmed):** engine never wires `MAX_SESSION_LOSSES=4` /
+   `MAX_SLTP_COUNT_PER_SESSION=7` (declared in kenkem_config, unused). The EA checks both at the TOP of
+   EVERY entry's Detect() (global, per-session). Add once detection is closer (modest trim).
+3. **Trend-quality forming-HTF-ADX** (recovers 2 E4). 4. **ATR bid-bar rebuild** (recovers ~4) — only if
+   1-3 don't get close enough. 5. THEN the rest of the limiters, SL/TP, exits.
+
+### Tooling / repro (all on branch `parity-trace-1.8.154`)
+- `cd cpp_core && make kenkem_tick kenkem_entry` · run: `./build/kenkem/tick_backtester --bars-m1
+  tools/bars_xauusd_2026_m1.csv --ticks tools/ticks_xauusd_2026_window.csv --symbol-xau --set
+  ../research/kenkem_parity/anchor_1.8.154.set --from-ms 1769889600000 --to-ms 1772337600000 --out <o>`
+- Ground truth: `research/kenkem_parity/mt5_runs/RUN_2026-06-17_1.8.154_xau_feb/{parity_trace,trades}.csv`
+  (9 executed: E1×3,E4×6; 20 E2 all SKIPPED). Run log: `kenkem/Tester/Agent-127.0.0.1-3000/logs/20260617.log`.
+
+---
+_(below = prior handoff; the bar-parity facts still hold; the trade-level plan is superseded above)_
+
+## 🚨 bars are bit-exact (still true)
 
 ## ➕ ADDENDUM (2026-06-17, parallel session, now rebased in) — limiter port STARTED + oracle tool
 A second agent (working off a stale checkout) independently corroborated this handoff's conclusions
