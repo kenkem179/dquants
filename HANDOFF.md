@@ -60,18 +60,28 @@ engine's trend_core HARD GATE passes where MT5's fails. DI feeds trend_core, HTF
 — a systematic 3-pt DI error makes the engine's DI-gates pass on far more armed bars → the late-firing
 over-fire (consistent with the AGE sweep). **This is very likely THE root cause, above trigger timing.**
 
-Puzzle to resolve: ADX matches but DI+/DI- individually drift — so it's the **DI smoothing/+DM−DM step**
-(`kk::ind::dmi_adx_mt5`), not the bar OHLC (EMAs from the same bars are exact) and not the ADX wrapper.
-The memory note "iADX≠Wilder" hints the DI line smoothing differs from MT5's iADX.
+⚠️ CAVEAT — do NOT blindly "fix the DI formula": `kk::ind::dmi_adx_mt5` is independently **validated <0.005
+vs the MT5 MasterVP parity CSV** (comment at indicators.hpp:140; matches MT5 ADX.mq5: per-bar 100·DM/TR
+then ExponentialMAOnBuffer k=2/(n+1)). So the trace DI drift is likely **partly a trace-dump SHIFT artifact**
+— DI is noisier than ADX, so a 1-bar offset between the engine `trace_dumper` DI column and the EA
+`BarTrace` DI column inflates DI's |Δ| (3 pts) while the smooth ADX stays ~0. **VERIFY the DI column shift
+on both sides FIRST.** The robust, shift-independent signal is the **gate-decision disagreement**:
+`L_tcore` cpp=6 vs **mt5=0** at the over-fire bar. And note MT5's trend_core=0 there is NOT explained by
+its OWN logged bullish DI (diP>diM on M1/M3/M5) — so MT5's GetTrendQualityScore core reads a shift/input
+the trace columns don't expose. THAT is the thing to pin down.
 
 ## ▶️ NEXT ACTION (exact, priority order)
-1. **Fix the DI computation to match MT5's iADX** (`cpp_core/include/kk/kenkem/indicators.hpp` /
-   `tf_cache.hpp` DMI step). Diff `dmi_adx_mt5` DI+/DI- against MT5 on a clean window; the smoothed +DM/−DM
-   (or the TR normalisation) is off by enough to shift DI ~3 pts while ADX (a ratio) stays ~exact. Re-run
-   the trace diff until diP/diM mean|Δ| → ~0, then re-run the trade diff — expect E1 over-fire to collapse.
-2. Re-check the AGE-sweep/over-fire after the DI fix (the late-firing should self-resolve once the DI-gates
-   reject the same bars MT5 does).
-3. Only then revisit cooldowns (turn ENABLE_LOSS_COOLDOWNS on) + exits (A7).
+1. **Resolve the trend_core disagreement at 2024-01-15 05:50** (L_tcore cpp=6 vs mt5=0). First confirm the
+   trace `diP_m1`/`adx_m1` SHIFT matches on both sides (compare a smooth EMA column you know is exact at
+   the same row). Then figure out why MT5's GetTrendQualityScore core returns 0 with bullish DI — likely a
+   required-direction or M15/MTF component the engine's `trend_core_score` (gates.hpp) computes too leniently.
+   Use `diff_kenkem_trace.py --dump <dt>` on several over-fire bars to find the COMMON differing gate column.
+2. Whatever gate is too lenient, tighten it to match MT5, re-run trade diff; expect E1 over-fire to drop
+   (AGE-sweep late-firing self-resolves once the engine rejects the same armed bars MT5 does).
+3. Only then revisit cooldowns (ENABLE_LOSS_COOLDOWNS on) + exits (A7).
+
+Tooling note: engine per-bar trace = `build/kenkem/trace_dumper` (bar-based, no ticks, ~10s); diff =
+`tools/kenkem/diff_kenkem_trace.py <cpp> <mt5> [--dump "YYYY.MM.DD HH:MM"]` (61-col schema, joins on `dt`).
 
 ## ✅ Landed this session (commit pending) — NON-REGRESSIVE, baseline preserved at 155/325
 - **Loss-cooldown port** (faithful `UpdateLosingStreak`: global escalating `losingStreakBlockUntil` +

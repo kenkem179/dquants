@@ -47,10 +47,11 @@ right type/direction 1–11 bars early, consuming the one-cross trigger). Diagno
   1→154≈MT5). Engine arms ~7289× (cross 3806 + touch 3687) vs MT5 far fewer. RULED OUT: ATR (binds),
   conviction (0% rej in MT5 too), trend-quality, pip_size, AND the B2 EMA-shift (tested align-2 on trigger
   AND gate → worsened match 155→130, reverted). MT5 rejection histogram (tester.log): E1 HTF 58%, MTF/EMA
-  31% — but engine HTF is redundant with MTF (insensitive to threshold). **STRONGEST LEAD (trace diff):**
-  EMAs bit-exact but **DI drifts pervasively (~3 pts on M1/M3) while ADX stays exact** → engine's
-  trend_core/HTF/MTF/momentum/conviction DI-gates pass where MT5's fail (over-fire bar: L_tcore cpp=6
-  mt5=0). Fix the DI smoothing (`dmi_adx_mt5`) to match iADX. See HANDOFF.md "STRONGEST LEAD".
+  31% — but engine HTF is redundant with MTF (insensitive to threshold). **LEAD (trace diff):** engine's
+  `trend_core` HARD GATE passes where MT5's fails (over-fire bar 2024-01-15 05:50: `L_tcore` cpp=6 mt5=0,
+  `L_pass` cpp=1 mt5=0). Trace shows DI |Δ|~3 but `dmi_adx_mt5` is validated <0.005 vs MT5 — so verify the
+  DI trace-column SHIFT before assuming a formula bug; the robust signal is the gate disagreement. MT5's
+  trend_core=0 there isn't explained by its own bullish logged DI → find the shift/input. See HANDOFF.md.
 - [~] **A4 — Skip-rule fidelity.** Loss cooldowns PORTED (`UpdateLosingStreak`: global escalating +
   per-(kind,dir) 60-min) in `tick_engine.hpp`, behind `ENABLE_LOSS_COOLDOWNS` (default OFF — depends on
   per-trade win/loss; exits not yet faithful (A7), so currently blocks real matches too: 155→137). Re-enable
