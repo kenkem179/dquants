@@ -43,6 +43,7 @@ struct TriggerState {
     int e75_up = -1, e75_down = -1;     // lastEma75TouchUp/Down (E2)
     int ichi_up = -1, ichi_down = -1;   // lastIchiCloudCrossUp/Down (E4, TK cross)
     int e5_up = -1, e5_down = -1;       // E5 SuperBros fresh strict-alignment onset
+    long arm_e1_cross = 0, arm_e1_touch = 0;  // DIAGNOSTIC: E1 arm-event source split
 };
 
 // Cloud (TK) bullish on a TF at absolute index idx: real Tenkan > real Kijun.
@@ -72,14 +73,14 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     bool m5Up = just_up(bundle.m5, m5s1, m5s2, false);
     if (st.ema_up == -1 && (m1Up || m3Up || m5Up) &&
         emas_ready(bundle.m1, m1s1, true, true, tol) && emas_ready(bundle.m3, m3s1, true, true, tol)) {
-        st.ema_up = B; st.ema_down = -1;
+        st.ema_up = B; st.ema_down = -1; ++st.arm_e1_cross;
     }
     bool m1Dn = just_dn(bundle.m1, m1s1, m1s2, true);
     bool m3Dn = just_dn(bundle.m3, m3s1, m3s2, true);
     bool m5Dn = just_dn(bundle.m5, m5s1, m5s2, false);
     if (st.ema_down == -1 && (m1Dn || m3Dn || m5Dn) &&
         emas_ready(bundle.m1, m1s1, false, true, tol) && emas_ready(bundle.m3, m3s1, false, true, tol)) {
-        st.ema_down = B; st.ema_up = -1;
+        st.ema_down = B; st.ema_up = -1; ++st.arm_e1_cross;
     }
 
     // ---- E1 alt: EMA200 touch with full M1+M3 alignment (EMAHelpers.mqh:259-283) ----
@@ -89,10 +90,10 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
         if (lo <= ema200 && hi >= ema200) {
             if (st.ema_up == -1 && emas_ready(bundle.m1, m1s1, true, true, tol) &&
                 emas_ready(bundle.m3, m3s1, true, true, tol)) {
-                st.ema_up = B; st.ema_down = -1;
+                st.ema_up = B; st.ema_down = -1; ++st.arm_e1_touch;
             } else if (st.ema_down == -1 && emas_ready(bundle.m1, m1s1, false, true, tol) &&
                        emas_ready(bundle.m3, m3s1, false, true, tol)) {
-                st.ema_down = B; st.ema_up = -1;
+                st.ema_down = B; st.ema_up = -1; ++st.arm_e1_touch;
             }
         }
     }

@@ -54,6 +54,11 @@ struct KenKemConfig {
     int    min_seconds_between    = 60;       // MIN_SECONDS_BETWEEN_ENTRIES
     int    max_consec_losses_type = 3;        // MAX_CONSECUTIVE_LOSSES_PER_ENTRY_TYPE (0 = off)
     int    consec_loss_block_mins = 60;       // ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS
+    int    losing_streak_escalation_thr = 2;  // LOSING_STREAK_ESCALATION_THRESHOLD (global block mult 1.5->2)
+    // Loss cooldowns depend on per-trade WIN/LOSS outcomes; exits aren't yet MT5-faithful (A7), so the
+    // engine's loss sequence diverges from MT5 and the cooldown blocks REAL matches too. Default OFF
+    // until exits tie out; flip ENABLE_LOSS_COOLDOWNS=true to A/B. (Port verified present, not yet net+.)
+    bool   enable_loss_cooldowns  = false;    // master toggle for global+per-type loss cooldowns (A/B knob)
     int    max_entries_per_day    = 0;        // hard cap on NEW entries per UTC day (0 = off).
                                               // Robust backstop proxy for the original's per-session
                                               // SLTP caps; prevents over-trading bleed.
@@ -422,6 +427,8 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "MAX_SLTP_COUNT_PER_SESSION") p.max_sltp_per_session = I();
     else if (key == "MIN_SECONDS_BETWEEN_ENTRIES") p.min_seconds_between = I();
     else if (key == "MAX_CONSECUTIVE_LOSSES_PER_ENTRY_TYPE") p.max_consec_losses_type = I();
+    else if (key == "LOSING_STREAK_ESCALATION_THRESHOLD") p.losing_streak_escalation_thr = I();
+    else if (key == "ENABLE_LOSS_COOLDOWNS") p.enable_loss_cooldowns = kbool(val);
     else if (key == "ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS") p.consec_loss_block_mins = I();
     else if (key == "MAX_CONCURRENT_POSITIONS_ALLOWED") p.max_concurrent_pos = I();
     else if (key == "BLOCK_OPPOSITE_DIRECTION_ENTRIES") p.block_opposite_dir = kbool(val);

@@ -98,6 +98,10 @@ public:
     // run with ATR gates ON but the percentile taken from MT5. Never used in production.
     void set_pctile_oracle(const std::unordered_map<int64_t, double>* m) { pctile_oracle_ = m; }
 
+    int arm_e1_count() const { return arm_e1_; }
+    int arm_e2_count() const { return arm_e2_; }
+    long arm_e1_cross() const { return tg_.arm_e1_cross; }
+    long arm_e1_touch() const { return tg_.arm_e1_touch; }
     const BtResult& result() {
         R_.end_balance = balance_;
         R_.net = balance_ - cfg_.start_balance;
@@ -171,7 +175,14 @@ private:
         const TfBundle::Align align = b_.align_at(bar.ts_ms);
 
         // Trigger state machine must see EVERY bar in order (it accumulates cross/touch state).
+        const int e1u0 = tg_.ema_up, e1d0 = tg_.ema_down, e2u0 = tg_.e75_up, e2d0 = tg_.e75_down;
         update_triggers(b_, cfg_, f, align, tg_);
+        if (start_ms_ == 0 || bar.ts_ms >= start_ms_) {  // count arms only in-window
+            if (e1u0 == -1 && tg_.ema_up   != -1) ++arm_e1_;
+            if (e1d0 == -1 && tg_.ema_down != -1) ++arm_e1_;
+            if (e2u0 == -1 && tg_.e75_up   != -1) ++arm_e2_;
+            if (e2d0 == -1 && tg_.e75_down != -1) ++arm_e2_;
+        }
 
         if (f < warmup_) return;
         if (start_ms_ && bar.ts_ms < start_ms_) return;
@@ -190,6 +201,11 @@ private:
         //   tradeSLTPCountInSession > MAX_SLTP_COUNT  -> block (>, so up to N closes allowed)
         if (cfg_.max_session_losses > 0 && session_losses_ >= cfg_.max_session_losses) return;
         if (cfg_.max_sltp_per_session > 0 && session_sltp_ > cfg_.max_sltp_per_session) return;
+        // Global losing-streak cooldown (IsBlockedByLosingStreak). In the EA this wraps the entire
+        // DetectNewEntry block, so when blocked Detect() never runs and triggers are NOT consumed —
+        // returning here (before detect_entry) preserves trigger state identically.
+        if (cfg_.enable_loss_cooldowns && losing_streak_block_until_ > 0 &&
+            t.ts_ms < losing_streak_block_until_) return;
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
@@ -235,8 +251,11 @@ private:
             tp = sig.is_long ? anchorEntry + tpDist * tpm : anchorEntry - tpDist * tpm;
             ++high_risk_count_;
         } else {
-            // Normal path: opposing-dir, then GetEntryBlockReason (ATR regime + min-seconds).
+            // Normal path: opposing-dir, then per-type consec-loss block, then GetEntryBlockReason.
+            // (detect_entry already consumed the trigger — matches Entry::Detect resetting lastX before
+            // DetectNewEntry checks IsEntryTypeBlocked, so a block here still costs the trigger.)
             if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
+            if (cfg_.enable_loss_cooldowns && entry_type_blocked_(sig.kind, sig.is_long, t.ts_ms)) return;
             if (entry_blocked_by_atr(snap, cfg_)) return;
             if (min_sec_blocked) return;
         }
@@ -247,6 +266,43 @@ private:
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
         last_entry_ms_ = t.ts_ms;
+    }
+
+    // UpdateLosingStreak (RiskManager.mqh:20-110). Global escalating block + per-(kind,dir) 60-min block
+    // after N consecutive losses; a win decrements the global streak and RESETS the OPPOSITE direction's
+    // per-type counters. consecutiveLosses persists for the whole run (reset only in OnInit). t_close =
+    // the close time (== TimeCurrent() in the tester).
+    void update_loss_streak_(bool is_loss, int kind, bool is_long, int64_t t_close) {
+        const int d = is_long ? 0 : 1;
+        if (is_loss) {
+            ++consec_losses_;
+            // Global block: blockUntil = now + floor(consecLosses * mult * MIN_SECONDS_BETWEEN) sec.
+            double mult = (consec_losses_ >= cfg_.losing_streak_escalation_thr) ? 2.0 : 1.5;
+            const double ddPct = (peak_ > 0.0) ? (peak_ - balance_) / peak_ : 0.0;
+            if (ddPct >= cfg_.dd_ratio_slowdown) mult *= 1.2;   // !IsWithinDrawdownLimit()
+            const int64_t block_s = (int64_t)std::floor(consec_losses_ * mult * cfg_.min_seconds_between);
+            losing_streak_block_until_ = t_close + block_s * 1000;
+            // Per-type block (E1/E2/E3 only; E4/E5 never counted by the EA).
+            if (kind >= 1 && kind <= 3) {
+                ++consec_loss_[kind][d];
+                if (cfg_.max_consec_losses_type > 0 && consec_loss_[kind][d] >= cfg_.max_consec_losses_type)
+                    blocked_until_[kind][d] = t_close + (int64_t)cfg_.consec_loss_block_mins * 60 * 1000;
+            }
+        } else {  // win
+            if (consec_losses_ > 0) { --consec_losses_; losing_streak_block_until_ = 0; }
+            const int od = is_long ? 1 : 0;   // a long win resets SHORT per-type; a short win resets LONG
+            for (int k = 1; k <= 4; ++k) { consec_loss_[k][od] = 0; blocked_until_[k][od] = 0; }
+        }
+    }
+    // IsEntryTypeBlocked (RiskManager.mqh:133): per-(kind,dir) block, auto-resetting on expiry. Only the
+    // NORMAL-risk path consults this in the EA (high-risk entries bypass it).
+    bool entry_type_blocked_(int kind, bool is_long, int64_t now) {
+        const int d = is_long ? 0 : 1;
+        if (kind < 1 || kind > 3) return false;
+        if (blocked_until_[kind][d] > 0 && now >= blocked_until_[kind][d]) {
+            consec_loss_[kind][d] = 0; blocked_until_[kind][d] = 0;
+        }
+        return (blocked_until_[kind][d] > 0 && now < blocked_until_[kind][d]);
     }
 
     void realize_(detail::OpenPos& o, int64_t t_out, bool count_session = true) {
@@ -260,6 +316,10 @@ private:
             const bool is_loss = hit_sl ? (o.pnl_acc <= 0.0) : (o.pnl_acc < 0.0);
             const bool is_be   = o.p.partial_done && hit_sl && !o.partial_taken;
             if (is_loss && !is_be) ++session_losses_;
+            // --- Loss cooldowns (UpdateLosingStreak, RiskManager.mqh:20). NOTE: the streak's loss test
+            // is `is_loss` (status=="LOST" iff hitSL?pnl<=0:pnl<0) — it does NOT exclude break-even, so a
+            // BE close DOES count as a streak loss (unlike session_losses_ above). Every close is win|loss.
+            if (cfg_.enable_loss_cooldowns) update_loss_streak_(is_loss, o.p.kind, o.p.is_long, t_out);
         }
         balance_ += o.pnl_acc;
         Trade tr; tr.kind = o.p.kind; tr.is_long = o.p.is_long; tr.t_in = o.t_in; tr.t_out = t_out;
@@ -289,6 +349,11 @@ private:
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
     int high_risk_count_ = 0;   // highRiskTradesInSession (reset per session)
     int64_t last_entry_ms_ = 0; // lastEntryTime (for MIN_SECONDS_BETWEEN_ENTRIES)
+    int arm_e1_ = 0, arm_e2_ = 0;   // diagnostic: trigger ARM events in-window
+    int consec_losses_ = 0;     // global consecutiveLosses (persists; OnInit-reset only)
+    int64_t losing_streak_block_until_ = 0;     // losingStreakBlockUntil (ms; 0 = none)
+    int consec_loss_[6][2] = {};                // [kind][dir 0=L/1=S] consecutiveLosses_{L,S}E{1..}
+    int64_t blocked_until_[6][2] = {};          // [kind][dir] blockedUntil_{L,S}E{1..} (ms)
     TriggerState tg_;
     std::vector<detail::OpenPos> open_;
     BtResult R_;
