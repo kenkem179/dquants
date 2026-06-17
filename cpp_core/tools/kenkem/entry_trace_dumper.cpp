@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     FILE* f=std::fopen(out_path.c_str(),"w"); if(!f){std::fprintf(stderr,"cannot open out\n");return 1;}
     std::fprintf(f,"ts_ms,dt,session,sideways,atr_pctile,atr_form,atr_closed,adx_m1,adx_m3,adx_m5,adx_m15,"
         "e1up,e1dn,e2up,e2dn,e4up,e4dn,"
-        "tqL_e1,tqS_e1,convL,convS,"
+        "tqL_e1,tqS_e1,tqL_e4,tqS_e4,convL,convS,"
         "E1L_age,E1L,E1S_age,E1S,E2L_age,E2L,E2S_age,E2S,E4L_age,E4L,E4S_age,E4S\n");
 
     TriggerState tg; const int N=B.m1.size(); int64_t rows=0;
@@ -131,18 +131,38 @@ int main(int argc, char** argv) {
         if(!only.empty() && !only.count(bar.ts_ms)) continue;
         Snapshot s=build_snapshot(B,cfg,bi,al); if(!s.valid) continue;
         bool session=in_valid_session(bar.ts_ms,cfg);
+        // DIAG: tq component breakdown for both directions (only-mode).
+        if(!only.empty()){
+            const int j3=al.m3-1;
+            for(int dl=0;dl<2;++dl){ bool L=(dl==0);
+                int adxPts=(s.adx[0]>=cfg.adx_high_threshold)?2:(s.adx[0]>=cfg.min_momentum_adx)?1:0;
+                double sp=L?(s.diP[0]-s.diM[0]):(s.diM[0]-s.diP[0]);
+                int spPts=(sp>=3)?2:(sp>=1)?1:0;
+                int acc=kk_trend_accel(B.m1,al.m1-1,L,5)?2:kk_trend_accel(B.m1,al.m1-1,L,3)?1:0;
+                auto ag=[&](int tf){return L?(s.diP[tf]>s.diM[tf]):(s.diM[tf]>s.diP[tf]);};
+                int al3=(ag(0)?1:0)+(ag(1)?1:0)+(ag(2)?1:0); int mtf=(al3==3)?2:(al3>=2)?1:0;
+                int dcnt=kk_dir_bar_count(B.m1,al.m1-1,5,L); bool eng=kk_has_engulf(B.m1,al.m1-1,5,L);
+                int pa=(dcnt>=4||eng)?1:0;
+                int m3a=(j3>=0&&kk_trend_accel(B.m3,j3,L,3))?1:0;
+                int atrp=(s.atr_pctile>=cfg.atr_percentile_low)?1:0;
+                std::fprintf(stderr,"  %s %s adx=%d di=%d accel=%d mtf=%d(%d/3) pa=%d(cnt%d/eng%d) m3acc=%d atr=%d  SUM=%d\n",
+                    utc(bar.ts_ms).c_str(), L?"L":"S", adxPts,spPts,acc,mtf,al3,pa,dcnt,eng,m3a,atrp,
+                    adxPts+spPts+acc+mtf+pa+m3a+atrp);
+            }
+        }
         auto age=[&](int fired){ return fired>=0?(bi-fired):-1; };
         const int i1d = al.m1 - 1;
         double atr_closed = (i1d >= 0) ? TfIndicators::get(B.m1.atr, i1d) : 0.0;
         std::fprintf(f,"%lld,%s,%d,%d,%.1f,%.5f,%.5f,%.2f,%.2f,%.2f,%.2f,"
             "%d,%d,%d,%d,%d,%d,"
-            "%d,%d,%d,%d,"
+            "%d,%d,%d,%d,%d,%d,"
             "%d,%s,%d,%s,%d,%s,%d,%s,%d,%s,%d,%s\n",
             (long long)bar.ts_ms, utc(bar.ts_ms).c_str(), session?1:0, s.sideways, s.atr_pctile,
             s.atrM1, atr_closed,
             s.adx[0],s.adx[1],s.adx[2],s.adx[3],
             age(tg.ema_up),age(tg.ema_down),age(tg.e75_up),age(tg.e75_down),age(tg.ichi_up),age(tg.ichi_down),
             trend_quality_score(B,al,s,true,1,cfg), trend_quality_score(B,al,s,false,1,cfg),
+            trend_quality_score(B,al,s,true,4,cfg), trend_quality_score(B,al,s,false,4,cfg),
             conviction_score(B,al,s,true,cfg), conviction_score(B,al,s,false,cfg),
             age(tg.ema_up), gate_reason(1,true,B,s,al,cfg),  age(tg.ema_down), gate_reason(1,false,B,s,al,cfg),
             age(tg.e75_up), gate_reason(2,true,B,s,al,cfg),  age(tg.e75_down), gate_reason(2,false,B,s,al,cfg),

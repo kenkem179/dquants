@@ -166,6 +166,33 @@ inline DMI dmi_adx_mt5(const vector<double>& h, const vector<double>& l,
     return r;
 }
 
+// One forming-bar (shift-0) step of dmi_adx_mt5 at the new bar's FIRST TICK (H=L=C=open_f). Mirrors the
+// EA reading iADX buffer index 0 in HasTrendAcceleration/IsAccelerating (ArraySetAsSeries → [0]=forming).
+// prev* = the last CLOSED bar's pd/nd/adx and that bar's H/L/C. alpha = 2/(n+1) (the dmi_adx_mt5 kernel).
+struct DmiStep { double adx, plus_di, minus_di; };
+inline DmiStep dmi_adx_mt5_form(double prevHigh, double prevLow, double prevClose,
+                                double prev_pdi, double prev_mdi, double prev_adx,
+                                double open_f, int n) {
+    double plus_dm  = open_f - prevHigh;   // h_form - h_prev
+    double minus_dm = prevLow - open_f;    // l_prev - l_form
+    if (plus_dm < 0.0)  plus_dm  = 0.0;
+    if (minus_dm < 0.0) minus_dm = 0.0;
+    if (plus_dm > minus_dm)       minus_dm = 0.0;
+    else if (minus_dm > plus_dm)  plus_dm  = 0.0;
+    else { plus_dm = 0.0; minus_dm = 0.0; }
+    const double tr = std::max(open_f, prevClose) - std::min(open_f, prevClose);
+    double pd = 0.0, nd = 0.0;
+    if (tr != 0.0) { pd = 100.0 * plus_dm / tr; nd = 100.0 * minus_dm / tr; }
+    const double k = 2.0 / (n + 1.0);
+    DmiStep r;
+    r.plus_di  = prev_pdi + k * (pd - prev_pdi);
+    r.minus_di = prev_mdi + k * (nd - prev_mdi);
+    const double s = r.plus_di + r.minus_di;
+    const double dx = s != 0.0 ? 100.0 * std::fabs(r.plus_di - r.minus_di) / s : 0.0;
+    r.adx = prev_adx + k * (dx - prev_adx);
+    return r;
+}
+
 inline DMI dmi_adx(const vector<double>& h, const vector<double>& l,
                    const vector<double>& c, int n) {
     const size_t N = h.size();

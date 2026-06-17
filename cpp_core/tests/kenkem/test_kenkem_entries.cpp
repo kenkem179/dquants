@@ -13,7 +13,11 @@ static TfIndicators blank(int n, bool ichi = false) {
                 s.ichi.span_a_cur.assign(n,0); s.ichi.span_b_cur.assign(n,0); }
     return s;
 }
-static void bull_emas(TfIndicators& s, int i) { s.ema[1][i]=110; s.ema[2][i]=108; s.ema[3][i]=106; s.ema[4][i]=104; }
+// Fill the EMA stack back a few bars so BOTH the trigger (reads align-1) and the faithful gates (read the
+// GetEMA entry shift align-3 via emas_ready_entry) see a valid bull stack.
+static void bull_emas(TfIndicators& s, int i) {
+    for (int k=0;k<5 && i-k>=0;++k){ s.ema[1][i-k]=110; s.ema[2][i-k]=108; s.ema[3][i-k]=106; s.ema[4][i-k]=104; }
+}
 
 // These tests isolate trigger dispatch + SL/TP geometry. The full conviction / trend-quality / RSI-veto
 // selectivity filters are exercised separately in test_kenkem_scoring.cpp; relax them here so the
@@ -29,7 +33,9 @@ static KenKemConfig geom_cfg() {
 static Snapshot snap_bull() {
     Snapshot s; s.valid = true;
     for (int t=0;t<4;++t){ s.adx[t]=30; s.diP[t]=28; s.diM[t]=8; }
-    s.emaM1[3]=106; s.emaM1[4]=104; s.atrM1=1.0; s.rsiM1=60; s.sideways=0; s.atr_pctile=70; s.closeM1=109;
+    // Full M1 EMA stack below price (faithful E4 STEP2/STEP3 + price-vs-EMA25 need emaM1[1..2] set).
+    s.emaM1[1]=107; s.emaM1[2]=106.5; s.emaM1[3]=106; s.emaM1[4]=104; s.atrM1=1.0; s.rsiM1=60;
+    s.sideways=0; s.atr_pctile=70; s.closeM1=109;
     s.senkouA_M3=120; s.senkouB_M3=118;   // cloud green (for E4)
     return s;
 }

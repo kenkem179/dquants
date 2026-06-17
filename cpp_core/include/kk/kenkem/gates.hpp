@@ -9,6 +9,7 @@
 #pragma once
 #include "kk/kenkem/snapshot.hpp"
 #include "kk/kenkem/kenkem_config.hpp"
+#include "kk/kenkem/triggers.hpp"   // emas_ready (EMA-stack readiness used by emas_ready_entry)
 #include <cmath>
 
 namespace kk::kenkem {

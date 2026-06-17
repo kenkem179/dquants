@@ -20,9 +20,15 @@
 
 namespace kk::kenkem {
 
-// HasTrendAcceleration(tf, trend, lookback): adx rising over 3 closed bars AND directional DI spread
-// accelerating over 3 bars AND spread[0] > 0.5. `min_bars` bars must be available (the EA copies
-// `lookback` bars but only inspects indices 0,1,2). idx = newest closed bar (series index 0).
+// HasTrendAcceleration(tf, trend, lookback): adx rising over 3 bars AND directional DI spread
+// accelerating over 3 bars AND spread[0] > 0.5. idx = newest CLOSED bar (series shift 1).
+//
+// PARITY NOTE: the EA reads the iADX buffer at shift 0 (the forming bar, ArraySetAsSeries) so its window
+// is {forming, closed, closed-1}; this reads {closed, closed-1, closed-2}. Modeling the forming bar's
+// shift-0 ADX as a first-tick step is correct ONLY for M1 (bar just opened) — for M3/M5 the "forming"
+// bar is partially built at an arbitrary M1 decision time and the first-tick model is WRONG, which
+// empirically *hurt* trade parity (matched 4→1). So we keep the closed-bar window as the best available
+// approximation; the residual ±1 trend-quality/conviction point is a documented tick-fidelity gap.
 inline bool kk_trend_accel(const TfIndicators& tf, int idx, bool is_long, int min_bars) {
     if (idx < min_bars - 1 || idx < 2) return false;
     auto A  = [&](int k){ return TfIndicators::get(tf.adx, idx - k); };
