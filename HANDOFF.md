@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-17 by Claude (Opus 4.8) — faithful E1/E2 + ATR-pctile wall. Branch `1-reorganize-code`._
+_Last updated: 2026-06-17 by Claude (Opus 4.8) — faithful E1/E2 done; ATR wall ratified; over-fire is next. Branch `1-reorganize-code`. Build GREEN, tests pass._
 
 ## 🎯 Goal (CLEAN-SLATE RESET — autopilot, 3 strategies)
 User was "super disappointed" by the distilled KK-KenKem and ordered a faithful rewrite, then expanded
@@ -26,50 +26,41 @@ THE REUSABLE METHODOLOGY: **`research/kenkem_parity/INDICATOR_PARITY_SPEC.md`**.
 EMA i1-2, ATR/RSI/high-low forming-bar-first-tick). The EMA "shift 1" is really shift 2 — non-series
 `CopyBuffer` index inversion. This trap WILL recur in MasterVP/Monster.
 
-## 🔄 Stage 2-4 IN PROGRESS (entry/gate/exit parity → match the 9 trades)
-With exact indicators the tick engine fires **50 trades (E1 17/E2 16/E4 17) vs MT5 9; 0/9 matched.** The
-existing C++ entry layer (`triggers/gates/entries/engine.hpp`) is the OLD DISTILLATION — its own comments
-admit gates were "parsed-and-ignored," session is UTC (EA uses JST), concurrency/cooldown are author-added
-backstops with knobs, trend-quality is 0-6 not the real 0-13. **Must rebuild faithfully from the EA.**
-Tell: MT5 fires ~1 trade/day at session-gated times; C++ fires many/day → missing session + conviction +
-trend-quality + RSI-div + concurrency gating.
+## 🔄 Stage 2-4 IN PROGRESS — CURRENT: validation config (ATR gate off) = **4/9 matched, 129 trades** (commit `26955b5`)
+Build GREEN, all C++ tests pass. The faithful entry layer is now ported (E1/E2/E4 gates, scoring, RSI-div);
+**4 EA specs** in `research/kenkem_parity/` (`SPEC_E4/E1_E2/PIPELINE/EXITS.md`, file:line). Two gaps remain:
+the **over-fire** (downstream limiters — the big lever) and a **1-point acceleration gap** (5 trades). See
+▶️ NEXT ACTIONS below. History of how we got here (durable traps worth keeping):
 
-**4 EA specs DONE** in `research/kenkem_parity/`: `SPEC_E4.md` `SPEC_E1_E2.md` `SPEC_PIPELINE.md`
-`SPEC_EXITS.md` (all with file:line). Config audit: **C++ defaults already faithful** (sessions UTC
-0-330/500-930/1200-1500 = JST windows, ATR-pctile 65, conviction 7/10/9, tq 6/9/9, RSI-div). So the
-over-fire is **gate COMPUTATION**, not config.
-
-**Progress so far (commits 30e8807, <e4>):**
-- Fixed RSI raw-vs-avg conflation (conviction/sideways use RAW shift-1 `rsiM1`; trace uses `rsiM1_avg5`).
+- Config audit: C++ defaults already faithful (sessions UTC 0-330/500-930/1200-1500 = JST windows,
+  ATR-pctile 65, conviction 7/10/9, tq 6/9/9, RSI-div). Over-fire is gate COMPUTATION + limiters, not config.
+- RSI raw-vs-avg conflation fixed (conviction/sideways use RAW shift-1 `rsiM1`; trace uses `rsiM1_avg5`).
 - **Faithful E4 gate (SPEC_E4 §4 Steps 0-4) → FIRST exact trade match**: C++ `02.17 13:20 S 4913.004`
-  == MT5 to the cent. E4 17→12, matched pairs 0→1. Added snapshot `tenkanM3/kijunM3/atrM3`.
+  == MT5 to the cent. Added snapshot `tenkanM3/kijunM3/atrM3`.
 - 🪤 **Ichimoku buffer-swap trap (CRITICAL, reusable):** MT5 iIchimoku buffers are 0=Tenkan,1=Kijun,
   2=SenkouA,3=SenkouB,4=Chikou, but the EA's var NAMES are swapped: `ichimokuSpanA/B_M3`=buf0/1=REAL
   Tenkan/Kijun; `ichimokuTenkan/Kijun_M3`=buf2/3=REAL Senkou A/B. So E4 cloud THICKNESS uses real
   Tenkan/Kijun (snapshot.tenkanM3/kijunM3) × atrM3; the "TK-align" check is real SenkouA>SenkouB
   (snapshot.senkouA/B_M3). Verify the same swap in MasterVP/Monster.
 
-### ✅ DONE this session (commit `2d7117a`)
+### ✅ DONE (commits `2d7117a`, `45d0722`)
 - **Faithful E1/E2 gates** ported 1:1 from `Entry1.mqh`/`Entry2.mqh` (ADX floor, HTF block-counter for
   E1 / require-aligned for E2, MTF m1&((m3&m5dir)||extremeDI), price-vs-EMA25, HasSufficientMomentum).
   **Gate EMA reads now use the GetEMA(...,1) non-series entry shift `align.tf-3`** (was raw shift-1 →
-  off by 2). New helpers in `gates.hpp`.
+  off by 2). New helpers in `gates.hpp` (incl. `#include triggers.hpp` for `emas_ready`).
 - **ATR-percentile recipe** fixed: distribution = closed ATR shifts **1..32** (was off-by-one), ref =
   **closed-bar ATR** (= MT5 `cache.atrM1`, proven by trace; first-tick forming model was ~7% low).
 - **New tool `tools/kenkem/entry_trace_dumper.cpp`** (`build/kenkem/entry_trace`) — per-bar E1/E2/E4
-  gate-decision trace (first failing gate + scores). The localizer that cracked this.
+  gate-decision trace (first failing gate + tq component breakdown). The localizer that cracked this.
 
-### 🧱 THE WALL (decision needed) — ATR-percentile gate is tick-fidelity-limited
+### 🧱 THE WALL (RESOLVED — tick-fidelity-limited, decision ratified below)
 `detect_entry` runs **once per bar at the new-bar's first tick** (KenKemExpert.mq5:2494). The dominant
 entry filter is **MIN_ENTRY_ATR_PERCENTILE=65 + ATR_HIGH_BLOCK>90** (RiskManager.mqh:284-308, under
-`ENABLE_BLACK_SWAN_PROTECTION=true`). At all 9 MT5 entries the MT5 percentile sits 68-88 (passes); my
-percentile swings wildly and wrongly blocks ~3 of them. **Root cause:** percentile *ranking* is
-hypersensitive to the irreducible ±0.2/bar ATR noise between the exported ticks and MT5's internal tick
-stream. My M1 bars are ALREADY tick-accurate (tick-built ATR == my bar ATR to 4 dp) → **NOT fixable by
-rebuilding**. Proof: disabling the 2 ATR gates lifts matched pairs **1→4** (engine 47→129 trades).
-→ **Options to put to user:** (a) accept gate as parity-limited; (b) disable ATR-pctile gate for the
-parity-validation run only, validate the rest exactly, re-enable for production; (c) replace with a
-more robust regime proxy. Recommend (b) for the validation contract.
+`ENABLE_BLACK_SWAN_PROTECTION=true`). At all 9 MT5 entries the MT5 percentile sits 68-88 (passes); mine
+swings wildly and wrongly blocks ~3. **Root cause:** percentile *ranking* is hypersensitive to the
+irreducible ±0.2/bar ATR noise between the exported ticks and MT5's internal tick stream. My M1 bars are
+ALREADY tick-accurate (tick-built ATR == my bar ATR to 4 dp) → **NOT fixable by rebuilding**. Proof:
+disabling the 2 ATR gates lifts matched pairs **1→4** (engine 47→129 trades).
 
 ### ✅ DECISION RATIFIED (user, 2026-06-17): disable MIN_ENTRY_ATR_PERCENTILE + ATR_HIGH for the parity
 diff ONLY. ⚠️ User says this ATR-regime filter is a PROFITABILITY lever for MasterVP/Monster — never
