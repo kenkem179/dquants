@@ -15,22 +15,24 @@ Gated by **`USE_FORMING_ACCEL` (default true)**; OFF reproduces the prior 19-tra
 bucket aggregate and IMPROVES match, unlike those).
 
 **Effect:** tq_e4 8→9 at both pure-miss bars; **02.17 03:28 + 02.17 13:20 now MATCH (0/9 → 2/9)**; phantom
-E2 → 0. Trades 19→12. (Interim PF is poor — 7 EA bars still missed, see below — that's parity-convergence,
-not the end state.) The remaining 7 misses decompose as:
-- **4 bars (02.04 07:45, 02.06 12:07, 02.09 14:32, 02.16 09:02)** — engine's OWN atr_pctile is WRONG
-  (46.9/62.5/96.9/21.9 vs MT5 68–88 at offset 0) ⇒ execute-stage ATR block. **NOW the top lever.**
-- **3 bars (02.16 13:29 S-E1, 02.18 02:10 L-E4, 02.23 07:38 S-E4)** — detection PASSES but execution is
-  suppressed by an early phantom fire (trigger consumed / opposite-dir open). Needs trigger-timing (B3).
+E2 → 0. Trades 19→12. (Interim PF is poor — 7 EA bars still missed — parity-convergence, not end state.)
+
+**⚠️ atr_pctile RE-DISPROVEN on the clean build:** ran `--pctile-oracle /tmp/oracle0.csv` (MT5's exact
+per-bar pctile, offset 0) on THIS forming+routing build → **9 trades, still 2/9** (the 4 "ATR" bars STILL
+miss with perfect ATR). So those bars are NOT atr-blocked — the `atr_lo/atr_hi` labels in entry_trace are
+the STALE in-dumper ATR check (red herring, as warned). **All 7 remaining misses are TRIGGER-TIMING
+suppression**: the engine fires the right type 1–11 bars early, consumes the one-cross trigger / opens an
+opposite-dir position, so the EA's bar is empty. (Detection at the EA bars PASSES — see entry_trace.)
 
 ### ▶️ NEXT ACTIONS (resume here)
-1. **atr_pctile production fidelity** (unlocks 4 bars). Engine uses forming `s.atrM1` for the percentile
-   ref + a 32-bar distribution; MT5 uses intra-bar `cache.atrM1`. Re-derive the percentile so the engine
-   value matches MT5's at the 9 bars (offset-0 oracle proves the target). NB: oracle alone was 0/9 on the
-   OLD over-firing engine, but with routing+forming the phantoms are largely gone, so correct pctile should
-   now actually pass these bars. Re-test `--pctile-oracle /tmp/oracle0.csv` on THIS build first to confirm.
-2. **Trigger timing (B3)** — ichi/EMA75/EMA-cross fire on closed-bar reads; align to the EA's forming-bar
-   evaluation so the cross is detected on the SAME bar (kills the −1/−2 early fires that consume the trigger).
-3. EMA-stack shift (B2): `emas_ready_entry` reads align.tf−3; truth is align.tf−2.
+1. **Trigger timing (B3) — THE lever now.** The ichi-cross / EMA75-touch / EMA-cross TRIGGERS fire on
+   closed-bar reads (triggers.hpp), one or more bars before the EA detects the same cross on its forming
+   bar. That early fire consumes the trigger (one-cross-one-entry) so the EA's actual bar is empty. Align
+   the trigger evaluation to the EA's forming-bar timing. Diagnose with the oracle trade list: engine
+   02.17 13:18 S-E4 vs EA 13:20 (−2), 02.04 07:44 L-E2 vs 07:45 (−1).
+2. EMA-stack shift (B2): `emas_ready_entry` reads align.tf−3; truth is align.tf−2 (near crossovers).
+3. atr_pctile production fidelity: DEPRIORITIZED (oracle-disproven twice). Only matters for non-anchor
+   ATR-regime selectivity once timing parity holds.
 
 ## ⭐⭐ post-routing diagnosis — read `research/kenkem_parity/PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`
 **Done this session (commit `976fb34`):** ported the EA's EXECUTE stage that the distilled engine never had.
