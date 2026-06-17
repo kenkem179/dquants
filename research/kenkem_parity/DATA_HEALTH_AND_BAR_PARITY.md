@@ -40,6 +40,30 @@ breaks + US-holiday short sessions, which MT5 shares). So anchor parity needs **
 - `cpp_core/tools/common/verify_bars_vs_trace.py` — proves a bars-M1 CSV is bit-exact vs an EA trace
   (the `−60000` join) and reports ATR |Δ|, pointing each spike at its data hole. A regression gate.
 
+## The C++ ENGINE is also verified on clean bars (not just DuckDB)
+Regenerated the engine trace (`trace_dumper` + `parity_kenkem_xau.set`, 2025-03..05) and diffed vs
+`trace_xau_paritywin.csv` at the correct **same-ts** join (the engine trace already labels by close
+time), excluding the 5 hole windows:
+
+| engine col | vs MT5 trace | verdict |
+|---|---|---|
+| close | **0.000000** (100%) | bars exact |
+| adx_m1 / adx_m3 / adx_m5 | 0.000 / 99.6% / 99.1% exact | M1/M3/M5 bars exact |
+| tenkan / kijun (M3 Ichimoku) | **0.000000** (100%) | M3 bars + Ichimoku exact |
+| atr | 0.086 off trace | **= forming(shift0) vs trace's closed(shift1); both correct** |
+| ema0 / rsi | 0.43 / 2.4 off | per-column SHIFT reads (E5 trace ≠ anchor); not bars |
+
+**The ATR "mismatch" is forming-vs-closed, not a defect.** Engine `atr` (shift-0 forming) matches a
+DuckDB forming model to **0.000000**; the trace `atr` column (shift-1 closed) matches DuckDB closed to
+3e-6. EA line 709 reads `cache.atrM1` at shift 0 → the engine is faithful to what the EA TRADES on.
+
+### The real remaining lever (engine logic, NOT data): the ATR-percentile REFERENCE
+`snapshot.hpp:172-177` deliberately uses the **closed** ATR (`b.m1.atr` @ i1) as the percentile
+reference, because the first-tick forming model ran ~7% low. But the EA reads `cache.atrM1` (forming,
+shift 0) — and in MT5 every-tick mode `detect_entry` fires at the bar's first tick (O=H=L=C). This
+forming-vs-closed / first-tick-vs-mid-bar choice is what makes the percentile rank wobble at the gate
+— NOT tick fidelity. Resolve it against the anchor ground truth (once re-exported), then sweep the gate.
+
 ## What this changes
 - The HANDOFF "ATR-percentile parity wall" was **half right** (data, not formula) but **mislocated**:
   it is not irreducible ±0.2/bar tick noise — it is concrete missing DAYS. Inside clean windows the
