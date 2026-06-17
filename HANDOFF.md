@@ -4,7 +4,24 @@ _Last updated: 2026-06-17 by Claude (Opus 4.8) — **execute-stage risk routing 
 pushed). New wall = detection TIMING (engine fires 1–11 bars EARLY), NOT limiters/ATR/concurrency.**
 dquants branch `1-reorganize-code`. Build GREEN, all 28 C++ checks pass._
 
-## ⭐⭐⭐ LATEST (2026-06-17) — forming-bar acceleration LANDED (C1), match 0/9 → 2/9
+## ⭐⭐⭐⭐ LATEST (2026-06-17, later) — trigger EXPIRE-THEN-REARM fixed → match 2/9 → 3/9, PF 0.04 → 0.49
+The distilled `detect_entry` only `continue`d on a stale trigger; it never reset it to −1, so a trigger
+pinned at its FIRST cross could never re-arm on a later re-cross. The EA (`Entry1/2/4.mqh`) RESETS
+`lastX=-1` on age expiry. Ported that (E1/E2/E4; E5 untouched — onset-rearm). **02.18 02:10 L-E4 now fires
+EXACT (4899.99), a +283 winner; match 2/9 → 3/9, PF 0.04 → 0.49, all 28 tests green.** Diagnosed with the
+trace_dumper (now also dumps `tenkanM3,kijunM3,ichiup_age,ichidn_age`): engine combined cloud re-crosses up
+at 02:02 but `ichi_up` was stuck at age 94. Full writeup + the CLEAN over-fire classification (11 E1
+phantoms + 6 EA-skipped) at the TOP of `research/kenkem_parity/PARITY_1.8.154_POST_ROUTING_DIAGNOSIS.md`.
+
+**▶️ NEXT (priority): (1) E1 PHANTOM over-detection — 11 of 17 over-fires are E1 bars the EA NEVER detected
+(prime suspects: B2 EMA-stack gate shift align.tf−3 vs verified −2; E1 EMA-cross trigger shift / HTF
+block-counter). (2) Skip rules — 6 over-fires are bars the EA detected then SKIPPED (port deferred limiters
+in risk_exec.hpp). (3) re-check the 3 remaining E4 misses once phantoms stop occupying slots.**
+⚠️ EA `parity_trace.csv` ichimoku cols are BUFFER-SWAPPED: `tenkan/kijun`=M3 Senkou(buf2/3);
+`senkouA_m3/senkouB_m3`=M3 real Tenkan/Kijun(buf0/1)=the cloud-cross inputs. Engine trace labels differ —
+compare engine `tenkanM3>kijunM3` vs EA `senkouA_m3>senkouB_m3`.
+
+## ⭐⭐⭐ (prior) forming-bar acceleration LANDED (C1), match 0/9 → 2/9
 Commit on dquants `1-reorganize-code` (build GREEN, 28 checks pass). Ported the EA's shift-0 (FORMING bar)
 acceleration reads — the C1 audit bug — for trend-quality (M1 comp3 / M3 comp6), conviction (M1 ADX accel),
 and the high-risk E1-accel momentum. New `snapshot.adxF/diPF/diMF[4]` = forming ADX/DI per TF: M1 = first-

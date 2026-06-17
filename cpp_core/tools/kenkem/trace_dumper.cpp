@@ -135,7 +135,8 @@ int main(int argc, char** argv) {
         "e5up_age,e5dn_age,"
         "L_inage,L_swblk,L_atrlo,L_atrhi,L_price,L_tcore,L_tq,L_tqok,L_adx,L_htf,L_pass,L_fire,"
         "S_inage,S_swblk,S_atrlo,S_atrhi,S_price,S_tcore,S_tq,S_tqok,S_adx,S_htf,S_pass,S_fire,"
-        "session,fire_dir\n");
+        "session,fire_dir,"
+        "tenkanM3,kijunM3,ichiup_age,ichidn_age\n");   // appended: M3 cloud-cross inputs (buf0/1) + E4 ichi trigger ages
 
     TriggerState tg;
     const int N = B.m1.size();
@@ -168,7 +169,8 @@ int main(int argc, char** argv) {
             "%d,%d,"
             "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
             "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
-            "%d,%d\n",
+            "%d,%d,"
+            "%.5f,%.5f,%d,%d\n",
             (long long)bar.ts_ms, utc(bar.ts_ms).c_str(),
             s.emaM1[0],s.emaM1[1],s.emaM1[2],s.emaM1[3],s.emaM1[4],
             s.adx[0],s.adx[1],s.adx[2],s.adx[3], s.diP[0],s.diP[1],s.diP[2],s.diP[3], s.diM[0],s.diM[1],s.diM[2],s.diM[3],
@@ -176,7 +178,8 @@ int main(int argc, char** argv) {
             e5age(tg.e5_up), e5age(tg.e5_down),
             L.in_age,L.sideways_blk,L.atr_lo_blk,L.atr_hi_blk,L.price_ok,L.trendcore,L.tq,L.tq_ok,L.adx_ok,L.htf_ok,L.pass,L.fire,
             S.in_age,S.sideways_blk,S.atr_lo_blk,S.atr_hi_blk,S.price_ok,S.trendcore,S.tq,S.tq_ok,S.adx_ok,S.htf_ok,S.pass,S.fire,
-            session?1:0, fire_dir);
+            session?1:0, fire_dir,
+            s.tenkanM3,s.kijunM3, tg.ichi_up>=0?(b-tg.ichi_up):-1, tg.ichi_down>=0?(b-tg.ichi_down):-1);
         ++rows;
     }
     std::fclose(f);

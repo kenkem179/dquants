@@ -1,3 +1,37 @@
+# ⭐ UPDATE 2026-06-17 (later) — trigger expire-then-rearm FIXED → 3/9; wall is now E1 over-fire + skip rules
+
+The "1–11 bars early / trigger timing" framing below was **incomplete**. After forming-accel the engine
+fired a *largely different set* than the EA, so I re-diagnosed from the EA `trades.csv` (which is a full
+DETECTION log: 108 candidates, `Status=SKIPPED_*` for rejects, only 9 executed). Findings:
+
+**Root cause of the E4 misses = trigger expire-then-rearm was missing.** Proven with the trace_dumper
+(now dumps `tenkanM3,kijunM3,ichiup_age,ichidn_age`): at 02.18, the engine's combined M1∧M3 cloud crosses
+up FRESH at 01:09 / 01:35 / **02:02**, but `st.ichi_up` stayed pinned at the 00:36 cross (age climbed to
+94) because the distilled `detect_entry` only `continue`d on a stale trigger — it never reset it to −1.
+The EA (`Entry1.mqh:103-109`, `Entry2.mqh:102-147`, `Entry4.mqh:106-108`) **resets `lastX=-1` on age
+expiry**, so a later re-cross re-arms. Ported that reset (E1/E2/E4; E5 re-arms on alignment onset, left).
+**Effect: 02.18 02:10 L-E4 now fires EXACT (4899.99) → match 2/9 → 3/9, PF 0.04 → 0.49, all 28 tests green.**
+
+**The remaining gap is now cleanly classified (engine 20 trades vs EA 9, 3 match):**
+- **11 PHANTOMS, ALL E1** (EA never detected at that bar): 02.04 14:43, 02.05 09:15, 02.10 09:12/14:20,
+  02.12 06:37/15:00, 02.13 14:50, 02.26 05:15/08:34/13:37, 02.27 05:30. ⇒ the E1 EMA-cross trigger/gate
+  OVER-DETECTS. **Biggest lever now.** Prime suspects: B2 EMA-stack gate shift (`emas_ready_entry` reads
+  align.tf−3 vs verified −2), and/or the E1 EMA-cross trigger `emas_ready` shift / HTF block-counter.
+- **6 EA-SKIPPED** (engine executes what the EA detected then SKIPPED): 02.06 14:40 L-E1, 02.16 12:16 S-E4,
+  02.19 00:04 S-E4, 02.20 01:01 L-E4, 02.20 13:47 L-E1, 02.25 09:08 S-E4. ⇒ missing skip rules (the
+  DEFERRED limiters in risk_exec.hpp: daily/DD room, consec-loss block, etc.). Note the skipped S-E4s
+  pre-empt nothing now, but 02.16 12:16 S-E4 (phantom) still suppresses the real 02.16 13:29 S-E1.
+- **6 EA-executed MISSED**: 02.04 07:45 / 02.09 14:32 L-E1, 02.16 13:29 S-E1 (E1 — blocked by phantoms /
+  skip), 02.06 12:07 / 02.16 09:02 L-E4, 02.23 07:38 S-E4 (E4 — no fresh re-cross armed before the EA bar,
+  or a gate edge; revisit after E1 over-fire is fixed since phantoms occupy slots).
+
+### ▶️ NEXT (resume here, priority): 1) E1 phantom over-detection (B2 EMA shift + E1 trigger/HTF). 2) skip
+rules (port deferred limiters). 3) re-check the 3 remaining E4 misses once slots aren't occupied by phantoms.
+Repro of the cloud/age diagnosis: `build/kenkem/trace_dumper ... ` then compare engine `tenkanM3>kijunM3`
+& `ichiup_age` vs EA `senkouA_m3>senkouB_m3` (EA trace cols are buffer-SWAPPED: its `tenkan/kijun`=M3 Senkou
+buf2/3, its `senkouA_m3/senkouB_m3`=M3 real Tenkan/Kijun buf0/1 = the actual cloud-cross inputs).
+
+---
 # 1.8.154 parity — post-routing diagnosis (the wall is detection TIMING, not limiters)
 
 _2026-06-17 (Opus 4.8). Follow-on to `PARITY_1.8.154_DETECTION_DIAGNOSIS.md` and

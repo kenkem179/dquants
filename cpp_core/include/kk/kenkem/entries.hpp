@@ -251,6 +251,16 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
     double hi, lo; recent_range(b.m1, i1, c.range_hilo_lookback, hi, lo);
     const double entry = s.closeM1;
 
+    // Clear one trigger (kind, direction) — shared by the stale-expiry reset and the on-fire consume.
+    auto clear_trigger = [&](int kind, bool lng) {
+        switch (kind) {
+            case 1: (lng ? tg.ema_up  : tg.ema_down)  = -1; break;
+            case 2: (lng ? tg.e75_up  : tg.e75_down)  = -1; break;
+            case 4: (lng ? tg.ichi_up : tg.ichi_down) = -1; break;
+            case 5: (lng ? tg.e5_up   : tg.e5_down)   = -1; break;
+        }
+    };
+
     struct Cand { int kind; bool en; int up; int down; int maxage; };
     const Cand cands[4] = {
         { 1, c.enable_e1, tg.ema_up,  tg.ema_down,  c.e1_max_cross_age },
@@ -265,19 +275,21 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             int fired = is_long ? cd.up : cd.down;
             if (fired < 0) continue;
             if (occ && occ[cd.kind][dir]) continue;    // slot occupied -> block WITHOUT consuming
-            if (B - fired > cd.maxage) continue;       // stale trigger
+            if (B - fired > cd.maxage) {               // stale trigger
+                // EA Entry1/2/4 RESET lastX=-1 on expiry (Entry1.mqh:103-109, Entry2.mqh:102-147,
+                // Entry4.mqh:106-108) so a later fresh cross/touch can re-arm. The distilled engine only
+                // skipped, pinning the trigger at its first cross forever -> a re-cross (e.g. M1 cloud
+                // dips below then back above while M3 stays bullish) could never re-arm, and the entry
+                // aged out permanently. E5 re-arms on alignment onset (update_triggers), not age -> leave.
+                if (cd.kind != 5) clear_trigger(cd.kind, is_long);
+                continue;
+            }
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
             r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry;
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);
             r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c);
             r.risk = std::fabs(r.entry - r.sl);
-            // consume the fired trigger (one cross/touch -> one entry)
-            switch (cd.kind) {
-                case 1: (is_long ? tg.ema_up  : tg.ema_down)  = -1; break;
-                case 2: (is_long ? tg.e75_up  : tg.e75_down)  = -1; break;
-                case 4: (is_long ? tg.ichi_up : tg.ichi_down) = -1; break;
-                case 5: (is_long ? tg.e5_up   : tg.e5_down)   = -1; break;
-            }
+            clear_trigger(cd.kind, is_long);           // consume the fired trigger (one cross/touch -> one entry)
             return r;
         }
     }
