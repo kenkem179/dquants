@@ -31,11 +31,19 @@ on 1.8.154**, **I re-add the trace hook**, **user re-exports complete XAU ticks*
    trade CSV is a **47-col analytics schema** (Timestamp,EntryType,Status,EntryPrice,SL,TP,... incl.
    SKIPPED rows) → `diff_kenkem_trades.py` needs an adapter.
 
-   **FIRST DIFF DONE** (`PARITY_1.8.154_DIFF.md`): **bars PERFECT again** (close 99.9% / adx_m1 99.9% /
-   adx_m3 100% exact, engine vs trace). Remaining = pure engine **1.8.15→1.8.154 PORTING**: EMA read
-   shift (~0.3), Ichimoku tenkan/senkou **column-swap** (values match, labels permuted), `sideways`
-   (53 vs 33), `atr_pctile` (84 vs 78), `rsi` trace col = 0 in EA (renamed/unused?), and the engine
-   fired **0 signals** (default xau specs ≠ 1.8.154 inputs). NONE are data. Port order in the diff doc.
+   **DIFF + FIXES DONE** (`PARITY_1.8.154_DIFF.md`, commits `d1f0129`,`e87d15b`). Bars PERFECT (close/
+   ema/adx bit-exact). Engine indicator FIXES shipped: **EMA now bit-exact** (GetEMA shift = `i1-1`,
+   not `i1-2`; this was a real bug on every EMA gate); **atr_pctile ref = forming s.atrM1**. Residuals:
+   atr forming ~0.19 (MT5 cache.atrM1 is intra-bar, unreachable from M1 bars — the true ATR-pctile
+   wall); RSI trace col = 0 (EA GetRSIAverage lazy-handle bug → sideways RSI comp ≈0, engine must mirror).
+
+   **Engine TRADES** (Feb-2026 default cfg via `tick_backtester`): **45 trades PF 1.225** (E1 18,E2 13,
+   E4 14). EA executed ~15-20 (E1/E4 only; **ALL E2 SKIPPED** by RiskManager). Over-fire localized:
+   only **6/45 engine trades match an EA signal**, 39 engine-only. ⏭️ **NEXT = trade-level gate port**:
+   (a) E2 RiskManager skip rule (EA skips every E2 → engine must too), (b) faithful limiters
+   (MAX_SESSION_LOSSES=4, MAX_SLTP_COUNT=7, MAX_HIGH_RISK_TRADES=5, 1-entry/bar, min-sec, max_concurrent,
+   day cap), (c) E1/E4 gate thresholds (engine misses most EA entries). Config in the 14:01 run log
+   (CONVICTION_THRESHOLD_E2=10, MIN_TREND_QUALITY_E2=9, E2_HTF_*, etc.). Read Entry1/2/4.mqh + RiskManager.
 3. ⏳ **User re-exports XAU ticks** — missing whole trading days; ranges in
    `research/kenkem_parity/XAU_TICK_REFETCH_LIST.md` (Feb-2026 anchor is clean, so not blocking it).
 
