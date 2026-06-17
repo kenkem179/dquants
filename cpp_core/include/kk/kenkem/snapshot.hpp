@@ -107,12 +107,13 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
     s.adxS = s.adx[0]; s.diPS = s.diP[0]; s.diMS = s.diM[0];
 
     // FAITHFUL SHIFTS (decoded from KenKemExpert.mq5 — see research/kenkem_parity/INDICATOR_PARITY_SPEC.md):
-    //  - EMA: GetEMA(...,ENTRY_SHIFT) reads a NON-series CopyBuffer(...,0,ENTRY_SHIFT+3) at index 1,
-    //    which lands 2 closed bars behind `close` (empirically ema[i] == EMA(close)[i-2]). → i1-2.
+    //  - EMA (v1.8.154): GetEMA(...,1) reads NON-series CopyBuffer(emaHandle,0,0,ENTRY_SHIFT+3=4,tmp)
+    //    then tmp[1]. start=0,count=4 non-series => tmp[3]=shift0..tmp[1]=shift2. So EA EMA == series-
+    //    shift 2 == i1-1. Verified bit-exact (0.00000) vs the 1.8.154 trace (periods 10/25/71/97/192).
     //  - close: iClose(...,ENTRY_SHIFT) = last CLOSED bar = i1.
     //  - ATR/RSI/high/low: read at shift 0 (the FORMING bar) — at the first tick of a new bar
     //    O=H=L=C=open, so model the forming bar as a single point at its open (no lookahead).
-    for (int e = 0; e < 5; ++e) s.emaM1[e] = TfIndicators::get(b.m1.ema[e], i1 - 2);
+    for (int e = 0; e < 5; ++e) s.emaM1[e] = TfIndicators::get(b.m1.ema[e], i1 - 1);
 
     const int fi = align.m1;                      // forming-bar index (shift 0)
     const bool has_form = (fi >= 0 && fi < b.m1.size());
@@ -169,12 +170,11 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
             s.atrM3 = (atr_c > 0.0) ? (atr_c * (n - 1) + trf) / n : atr_c;
         }
     }
-    // ATR percentile reference: the EA reads cache.atrM1 at ENTRY time (mid-bar, not first tick), so its
-    // reference reflects the bar's realized range — empirically ≈ the CLOSED-bar ATR (atr[i1]), NOT the
-    // first-tick forming model (which is systematically ~7% low and drags the percentile down, wrongly
-    // tripping the MIN_ENTRY_ATR_PERCENTILE/ATR_HIGH gates). Intrabar exactness is unreachable from M1
-    // bars; the closed-bar ATR is the faithful-in-spirit, MT5-tracking proxy. See research/kenkem_parity.
-    s.atr_pctile = atr_percentile(b.m1, i1, TfIndicators::get(b.m1.atr, i1), cfg.atr_percentile_lookback);
+    // ATR percentile (v1.8.154 CalculateATRPercentile, RiskManager.mqh:215): currentATR = cache.atrM1
+    // = the FORMING-bar ATR (shift 0) = s.atrM1; distribution = closed ATR shifts 1..32 (ref_idx=i1),
+    // counted strictly < currentATR, ×100/32. (The earlier closed-ref proxy was wrong; the EA uses
+    // shift-0 forming as the reference, verified against the fresh 1.8.154 atr_pctile column.)
+    s.atr_pctile = atr_percentile(b.m1, i1, s.atrM1, cfg.atr_percentile_lookback);
     s.sideways = sideways_score(s, cfg);
     s.valid = true;
     return s;
