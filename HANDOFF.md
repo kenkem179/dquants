@@ -17,6 +17,16 @@ parallel session's oracle. Hard numbers (config = `anchor_1.8.154.set`, Feb wind
   (esp. **E2: 49 detected vs EA 20**) crowd out/suppress the real entries via priority (E1→E2→E4),
   occupancy, min-seconds, max-concurrent + unmodeled account limiters.
 
+### 📋 FULL C++↔MQL FAITHFULNESS AUDIT (2026-06-17) — `research/kenkem_parity/CPP_VS_MQL_FAITHFULNESS_AUDIT.md`
+Module-by-module 1:1 audit (8 parallel agents + manual verification). VERDICT: NOT 1:1. Detection is
+mostly faithful; the **risk/limiter back-half, exit management, and dynamic lot-sizing are largely
+UN-PORTED**, plus 3 confirmed detection bugs. That doc is the authoritative punch list — the NEXT ACTIONS
+below are its top items. Biggest over-fire lever = **high-risk routing is not modeled at all** (every EA
+E2 routed through HandleHighRiskEntry and was skipped; C++ opens them) + **ATR gate applied at detection
+not execute-stage** (changes E1→E2→E4 priority/suppression). Confirmed detection bugs: EMA-stack gate
+reads `align-3` not `align-2` (one bar too old vs the verified snapshot); accel/ADX read closed not
+forming bars (the tq=8-vs-9 gap). I/O modules (alerts/CSV) are cleanly separable — correctly omitted.
+
 ### ▶️ NEXT ACTIONS (resume here)
 1. **E2 detection-input fidelity** (highest leverage). EMA75-touch trigger + gate ORDER are faithful →
    diff the gate INPUTS (HTF M5/M15 ADX/DI, emas_ready, trend-quality) vs EA `trades.csv` per-signal
