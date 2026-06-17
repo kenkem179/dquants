@@ -154,13 +154,53 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
             if (!emas_ready(b.m1, align.m1 - 1, is_long, true, tol)) return false;
             if (!emas_ready(b.m3, align.m3 - 1, is_long, true, tol)) return false;
             return htf_filter_ok(s, is_long, c.e2_htf_filter, c.e2_htf_min_adx, c.e2_htf_min_di_spread);
-        case 4: { // E4: own ADX min + real-cloud (Senkou) agreement + M5/M15 HTF
+        case 4: { // E4 faithful gate — SPEC_E4 §4 Steps 0-4. (Step5 trend-quality≥9, Step6 RSI-div,
+                  // post-detection conviction≥9 are already enforced by quality_filters_ok above.)
+            // STEP 0 — Ichimoku quality (M3). Cloud THICKNESS uses REAL Tenkan/Kijun (EA buf0/1) vs
+            // atrM3; the "Tenkan/Kijun align" check is actually REAL Senkou A/B (EA buf2/3) = cloud color.
+            double thick = std::fabs(s.tenkanM3 - s.kijunM3);
+            if (c.e4_min_cloud_thick_atr > 0.0 && s.atrM3 > 0.0 &&
+                thick < c.e4_min_cloud_thick_atr * s.atrM3) return false;
+            if (c.e4_require_tenkan_kijun) {
+                bool cloudGreen = s.senkouA_M3 > s.senkouB_M3;
+                if (is_long ? !cloudGreen : cloudGreen) return false;
+            }
+            // STEP 0.1 — E4 sideway block (stricter than the global 53 guard).
+            if (s.sideways > c.e4_max_sideway_score) return false;
+            // STEP 0.5 — HTF M5-OR-M15 directional BLOCK: block on any opposing VALID HTF.
+            {
+                double sp5 = s.diP[2] - s.diM[2], sp15 = s.diP[3] - s.diM[3];
+                bool m5Valid  = s.adx[2] >= c.e4_htf_min_adx && std::fabs(sp5)  >= c.e4_htf_min_di_spread;
+                bool m15Valid = s.adx[3] >= c.e4_htf_min_adx && std::fabs(sp15) >= c.e4_htf_min_di_spread;
+                bool m5Bull = s.diP[2] > s.diM[2], m15Bull = s.diP[3] > s.diM[3];
+                bool blockL = (m5Valid && !m5Bull) || (m15Valid && !m15Bull);
+                bool blockS = (m5Valid &&  m5Bull) || (m15Valid &&  m15Bull);
+                if (is_long ? blockL : blockS) return false;
+            }
+            // STEP 1 — M5 DI alignment (skip if M5 ranging: adx[2] < ADX_LOW_THRESHOLD).
+            if (s.adx[2] >= c.adx_low_threshold) {
+                if (is_long ? (s.diP[2] <= s.diM[2]) : (s.diM[2] <= s.diP[2])) return false;
+            }
+            // STEP 2 — EMA stack: M1 (25>71>97) ALWAYS + (M3 same OR extreme M1 DI spread >= 16).
+            auto stk = [&](double e1,double e2,double e3){ return is_long ? (e1>e2 && e2>e3) : (e1<e2 && e2<e3); };
+            if (!stk(s.emaM1[1], s.emaM1[2], s.emaM1[3])) return false;
+            const int m3i = align.m3 - 3;   // M3 EMA at the same non-series lag as M1 (closed-2)
+            bool m3Aligned = stk(TfIndicators::get(b.m3.ema[1], m3i),
+                                 TfIndicators::get(b.m3.ema[2], m3i),
+                                 TfIndicators::get(b.m3.ema[3], m3i));
+            double m1di = is_long ? (s.diP[0] - s.diM[0]) : (s.diM[0] - s.diP[0]);
+            if (!(m3Aligned || m1di >= c.extreme_di_spread)) return false;
+            // STEP 3 — price vs EMA25 & M1 cloud (real Tenkan/Kijun), 5-pip tolerance.
+            {
+                const double tol = 5.0 * c.pip_size, ema25 = s.emaM1[1];
+                const double cloudTop = std::max(s.tenkanM1, s.kijunM1);
+                const double cloudBot = std::min(s.tenkanM1, s.kijunM1);
+                if (is_long) { if (s.closeM1 <= ema25 - tol || s.closeM1 <= cloudTop - tol) return false; }
+                else         { if (s.closeM1 >= ema25 + tol || s.closeM1 >= cloudBot + tol) return false; }
+            }
+            // STEP 4 — M1 ADX minimum.
             if (s.adx[0] < c.e4_min_momentum_adx) return false;
-            bool cloudGreen = s.senkouA_M3 > s.senkouB_M3;
-            if (c.e4_require_tenkan_kijun && (is_long ? !cloudGreen : cloudGreen)) return false;
-            double thick = std::fabs(s.senkouA_M3 - s.senkouB_M3);
-            if (c.e4_min_cloud_thick_atr > 0 && s.atrM1 > 0 && thick < c.e4_min_cloud_thick_atr * s.atrM1) return false;
-            return htf_filter_ok(s, is_long, c.e4_htf_filter, c.e4_htf_min_adx, c.e4_htf_min_di_spread);
+            return true;
         }
     }
     return false;

@@ -29,7 +29,9 @@ struct Snapshot {
     double closeM1 = 0, highM1 = 0, lowM1 = 0;   // M1 bar shift 1 OHLC
     // Ichimoku: current cloud = TK lines (EA buffer 0/1); real Senkou cloud (buffer 2/3) for E4 quality.
     double tenkanM1 = 0, kijunM1 = 0;
-    double senkouA_M3 = 0, senkouB_M3 = 0;
+    double senkouA_M3 = 0, senkouB_M3 = 0;     // M3 real Senkou A/B "current" cloud (EA buf 2/3 → TK-align)
+    double tenkanM3 = 0, kijunM3 = 0;          // M3 real Tenkan/Kijun (EA buf 0/1 → E4 cloud THICKNESS)
+    double atrM3 = 0;                          // M3 ATR(14) shift-0 forming (E4 cloud-thickness threshold)
     // Regime.
     int    sideways = 0;          // 0-100 chop score
     double atr_pctile = 50.0;     // ATR percentile over lookback
@@ -148,8 +150,21 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
     if (b.m1.has_ichi) { s.tenkanM1 = TfIndicators::get(b.m1.ichi.tenkan, i1); s.kijunM1 = TfIndicators::get(b.m1.ichi.kijun, i1); }
     if (b.m3.has_ichi) {
         int j3 = align.m3 - 1;
-        s.senkouA_M3 = TfIndicators::get(b.m3.ichi.span_a_cur, j3);
-        s.senkouB_M3 = TfIndicators::get(b.m3.ichi.span_b_cur, j3);
+        s.senkouA_M3 = TfIndicators::get(b.m3.ichi.span_a_cur, j3);   // EA "Tenkan_M3" (buf2) → TK-align
+        s.senkouB_M3 = TfIndicators::get(b.m3.ichi.span_b_cur, j3);   // EA "Kijun_M3"  (buf3)
+        s.tenkanM3   = TfIndicators::get(b.m3.ichi.tenkan, j3);       // EA "SpanA_M3_Current" (buf0) → thickness
+        s.kijunM3    = TfIndicators::get(b.m3.ichi.kijun,  j3);       // EA "SpanB_M3_Current" (buf1)
+    }
+    // M3 ATR shift-0 forming (one Wilder step from closed M3 ATR using the M3 forming-bar gap TR).
+    {
+        const int fj = align.m3, jj = align.m3 - 1;
+        if (jj >= 0) {
+            const double atr_c = TfIndicators::get(b.m3.atr, jj);
+            const double opf = (fj >= 0 && fj < b.m3.size()) ? b.m3.bars[fj].open : b.m3.bars[jj].close;
+            const double trf = std::fabs(opf - b.m3.bars[jj].close);
+            const int n = KENKEM_CACHE_ATR_PERIOD;
+            s.atrM3 = (atr_c > 0.0) ? (atr_c * (n - 1) + trf) / n : atr_c;
+        }
     }
     s.atr_pctile = atr_percentile(b.m1, i1, s.atrM1, cfg.atr_percentile_lookback);
     s.sideways = sideways_score(s, cfg);
