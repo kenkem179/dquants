@@ -146,14 +146,47 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
     // absence was the primary cause of the dquants edition over-trading and losing. See scoring.hpp.
     if (!quality_filters_ok(kind, is_long, b, s, align, c)) return false;
     switch (kind) {
-        case 1:  // E1: EMA alignment still holds (M1+M3) + M5 HTF
-            if (!emas_ready(b.m1, align.m1 - 1, is_long, true, tol)) return false;
-            if (!emas_ready(b.m3, align.m3 - 1, is_long, true, tol)) return false;
-            return htf_filter_ok(s, is_long, c.e1_htf_filter, c.e1_htf_min_adx, c.e1_htf_min_di_spread);
-        case 2:  // E2: alignment (M1+M3) + M15 HTF (momentum gate deliberately omitted)
-            if (!emas_ready(b.m1, align.m1 - 1, is_long, true, tol)) return false;
-            if (!emas_ready(b.m3, align.m3 - 1, is_long, true, tol)) return false;
-            return htf_filter_ok(s, is_long, c.e2_htf_filter, c.e2_htf_min_adx, c.e2_htf_min_di_spread);
+        case 1: {  // E1 faithful gate — CheckE1EntryConditions_Internal (Entry1.mqh:215-314), IN ORDER.
+            // E1.5 ADX floor (cache.adx[0] < E1_MIN_MOMENTUM_ADX).
+            if (s.adx[0] < c.e1_min_momentum_adx) return false;
+            // E1.6 HTF M5 block-COUNTER-only (NOT require-aligned).
+            if (!htf_block_counter_ok(s, is_long, c.e1_htf_filter, c.e1_htf_min_adx, c.e1_htf_min_di_spread))
+                return false;
+            // E1.7 MTF EMA: m1_ready(strict) && ((m3_ready(strict) && m5_directional) || extremeMomentum).
+            //   (E1_MOMENTUM_BYPASS_LEVEL=1; reads at the GetEMA entry shift align.tf-3.)
+            {
+                bool m1_ready = emas_ready_entry(b.m1, align.m1, is_long, true, tol);
+                bool m3_ready = emas_ready_entry(b.m3, align.m3, is_long, true, tol);
+                bool m5_dir   = m5_directional_ok(b.m5, align.m5, is_long);
+                double m1di   = is_long ? (s.diP[0] - s.diM[0]) : (s.diM[0] - s.diP[0]);
+                bool extreme  = m1di >= c.extreme_di_spread;
+                bool pass;
+                if (c.e1_momentum_bypass == 0)      pass = m1_ready && m3_ready && m5_dir;
+                else if (c.e1_momentum_bypass == 1) pass = m1_ready && ((m3_ready && m5_dir) || extreme);
+                else                                pass = m1_ready || extreme;
+                if (!pass) return false;
+            }
+            // E1.8 price vs EMA25 (currentPrice = close[1]).
+            if (is_long ? (s.closeM1 <= s.emaM1[1]) : (s.closeM1 >= s.emaM1[1])) return false;
+            // E1.9 trend-quality, E1.11 RSI-div enforced by quality_filters_ok above.
+            // E1.10 HasSufficientMomentum (E1 only).
+            if (!has_sufficient_momentum(s, is_long, c)) return false;
+            return true;
+        }
+        case 2: {  // E2 faithful gate — CheckE2EntryConditions_Internal (Entry2.mqh:192-274), IN ORDER.
+            // E2.5 HTF M15 REQUIRE strong-aligned (direction must match) — htf_filter_ok = require-aligned.
+            if (!htf_filter_ok(s, is_long, c.e2_htf_filter, c.e2_htf_min_adx, c.e2_htf_min_di_spread))
+                return false;
+            // E2.6 MTF EMA: m1 && m3 && m5 ALL strict (no momentum bypass), at the GetEMA entry shift.
+            if (!emas_ready_entry(b.m1, align.m1, is_long, true, tol)) return false;
+            if (!emas_ready_entry(b.m3, align.m3, is_long, true, tol)) return false;
+            if (!emas_ready_entry(b.m5, align.m5, is_long, true, tol)) return false;
+            // E2.7 price vs EMA25.
+            if (is_long ? (s.closeM1 <= s.emaM1[1]) : (s.closeM1 >= s.emaM1[1])) return false;
+            // E2.8 trend-quality(>=9), E2.10 RSI-div enforced by quality_filters_ok. HasSufficientMomentum
+            // deliberately omitted for E2 (Entry2.mqh:263-266).
+            return true;
+        }
         case 4: { // E4 faithful gate — SPEC_E4 §4 Steps 0-4. (Step5 trend-quality≥9, Step6 RSI-div,
                   // post-detection conviction≥9 are already enforced by quality_filters_ok above.)
             // STEP 0 — Ichimoku quality (M3). Cloud THICKNESS uses REAL Tenkan/Kijun (EA buf0/1) vs

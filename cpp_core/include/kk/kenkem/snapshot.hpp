@@ -38,11 +38,14 @@ struct Snapshot {
     bool   valid = false;
 };
 
-// ATR percentile: % of the last `lookback` closed-bar ATRs strictly below the reference ATR.
+// ATR percentile — faithful port of CalculateATRPercentile (RiskManager.mqh:215). MT5 copies the ATR
+// buffer at shifts 1..lookback (CopyBuffer start=1, count=lookback) and counts how many are strictly
+// below the FORMING-bar ATR (cache.atrM1 = shift 0). So the distribution INCLUDES the last closed bar
+// (shift 1 = ref_idx) and spans `lookback` bars ending at ref_idx. ref_atr = s.atrM1 (forming step).
 inline double atr_percentile(const TfIndicators& m1, int ref_idx, double ref_atr, int lookback) {
-    if (lookback <= 0 || ref_atr <= 0.0 || ref_idx < 1) return 50.0;
+    if (lookback <= 0 || ref_atr <= 0.0 || ref_idx < 0) return 50.0;
     int below = 0, n = 0;
-    for (int i = ref_idx - 1; i >= 0 && n < lookback; --i, ++n)
+    for (int i = ref_idx; i >= 0 && n < lookback; --i, ++n)
         if (m1.atr[i] < ref_atr) ++below;
     return n > 0 ? (double)below / (double)n * 100.0 : 50.0;
 }
@@ -166,7 +169,12 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
             s.atrM3 = (atr_c > 0.0) ? (atr_c * (n - 1) + trf) / n : atr_c;
         }
     }
-    s.atr_pctile = atr_percentile(b.m1, i1, s.atrM1, cfg.atr_percentile_lookback);
+    // ATR percentile reference: the EA reads cache.atrM1 at ENTRY time (mid-bar, not first tick), so its
+    // reference reflects the bar's realized range — empirically ≈ the CLOSED-bar ATR (atr[i1]), NOT the
+    // first-tick forming model (which is systematically ~7% low and drags the percentile down, wrongly
+    // tripping the MIN_ENTRY_ATR_PERCENTILE/ATR_HIGH gates). Intrabar exactness is unreachable from M1
+    // bars; the closed-bar ATR is the faithful-in-spirit, MT5-tracking proxy. See research/kenkem_parity.
+    s.atr_pctile = atr_percentile(b.m1, i1, TfIndicators::get(b.m1.atr, i1), cfg.atr_percentile_lookback);
     s.sideways = sideways_score(s, cfg);
     s.valid = true;
     return s;
