@@ -43,17 +43,35 @@ HTF is MT5's dominant E1 filter — but in the engine it's REDUNDANT with the MT
 insensitive to `E1_HTF_MIN_ADX`/`DI` even at 0, because fired entries are already M5-aligned). So the
 over-fire is the per-armed-bar pass-rate of the EMA-stack/MTF/price structural gates being ~3× MT5's.
 
-## ▶️ NEXT ACTION (exact)
-The remaining lever is **why the engine's structural gates (EMA-stack alignment / MTF / price-vs-EMA)
-pass on ~3× more armed bars than MT5**, and **why it arms ~3-6× more**. To crack it you need MT5's
-per-bar EMA/DI values to diff against the engine on specific armed-but-MT5-didn't-fire bars:
-1. The E1E2 run's `trace.csv` (291MB, E5 bar-trace) OR re-run the EA with the bar trace; join
-   `cpp_ts-60000 == mt5_ts`. Pick a day the engine over-fired (e.g. 2024-01-15 05:50 L-E1) and compare
-   the EMA25/75/100/192 + M5 DI the engine sees vs MT5 at that bar — find which input diverges enough to
-   flip the EMA-stack/MTF gate. That single divergence likely explains both the extra arming AND the
-   extra late fires.
-2. Also worth: split-test disabling EMA200-touch arming (engine arms 3687 via touch) — quantify how much
-   of the over-fire is touch vs cross, then verify each against MT5's actual touch events in the log.
+## 🚨 STRONGEST LEAD (found via trace diff) — pervasive DI drift corrupts every DI-gate
+Ran the per-bar trace diff (engine `trace_dumper` vs MT5 `trace.csv`, 848k common bars):
+```
+cd cpp_core && make kenkem_trace
+./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --symbol-xau \
+  --set ../research/kenkem_parity/anchor_E1E2.set --from-ms 1704067200000 --to-ms 1780272000000 --out /tmp/eng_trace.csv
+~/miniforge3/envs/kenkem/bin/python tools/kenkem/diff_kenkem_trace.py /tmp/eng_trace.csv \
+  research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/trace.csv [--dump "YYYY.MM.DD HH:MM"]
+```
+Result: **EMAs bit-exact** (ema mean|Δ|=0.0024 ✓). **ADX near-exact** (adx_m1 mean|Δ|≈2 but worst at data
+holes; at clean bars ~0.01). **BUT DI DRIFTS PERVASIVELY: diP_m1 mean|Δ|=3.12, diM_m1=3.09, diP_m3=1.02**
+(worst single bars 10-13 pts). At the over-fire bar 2024-01-15 05:50: adx_m1 35.580 vs 35.571 (exact) but
+**diP_m1 cpp 23.06 vs mt5 19.98** — and `L_tcore` cpp=6 vs **mt5=0**, `L_pass` cpp=1 vs **mt5=0**: the
+engine's trend_core HARD GATE passes where MT5's fails. DI feeds trend_core, HTF, MTF, momentum, conviction
+— a systematic 3-pt DI error makes the engine's DI-gates pass on far more armed bars → the late-firing
+over-fire (consistent with the AGE sweep). **This is very likely THE root cause, above trigger timing.**
+
+Puzzle to resolve: ADX matches but DI+/DI- individually drift — so it's the **DI smoothing/+DM−DM step**
+(`kk::ind::dmi_adx_mt5`), not the bar OHLC (EMAs from the same bars are exact) and not the ADX wrapper.
+The memory note "iADX≠Wilder" hints the DI line smoothing differs from MT5's iADX.
+
+## ▶️ NEXT ACTION (exact, priority order)
+1. **Fix the DI computation to match MT5's iADX** (`cpp_core/include/kk/kenkem/indicators.hpp` /
+   `tf_cache.hpp` DMI step). Diff `dmi_adx_mt5` DI+/DI- against MT5 on a clean window; the smoothed +DM/−DM
+   (or the TR normalisation) is off by enough to shift DI ~3 pts while ADX (a ratio) stays ~exact. Re-run
+   the trace diff until diP/diM mean|Δ| → ~0, then re-run the trade diff — expect E1 over-fire to collapse.
+2. Re-check the AGE-sweep/over-fire after the DI fix (the late-firing should self-resolve once the DI-gates
+   reject the same bars MT5 does).
+3. Only then revisit cooldowns (turn ENABLE_LOSS_COOLDOWNS on) + exits (A7).
 
 ## ✅ Landed this session (commit pending) — NON-REGRESSIVE, baseline preserved at 155/325
 - **Loss-cooldown port** (faithful `UpdateLosingStreak`: global escalating `losingStreakBlockUntil` +
