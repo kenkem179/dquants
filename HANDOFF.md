@@ -3,6 +3,17 @@
 _Last updated: 2026-06-17 by Claude (Opus 4.8) — **BAR PARITY SOLVED**: M1 bit-exact vs MT5, ATR
 "residual" was a join bug + missing tick days. Branch `1-reorganize-code` @ `c022217`. Build GREEN._
 
+## ➕ ADDENDUM (2026-06-17, parallel session, now rebased in) — limiter port STARTED + oracle tool
+A second agent (working off a stale checkout) independently corroborated this handoff's conclusions
+(ATR is NOT the wall; over-fire = unmodeled account limiters) and landed two things on the NEXT list:
+- ✅ **`MAX_SESSION_LOSSES=4` + `MAX_SLTP_COUNT_PER_SESSION=7` caps PORTED** into `tick_engine.hpp`
+  (commit `144d6af`): per-named-session counters (ASIA/EU/US), reset via UpdateSessionTracking,
+  increment on every close via the EA's HandleClosedTrade loss/BE classification. Item (b) partially done.
+- ✅ **New diagnostic `tick_backtester --pctile-oracle <csv>`** (commit `80852f5`): feeds MT5's per-bar
+  `atr_pctile` (joined offset 0) into the engine — used to PROVE the percentile is not the blocker.
+- ⚠️ That agent's numbers (old 9-trade Feb anchor) are STALE — trust THIS handoff's 1.8.154 ground truth.
+  Still-TODO limiters: consec-loss block, losing-streak cooldown, daily-loss, drawdown EOD-block, E2-skip.
+
 ## 🚨 SUPERSEDES "THE WALL": bars are bit-exact; the ATR mismatch was NOT tick-fidelity
 The prior "~2% / 0.31 ATR tick-completeness residual" conclusion was WRONG. Proof + tools committed:
 `research/kenkem_parity/DATA_HEALTH_AND_BAR_PARITY.md`, `cpp_core/tools/common/{build_bars,verify_bars_vs_trace}.py`.
