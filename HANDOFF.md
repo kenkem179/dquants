@@ -1,103 +1,84 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-18 (latest) by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 28 C++ checks PASS._
+_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 29 C++ checks PASS._
 
-## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the EA.
+## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
-## 🧨 2026-06-18 PIVOT — exit divergence ROOT CAUSE = C++ models the WRONG manager
-The C++ `trade_manager.hpp` is a DISTILLED model (partial→BE→single **chandelier** trail). The
-ground-truth EA `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (canonical; user said **ignore all
-`1.8.x`-suffixed files**) runs a **9-mechanism per-tick pipeline** (`TradeManager::ProcessAllTrades`):
-high-risk time-exit · broker SL/TP · pre-BE structure · **R-mult BE (0.87R)** · **TP-extension** ·
-**smart partial (eligible→weaken/retrace→fill at live price)** · **3-stage LADDER trail** · early-exit ·
-**session-end close** (the "EA" exitTag). Proof: exit-tag mix SL-WIN **engine 7% vs MT5 35%**.
-→ Full port spec written: **`research/hypotheses/KENKEM-EXIT-PARITY-SPEC.md`** (formulas + .set + §6 phased plan).
-→ The trail-risk fix I shipped (commit below, `KK_TRAIL_LIVE_RISK`, faithful to a *chandelier*) is a real but
-   tiny gain (Δpnl 60.3→56.4) and becomes **moot once the ladder replaces the chandelier**. Don't chase it further.
-→ **NEXT ACTION: port the EA pipeline per the SPEC, phase P1 first (ladder + smart-partial + correct BE),
-   re-run 2yr E1 diff, measure exitTag+Δpnl after each phase.** User approved "port ladder, verify scope first" — scope now verified.
+## ✅ THIS SESSION — EA-faithful EXIT pipeline ported (P1–P3) + ROOT CAUSE re-diagnosed
+Replaced the distilled `manage_tick` (partial→BE→single chandelier) with the canonical
+`KenKemExpert.mq5` STANDARD-mode pipeline. Two commits (pushed):
+- **4b7e2fc** P1: R-mult BE (D), smart-partial-on-retrace (F), 3-stage ladder (G), origTPDist trail (T),
+  the **load-bearing price split** (`live_px` for SL/TP+ladder; bar-frozen `bar_px` = EA
+  `cache.currentPrice/high/low` = bar first-tick bid for D/F/T/best), and the **entry-bar gate**
+  (`barsSinceEntry>0` skips management, broker SL/TP still fills).
+- **d4a51ee** P2/P3: TP-extension (E, static 6/25 pips) + **live volatility multiplier** in the trail
+  (`clamp(formingBarRange/atr14, 0.7, 1.5)`; tick_engine tracks forming-bar bid range + 14-bar TR).
 
-## ✅ BUFFER-INVERSION FIX **CONFIRMED AT FULL 2yr SCALE** — the over-ARM problem is solved
-The prior handoff's open next-action ("confirm 511→~78 on the full E1-only 2yr run") is **DONE and POSITIVE**.
-The 2yr data was NOT gone — `tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` (5.17GB) and
-the full MT5 reference `RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/{trades,kke1gate,trace}.csv` are all on
-disk. Re-ran both legs:
+Files: `cpp_core/include/kk/kenkem/{trade_manager.hpp,tick_engine.hpp}`,
+`cpp_core/tests/kenkem/test_kenkem_trade_manager.cpp` (rewritten for the new model).
 
-| run (full 2yr, E1-only, `anchor_E1_only_trace.set`) | engine | matched | missed | **overfire** | arm cross / touch |
-|---|---|---|---|---|---|
-| legacy `KK_E1_FAITHFUL=0` | 511 | 46 | 32 | **465** | 4065 / 2220 (INVERTED) |
-| **faithful (default)** | 142* | 46 | 32 | **96** | **1385 / 3043** |
-| **MT5 ground truth (ENTRIES)** | **78** | — | — | — | ~1174 / ~3146 |
+## 🔬 DECISIVE EVIDENCE — from MT5 `tester.log.gz` (RUN 1.8.154, 78 trades). THIS REPRIORITIZES THE SPEC.
+Mechanism fire counts in MT5: **TRAILING SL 290** · PARTIAL 93 · PANIC 24 · R-MULT BE 20 · BE 18 ·
+SIDEWAY 15 · EARLY 9 · PRE-BE 6 · **TP EXTENSION 1** · **LADDER 0** (all 106 trailing lines `Ext #0`).
+- ⇒ **The ladder (SPEC P1 G) and TP-extension (SPEC P3 E) are essentially INERT in MT5.** My ports are
+  correctly near-inert and are **NOT** the divergence source. (SPEC §0's "SL-WIN 7% vs 35% ⇒ ladder"
+  hypothesis is WRONG — the ladder never fires; the SL-WIN comes from the **TRAILING SL**.)
+- ⇒ Decoded a trailing line: dist = best−newSL = 0.469 = `0.40*origTPDist*0.70` ⇒ **volMult=0.70 confirmed**
+  (my live volMult port is faithful). `bestPrice==marketPrice` at bar-boundary ts ⇒ **bar-frozen model confirmed**.
 
-\*142 = windowed-to-MT5-span (149 raw). **The fix cut over-fire 4.8× (465→96) and corrected the cross/touch
-arm split to match MT5 almost exactly.** matched(46)/missed(32) are IDENTICAL legacy↔faithful ⇒ it's a **pure
-precision fix** — it kills spurious arms without touching which real trades fire. Diff tool:
+## 🧨 TRUE ROOT CAUSE of the residual exit gap = **SL/TP LEVELS differ (entry-side), not exit mechanics**
+Same matched trade: engine TP **2032.609** vs MT5 TP **2032.073**. Across 46 matched trades the engine's
+**risk (|entry−SL|) is systematically TIGHTER**: median Δ −0.248, **ratio 0.949 (~5% tight)**, 36/46
+engine<MT5, **7 EXACT**, 3 wider. Wider engine TP ⇒ later 0.90 partial-eligibility + looser
+`0.40*origTPDist` trail ⇒ the trail never catches the retrace ⇒ engine rides to TP where MT5 books SL-WIN.
+**Exit mechanics cannot tie out until SL/TP levels match** — every exit change this session was net-neutral
+(net 1456.63, SL-WIN 11% vs MT5 35%) BECAUSE the level gap dominates.
 
-> ⚠️ **78 vs 96 — DO NOT confuse these two numbers (corrected 2026-06-18 from the MT5 report image).**
-> The parity target on the ENTRY side is **78 = MT5 position ENTRIES** (in-deals), which equals the EA log's
-> `Total E1 Entries: 78` and the 78 rows in `trades.csv`. The MT5 **Strategy-Tester report headline
-> `Total Trades = 96`** is a DIFFERENT metric: it counts **closing deals (out-deals)**. The report proves it
-> exactly: `Total Deals 174 = 78 entries + 96 closes`; `Profit 64 + Loss 32 = 96`; `Short 44 + Long 52 = 96`.
-> 78 positions are closed by 96 deals because **18 positions get partial closes** → direct evidence for the
-> EXIT-FIDELITY work below (engine must model partial closes to reproduce MT5 P&L *and* the 96 count).
-> SEPARATE COINCIDENCE: the engine's *over-fire* count is also 96 — unrelated to MT5's 96 closing deals.
-> Engine emits one row per ENTRY, so it is compared against 78 (= 46 matched + 32 missed). Over-fire 142 vs 78
-> is real and unchanged.
+### Where the 5% comes from (traced into the EA):
+EA `CalculateStopLossWithCustomEMA` (EntryBase.mqh:637) = structure stop (`min(recentLow,emaLevel)−27pip`)
+→ **ATR arbitration** (floor `1.2*ATR`, cap `4.0*ATR`) → `ApplySpreadBuffer`. The engine's `compute_sl`
+(entries.hpp:57) mirrors structure+arbitration but the gap is the **ATR value feeding the floor/cap**:
+- `ApplySpreadBuffer`/`CalculateBufferedStopWithSpread` only widens if rawSL < 0.5*spread (≈0.025) ⇒ INERT,
+  not the cause (engine omitting it is fine).
+- The **7 EXACT matches = pure-structure SLs** (ATR arb doesn't bind). The **36 tighter = ATR floor/cap
+  binds with a slightly-low engine ATR** — the documented **Wilder-seeding / `InpAtrMt5Mode` caveat**
+  ([[parity-findings-front-half]], [[atr-percentile-parity-wall]], `snapshot.hpp:159-165` forming Wilder step).
 
-`research/kenkem_parity/diff_kk.py` (windowed, +60s-offset aware). Fix lives in
-`cpp_core/include/kk/kenkem/triggers.hpp` (gated `cfg.e1_faithful_trigger`, default TRUE; `KK_E1_FAITHFUL=0`
-reverts). Already committed (355cf19). **No code changed this session — confirmation + decomposition only.**
+## ▶️ NEXT ACTION — make `cache.atrM1` MT5-faithful, THEN re-measure exits
+1. **Tie out `s.atrM1` to MT5's `iATR(14)` shift-0** (the forming Wilder step). Diagnostic: dump engine
+   atrM1 per entry-bar vs MT5 `trace.csv` `atr` column (joined by ts−60000); the floor/cap bind cases are
+   where they diverge. Adopt the MT5 ATR mode/seeding (the `InpAtrMt5Mode` lesson). Target: `|Δrisk|`
+   median 0.25→~0 on the 36 currently-tight trades; the 7 exact must STAY exact.
+2. Also verify `recentHigh/recentLow` (entries.hpp recentHi/Lo) use `iHighest/iLowest(MODE,18,ENTRY_SHIFT)`
+   with the SAME window+shift as Entry1.mqh:125 (a wrong/short window also tightens the stop).
+3. **Re-run the 2yr E1 diff** — expect SL-WIN to jump toward 35% and Δpnl to collapse ONCE levels match,
+   because the trail (volMult 0.7, origTPDist) is already correct and will then bind at MT5's geometry.
+4. Only AFTER levels+exits tie out: re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters) to collapse
+   the 96 overfire / 32 missed (those are entry-count, unchanged this session: engine 149/142-windowed vs 78).
 
-## 🔬 The residual 96 overfire + 32 missed — DECOMPOSED (vs MT5 `kke1gate.csv`, `/tmp/decomp.py`)
-- **OVERFIRE 96** = 10 over-arm (no MT5 arm) · **23 gate-leak** (mtf 20, price_pos/trend_strength/trend_quality 1 ea) · **63 "MT5 gate-PASS but fired NO trade"**.
-- **MISSED 32** = ALL 32 are MT5 gate-**PASS** bars the engine under-fired (0 block, 0 no-arm).
-- The legacy diagnosis was "85% spurious over-ARM"; after the fix **over-arm is essentially gone (10 left)**.
-
-### ⭐ KEYSTONE = EXIT FIDELITY, not trigger and not the gate. The MT5 post-gate funnel proves it:
-**MT5 gate-PASS on 554 bars → only 78 ENTRIES fire** (a 7:1 suppression layer AFTER the per-bar gate; those
-78 entries close in 96 deals = MT5 report "Total Trades", incl. 18 partial closes). The engine converts 142
-of those passed arms (vs MT5's 78 entries) because its post-gate suppression is weaker. That layer is
-**position-occupancy + account limiters**, and both hinge on exits matching MT5 (incl. partial closes):
-- The loss-cooldown limiter **is already ported** (`tick_engine.hpp:227-360`) but **disabled by default**
-  (`enable_loss_cooldowns=false`, kenkem_config.hpp:58-61) because it needs faithful per-trade WIN/LOSS.
-  **A/B confirmed: flipping `ENABLE_LOSS_COOLDOWNS=true` moved overfire only 96→95** — useless until exits tie out.
-- Matched trades already diverge on exit: **|ΔpnlUSD| median 60.3 / max 237**, **exitTag mismatch on 18/46**
-  (e.g. cpp=TP vs ref=SL-WIN), |Δrisk(SL)| median 0.25. So engine hold-windows ≠ MT5 hold-windows ⇒ the
-  engine is free to re-enter on passed arms where MT5 still holds a position ⇒ the 63 "PASS-but-no-trade".
-
-### ▶️ NEXT ACTION — make E1 exits MT5-faithful (the "A7" exit work), THEN re-enable limiters
-1. Tie out exit mechanics on the 46 matched trades first (exitTag + Δpnl + Δrisk → ~0). Suspects: SL/TP
-   trigger order, forming-bar exit timing, BE/trail, partial-close. Use matched-pair list from diff_kk.
-2. Once exits match, re-run with `ENABLE_LOSS_COOLDOWNS=true` and verify the 63 PASS-but-no-trade collapse
-   (position-occupancy now aligns) and the 32 missed resolve. Expect engine→~78.
-3. The 20-bar `mtf` gate-leak is small and known ([[kenkem-e1-overfire-trendcore]] §9) — chase only after exits.
-4. Do NOT touch the trigger/arm path or mirror anything into MQL5 — the EA already has the (faithful) behavior;
-   the engine now matches it. Parity = keep both as-is.
-
-## 🔁 Repro (full 2yr, each leg ~40s)
+## 🔁 Repro (full 2yr, ~25s each)
 ```
-cd cpp_core && make kenkem_tick && make test          # 28 checks, green
+cd cpp_core && make test                       # 29 checks, green
 KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
   --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --ticks tools/ticks_xauusd_2024_2026.csv \
   --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/e.csv
 python research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
   --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv
-python /tmp/decomp.py    # overfire/missed decomposition vs kke1gate.csv (script saved in /tmp this session)
+# exit-tag dist + matched Δrisk characterization: ad-hoc python in this session's transcript.
+# MT5 mechanism fires: gzcat <RUN>/tester.log.gz | grep -c "TRAILING SL"   (etc.)
 ```
+Current diff: matched 46 / missed 32 / overfire 96; Δpnl median **51.15** (was 60.3); exit-tag
+engine SL-WIN **11%** TP 32% SL-LOSS 36% EA 21%  vs  MT5 SL-WIN **35%** TP 21% SL-LOSS 28% EA 17%.
 
-## ✅ M1/M3/M5/M15 DATA INTEGRITY VERIFIED (2026-06-18) — bars/EMA/ADX/DI bit-exact on normal days
-Bar aggregation is correct (`aggregate()` in tick_backtester.cpp). Only desync = holiday/month-end tick
-holes. **ATR caveat:** Wilder seeding/mode diff (`InpAtrMt5Mode`, [[parity-findings-front-half]]) drifts even
-where OHLC is exact; converges after warmup; resolve when locking ATR-based SL/gates. Full repro in git
-history (commit 8459947) if needed.
+## 📦 Data / instruments
+- Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv (5.17GB)}`.
+- MT5 ref `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`:
+  `trades.csv` (78), `kke1gate.csv` (554 PASS), `trace.csv` (291MB; has per-bar `atr` col), `tester.log.gz`.
+- Ground-truth EA = `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (+ `TradeManagement/TradeManager.mqh`,
+  `Entries/EntryBase.mqh`). NOTE: dquants `mql5/experts/KenKem/` is the THIN KK-rewrite (Engine.mqh), NOT
+  this EA — do not confuse them. Exit port spec: `research/hypotheses/KENKEM-EXIT-PARITY-SPEC.md`
+  (its P1/P3 emphasis is now superseded by the log evidence above — TRAILING SL + SL-levels are the levers).
 
-## 📦 Data reality (CORRECTED — prior handoff wrongly said 2yr data was gone)
-- Full 2yr XAU present: `cpp_core/tools/bars_xauusd_2024_2026_m1.csv` (45MB) + `ticks_xauusd_2024_2026.csv`
-  (5.17GB), plus 2026/2025h2/2425 windows. MT5 ref `RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/` INTACT
-  (kke1gate.csv 55748 rows: 554 PASS / 55194 BLOCK; trades.csv 78; trace.csv 291MB).
-- Engine arm instruments: `KK_EMIT_ARMS`, `KK_EMIT_ARMSTATE`, `KK_EMIT_GATE`, `KK_EMIT_GATE_REASON`.
-  A/B knobs: `KK_E1_FAITHFUL` (trigger), `ENABLE_LOSS_COOLDOWNS` (.set key, limiter).
-
-## 🧱 After E1→E5 parity is LOCKED (user's explicit next phase)
+## 🧱 After E1→E5 parity LOCKED (user's explicit next phase)
 Convert pip-denominated params to ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before — parity is
-ground truth. See [[goal-pip-to-atr-relative]], [[kenkem-e1-overfire-trendcore]], [[kenkem-e1-ema-buffer-inversion]].
+ground truth. See [[goal-pip-to-atr-relative]].
