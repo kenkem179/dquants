@@ -102,6 +102,19 @@ void test_ladder_engages_above_orig_tp() {
     KK_CHECK_NEAR(p.sl, 106.09, 1e-6);
 }
 
+// (E) TP extension: within 25 pips of TP at >=92% progress, push TP out by 6 pips and bump tp_ext (which
+// halves the trail divisor). EA UpdateDynamicTPExtension is dead -> static 6/25 pips. pip=0.01 here.
+void test_tp_extension() {
+    KenKemConfig c;
+    vector<Fill> fills;
+    Position p = open_position(true, 1, 100.0, 96.0, 108.0, 1.0, c);  // origTPDist 8
+    manage_tick(p, 107.8, c, fills);     // remaining 0.2=20pips<=25, progress 0.975 -> extend +6pips
+    KK_CHECK(p.open && p.tp_ext == 1);
+    KK_CHECK_NEAR(p.tp, 108.06, 1e-9);
+    KK_CHECK_NEAR(p.orig_tp, 108.0, 1e-9);   // origTPDist basis unchanged
+    KK_CHECK_NEAR(p.sl, 106.2, 1e-6);        // trail = best 107.8 - origTPDist*0.40/(tp_ext+1)=1.6
+}
+
 // Partial slice rounds to the broker volume step (EA NormalizeLotSize): 0.13*0.20=0.026 -> 0.03.
 void test_partial_slice_rounds_to_step() {
     KenKemConfig c;
@@ -150,10 +163,10 @@ void test_entry_bar_skips_management_not_sltp() {
     KenKemConfig c;
     vector<Fill> fills;
     Position p = open_position(true, 1, 100.0, 96.0, 108.0, 1.0, c);
-    manage_tick(p, 107.5, 107.5, c, fills, /*manage_allowed=*/false);  // no partial/trail on entry bar
+    manage_tick(p, 107.5, 107.5, c, fills, /*manage_allowed=*/false, 1.0);  // no partial/trail on entry bar
     KK_CHECK(p.open && !p.partial_eligible && !p.partial_done && fills.empty() && p.sl == 96.0);
     // But SL still fills even on the entry bar.
-    manage_tick(p, 95.0, 95.0, c, fills, /*manage_allowed=*/false);
+    manage_tick(p, 95.0, 95.0, c, fills, /*manage_allowed=*/false, 1.0);
     KK_CHECK(!p.open && fills.size() == 1 && fills[0].reason == 'S');
 }
 
@@ -165,6 +178,7 @@ void run_all() {
     KK_RUN(test_smart_partial_waits_for_retrace);
     KK_RUN(test_trail_engages_on_eligible);
     KK_RUN(test_ladder_engages_above_orig_tp);
+    KK_RUN(test_tp_extension);
     KK_RUN(test_partial_slice_rounds_to_step);
     KK_RUN(test_partial_sub_min_bumps_to_min);
     KK_RUN(test_stops_level_blocks_sl_move);

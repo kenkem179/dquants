@@ -61,7 +61,17 @@ public:
         //      iClose(0)==iHigh(0)==iLow(0) = the new bar's first-tick BID), set ONCE at the new-bar event
         //      and held for the whole bar. Drives R-mult BE / smart-partial / trail / bestPrice in
         //      manage_tick (the ladder + broker SL/TP use the live tick price instead). See trade_manager.hpp.
-        if (forming != cur_forming_ || bar_bid_ == 0.0) bar_bid_ = t.bid;
+        if (forming != cur_forming_ || bar_bid_ == 0.0) {
+            bar_bid_ = t.bid;
+            cur_bar_hi_ = cur_bar_lo_ = t.bid;   // reset forming-bar running range (bid, like iHigh/iLow(0))
+            atr14_ = compute_atr14_(forming);    // 14-bar TR average (completed bars) for the vol multiplier
+        }
+        // Track the forming bar's live bid range INCLUDING this tick (EA GetVolatilityMultiplier reads the
+        // live iHigh(0)-iLow(0) each tick), then derive the trail's volatility multiplier (clamped [0.7,1.5]).
+        if (t.bid > cur_bar_hi_) cur_bar_hi_ = t.bid;
+        if (t.bid < cur_bar_lo_) cur_bar_lo_ = t.bid;
+        const double vol_mult = (atr14_ > 0.0)
+            ? std::min(1.5, std::max(0.7, (cur_bar_hi_ - cur_bar_lo_) / atr14_)) : 1.0;
 
         // (1) Manage every open position with this tick (exit-side price), BEFORE any new entry so a
         //     position opened on this tick is not managed until the next tick (MT5 OnTick order).
@@ -71,7 +81,7 @@ public:
             // EA skips ALL management on the entry bar (barsSinceEntry==0); broker SL/TP still fill there.
             const bool manage_allowed = (forming > o.p.entry_bar);
             std::vector<Fill> fills;
-            manage_tick(o.p, px, bar_bid_, cfg_, fills, manage_allowed);
+            manage_tick(o.p, px, bar_bid_, cfg_, fills, manage_allowed, vol_mult);
             for (const Fill& f : fills) {
                 const double pts = o.p.is_long ? (f.price - o.p.entry) : (o.p.entry - f.price);
                 o.pnl_acc += f.lot * pts * vppl_ - f.lot * cfg_.commission_per_lot;
@@ -351,6 +361,20 @@ private:
         return (blocked_until_[kind][d] > 0 && now < blocked_until_[kind][d]);
     }
 
+    // GetVolatilityMultiplier's denominator (Helpers.mqh:205): the 14-bar average True Range over the bars
+    // CLOSED before the forming bar `f` (TR=max(H-L,|H-prevC|,|L-prevC|), prevC=close of the older bar).
+    // Divides by 14.0 always, matching the EA. Returns 0 if too early (warmup) -> caller uses volMult 1.0.
+    double compute_atr14_(int f) const {
+        if (f < 16) return 0.0;
+        double sum = 0.0;
+        for (int i = 1; i <= 14; ++i) {
+            const kk::Bar& b = b_.m1.bars[f - i];
+            double pc = b_.m1.bars[f - i - 1].close;
+            sum += std::max(b.high - b.low, std::max(std::fabs(b.high - pc), std::fabs(b.low - pc)));
+        }
+        return sum / 14.0;
+    }
+
     void realize_(detail::OpenPos& o, int64_t t_out, bool count_session = true) {
         // Update the per-session caps exactly as BrokerHelpers::HandleClosedTrade does on every close:
         //   tradeSLTPCountInSession++ on EVERY close; sessionLossCount++ only on a real (non-breakeven)
@@ -388,6 +412,8 @@ private:
     double vppl_ = 0, balance_ = 0, peak_ = 0, gross_win_ = 0, gross_loss_ = 0;
     int N_ = 0, cur_forming_ = 0;
     double bar_bid_ = 0.0;      // EA cache.currentPrice/high/low: bar's first-tick bid, frozen per bar
+    double cur_bar_hi_ = 0.0, cur_bar_lo_ = 0.0;  // forming-bar running bid range (live iHigh/iLow(0))
+    double atr14_ = 0.0;        // 14-bar TR avg (denominator of GetVolatilityMultiplier)
     int64_t cur_day_ = -1;
     int entries_today_ = 0;
     const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
