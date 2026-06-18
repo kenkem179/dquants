@@ -57,13 +57,21 @@ public:
         if (forming != cur_forming_)
             for (int f = cur_forming_ + 1; f <= forming; ++f) update_session_(b_.m1.bars[f].ts_ms);
 
+        // (0b) Freeze the per-bar reference price (= EA UpdateIndicatorCache: cache.currentPrice/high/low =
+        //      iClose(0)==iHigh(0)==iLow(0) = the new bar's first-tick BID), set ONCE at the new-bar event
+        //      and held for the whole bar. Drives R-mult BE / smart-partial / trail / bestPrice in
+        //      manage_tick (the ladder + broker SL/TP use the live tick price instead). See trade_manager.hpp.
+        if (forming != cur_forming_ || bar_bid_ == 0.0) bar_bid_ = t.bid;
+
         // (1) Manage every open position with this tick (exit-side price), BEFORE any new entry so a
         //     position opened on this tick is not managed until the next tick (MT5 OnTick order).
         for (size_t k = 0; k < open_.size(); ) {
             detail::OpenPos& o = open_[k];
-            const double px = o.p.is_long ? t.bid : t.ask;   // exit-side market price
+            const double px = o.p.is_long ? t.bid : t.ask;   // exit-side market price (live, for SL/TP+ladder)
+            // EA skips ALL management on the entry bar (barsSinceEntry==0); broker SL/TP still fill there.
+            const bool manage_allowed = (forming > o.p.entry_bar);
             std::vector<Fill> fills;
-            manage_tick(o.p, px, cfg_, fills);
+            manage_tick(o.p, px, bar_bid_, cfg_, fills, manage_allowed);
             for (const Fill& f : fills) {
                 const double pts = o.p.is_long ? (f.price - o.p.entry) : (o.p.entry - f.price);
                 o.pnl_acc += f.lot * pts * vppl_ - f.lot * cfg_.commission_per_lot;
@@ -298,6 +306,7 @@ private:
         // Fill at THIS tick's real ask (long) / bid (short) — spread is in the price, no synthetic add.
         const double fill = sig.is_long ? t.ask : t.bid;
         Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, tp, lot, cfg_);
+        p.entry_bar = f;   // entryBar = forming-bar index at fill (gates management: barsSinceEntry>0)
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
         last_entry_ms_ = t.ts_ms;
@@ -378,6 +387,7 @@ private:
     int64_t start_ms_, end_ms_;
     double vppl_ = 0, balance_ = 0, peak_ = 0, gross_win_ = 0, gross_loss_ = 0;
     int N_ = 0, cur_forming_ = 0;
+    double bar_bid_ = 0.0;      // EA cache.currentPrice/high/low: bar's first-tick bid, frozen per bar
     int64_t cur_day_ = -1;
     int entries_today_ = 0;
     const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
