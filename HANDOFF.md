@@ -14,11 +14,23 @@ disk. Re-ran both legs:
 |---|---|---|---|---|---|
 | legacy `KK_E1_FAITHFUL=0` | 511 | 46 | 32 | **465** | 4065 / 2220 (INVERTED) |
 | **faithful (default)** | 142* | 46 | 32 | **96** | **1385 / 3043** |
-| **MT5 ground truth** | 78 | — | — | — | ~1174 / ~3146 |
+| **MT5 ground truth (ENTRIES)** | **78** | — | — | — | ~1174 / ~3146 |
 
 \*142 = windowed-to-MT5-span (149 raw). **The fix cut over-fire 4.8× (465→96) and corrected the cross/touch
 arm split to match MT5 almost exactly.** matched(46)/missed(32) are IDENTICAL legacy↔faithful ⇒ it's a **pure
 precision fix** — it kills spurious arms without touching which real trades fire. Diff tool:
+
+> ⚠️ **78 vs 96 — DO NOT confuse these two numbers (corrected 2026-06-18 from the MT5 report image).**
+> The parity target on the ENTRY side is **78 = MT5 position ENTRIES** (in-deals), which equals the EA log's
+> `Total E1 Entries: 78` and the 78 rows in `trades.csv`. The MT5 **Strategy-Tester report headline
+> `Total Trades = 96`** is a DIFFERENT metric: it counts **closing deals (out-deals)**. The report proves it
+> exactly: `Total Deals 174 = 78 entries + 96 closes`; `Profit 64 + Loss 32 = 96`; `Short 44 + Long 52 = 96`.
+> 78 positions are closed by 96 deals because **18 positions get partial closes** → direct evidence for the
+> EXIT-FIDELITY work below (engine must model partial closes to reproduce MT5 P&L *and* the 96 count).
+> SEPARATE COINCIDENCE: the engine's *over-fire* count is also 96 — unrelated to MT5's 96 closing deals.
+> Engine emits one row per ENTRY, so it is compared against 78 (= 46 matched + 32 missed). Over-fire 142 vs 78
+> is real and unchanged.
+
 `research/kenkem_parity/diff_kk.py` (windowed, +60s-offset aware). Fix lives in
 `cpp_core/include/kk/kenkem/triggers.hpp` (gated `cfg.e1_faithful_trigger`, default TRUE; `KK_E1_FAITHFUL=0`
 reverts). Already committed (355cf19). **No code changed this session — confirmation + decomposition only.**
@@ -29,9 +41,10 @@ reverts). Already committed (355cf19). **No code changed this session — confir
 - The legacy diagnosis was "85% spurious over-ARM"; after the fix **over-arm is essentially gone (10 left)**.
 
 ### ⭐ KEYSTONE = EXIT FIDELITY, not trigger and not the gate. The MT5 post-gate funnel proves it:
-**MT5 gate-PASS on 554 bars → only 78 trades fire** (a 7:1 suppression layer AFTER the per-bar gate). The
-engine converts 142 of those passed arms (vs MT5's 78) because its post-gate suppression is weaker. That
-layer is **position-occupancy + account limiters**, and both hinge on exits matching MT5:
+**MT5 gate-PASS on 554 bars → only 78 ENTRIES fire** (a 7:1 suppression layer AFTER the per-bar gate; those
+78 entries close in 96 deals = MT5 report "Total Trades", incl. 18 partial closes). The engine converts 142
+of those passed arms (vs MT5's 78 entries) because its post-gate suppression is weaker. That layer is
+**position-occupancy + account limiters**, and both hinge on exits matching MT5 (incl. partial closes):
 - The loss-cooldown limiter **is already ported** (`tick_engine.hpp:227-360`) but **disabled by default**
   (`enable_loss_cooldowns=false`, kenkem_config.hpp:58-61) because it needs faithful per-trade WIN/LOSS.
   **A/B confirmed: flipping `ENABLE_LOSS_COOLDOWNS=true` moved overfire only 96→95** — useless until exits tie out.
