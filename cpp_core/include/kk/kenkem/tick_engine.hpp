@@ -178,12 +178,23 @@ private:
 
         // Trigger state machine must see EVERY bar in order (it accumulates cross/touch state).
         const int e1u0 = tg_.ema_up, e1d0 = tg_.ema_down, e2u0 = tg_.e75_up, e2d0 = tg_.e75_down;
+        const long ac0 = tg_.arm_e1_cross, at0 = tg_.arm_e1_touch;
         update_triggers(b_, cfg_, f, align, tg_);
         if (start_ms_ == 0 || bar.ts_ms >= start_ms_) {  // count arms only in-window
             if (e1u0 == -1 && tg_.ema_up   != -1) ++arm_e1_;
             if (e1d0 == -1 && tg_.ema_down != -1) ++arm_e1_;
             if (e2u0 == -1 && tg_.e75_up   != -1) ++arm_e2_;
             if (e2d0 == -1 && tg_.e75_down != -1) ++arm_e2_;
+            if (emit_arms_) {   // diagnostic: per-bar E1 arm event (consumption-aware) — src + dir
+                const char* src = (tg_.arm_e1_cross > ac0) ? "cross"
+                                : (tg_.arm_e1_touch > at0) ? "touch" : nullptr;
+                if (src) {
+                    if (e1u0 == -1 && tg_.ema_up   != -1)
+                        std::fprintf(stderr, "ARMFIRE,%lld,L,%s\n", (long long)bar.ts_ms, src);
+                    if (e1d0 == -1 && tg_.ema_down != -1)
+                        std::fprintf(stderr, "ARMFIRE,%lld,S,%s\n", (long long)bar.ts_ms, src);
+                }
+            }
         }
 
         if (f < warmup_) return;
@@ -349,6 +360,7 @@ private:
     int entries_today_ = 0;
     const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
     const bool emit_age_ = std::getenv("KK_EMIT_AGE") != nullptr;         // diagnostic: per-fire age to stderr
+    const bool emit_arms_ = std::getenv("KK_EMIT_ARMS") != nullptr;       // diagnostic: per-bar E1 arm events
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)

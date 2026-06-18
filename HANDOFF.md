@@ -57,29 +57,48 @@ MT5 tester.log (`tester.log.gz`, **UTF-16**) logs arm events directly:
 - Offset is **UTC+0** (log bar-times already UTC): 142/183 MT5 fires reconcile to a same-dir touch-arm at
   age 0–80 (median age **40** — MT5 ALSO fires late, so late-firing is normal). The other ~41 fires are
   cross-armed (recent). So MT5 E1 ≈ **78% touch-armed, 22% cross-armed**.
-- The ENGINE **under-touch-arms** (3687 touch vs MT5 7987) yet over-fires — i.e. it leans on CROSS arming
-  (3806) the EA barely uses, AND its touch arming fires on different/fewer bars.
-- **Artifact saved:** `research/kenkem_parity/mt5_runs/RUN_.../mt5_e1_touch_arms_utc.csv` (7987 rows
-  ts_ms,dt,dir) — MT5's actual touch-arm bars, ready to diff against the engine's.
+- ⚠️ **CORRECTION:** `tester.log.gz` contains **3 concatenated tester runs** (input echo at 00:24/00:27/00:32),
+  so the raw 7987 touch lines are inflated 3×. **Deduped: MT5 has 2761 unique touch-arm bars (L1619/S1142).**
+  The saved `mt5_e1_touch_arms_utc.csv` already de-dups to 2761 (set-keyed).
+
+## 🧪 ROUND-2 (this session, age=80 to match MT5) — touch-arm shift & wick hypotheses REJECTED
+Built consumption-aware engine arm emit (`KK_EMIT_ARMS=1` → `ARMFIRE,ts,dir,src{cross|touch}`) and
+bar-matched vs MT5's 2761 touch arms (engine run on `/tmp/anchor_age80.set`, src-split: cross 3704, touch 3585):
+- Engine **over**-touch-arms (3585 vs 2761, +30%); exact-bar overlap only **~72%** (L 74%, S 69%).
+- **EMA200-touch read-SHIFT REJECTED:** `KK_TOUCH_SHIFT` sweep 0/1/2 moves overlap only 72→73→75% — NOT
+  the cause. Do not change the touch shift.
+- **Wick-fidelity REJECTED:** engine M1 `close/high/low` match MT5 to **0.0000** (at the +1 trace label
+  shift; raw 0.74 was the same labeling artifact as DI). Bars are exact.
+- **E1 HTF filter is a faithful 1:1 port** (EA enum `HTF_TREND_MODE` == engine `HtfMode`; mode 1=M5_ONLY;
+  block-counter logic matches). Not the divergence.
+- **Net:** bars + indicators + E1 gates + arming LOGIC are each individually faithful, yet entry sets still
+  diverge (86/183 matched). The residual must be **stateful trigger COUPLING** — guard (`==-1`) +
+  consumption + expiry + intra-bar arm/fire ORDERING — where small timing diffs compound the trigger state
+  apart. The 72% touch overlap is largely DOWNSTREAM of this (different fire/expiry history → different bars
+  eligible to arm), not an independent root.
 
 ## ▶️ NEXT ACTION (exact, priority order)
-1. **Compare engine vs MT5 E1 touch-arm BARS directly.** Add a per-source tag to the engine's touch-arm
-   emission WITH consumption (the real engine, not the consumption-free `e1_arm_dumper`), then bar-by-bar
-   diff vs `mt5_e1_touch_arms_utc.csv`. Likely an EMA200 read-SHIFT difference: EA reads
-   `ema200=GetEMA(...,ENTRY_SHIFT)` (non-series trap → series-shift2) but bar low/high at
-   `iLow(...,ENTRY_SHIFT)` (series-shift1); the C++ `triggers.hpp` touch (lines 86–98) reads BOTH ema200 and
-   low/high at `m1s1=B-1` (series-shift1). Fix the EMA200 shift to the trap shift and re-diff.
-2. Audit the CROSS arming shift (`triggers.hpp:64–84`): EA uses `isEMAsReadyForEntry(...,1)`/`(...,2)` =
-   `GetEMA` trap (series-shift2/3); C++ uses `emas_ready(s, B-1, B-2)` (series-shift1/2). Re-test the
-   trap-shift with the QUALITY metric (matched/missed/overfire/pnl), NOT matched-count.
-3. Once arm bars align, re-check the missed/overfire split. Only then revisit exits (A7) + cooldowns.
+1. **Attack the stateful coupling / intra-bar ordering.** In the EA, `UpdateEmaTouches()` (arming) runs at a
+   specific point in `OnTick` relative to `DetectNewEntry` — determine whether a touch armed on bar B can FIRE
+   on bar B (age 0) or only B+1, and whether the engine's order (update_triggers in `on_bar_closed_` BEFORE
+   detect) matches. A 1-bar earliest-fire offset would shift the whole entry set. Also check the cross-arm's
+   `lastEMACrossingDown=-1` opposite-clear vs the engine.
+2. **Get MT5's true per-armed-bar gate fire-rate** (the 2.3× fire-rate-per-arm gap is still unexplained):
+   mine the per-bar `[E1] ... blocked: <reason>` lines from `tester.log.gz` keyed by bar time, and compare to
+   the engine's E1 gate decisions on the SAME bars. The MT5 end-of-run histogram is HTF 58% / MTF 31% — find
+   whether the engine rejects those same bars.
+3. Only after entry timing ties out: exits (A7) + cooldowns.
 
-## 🧰 Tooling added this session
-- `KK_EMIT_AGE=1` → tick backtester emits `AGEFIRE,ts_ms,dir,Ekind,age` per fire (EntrySignal.age, set in
-  `entries.hpp:288`; printed in `tick_engine.hpp`). Non-regressive (diagnostic field, env-gated).
-- `cpp_core/tools/kenkem/e1_arm_dumper.cpp` (compile: `clang++ -std=c++20 -O2 -Iinclude
-  tools/kenkem/e1_arm_dumper.cpp -o build/kenkem/e1_arm_dumper`) — dumps E1 arm transition bars
-  (CONSUMPTION-FREE → undercounts; for the bar-diff in NEXT-1 make it consumption-aware / source-tagged).
+## 🧰 Tooling (all env-gated, non-regressive — default OFF reproduces baseline E1 624)
+- `KK_EMIT_AGE=1` → tick backtester emits `AGEFIRE,ts_ms,dir,Ekind,age` per fire (EntrySignal.age).
+- `KK_EMIT_ARMS=1` → emits `ARMFIRE,ts_ms,dir,src{cross|touch}` per E1 arm WITH consumption
+  (`tick_engine.hpp` `on_bar_closed_`). This is the consumption-aware arm dump (use over `e1_arm_dumper`).
+- `KK_TOUCH_SHIFT=N` → offsets the EMA200/alignment read in the touch arming (`triggers.hpp:86`); sweep
+  showed flat overlap → keep 0.
+- `cpp_core/tools/kenkem/e1_arm_dumper.cpp` — standalone consumption-FREE arm dumper (undercounts; prefer
+  `KK_EMIT_ARMS`).
+- MT5 touch-arm extraction (UTF-16, de-dup 3 runs): `gzip.open(...,'rb').read().decode('utf-16')` + regex
+  `(\d4.\d2.\d2 \d2:\d2):\d2\s+\[EMA200 Touch\] (Bull|Bear)ish` → set-key (ts,dir).
 
 ## 🔑 Key facts / gotchas
 - Full 2yr run FAST (~20s). Tick engine only for P&L. `anchor_E1E2.set` = MT5 config (now E1 age=28).

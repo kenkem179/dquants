@@ -15,6 +15,7 @@
 #include "kk/kenkem/tf_cache.hpp"
 #include "kk/kenkem/kenkem_config.hpp"
 #include <cstdint>
+#include <cstdlib>
 
 namespace kk::kenkem {
 
@@ -84,15 +85,20 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     }
 
     // ---- E1 alt: EMA200 touch with full M1+M3 alignment (EMAHelpers.mqh:259-283) ----
-    if (m1s1 >= 0) {
-        const double ema200 = bundle.m1.ema[4][m1s1];
+    // DIAGNOSTIC: KK_TOUCH_SHIFT offsets the EMA200/alignment read (bar low/high stay at iLow shift1 = m1s1,
+    // matching the EA). The EA reads ema200/alignment via GetEMA(...,ENTRY_SHIFT) (non-series trap); this
+    // sweep finds the shift that best matches MT5's logged touch-arm bars. 0 = original (m1s1).
+    static const int touch_sh = [] { const char* e = std::getenv("KK_TOUCH_SHIFT"); return e ? std::atoi(e) : 0; }();
+    const int e1t = m1s1 - touch_sh, e3t = m3s1 - touch_sh;
+    if (m1s1 >= 0 && e1t >= 0 && e3t >= 0) {
+        const double ema200 = bundle.m1.ema[4][e1t];
         const double lo = bundle.m1.bars[m1s1].low, hi = bundle.m1.bars[m1s1].high;
         if (lo <= ema200 && hi >= ema200) {
-            if (st.ema_up == -1 && emas_ready(bundle.m1, m1s1, true, true, tol) &&
-                emas_ready(bundle.m3, m3s1, true, true, tol)) {
+            if (st.ema_up == -1 && emas_ready(bundle.m1, e1t, true, true, tol) &&
+                emas_ready(bundle.m3, e3t, true, true, tol)) {
                 st.ema_up = B; st.ema_down = -1; ++st.arm_e1_touch;
-            } else if (st.ema_down == -1 && emas_ready(bundle.m1, m1s1, false, true, tol) &&
-                       emas_ready(bundle.m3, m3s1, false, true, tol)) {
+            } else if (st.ema_down == -1 && emas_ready(bundle.m1, e1t, false, true, tol) &&
+                       emas_ready(bundle.m3, e3t, false, true, tol)) {
                 st.ema_down = B; st.ema_up = -1; ++st.arm_e1_touch;
             }
         }
