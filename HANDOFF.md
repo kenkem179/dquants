@@ -38,6 +38,10 @@ scenario can't arm a faithful cross — that path only fires on alignment-loss).
 ~23 are large-delta, explained by E1-only engine vs E1+E2+E4 MT5 latch-consumption mismatch). The fix
 corrects **both** sides the handoff flagged (cross over-fire ↓, touch under-fire ↑) in one change.
 
+**Scale check** (2425 window ≈ 2024-12→2025-07, no MT5 ref but directional): legacy 104 E1 trades / 860
+cross / 439 touch → faithful **19 / 304 / 616**. The 5.5× trade collapse matches the full-2yr 6.5× over-fire
+signature (511 vs 78) → strong evidence the same fix closes the 2yr gap.
+
 ### ▶️ NEXT ACTION — confirm on the full E1-only 2yr run, then lock
 The decisive Feb-2026 check is arm-level (touch 105=105). To close trade-level parity, **regenerate the
 full 2yr E1-only MT5 + engine run** (the old `bars/ticks_xauusd_2024_2026*` and the
