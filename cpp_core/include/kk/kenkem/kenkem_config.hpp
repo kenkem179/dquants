@@ -196,6 +196,11 @@ struct KenKemConfig {
     // ~3.5x E1 cross over-arm and lands EMA200-touch arm count EXACTLY on MT5 (105=105, Feb-2026 XAU).
     // false = legacy natural-order detection (used by synthetic engine-mechanics tests only).
     bool   e1_faithful_trigger    = true;
+    // FAITHFUL trail risk basis: the EA recomputes risk=|entry-currentSL| every tick (Engine.mqh:172)
+    // and feeds it to the chandelier trail (KK-Common/PositionManager.mqh:45). So once SL moves to BE
+    // and trails, the trailing distance trailF*risk tracks the LIVE stop distance, not the entry risk.
+    // true = match EA (live risk); false = legacy frozen entry-risk. Toggle via KK_TRAIL_LIVE_RISK.
+    bool   trail_live_risk        = true;
     int    e1_momentum_bypass     = 1;
     double e1_rr                  = 1.9;
     double e1_rr_sideway          = 1.2;

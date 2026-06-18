@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[set] applied %d keys from %s\n", n, set_path.c_str());
     }
     if (const char* e = std::getenv("KK_E1_FAITHFUL")) cfg.e1_faithful_trigger = std::atoi(e) != 0;
+    if (const char* e = std::getenv("KK_TRAIL_LIVE_RISK")) cfg.trail_live_risk = std::atoi(e) != 0;
 
     // Load ALL M1 bars (no from filter) so indicators warm up; the engine gates trading by from_ms.
     std::vector<kk::Bar> m1 = kk::load_bars_csv(m1_path, 0, to_ms);

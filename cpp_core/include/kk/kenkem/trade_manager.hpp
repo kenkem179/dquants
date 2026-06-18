@@ -81,6 +81,12 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
         if (c.stops_level_price <= 0.0) return true;
         return p.is_long ? (price - cand >= c.stops_level_price) : (cand - price >= c.stops_level_price);
     };
+    // Risk basis for BE/trail. The EA recomputes risk=|entry-currentSL| ONCE per tick (Engine.mqh:172)
+    // BEFORE any SL move, then uses it for both BE and the chandelier trail (PositionManager.mqh:36,45).
+    // Read p.sl here (pre-move): on the partial tick it is still the original stop, so BE + the first
+    // trail match exactly; on later ticks it follows BE/trail like MT5. p.risk (entry distance) is kept
+    // intact for R-multiple reporting.
+    const double mrisk = c.trail_live_risk ? std::fabs(p.entry - p.sl) : p.risk;
 
     if (p.is_long) {
         if (price > p.best) p.best = price;
@@ -95,13 +101,13 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
                 double q = partial_slice();
                 if (q >= c.min_lot && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
                 p.partial_done = true;
-                double be = p.entry + m.be_buffer * p.risk;
+                double be = p.entry + m.be_buffer * mrisk;
                 if (be > p.sl && sl_move_ok(be)) p.sl = be;
             }
         }
         // Chandelier trail (raise-only) once partial taken.
         if (p.partial_done) {
-            double trail = p.best - m.trailing_factor * p.risk;
+            double trail = p.best - m.trailing_factor * mrisk;
             if (trail > p.sl && sl_move_ok(trail)) p.sl = trail;
         }
     } else {
@@ -114,12 +120,12 @@ inline void manage_tick(Position& p, double price, const KenKemConfig& c, std::v
                 double q = partial_slice();
                 if (q >= c.min_lot && q < p.lot) { fills.push_back({ price, q, 'P' }); p.lot -= q; }
                 p.partial_done = true;
-                double be = p.entry - m.be_buffer * p.risk;
+                double be = p.entry - m.be_buffer * mrisk;
                 if (be < p.sl && sl_move_ok(be)) p.sl = be;
             }
         }
         if (p.partial_done) {
-            double trail = p.best + m.trailing_factor * p.risk;
+            double trail = p.best + m.trailing_factor * mrisk;
             if (trail < p.sl && sl_move_ok(trail)) p.sl = trail;
         }
     }
