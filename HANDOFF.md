@@ -1,47 +1,40 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-18 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 28 C++ checks pass._
+_Last updated: 2026-06-18 PM by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the EA.
 
-## 📍 STATE: over-fire root cause LOCALIZED to a feedback loop; seed not yet fixed.
+## 📍 STATE: E1 NOT at parity (511 vs 78). Over-fire DEFINITIVELY localized to the ARM/LATCH lifecycle — NOT the gate. The "mtf-seed" theory is DEAD (it was 119 bars, not the seed).
 
-### The numbers (E1-ONLY, full 2yr, current pip-fixed config)
-- Engine **531** E1 trades vs MT5 **78** (6.8× over-fire). diff_kk: **matched 46 / MISSED 32 / OVERFIRE 465**.
+### The numbers (E1-ONLY, full 2yr, current config) — reproduced 2026-06-18 PM
+- Engine **511** E1 trades vs MT5 **78** (6.5×). diff_kk: **matched 46 / MISSED 32 / OVERFIRE 465**.
 - Matched timing near-perfect (median +0min, 40/46 exact-minute) → the matched logic is sound.
 
-### What is TRUE (evidence-backed, do not re-litigate)
-1. **Arm GEOMETRY is correct.** Direction-change arms: engine **1197** ≈ MT5 **1174** ≈ alternation **1193**.
-   The prior "engine over-arms 4×" was an ARTIFACT (engine raw count vs a mis-measured MT5 ~1000). DEAD.
-2. **Cross/touch split is INVERTED:** MT5 cross 1174 / touch 3146 (touch-dominated); engine cross 4059 /
-   touch 2195 (cross-dominated). Engine cross = 1197 genuine + **2860 SPURIOUS same-dir re-arms** (1694
-   M1-alone). MT5 re-arms same-dir via TOUCH, not cross.
-3. **Overfire decomposition (485 bars vs MT5 KKE1ARM/KKE1GATE):** 77% MT5 was DORMANT (no arm) · 11% MT5
-   gate-PASSED but didn't fire (position-open) · 5% MT5 gate-BLOCK (21 mtf, 3 price_pos). **Gate leak is minor.**
-4. **MECHANISM = feedback loop.** MT5 holds its latch armed for long stretches (median 97 bars; the 28-bar
-   expiry only runs when DetectE1Entry is reached, so it expires LATE — `Expired stale … age 30/58/521`).
-   While armed, MT5's latch SUPPRESSES M1-fan flickers (MT5 sees 8016 M1 just-crosses, arms only 1174).
-   The engine fires more → clears its latch → latch FREE when flickers hit → arms on flicker → fires →
-   repeat. Cross has PRIORITY over touch for the shared latch → engine touch starves (2195 vs 3146).
-5. **Seed = arm→fire CONVERSION: engine gate PASSES 3990 vs MT5 554 (7.2×); pass→fire ratio similar
-   (13% vs 14%).** So the gate is the seed, not the post-gate routing.
-6. **⭐ SEED PINPOINTED to the `mtf` gate.** Built `KK_EMIT_GATE` (engine `EGATE,ts,dir,PASS|BLOCK` per
-   armed bar). On 41,670 bars BOTH evaluated: agree 40,868 BLOCK + 375 PASS; **engine PASS where MT5 BLOCK
-   = 277, of which 270 are MT5's `mtf` gate** (`isAllTimeframeEMAsReadyForEntry`). 150 engine-BLOCK/MT5-PASS.
-   The ~270-bar `mtf` leak is the seed that the re-arm loop amplifies into 3436 extra dormant-zone passes.
+### ⭐ DEFINITIVE finding (per-gate confusion matrix — do not re-litigate)
+Built engine-side first-fail gate diagnostic (NO EA rerun: MT5 `kke1gate.csv` already has per-gate labels):
+`e1_first_fail_label()` (entries.hpp) + `KK_EMIT_GATE_REASON=1` → `GR,ts,dir,label` (tick_engine.hpp) +
+`research/kenkem_parity/diff_gate_reason.py` (auto +60s offset → confusion matrix). Self-check: diagnostic
+PASS=3990 == production EGATE PASS (faithful by construction).
+1. **The GATE is CORRECT.** On 40,779 bars BOTH armed: MT5 blocks `htf_trend` 21,019 → engine PASSes **0**.
+   **Total engine-PASS-where-MT5-BLOCK = 122** (119 mtf + 3 tq). The mtf "seed" is just 119 bars — a rounding
+   error, NOT the cause. (htf_trend hypothesis tested and REJECTED; mtf-seed theory KILLED.)
+2. **THE SEED = arm/latch TIMING.** Engine PASS 3990 = **486 on MT5-armed bars + 3504 on MT5-DORMANT bars**
+   (no arm row at all). ~3504 over-passes happen where MT5's latch is dormant → it's WHEN the engine is armed,
+   not whether the gate passes. Engine armed at **46,344** bars MT5 isn't; MT5 armed at 14,969 bars engine isn't.
+3. **Cross/touch inversion persists:** engine cross 4065 / touch 2220 vs MT5 cross 1174 / touch 3146.
+   Self-amplifying loop: each extra fire consumes+frees the latch → cross re-grabs on the next M1 flicker →
+   starves touch. The ~2891 extra cross-arms is the lever.
 
-### RULED OUT this session
-- **EMA shift trap** (`KK_E1_EMA_TRAP=1` → 549 trades, WORSE; flicker count is shift-invariant).
-- **occ-before-expiry ordering** in `entries.hpp` — reordered to expiry→occ to match EA Entry1.mqh:103
-  (faithful, tests pass) but NEUTRAL on results. KEPT as a correctness fix.
+### RULED OUT as the cause (all MATCH the EA — so the cross over-arm is NOT param-driven)
+- EMA_ALIGNMENT_TOLERANCE_PIPS=23, pip_size=0.001 (XAU), E1_MAX_CROSS_AGE=28, HTF enum/params
+  (E1=M5-only, ADX≥18.5, DI≥4.0), conviction wiring. The gate (incl. mtf/htf_trend) — see finding #1.
 
-### ▶️ NEXT ACTION — break down the `mtf` leak (270 bars)
-Engine MTF (`entries.hpp:154-165`) and EA `isAllTimeframeEMAsReadyForEntry` (KenKemExpert.mq5:1946-1994) look
-logically identical (bypass-lvl-1: `m1_ready && ((m3_ready && m5_dir) || extreme)`; extreme = M1 DI-spread≥16).
-So the leak is at the **boundary inputs** — prime suspect the `extreme` DI bypass or m1/m3 ready tolerance edge,
-a per-bar DI/EMA micro-difference. NEITHER trace carries DI today → instrument BOTH sides: add the MTF
-sub-components (m1_ready, m3_ready, m5_dir, extreme, M1 DI±) to the engine `EGATE` AND the EA `KKE1GATE,mtf`
-detail (needs a small EA recompile + one rerun), then compare at the 270 leak bars to see which sub-check flips.
+### ▶️ NEXT ACTION — the ARM lifecycle, NOT the gate
+Localize why engine cross-arms 3.5× MT5 (4065 vs 1174) while touch-arms LESS (2220 vs 3146). Either (a) the
+engine registers more M1 "just-cross" flicker arms, or (b) engine touch-arming under-fires → latch free → cross
+re-grabs. Compare engine `KK_EMIT_ARMS`/ARMFIRE per-arm src+tf vs MT5's reconstructed arm bars (expiry `age N`
+→ arm_idx=expiry−N + `[EMA200 Touch]` lines from `tester.log`). Suspect: M1 just-cross sensitivity
+(triggers.hpp:84-99) and the EMA200 touch read (triggers.hpp:101-119). **Do NOT touch the gate.**
 
 ## 🔁 Repro (full 2yr ≈ 2min, 5GB tick stream)
 ```
@@ -55,6 +48,10 @@ python3 research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
 # per-bar engine latch age:  KK_EMIT_ARMSTATE=1 ... 2>/tmp/estate.txt  (ESTATE,ts_ms,armU_age,armD_age)
 # per-arm src/tf:            KK_EMIT_ARMS=1 ...      2>/tmp/armfire.txt (ARMFIRE,ts_ms,L|S,cross|touch,tfbits)
 # per-armed-bar gate verdict:KK_EMIT_GATE=1 ...      2>/tmp/egate.txt   (EGATE,ts_ms,L|S,PASS|BLOCK)  vs MT5 kke1gate.csv
+# per-armed-bar FIRST-FAIL gate label (the confusion-matrix diagnostic — proves gate vs arm):
+KK_EMIT_GATE_REASON=1 ./build/kenkem/tick_backtester ... 2>/tmp/greason.txt   (GR,ts_ms,L|S,<label>)
+python3 ../research/kenkem_parity/diff_gate_reason.py --engine /tmp/greason.txt \
+  --mt5 ../research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/kke1gate.csv
 ```
 
 ## 📦 Data & instruments

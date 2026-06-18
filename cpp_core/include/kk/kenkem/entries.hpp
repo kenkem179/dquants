@@ -236,6 +236,43 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
     return false;
 }
 
+// DIAGNOSTIC ONLY (not used by trading logic): returns the FIRST-FAIL E1 gate label in the EA's
+// exact order + vocabulary (CheckE1EntryConditions_Internal, Entry1.mqh:215-331) so the engine's
+// per-armed-bar verdict can be diffed against MT5's kke1gate.csv to localize the over-pass.
+// The set of conditions is IDENTICAL to entry_gate_ok(1,...): "PASS" here <=> entry_gate_ok==true
+// (self-check: the PASS count must equal the KK_EMIT_GATE PASS count). Only the FIRST-fail attribution
+// is re-ordered to match the EA's sequence. Labels match MT5: trend_strength, htf_trend, mtf, price_pos,
+// trend_quality, momentum, rsi_div, plus engine-only "sideways"/"conviction" (which have no EA gate-trace
+// equivalent -> a mismatch there pinpoints a structural divergence).
+inline const char* e1_first_fail_label(bool is_long, const TfBundle& b, const Snapshot& s,
+                                       const TfBundle::Align& align, const KenKemConfig& c) {
+    const double tol = c.ema_align_tol_pips * c.pip_size;
+    if (sideways_blocked(s, c)) return "sideways";                    // EA pre-filters (no trace row)
+    if (s.adx[0] < c.e1_min_momentum_adx) return "trend_strength";    // Entry1.mqh:227
+    if (!htf_block_counter_ok(s, is_long, c.e1_htf_filter, c.e1_htf_min_adx, c.e1_htf_min_di_spread))
+        return "htf_trend";                                          // Entry1.mqh:236-288
+    {                                                                // Entry1.mqh:292 (mtf)
+        bool m1_ready = emas_ready_entry(b.m1, align.m1, is_long, true, tol);
+        bool m3_ready = emas_ready_entry(b.m3, align.m3, is_long, true, tol);
+        bool m5_dir   = m5_directional_ok(b.m5, align.m5, is_long);
+        double m1di   = is_long ? (s.diP[0] - s.diM[0]) : (s.diM[0] - s.diP[0]);
+        bool extreme  = m1di >= c.extreme_di_spread;
+        bool pass;
+        if (c.e1_momentum_bypass == 0)      pass = m1_ready && m3_ready && m5_dir;
+        else if (c.e1_momentum_bypass == 1) pass = m1_ready && ((m3_ready && m5_dir) || extreme);
+        else                                pass = m1_ready || extreme;
+        if (!pass) return "mtf";
+    }
+    if (is_long ? (s.closeM1 <= s.emaM1[1]) : (s.closeM1 >= s.emaM1[1])) return "price_pos"; // :300
+    if (trend_core_score(s, is_long, c) == 0) return "trend_quality";                         // :309-314
+    if (trend_quality_score(b, align, s, is_long, 1, c) < c.min_tq_e1) return "trend_quality";
+    if (c.use_conviction_e1 && conviction_score(b, align, s, is_long, c) < c.conviction_thr_e1)
+        return "conviction";                                         // engine-only (EA: soft low-conf flag)
+    if (!has_sufficient_momentum(s, is_long, c)) return "momentum";  // Entry1.mqh:317
+    if (rsi_divergence_veto(b, align, is_long, c)) return "rsi_div"; // Entry1.mqh:324
+    return "PASS";
+}
+
 // First-match-wins E1->E2->E4, long-before-short. B = forming M1 bar; entry anchor = close[1].
 // CONSUMES the trigger that fires (resets it to -1) so one cross/touch == one entry — mirrors the EA
 // (which clears lastEMACrossing/Touch/IchiCross on a successful build). `tg` is mutated on success.
