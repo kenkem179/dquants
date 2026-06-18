@@ -128,7 +128,24 @@ inflating EMA-align tol (23*pip) 10x + every pip param. Fix → arms 8428→6250
 35→32, overfire 496→465**, no SL regression (Δ0.25). Test updated (`test_kenkem_config.cpp:71`). MasterVP
 golden parity UNAFFECTED (own config). ALL C++ TESTS PASS.
 
-### ⏳ REMAINING — cross-arm bar SHIFT mismatch (the dominant ~4000 spurious arms)
+### ✅ RULED OUT — M3/M5 indicator divergence. Engine `trace_dumper` vs MT5 BarTrace (align engine[T] vs
+mt5[T−1min] — the known label shift): adx_m1/m3/m5 + diP/diM match to **0.0000–0.0002** → M3/M5 BARS are
+byte-identical → M3/M5 EMAs are exact too. M1 EMAs match ~0.0024 (at shift 0). So the EMA INPUTS to the arm
+logic are correct; the over-cross-arming is purely the **state machine** (arm/clear/re-arm cycling), not
+indicators. (EMA-trap shift `KK_E1_EMA_TRAP=1` retested under correct pip — still doesn't collapse cross
+arms 4059→4151, so NOT a uniform 1-bar shift either.)
+
+### ⏳ WAITING ON USER — E1 ARM-STATE trace run (instrument BUILT & COMPILES)
+Added EA input `E1_ARM_TRACE` (`InputParams.mqh`) → per-bar Print from `UpdateEmaTouches` (`EMAHelpers.mqh`):
+`KKE1ARM,<ts>,jcU=<m1m3m5>,jcD=<m1m3m5>,rU=<m1m3>,rD=<m1m3>,armU=<age>,armD=<age>,e2U=,e2D=` (emits on any
+just-cross OR while armed). This is MT5's per-bar E1 arm DECISION (the half the BarTrace never exposed —
+its L_*/ages are E5 semantics). Compiles 0-err. Set `anchor_E1_only_trace.set` now has E1_ARM_TRACE=true +
+E1_GATE_TRACE=true. **USER: recompile EA in MT5 → same E1-only 2yr run (XAUUSD/M1/real-ticks/2024.01.01→
+2026.06.01) → return the new tester.log.gz.** Then diff MT5 `KKE1ARM` (extract arm bars = armU 0-from-−1;
+inspect jc flags + guards on engine-overfire bars) vs engine `ARMFIRE` to find the exact state-machine
+divergence (prime suspects: arm/clear ordering, opposite-dir clear, re-arm after consume/expire).
+
+### 🔎 REMAINING ROOT QUESTION — why engine cross-arms ~4000 vs MT5 ~1000 (EMA inputs proven equal)
 Concrete evidence (`/tmp/check_emas2.py`, reads MT5 BarTrace ema1-4 at engine cross-arm bars): engine fires
 M1-cross-arms where MT5's OWN trace shows **no fan-alignment cross in a 5-bar window** (e.g. 2024-01-03 06:53 L:
 ema25<ema71 throughout, no cross even with tol). ⇒ the engine's TRIGGER-path M1 EMA read index is landing on

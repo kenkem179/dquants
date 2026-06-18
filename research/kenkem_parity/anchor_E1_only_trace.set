@@ -412,3 +412,4 @@ E1_MAX_CROSS_AGE=28
   InpExportTradeJournal=true
 E1_GATE_TRACE=true
 showDebug=true
+E1_ARM_TRACE=true
