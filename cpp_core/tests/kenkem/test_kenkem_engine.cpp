@@ -17,6 +17,10 @@ static kk::Bar mk(int64_t ts, double mid, double band, double spread) {
 // real multi-bar indicator history; these engine-mechanics tests use synthetic ramps. Filter behaviour
 // is covered in test_kenkem_scoring.cpp.
 static void relax_filters(KenKemConfig& cfg) {
+    // Legacy natural-order trigger: the faithful EA-inverted cross only arms on alignment-LOSS, so a clean
+    // synthetic ramp never produces a profitable E1 cross. These tests exercise engine mechanics/accounting,
+    // not trigger fidelity (covered in test_kenkem_triggers + real-data EMA200-touch parity 105=105).
+    cfg.e1_faithful_trigger = false;
     cfg.min_tq_e1 = cfg.min_tq_e2 = cfg.min_tq_e4 = 0;
     cfg.use_conviction_e1 = cfg.use_conviction_e2 = cfg.use_conviction_e4 = false;
     cfg.enable_rsi_div_veto = false;

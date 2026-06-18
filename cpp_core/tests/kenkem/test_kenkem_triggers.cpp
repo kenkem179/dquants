@@ -43,11 +43,13 @@ void test_ema_cross_trigger() {
     TfBundle bundle;
     bundle.m1 = blank_tf(B + 1); bundle.m3 = blank_tf(B + 1); bundle.m5 = blank_tf(B + 1);
     bundle.m15 = blank_tf(B + 1);
-    // M1: NOT bullish-aligned at B-2 (bearish), bullish-aligned at B-1 -> just crossed up.
-    set_emas(bundle.m1, B - 2, 104, 106, 108, 110);   // bearish
-    set_emas(bundle.m1, B - 1, 110, 108, 106, 104);   // bullish
-    // M3 bullish at its shift1 (so the gate `ready(M3,s1)` passes). align.m3 = 20 -> s1 = 19.
-    set_emas(bundle.m3, 19, 110, 108, 106, 104);
+    // FAITHFUL EA buffer-inversion semantics (triggers.hpp): GetEMA(shift1)->B-2 (the "ready"/latch bar),
+    // GetEMA(shift2)->B-1 (the "prev" bar). So the EA's "just crossed up" = !ready@(B-1) && ready@(B-2):
+    // alignment PRESENT at the older bar (B-2) and ABSENT at the newer bar (B-1).
+    set_emas(bundle.m1, B - 2, 110, 108, 106, 104);   // bullish at the ready bar (B-2)
+    set_emas(bundle.m1, B - 1, 104, 106, 108, 110);   // bearish at the prev bar (B-1) -> alignment lost
+    // M3 bullish at its ready bar (EA shift1 = align.m3-2). align.m3 = 20 -> ready = 18.
+    set_emas(bundle.m3, 18, 110, 108, 106, 104);
     TfBundle::Align align{ B, 20, 12, 4 };
 
     TriggerState st;

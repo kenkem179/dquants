@@ -74,26 +74,44 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     const int m3e1 = m3s1 - kTrap, m3e2 = m3s2 - kTrap;
     const int m5e1 = m5s1 - kTrap, m5e2 = m5s2 - kTrap;
 
-    // ---- E1: EMA-stack cross (M1/M3 strict, M5 non-strict); just-crossed = !ready@s2 && ready@s1 ----
-    auto just_up = [&](const TfIndicators& s, int s1, int s2, bool strict) {
-        return !emas_ready(s, s2, true, strict, tol) && emas_ready(s, s1, true, strict, tol);
+    // EA BUFFER-INVERSION TRAP (the REAL trap — supersedes the uniform kTrap above for the E1 cross).
+    // emaBuffers is a FIXED [.][30] array filled from a NON-series CopyBuffer tempBuffer, so element[0]
+    // is the OLDEST bar. With ENTRY_SHIFT=1 (bufferSize=4) the EA's GetEMA(shift) maps INVERTED:
+    //   GetEMA(shift=1) -> tempBuffer[1] = series bar 2 = B-2   (the "ready"/latch bar)
+    //   GetEMA(shift=2) -> tempBuffer[2] = series bar 1 = B-1   (the "prev" bar)
+    // So the EA's "just crossed up" = !ready@shift2 && ready@shift1 = !ready@(B-1) && ready@(B-2):
+    // alignment PRESENT at the older bar (B-2) and ABSENT at the newer bar (B-1). The old engine read
+    // the two bars in natural order (ready@B-1, prev@B-2) — a chronological cross — which is INVERTED
+    // vs the EA and the documented cause of the ~3.5x E1 cross over-arm. The validated SIGNAL path
+    // already reads single EMAs at B-2 (snapshot.hpp), consistent with shift1->B-2 here.
+    // Controlled by cfg.e1_faithful_trigger (default true). The tick_backtester CLI lets KK_E1_FAITHFUL
+    // override it for A/B runs; synthetic engine-mechanics tests set it false to keep their legacy scenario.
+    const bool kFaithful = cfg.e1_faithful_trigger;
+    // "ready"/latch bar = EA shift1 ; "prev" bar = EA shift2.
+    const int m1_rdy = kFaithful ? m1s2 : m1e1, m1_prv = kFaithful ? m1s1 : m1e2;
+    const int m3_rdy = kFaithful ? m3s2 : m3e1, m3_prv = kFaithful ? m3s1 : m3e2;
+    const int m5_rdy = kFaithful ? m5s2 : m5e1, m5_prv = kFaithful ? m5s1 : m5e2;
+
+    // ---- E1: EMA-stack cross (M1/M3 strict, M5 non-strict); just-crossed = !ready@prv && ready@rdy ----
+    auto just_up = [&](const TfIndicators& s, int rdy, int prv, bool strict) {
+        return !emas_ready(s, prv, true, strict, tol) && emas_ready(s, rdy, true, strict, tol);
     };
-    auto just_dn = [&](const TfIndicators& s, int s1, int s2, bool strict) {
-        return !emas_ready(s, s2, false, strict, tol) && emas_ready(s, s1, false, strict, tol);
+    auto just_dn = [&](const TfIndicators& s, int rdy, int prv, bool strict) {
+        return !emas_ready(s, prv, false, strict, tol) && emas_ready(s, rdy, false, strict, tol);
     };
-    bool m1Up = just_up(bundle.m1, m1e1, m1e2, true);
-    bool m3Up = just_up(bundle.m3, m3e1, m3e2, true);
-    bool m5Up = just_up(bundle.m5, m5e1, m5e2, false);
+    bool m1Up = just_up(bundle.m1, m1_rdy, m1_prv, true);
+    bool m3Up = just_up(bundle.m3, m3_rdy, m3_prv, true);
+    bool m5Up = just_up(bundle.m5, m5_rdy, m5_prv, false);
     if (st.ema_up == -1 && (m1Up || m3Up || m5Up) &&
-        emas_ready(bundle.m1, m1e1, true, true, tol) && emas_ready(bundle.m3, m3e1, true, true, tol)) {
+        emas_ready(bundle.m1, m1_rdy, true, true, tol) && emas_ready(bundle.m3, m3_rdy, true, true, tol)) {
         st.ema_up = B; st.ema_down = -1; ++st.arm_e1_cross;
         st.e1_cross_tf = (m1Up?1:0)|(m3Up?2:0)|(m5Up?4:0);
     }
-    bool m1Dn = just_dn(bundle.m1, m1e1, m1e2, true);
-    bool m3Dn = just_dn(bundle.m3, m3e1, m3e2, true);
-    bool m5Dn = just_dn(bundle.m5, m5e1, m5e2, false);
+    bool m1Dn = just_dn(bundle.m1, m1_rdy, m1_prv, true);
+    bool m3Dn = just_dn(bundle.m3, m3_rdy, m3_prv, true);
+    bool m5Dn = just_dn(bundle.m5, m5_rdy, m5_prv, false);
     if (st.ema_down == -1 && (m1Dn || m3Dn || m5Dn) &&
-        emas_ready(bundle.m1, m1e1, false, true, tol) && emas_ready(bundle.m3, m3e1, false, true, tol)) {
+        emas_ready(bundle.m1, m1_rdy, false, true, tol) && emas_ready(bundle.m3, m3_rdy, false, true, tol)) {
         st.ema_down = B; st.ema_up = -1; ++st.arm_e1_cross;
         st.e1_cross_tf = (m1Dn?1:0)|(m3Dn?2:0)|(m5Dn?4:0);
     }
@@ -103,7 +121,10 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     // bar low/high via iLow/iHigh(ENTRY_SHIFT) (series shift1 = m1s1, untrapped). KK_TOUCH_SHIFT is an
     // additional experimental offset on top of the trap (default 0).
     static const int touch_sh = [] { const char* e = std::getenv("KK_TOUCH_SHIFT"); return e ? std::atoi(e) : 0; }();
-    const int e1t = m1s1 - kTrap - touch_sh, e3t = m3s1 - kTrap - touch_sh;
+    // Faithful: EA reads ema200 = GetEMA(TF0,EMA4,1) and alignment via isEMAsReadyForEntry(...,1) — both
+    // at shift1 = B-2 (inverted buffer); bar low/high use iLow/iHigh(1) = series 1 = B-1 (untrapped).
+    const int e1t = (kFaithful ? m1s2 : m1s1 - kTrap) - touch_sh;
+    const int e3t = (kFaithful ? m3s2 : m3s1 - kTrap) - touch_sh;
     if (m1s1 >= 0 && e1t >= 0 && e3t >= 0) {
         const double ema200 = bundle.m1.ema[4][e1t];
         const double lo = bundle.m1.bars[m1s1].low, hi = bundle.m1.bars[m1s1].high;

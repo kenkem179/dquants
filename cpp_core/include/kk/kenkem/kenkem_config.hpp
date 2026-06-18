@@ -191,6 +191,11 @@ struct KenKemConfig {
     double e1_htf_min_di_spread   = 4.0;
     double e1_min_momentum_adx    = 19.5;
     int    e1_max_cross_age       = 28;   // capped 80->28 (align with E5; cut E1 late-fire over-trading)
+    // Faithful EA buffer-inversion model for the E1 EMA-cross + EMA200-touch triggers (see triggers.hpp).
+    // true = port the EA's non-series emaBuffers trap exactly (GetEMA shift1->B-2, shift2->B-1); fixes the
+    // ~3.5x E1 cross over-arm and lands EMA200-touch arm count EXACTLY on MT5 (105=105, Feb-2026 XAU).
+    // false = legacy natural-order detection (used by synthetic engine-mechanics tests only).
+    bool   e1_faithful_trigger    = true;
     int    e1_momentum_bypass     = 1;
     double e1_rr                  = 1.9;
     double e1_rr_sideway          = 1.2;

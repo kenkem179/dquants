@@ -43,6 +43,10 @@ static BtResult run_once() {
     cfg.max_concurrent_pos = 2;
     // Disable the selectivity filters that need real multi-bar indicator history; this test exercises
     // tick-engine accounting/determinism on a synthetic trend (filters covered in test_kenkem_scoring).
+    // Legacy natural-order trigger: the faithful EA-inverted cross only arms on alignment-LOSS, so a clean
+    // synthetic ramp never produces a profitable E1 cross. Trigger fidelity is covered in
+    // test_kenkem_triggers (faithful) + real-data parity (EMA200-touch 105=105). Here we only need entries.
+    cfg.e1_faithful_trigger = false;
     cfg.min_entry_atr_pctile = 0.0;
     cfg.min_tq_e1 = cfg.min_tq_e2 = cfg.min_tq_e4 = 0;
     cfg.use_conviction_e1 = cfg.use_conviction_e2 = cfg.use_conviction_e4 = false;
