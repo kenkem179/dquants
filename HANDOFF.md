@@ -92,29 +92,41 @@ Method validated: **97% of MATCHED engine trades** sit on a reconstructed MT5-ar
 ## 🎯 SCOPE NARROWED (user, 2026-06-18): E1 PERFECT PARITY FIRST, then E2/E4/E5 later.
 Reference must be **E1-ONLY** (E2 off) so the trade diff isolates E1. Old anchor was E1+E2 → contaminated.
 
-## ⏳ WAITING ON USER — fresh E1-only + gate-trace MT5 run (instrumentation DONE & COMPILES)
-Instrumented the GROUND-TRUTH EA (`kenkem/.../KenKem/Entries/Entry1.mqh`) so each E1 gate decision Prints
-per-armed-bar — directly exposes the 32% SILENT-GATE seed (mtf / price_pos / trend_quality / momentum /
-rsi_div) instead of reconstructing it. New input `E1_GATE_TRACE` (default false; `InputParams.mqh:605`).
-Emits `KKE1GATE,<ts>,<L|S>,<BLOCK|PASS>,<gate>,<detail>` (regex `^KKE1GATE,`). Compiles 0-err.
-Ready set: `research/kenkem_parity/anchor_E1_only_trace.set` (E1 on, E2–E5 off, age=28, E1_GATE_TRACE=true,
-showDebug=true). USER STEPS: recompile EA in MT5 → Tester KenKemExpert / XAUUSD / M1 / real-ticks /
-2024.01.01→2026.06.01 → load that .set → run → return Journal log (gz, UTF-16; has KKE1GATE + touch/expiry/
-fire) + EA Parity exports (TradeJournal/BarTrace) + trades.csv into a new `mt5_runs/RUN_<date>_..._E1only_trace/`.
+## ✅ E1-ONLY gate-trace MT5 run LANDED + DECOMPOSED (2026-06-18) — prior diagnosis OVERTURNED
+Run saved: `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_E1only_trace/` (trades.csv 42, trace.csv,
+tester.log.gz UTF-16, **kke1gate.csv** = 33790 parsed gate rows, UTF-8, fast to reuse). Instrumentation
+(`E1_GATE_TRACE`, `Entry1.mqh`) worked: 33790 `KKE1GATE,<ts>,<L|S>,<BLOCK|PASS>,<gate>,<detail>` lines.
+⚠️ **Run caveats:** (a) window is **2025.01.02→2026.05.29 only** (tester From-date was 2025, NOT 2024) — a
+full-2yr E1-only re-run is still needed for FINAL parity sign-off; diagnosis below holds on the overlap.
+(b) log has **2 concatenated tester passes** (dedup by set — done).
 
-## ▶️ NEXT ACTION (after the run lands)
-1. **Kill the 32% SEED with the new direct evidence.** Run engine E1-only at age=28, get overfire bars via
-   `diff_kk`, then for each overfire bar look up the `KKE1GATE` BLOCK on that bar/dir: which gate MT5 blocked
-   that the engine let through. Prime suspect = `mtf` (`isAllTimeframeEMAsReadyForEntry`, 31% of MT5
-   rejections): re-examine engine `emas_ready_entry`'s `align_tf−3` shift against PER-BAR MT5 evidence
-   (NOT matched-count — unreliable, see ROUND-1/2). `price_pos` (px vs EMA25) is now separately visible too.
-2. Then the 68%: once the seed is fixed, re-measure — the fire→re-arm feedback should shrink arming toward
-   MT5's. If residual spurious arming remains, audit the cross-arm geometry (`triggers.hpp:64–84`) vs the
-   reconstructed MT5 cross-arm bars (now available from expiry reconstruction).
-3. Only after entry timing ties out: exits (A7) + cooldowns.
+Engine E1-only (`--set anchor_E1_only_trace.set`, E2–E5 off → 561 E1 / 0 others) vs MT5, windowed by `diff_kk`:
+**MT5 42 · engine 296 · matched 22 · MISSED 20 · OVERFIRE 274.** Then probed each overfire bar against the
+direct MT5 gate trace (`/tmp/seed_probe.py`, ±2min same-dir):
+- **231 / 274 (84%) = engine OVER-ARMS** — fires where MT5 had NO armed E1 trigger at all. *(DOMINANT)*
+- **29 / 274 (11%) = MT5 also gate-PASSED but did not execute** → downstream ACCOUNT LIMITER / occupancy
+  (conviction, MAX_CONCURRENT, session/daily-loss, ATR-pctile, cooldown) — a SEPARATE parity layer, not a gate.
+- **14 / 274 (5%) = MT5 gate-BLOCKED** (the true silent-gate seed) — **13 of 14 = `mtf`**; rest htf/adx/momentum.
+- Overfire AGE profile (`/tmp/seed_age.py`): median **3**, 61@age0-1 + 144@age2-9 + 69@age10-28, **0 above cap** →
+  the over-arming is **low-age FRESH CROSS-arms**, not stale/touch.
 
-Reusable: MT5 arm-bar reconstruction (expiry+touch+fire) is the key instrument — re-derive in Python from
-`tester.log.gz` (UTF-16) as above; `diff_kk.match()` gives matched/missed/overfire splits.
+🔑 **CORRECTED ROOT CAUSE:** E1 over-fire is **~84% spurious CROSS-ARMING**, not gate leakage. The earlier
+"68% spurious-arm / 32% silent-gate (feedback loop)" reconstruction OVER-weighted the silent gate (really 5%).
+The `mtf` gate is a minor (5%) contributor; the downstream limiters are a real-but-separate 11%.
+
+## ▶️ NEXT ACTION (exact, priority order)
+1. **Fix the cross-arm geometry — this is 84% of the bug.** Reconstruct MT5's true E1 cross-arm bars from the
+   now-available expiry lines (`Expired stale … age N` → `arm_idx = expiry_idx − N`) + fires, in
+   `RUN_..._E1only_trace/tester.log.gz`, and diff bar-for-bar against the engine's cross-arm bars
+   (`KK_EMIT_ARMS=1` src=cross; engine arms cross 4490 / touch 4141). Audit `cpp_core/.../triggers.hpp:64–84`
+   (cross detection) + the consumption/`==-1` guard + re-arm timing — the engine arms fresh EMA75 crosses MT5
+   does not. (Engine touch-arms 4141 < MT5 ~5930/run, so the leak is CROSS, consistent with low-age profile.)
+2. The 5% `mtf` seed: only after arming ties out — re-examine `emas_ready_entry` `align_tf−3` with PER-BAR EMA.
+3. The 11% limiter gap (`MT5 passed but didn't execute`) → port the account-layer limiters (A-later).
+4. **Get a full-2yr E1-only re-run** from user (From=2024.01.01) for final E1 parity sign-off.
+
+Reusable instruments: `RUN_..._E1only_trace/kke1gate.csv` (per-bar gate decisions), `/tmp/seed_probe.py`
+(overfire decomposition), `/tmp/seed_age.py` (age profile), `diff_kk.py` (matched/missed/overfire).
 
 ## 🧰 Tooling (all env-gated, non-regressive — default OFF reproduces baseline E1 624)
 - `KK_EMIT_AGE=1` → tick backtester emits `AGEFIRE,ts_ms,dir,Ekind,age` per fire (EntrySignal.age).
