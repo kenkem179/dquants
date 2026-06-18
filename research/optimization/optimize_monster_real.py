@@ -51,8 +51,12 @@ SPACE = [
     # vol gate + sizing
     ("InpMinAtrPct",      0.005, 0.04, False), ("InpMaxAtrPct",   0.10, 0.35, False),
     ("InpRiskAccPct",     0.5,  2.0,  False),
+    # feature #1: multi-bar net volume (persistence-entry + N-bar flip-exit)
+    ("InpNetPersistBars", 2, 8, True), ("InpNetPersistMin", 0.30, 0.80, False),
+    ("InpNetFlipBars",    2, 8, True), ("InpNetFlipMin",    0.30, 0.80, False),
 ]
-TOGGLES = ["InpUseWeightedNet", "InpNetConfirmM5", "InpNetConfirmM1orM3"]
+TOGGLES = ["InpUseWeightedNet", "InpNetConfirmM5", "InpNetConfirmM1orM3",
+           "InpEnableNetPersist", "InpEnableNetFlipExit"]
 FORCE = {"InpEnableReversion": "true", "InpEnableBreakout": "true", "InpEnableImpulse": "true"}
 MIN_TRADES = 150
 

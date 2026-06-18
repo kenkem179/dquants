@@ -64,7 +64,8 @@ inline std::vector<ParityRow> run(const std::vector<Bar>& bars, const Params& p)
     // Indicator arrays over the whole series (warmup converges long before the test window).
     std::vector<double> h(N), l(N), c(N);
     for (int i = 0; i < N; ++i) { h[i] = bars[i].high; l[i] = bars[i].low; c[i] = bars[i].close; }
-    const auto atr   = kk::ind::atr(h, l, c, p.atr_len);
+    const auto atr   = p.atr_mt5_mode ? kk::ind::atr_mt5(h, l, c, p.atr_len)
+                                      : kk::ind::atr(h, l, c, p.atr_len);
     const auto dmi   = kk::ind::dmi_adx_mt5(h, l, c, p.adx_len);   // MT5 iADX (EMA-smoothed), NOT Wilder
     const auto emaF  = kk::ind::ema(c, p.ema_fast);
     const auto emaS  = kk::ind::ema(c, p.ema_slow);

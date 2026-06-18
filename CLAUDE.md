@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⭐ ALWAYS maintain `HANDOFF.md` (root) — read first, update last
+
+There is a **`HANDOFF.md` at the repo root**. It is the living baton between agents/sessions.
+
+- **At the START of every session: read `HANDOFF.md` first** (after this file). It tells you exactly
+  where the previous agent left off, what is in flight, what is blocked (and on what), and the single
+  most useful next action.
+- **Before you finish / pause / hand off: UPDATE `HANDOFF.md`.** Keep it short and current — overwrite
+  stale content, don't append endlessly. It must always answer: (1) current goal & sub-goal, (2) what
+  just changed (with commit hashes), (3) what's blocked and on whom (e.g. "waiting on user MT5 run X"),
+  (4) the exact next action, (5) any decisions made. This is **mandatory**, not optional.
+- `HANDOFF.md` is the fast tactical baton; `docs/BUILD-PLAN.md` remains the durable phase-by-phase plan
+  (keep ticking it after each step) and `~/.claude` memory holds cross-session facts. When they
+  disagree, trust git + the code, then reconcile all three.
+
 ## What this is
 
 **KenKem Quant OS** — a quantitative research stack for finding, validating, and deploying **XAUUSD /

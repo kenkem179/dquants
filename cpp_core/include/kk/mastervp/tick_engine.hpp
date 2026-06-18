@@ -71,6 +71,7 @@ public:
         }
         equity_ = rm_.balance();
         trades_.clear();
+        defer_ = Defer{};
     }
 
     // Feed one tick (UTC epoch-ms order). Drives management + new-bar entry.
@@ -90,6 +91,9 @@ public:
             const double atr1 = (shift1 >= 0) ? atr_[shift1] : 0.0;
             if (pos_.on_tick(t.bid, t.ask, atr1)) finalize_trade_(t.ts_ms);
         }
+
+        // DeferredEntry: try to fill / expire an armed virtual limit on this tick (only when flat).
+        if (defer_.active && !pos_.open()) try_defer_fill_(forming, t);
 
         // New-bar gate: every bar that just completed fires its signal/entry block, with the
         // current tick as the fill candidate. Normally advances by exactly one bar.
@@ -131,7 +135,9 @@ private:
 
         std::vector<double> h(N_), l(N_), c(N_);
         for (int i = 0; i < N_; ++i) { h[i] = bars_[i].high; l[i] = bars_[i].low; c[i] = bars_[i].close; }
-        atr_  = kk::ind::atr(h, l, c, p_.atr_len);
+        atr_  = p_.atr_mt5_mode ? kk::ind::atr_mt5(h, l, c, p_.atr_len)
+                                : kk::ind::atr(h, l, c, p_.atr_len);
+        build_net_flow_();
         rsi_  = kk::ind::rsi(c, p_.rsi_len);
         const auto dmi  = kk::ind::dmi_adx_mt5(h, l, c, p_.adx_len);
         const auto emaF = kk::ind::ema(c, p_.ema_fast);
@@ -170,6 +176,12 @@ private:
                 const NodeState nsPx  = node.state_at_price(s.c, p_);
                 ev.sig = kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
                                            s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
+                // Feature #2: replace the final/runner target with a node-structure level.
+                if (ev.sig.valid && p_.enable_struct_tp && ev.sig.risk > 0.0) {
+                    ev.sig.tp2 = node.structural_tp(ev.sig.is_long, ev.sig.entry, ev.sig.risk,
+                                                    ev.sig.tp1, atr_[i], masterCur.vah, masterCur.val,
+                                                    ev.sig.tp2, p_);
+                }
                 ev.valid = true;
                 if (ev.sig.valid) ++raw_signals_;
             }
@@ -194,6 +206,45 @@ private:
         m15_emaS_ = kk::ind::ema(m15_close_, p_.ema_slow);
     }
 
+    // Per-bar net flow (feature #1): volume-weighted directional body ratio in ~[-3,3].
+    // body = (c-o)/max(h-l,mintick) in [-1,1]; weighted by the bar's tick-count relative to a
+    // trailing average (capped at 3) so high-activity directional bars count more. Precomputed
+    // once; inert unless enable_net_persist / enable_net_flip_exit is set.
+    void build_net_flow_() {
+        net_flow_.assign(N_, 0.0);
+        const int W = std::max(1, p_.net_vol_avg_len);
+        double run = 0.0;
+        for (int i = 0; i < N_; ++i) {
+            const double rng = std::max(bars_[i].high - bars_[i].low, p_.mintick);
+            const double body = (bars_[i].close - bars_[i].open) / rng;   // [-1,1]
+            const double vol = static_cast<double>(bars_[i].tick_count);
+            run += vol;
+            if (i >= W) run -= static_cast<double>(bars_[i - W].tick_count);
+            const int cnt = std::min(i + 1, W);
+            const double avg = run / std::max(cnt, 1);
+            const double relvol = (avg > 0.0) ? std::min(vol / avg, 3.0) : 1.0;
+            net_flow_[i] = body * relvol;
+        }
+    }
+    // last `n` bars ending at `bar` all flow WITH the trade side (long: >= minv ; short: <= -minv).
+    bool net_persist_n_(bool is_long, int bar, int n, double minv) const {
+        if (n < 1 || bar - n + 1 < 0) return false;
+        for (int i = bar - n + 1; i <= bar; ++i) {
+            const double v = net_flow_[i];
+            if (is_long ? !(v >= minv) : !(v <= -minv)) return false;
+        }
+        return true;
+    }
+    // last `n` bars ending at `bar` all flow AGAINST the position (long: <= -minv ; short: >= minv).
+    bool net_against_n_(bool is_long, int bar, int n, double minv) const {
+        if (n < 1 || bar - n + 1 < 0) return false;
+        for (int i = bar - n + 1; i <= bar; ++i) {
+            const double v = net_flow_[i];
+            if (is_long ? !(v <= -minv) : !(v >= minv)) return false;
+        }
+        return true;
+    }
+
     // MTF shift-1 HTF EMA at wall-clock `now_ms`: the M15 bar immediately preceding the
     // bucket that contains now_ms (shift-0 = forming bucket, shift-1 = the one before it).
     // Returns {0,0} if no prior M15 bar exists (gate skips silently, as the EA does).
@@ -211,25 +262,26 @@ private:
     }
 
     // QualityGateOk (EntryVP.mqh:33): MTF-agree (M15 EMA) + RSI veto. ATR-pctl gate is off.
-    bool quality_ok_(bool is_long, int sig_bar, int64_t now_ms) const {
+    bool quality_ok_(bool is_long, int sig_bar, int64_t now_ms, const char** why = nullptr) const {
+        auto fail = [&](const char* w) { if (why) *why = w; return false; };
         if (p_.use_mtf_agree) {
             const auto [hf, hs] = htf_emas_(now_ms);
             if (hf > 0.0 && hs > 0.0) {
                 const bool htf_bull = hf > hs, htf_bear = hf < hs;
                 if (p_.mtf_hard_veto) {
-                    if (is_long && !htf_bull) return false;
-                    if (!is_long && !htf_bear) return false;
+                    if (is_long && !htf_bull) return fail("quality:MTF");
+                    if (!is_long && !htf_bear) return fail("quality:MTF");
                 } else {
-                    if (is_long && htf_bear) return false;
-                    if (!is_long && htf_bull) return false;
+                    if (is_long && htf_bear) return fail("quality:MTF");
+                    if (!is_long && htf_bull) return fail("quality:MTF");
                 }
             }
         }
         if (p_.use_mom_veto) {
             const double r = rsi_[sig_bar];
             if (r > 0.0) {
-                if (is_long && r < p_.rsi_midline) return false;
-                if (!is_long && r > p_.rsi_midline) return false;
+                if (is_long && r < p_.rsi_midline) return fail("quality:RSI");
+                if (!is_long && r > p_.rsi_midline) return fail("quality:RSI");
             }
         }
         return true;
@@ -253,6 +305,13 @@ private:
             finalize_trade_(t.ts_ms);
         }
 
+        // Feature #1: multi-bar net-volume flip exit — flow against the open position for N bars.
+        if (p_.enable_net_flip_exit && pos_.open()
+            && net_against_n_(pos_.is_long(), sig_bar, p_.net_flip_bars, p_.net_flip_min)) {
+            pos_.force_close(t.bid, t.ask);
+            finalize_trade_(t.ts_ms);
+        }
+
         if (!ev.valid || !ev.sig.valid) return;
         const Signal& sig = ev.sig;
         const bool dbg = dbg_from_ && bars_[sig_bar].ts_ms >= dbg_from_ && bars_[sig_bar].ts_ms <= dbg_to_;
@@ -260,7 +319,14 @@ private:
                        trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", why); };
 
         // Supplementary quality gate (before the main safety gate, as in OnTick).
-        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms)) { blk("quality (MTF/RSI)"); return; }
+        const char* qwhy = "quality";
+        if (!quality_ok_(sig.is_long, sig_bar, t.ts_ms, &qwhy)) { blk(qwhy); return; }
+
+        // Feature #1: require net volume to PERSIST with the trade for N closed bars before entry.
+        if (p_.enable_net_persist
+            && !net_persist_n_(sig.is_long, sig_bar, p_.net_persist_bars, p_.net_persist_min)) {
+            blk("net persistence"); return;
+        }
 
         // Flat check + main safety gate (order mirrors OnTick / SafetyBlockReason).
         if (pos_.open()) { blk("position already open"); return; }
@@ -277,6 +343,24 @@ private:
         // Cost-clearance: live spread must not eat the TP1 partial.
         if (!spread_vs_tp1_ok(t.bid, t.ask, sig.tp1, sig.entry, p_)) { blk("spread vs TP1"); return; }
 
+        // DeferredEntry (shared module): instead of a market fill, arm a virtual limit at a more
+        // favourable pullback price; it fills within defer_bars if price trades through it (checked
+        // per tick), else cancels. SL/TP prices stay put, so the better entry shrinks risk = better R.
+        if (p_.enable_defer_entry && ev.atr1 > 0.0) {
+            const double limit = sig.is_long ? sig.entry - p_.defer_pullback_atr * ev.atr1
+                                             : sig.entry + p_.defer_pullback_atr * ev.atr1;
+            Signal ds = sig;
+            ds.entry = limit;
+            ds.risk  = std::fabs(limit - sig.sl);
+            if (ds.risk > 0.0 && ((sig.is_long && limit < sig.entry) || (!sig.is_long && limit > sig.entry))) {
+                defer_ = Defer{true, ds, sessionId, ev.atr1, ev.regime_trend, sig_bar,
+                               bars_[sig_bar].ts_ms};
+                if (dbg) std::fprintf(stderr, "[gate] %s %s -> DEFER-ARM limit=%.3f sl=%.3f\n",
+                                      trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", limit, ds.sl);
+            }
+            return;   // no market fill this bar; the deferred limit may fill on a later tick
+        }
+
         // Size + market fill at this tick (long->ask, short->bid).
         const double lot = rm_.compute_lot(sig.risk, equity_);
         if (lot <= 0.0) { blk("lot<=0 (min-lot-over-risk)"); return; }   // no fill, no counter
@@ -289,6 +373,36 @@ private:
                                   trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S",
                                   fill, sig.sl, lot);
         }
+    }
+
+    // Deferred-limit intent (feature: DeferredEntry). Armed in on_bar_closed_, filled/expired here.
+    struct Defer {
+        bool   active = false;
+        Signal sig;                 // limit-based signal (entry=limit, recomputed risk)
+        int    session = 0;
+        double atr1 = 0.0;
+        bool   regime_trend = false;
+        int    arm_sig_bar = -1;    // signal bar at arm time (for the bars-elapsed expiry)
+        int64_t arm_ts_ms = 0;
+    };
+    Defer defer_;
+
+    // Per-tick: fill the armed limit if price trades through it, or cancel on expiry.
+    void try_defer_fill_(int forming, const Tick& t) {
+        // Expiry: bars elapsed since the signal bar. Armed when forming was arm_sig_bar+1.
+        if (forming - defer_.arm_sig_bar > p_.defer_bars + 1) { defer_.active = false; return; }
+        const Signal& ds = defer_.sig;
+        const double limit = ds.entry;
+        const bool touched = ds.is_long ? (t.ask <= limit) : (t.bid >= limit);
+        if (!touched) return;
+        const double lot = rm_.compute_lot(ds.risk, equity_);
+        if (lot <= 0.0) { defer_.active = false; return; }   // unsized -> drop the intent
+        const double entry_spread = ExecutionSimulator::entry_spread(t);
+        if (pos_.open_position(p_, ds, limit, lot, defer_.arm_ts_ms, defer_.session, entry_spread,
+                               defer_.atr1, defer_.regime_trend)) {
+            sess_.on_fill();
+        }
+        defer_.active = false;
     }
 
     std::string trade_dbg_time_(int sig_bar) const {
@@ -311,6 +425,7 @@ private:
     // precomputed arrays
     std::vector<BarEval> evals_;
     std::vector<double>  atr_, rsi_;
+    std::vector<double>  net_flow_;   // feature #1: per-bar volume-weighted net flow
     std::vector<int64_t> m15_start_;
     std::vector<double>  m15_close_, m15_emaF_, m15_emaS_;
 

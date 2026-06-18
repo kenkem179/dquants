@@ -16,6 +16,7 @@
 #include <algorithm>
 #include "kk/common/types.hpp"
 #include "kk/common/config.hpp"
+#include "kk/common/profit_manager.hpp"
 
 namespace kk {
 
@@ -86,11 +87,17 @@ public:
         // breakout can run; the chandelier trail normally exits first. The backstop is anchored
         // to sig.entry + sig.risk*RunnerRr (TradeManager.mqh:61-64) — the SIGNAL anchor/risk,
         // not the fill — so it is a fixed absolute price the broker holds as TP.
-        tp_backstop_ = (p.trail_runner && sig.risk > 0.0)
-            ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
-            : sig.tp2;
+        // Feature #2: when node-structure TP is on, the final/runner target IS the structural
+        // level (already baked into sig.tp2 by the engine); the chandelier trail still rides and
+        // may exit earlier. Otherwise the usual runner backstop (or fixed rrBrk cap).
+        tp_backstop_ = (p.enable_struct_tp && sig.tp2 > 0.0)
+            ? sig.tp2
+            : ((p.trail_runner && sig.risk > 0.0)
+                ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
+                : sig.tp2);
         tp1_ = sig.tp1;
         tp1_done_ = false; be_applied_ = false;
+        pm_partial_done_ = false; pm_tp_ext_count_ = 0;
         mfe_ = 0.0; mae_ = 0.0;
         last_atr_ = entry_atr1;
 
@@ -159,6 +166,33 @@ public:
                 if (cand > 0.0 && cand <= sl_ - step) sl_ = cand;
             }
         }
+
+        // 4) Shared ProfitManager (kk::common). All toggles default OFF => skipped (provably inert).
+        //    Composes with the above: SL merged tighten-only, TP extended-only, partial one-shot.
+        //    structure_level/trend_weakening are not yet fed by this engine (pre_be_structure /
+        //    tp_extension stay inert until wired); the SL-only toggles are fully functional here.
+        if (common::pm_any(p.pm)) {
+            common::PMState st;
+            st.is_long = is_long_; st.entry = entry_; st.sl = sl_; st.tp = tp_backstop_;
+            st.cur_price = exit_px; st.best_price = is_long_ ? (entry_ + mfe_) : (entry_ - mfe_);
+            st.risk = risk_; st.atr = last_atr_;
+            st.tp_extensions = pm_tp_ext_count_;
+            st.partial_done = pm_partial_done_; st.be_done = be_applied_;
+            st.structure_level = 0.0; st.trend_weakening = false;
+            const common::PMActions act = common::pm_evaluate(st, p.pm);
+            if (is_long_ ? (act.sl > sl_) : (act.sl < sl_)) sl_ = act.sl;
+            if (is_long_ ? (act.tp > tp_backstop_) : (act.tp < tp_backstop_)) {
+                tp_backstop_ = act.tp; ++pm_tp_ext_count_;
+            }
+            if (act.partial_frac > 0.0 && !pm_partial_done_) {
+                const double close_vol = p.normalize_lot(initial_vol_ * act.partial_frac);
+                if (close_vol >= p.min_lot && (cur_vol_ - close_vol) >= p.min_lot) {
+                    book_pnl(exit_px, close_vol);
+                    cur_vol_ -= close_vol;
+                }
+                pm_partial_done_ = true;
+            }
+        }
         return false;
     }
 
@@ -193,6 +227,8 @@ private:
 
     const Params* p_ = nullptr;
     bool   open_ = false, is_long_ = false, tp1_done_ = false, be_applied_ = false;
+    bool   pm_partial_done_ = false;
+    int    pm_tp_ext_count_ = 0;
     double entry_ = 0.0, sl_ = 0.0, tp1_ = 0.0, tp_backstop_ = 0.0, risk_ = 0.0;
     double initial_vol_ = 0.0, cur_vol_ = 0.0, realized_usd_ = 0.0;
     double mfe_ = 0.0, mae_ = 0.0, last_atr_ = 0.0;

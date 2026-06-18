@@ -1,0 +1,229 @@
+[bt] applied 63 keys from ../validation/mt5_parity_runs/RUN_2026-05_xau_m3/cpp_out/xau_ref_run_ema.set (mimic MT5 non-input)
+[bt] loaded 46321 bars from ../validation/mt5_parity_runs/RUN_2026-05_xau_m3/cpp_out/bars_xauusd_m3.csv
+[gate] 2026.05.19 02:57 S -> FILL entry=4547.207 sl=4557.263 lot=0.09
+[gate] 2026.05.19 03:00 S -> BLOCK: position already open
+[gate] 2026.05.19 03:03 S -> BLOCK: position already open
+[gate] 2026.05.19 04:15 S -> BLOCK: position already open
+[gate] 2026.05.19 05:24 S -> BLOCK: position already open
+[gate] 2026.05.19 12:00 S -> BLOCK: out of session
+[gate] 2026.05.19 13:06 S -> FILL entry=4517.317 sl=4530.950 lot=0.07
+[gate] 2026.05.19 13:09 S -> BLOCK: position already open
+[gate] 2026.05.19 13:12 S -> BLOCK: position already open
+[gate] 2026.05.19 13:15 S -> BLOCK: position already open
+[gate] 2026.05.19 13:18 S -> BLOCK: position already open
+[gate] 2026.05.19 13:21 S -> BLOCK: position already open
+[gate] 2026.05.19 13:24 S -> BLOCK: position already open
+[gate] 2026.05.19 13:27 S -> BLOCK: position already open
+[gate] 2026.05.19 13:30 S -> BLOCK: position already open
+[gate] 2026.05.19 13:33 S -> BLOCK: position already open
+[gate] 2026.05.19 13:36 S -> BLOCK: position already open
+[gate] 2026.05.19 13:39 S -> BLOCK: position already open
+[gate] 2026.05.19 13:42 S -> BLOCK: position already open
+[gate] 2026.05.19 13:45 S -> BLOCK: position already open
+[gate] 2026.05.19 14:21 S -> BLOCK: ATR% band
+[gate] 2026.05.19 14:24 S -> BLOCK: ATR% band
+[gate] 2026.05.19 20:33 S -> BLOCK: out of session
+[gate] 2026.05.19 20:39 S -> BLOCK: out of session
+[gate] 2026.05.19 20:42 S -> BLOCK: out of session
+[gate] 2026.05.19 22:27 S -> BLOCK: out of session
+[gate] 2026.05.19 22:30 S -> BLOCK: out of session
+[gate] 2026.05.20 01:30 S -> FILL entry=4473.647 sl=4488.268 lot=0.06
+[gate] 2026.05.20 01:33 S -> BLOCK: position already open
+[gate] 2026.05.20 01:36 S -> BLOCK: position already open
+[gate] 2026.05.20 01:39 S -> BLOCK: position already open
+[gate] 2026.05.20 01:42 S -> BLOCK: position already open
+[gate] 2026.05.20 01:45 S -> BLOCK: position already open
+[gate] 2026.05.20 01:48 S -> BLOCK: ATR% band
+[gate] 2026.05.20 02:48 S -> FILL entry=4465.015 sl=4479.066 lot=0.07
+[gate] 2026.05.20 02:54 S -> BLOCK: position already open
+[gate] 2026.05.20 02:57 S -> BLOCK: position already open
+[gate] 2026.05.20 03:00 S -> BLOCK: position already open
+[gate] 2026.05.20 03:06 S -> BLOCK: position already open
+[gate] 2026.05.20 03:09 S -> BLOCK: position already open
+[gate] 2026.05.20 03:12 S -> BLOCK: position already open
+[gate] 2026.05.20 08:30 L -> BLOCK: blocked hour
+[gate] 2026.05.20 08:33 L -> BLOCK: blocked hour
+[gate] 2026.05.20 08:54 L -> BLOCK: blocked hour
+[gate] 2026.05.20 09:03 L -> FILL entry=4485.990 sl=4477.822 lot=0.11
+[gate] 2026.05.20 10:09 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:24 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:27 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:33 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:36 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:39 L -> BLOCK: blocked hour
+[gate] 2026.05.20 10:42 L -> BLOCK: blocked hour
+[gate] 2026.05.20 12:39 L -> FILL entry=4501.893 sl=4493.812 lot=0.12
+[gate] 2026.05.20 12:42 L -> BLOCK: position already open
+[gate] 2026.05.20 12:45 L -> BLOCK: position already open
+[gate] 2026.05.20 12:48 L -> BLOCK: position already open
+[gate] 2026.05.20 14:30 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:33 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:39 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:45 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:48 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:51 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:54 L -> BLOCK: ATR% band
+[gate] 2026.05.20 14:57 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:00 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:03 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:15 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:18 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:21 L -> BLOCK: ATR% band
+[gate] 2026.05.20 15:39 L -> FILL entry=4538.517 sl=4524.314 lot=0.06
+[gate] 2026.05.20 17:24 L -> BLOCK: out of session
+[gate] 2026.05.20 17:36 L -> BLOCK: out of session
+[gate] 2026.05.21 01:21 L -> FILL entry=4564.546 sl=4551.677 lot=0.07
+[gate] 2026.05.21 01:24 L -> BLOCK: position already open
+[gate] 2026.05.21 01:27 L -> BLOCK: position already open
+[gate] 2026.05.21 01:30 L -> BLOCK: position already open
+[gate] 2026.05.21 01:33 L -> BLOCK: position already open
+[gate] 2026.05.21 01:36 L -> BLOCK: position already open
+[gate] 2026.05.21 01:39 L -> BLOCK: position already open
+[gate] 2026.05.21 01:42 L -> BLOCK: position already open
+[gate] 2026.05.21 01:45 L -> BLOCK: position already open
+[gate] 2026.05.21 03:54 S -> FILL entry=4528.421 sl=4535.439 lot=0.13
+[gate] 2026.05.21 03:57 S -> BLOCK: position already open
+[gate] 2026.05.21 04:00 S -> BLOCK: position already open
+[gate] 2026.05.21 05:21 S -> FILL entry=4525.677 sl=4532.032 lot=0.14
+[gate] 2026.05.21 05:24 S -> BLOCK: position already open
+[gate] 2026.05.21 05:27 S -> BLOCK: position already open
+[gate] 2026.05.21 05:30 S -> FILL entry=4526.109 sl=4535.305 lot=0.10
+[gate] 2026.05.21 07:30 S -> FILL entry=4515.698 sl=4525.204 lot=0.09
+[gate] 2026.05.21 10:30 S -> BLOCK: blocked hour
+[gate] 2026.05.21 10:33 S -> BLOCK: blocked hour
+[gate] 2026.05.21 10:39 S -> BLOCK: blocked hour
+[gate] 2026.05.21 10:42 S -> BLOCK: ATR% band
+[gate] 2026.05.21 10:51 S -> BLOCK: blocked hour
+[gate] 2026.05.21 10:54 S -> BLOCK: blocked hour
+[gate] 2026.05.21 10:57 S -> BLOCK: blocked hour
+[gate] 2026.05.21 13:21 S -> FILL entry=4501.226 sl=4514.865 lot=0.06
+[gate] 2026.05.21 13:36 S -> BLOCK: position already open
+[gate] 2026.05.21 16:48 L -> BLOCK: out of session
+[gate] 2026.05.21 17:12 L -> BLOCK: out of session
+[gate] 2026.05.21 17:15 L -> BLOCK: out of session
+[gate] 2026.05.21 17:18 L -> BLOCK: out of session
+[gate] 2026.05.21 17:21 L -> BLOCK: out of session
+[gate] 2026.05.21 17:24 L -> BLOCK: out of session
+[gate] 2026.05.21 17:27 L -> BLOCK: out of session
+[gate] 2026.05.21 17:30 L -> BLOCK: out of session
+[gate] 2026.05.21 17:33 L -> BLOCK: out of session
+[gate] 2026.05.21 17:36 L -> BLOCK: out of session
+[gate] 2026.05.21 17:39 L -> BLOCK: out of session
+[gate] 2026.05.21 17:42 L -> BLOCK: out of session
+[gate] 2026.05.21 17:45 L -> BLOCK: out of session
+[gate] 2026.05.21 17:48 L -> BLOCK: out of session
+[gate] 2026.05.21 17:51 L -> BLOCK: out of session
+[gate] 2026.05.21 17:54 L -> BLOCK: out of session
+[gate] 2026.05.21 17:57 L -> BLOCK: out of session
+[gate] 2026.05.21 18:00 L -> BLOCK: out of session
+[gate] 2026.05.21 18:03 L -> BLOCK: out of session
+[gate] 2026.05.21 18:06 L -> BLOCK: out of session
+[gate] 2026.05.21 18:09 L -> BLOCK: out of session
+[gate] 2026.05.21 18:18 L -> BLOCK: out of session
+[gate] 2026.05.21 18:21 L -> BLOCK: out of session
+[gate] 2026.05.21 18:24 L -> BLOCK: out of session
+[gate] 2026.05.21 18:27 L -> BLOCK: out of session
+[gate] 2026.05.21 19:15 L -> BLOCK: out of session
+[gate] 2026.05.21 19:18 L -> BLOCK: out of session
+[gate] 2026.05.21 19:21 L -> BLOCK: out of session
+[gate] 2026.05.22 00:54 S -> FILL entry=4530.107 sl=4537.876 lot=0.12
+[gate] 2026.05.22 01:33 S -> FILL entry=4524.593 sl=4534.487 lot=0.09
+[gate] 2026.05.22 01:36 S -> BLOCK: position already open
+[gate] 2026.05.22 01:39 S -> BLOCK: position already open
+[gate] 2026.05.22 02:33 S -> BLOCK: position already open
+[gate] 2026.05.22 02:36 S -> BLOCK: position already open
+[gate] 2026.05.22 02:39 S -> BLOCK: position already open
+[gate] 2026.05.22 05:57 S -> FILL entry=4511.334 sl=4523.182 lot=0.07
+[gate] 2026.05.22 06:00 S -> BLOCK: out of session
+[gate] 2026.05.22 09:30 S -> FILL entry=4516.250 sl=4523.054 lot=0.12
+[gate] 2026.05.22 09:33 S -> BLOCK: position already open
+[gate] 2026.05.22 09:54 L -> BLOCK: cooldown
+[gate] 2026.05.22 09:57 L -> BLOCK: cooldown
+[gate] 2026.05.22 10:09 L -> BLOCK: blocked hour
+[gate] 2026.05.22 10:12 L -> BLOCK: blocked hour
+[gate] 2026.05.22 10:15 L -> BLOCK: blocked hour
+[gate] 2026.05.22 10:42 S -> BLOCK: blocked hour
+[gate] 2026.05.22 10:45 S -> BLOCK: blocked hour
+[gate] 2026.05.22 10:48 S -> BLOCK: blocked hour
+[gate] 2026.05.22 10:51 S -> BLOCK: blocked hour
+[gate] 2026.05.22 10:54 S -> BLOCK: blocked hour
+[gate] 2026.05.22 10:57 S -> BLOCK: blocked hour
+[gate] 2026.05.22 11:00 S -> BLOCK: out of session
+[gate] 2026.05.22 11:15 S -> BLOCK: out of session
+[gate] 2026.05.22 11:18 S -> BLOCK: out of session
+[gate] 2026.05.22 11:21 S -> BLOCK: out of session
+[gate] 2026.05.22 11:24 S -> BLOCK: out of session
+[gate] 2026.05.22 11:27 S -> BLOCK: out of session
+[gate] 2026.05.22 11:30 S -> BLOCK: out of session
+[gate] 2026.05.22 14:03 S -> FILL entry=4508.150 sl=4520.831 lot=0.07
+[gate] 2026.05.22 14:06 S -> BLOCK: position already open
+[gate] 2026.05.22 14:09 S -> BLOCK: position already open
+[gate] 2026.05.22 14:12 S -> BLOCK: position already open
+[gate] 2026.05.22 14:15 S -> BLOCK: position already open
+[gate] 2026.05.22 14:18 S -> BLOCK: position already open
+[gate] 2026.05.22 14:21 S -> BLOCK: position already open
+[gate] 2026.05.22 14:24 S -> BLOCK: position already open
+[gate] 2026.05.22 14:27 S -> BLOCK: position already open
+[gate] 2026.05.22 19:12 S -> BLOCK: out of session
+[gate] 2026.05.22 19:15 S -> BLOCK: out of session
+[gate] 2026.05.22 19:21 S -> BLOCK: out of session
+[gate] 2026.05.22 19:27 S -> BLOCK: out of session
+[gate] 2026.05.22 19:30 S -> BLOCK: out of session
+[gate] 2026.05.22 19:33 S -> BLOCK: out of session
+[gate] 2026.05.24 22:09 L -> BLOCK: out of session
+[gate] 2026.05.24 22:12 L -> BLOCK: out of session
+[gate] 2026.05.24 22:15 L -> BLOCK: out of session
+[gate] 2026.05.24 22:18 L -> BLOCK: out of session
+[gate] 2026.05.24 22:21 L -> BLOCK: out of session
+[gate] 2026.05.24 22:24 L -> BLOCK: out of session
+[gate] 2026.05.24 22:30 L -> BLOCK: out of session
+[gate] 2026.05.24 22:33 L -> BLOCK: out of session
+[gate] 2026.05.24 22:45 L -> BLOCK: out of session
+[gate] 2026.05.24 22:48 L -> BLOCK: out of session
+[gate] 2026.05.24 22:51 L -> BLOCK: out of session
+[gate] 2026.05.25 00:30 L -> FILL entry=4573.729 sl=4565.750 lot=0.11
+[gate] 2026.05.25 00:33 L -> BLOCK: position already open
+[gate] 2026.05.25 00:36 L -> BLOCK: position already open
+[gate] 2026.05.25 00:39 L -> BLOCK: position already open
+[gate] 2026.05.25 00:48 L -> BLOCK: position already open
+[gate] 2026.05.25 00:51 L -> FILL entry=4572.589 sl=4563.785 lot=0.10
+[gate] 2026.05.25 05:30 S -> FILL entry=4555.785 sl=4560.915 lot=0.16
+[gate] 2026.05.25 05:51 S -> FILL entry=4554.110 sl=4560.652 lot=0.13
+[gate] 2026.05.25 05:54 S -> BLOCK: position already open
+[gate] 2026.05.25 05:57 S -> BLOCK: position already open
+[gate] 2026.05.25 06:00 S -> BLOCK: out of session
+[gate] 2026.05.25 06:03 S -> BLOCK: out of session
+[gate] 2026.05.25 06:06 S -> BLOCK: out of session
+[gate] 2026.05.25 06:09 S -> BLOCK: out of session
+[gate] 2026.05.25 06:12 S -> BLOCK: out of session
+[gate] 2026.05.25 06:15 S -> BLOCK: out of session
+[gate] 2026.05.25 06:21 S -> BLOCK: out of session
+[gate] 2026.05.25 09:54 L -> BLOCK: cooldown
+[gate] 2026.05.25 09:57 L -> BLOCK: cooldown
+[gate] 2026.05.25 10:00 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:03 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:06 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:09 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:12 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:15 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:18 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:21 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:24 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:27 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:30 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:33 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:36 L -> BLOCK: blocked hour
+[gate] 2026.05.25 10:45 L -> BLOCK: blocked hour
+[gate] 2026.05.25 11:15 L -> BLOCK: out of session
+[gate] 2026.05.25 11:18 L -> BLOCK: out of session
+[gate] 2026.05.25 12:39 L -> FILL entry=4568.317 sl=4560.955 lot=0.12
+[gate] 2026.05.25 12:42 L -> BLOCK: position already open
+[gate] 2026.05.25 12:57 L -> BLOCK: position already open
+[gate] 2026.05.25 22:57 L -> BLOCK: out of session
+[gate] 2026.05.25 23:12 L -> BLOCK: out of session
+[gate] 2026.05.25 23:15 L -> BLOCK: out of session
+[gate] 2026.05.25 23:18 L -> BLOCK: out of session
+[gate] 2026.05.25 23:36 S -> BLOCK: out of session
+[gate] 2026.05.25 23:39 S -> BLOCK: out of session
+[bt] streamed 1444338 ticks
+[bt] 23 trades -> ../validation/mt5_parity_runs/RUN_2026-05_xau_m3/cpp_out/trades_cpp_ema.csv | final balance 9271.41, peak 10366.87, raw signals 7209

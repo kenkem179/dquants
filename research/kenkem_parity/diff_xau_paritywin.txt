@@ -1,0 +1,25 @@
+cpp=218 ref=136 | matched=6 missed(ref-only)=130 extra(cpp-only)=212
+entry parity: 6/136 ref trades reproduced (4.4%)
+
+--- matched-trade deltas (geometry first, $ last) ---
+  entry        max|Δ|=      0.1230 mean|Δ|=    0.0205  worst@2025.03.05 12:00 cpp=2913.302 ref=2913.425
+  riskPrice    max|Δ|=      0.2320 mean|Δ|=    0.1558  worst@2025.05.22 13:57 cpp=11.658 ref=11.89
+  exitPrice    max|Δ|=      9.4770 mean|Δ|=    2.4232  worst@2025.05.22 13:57 cpp=3289.357 ref=3279.88
+  realizedUsd  max|Δ|=    146.4500 mean|Δ|=   99.3000  worst@2025.05.15 00:20 cpp=-200.9 ref=-54.45
+  mfeR         max|Δ|=      0.5700 mean|Δ|=    0.1733  worst@2025.05.22 13:57 cpp=0.71 ref=1.28
+  dir          EXACT
+  kind         EXACT
+  exitTag      MISMATCH on 3, e.g. 2025.03.05 12:00: cpp=SL-WIN ref=SL-LOSS
+
+--- MISSED (ref took, cpp skipped) (first 15) ---
+  2025.03.03 00:00  L E5 entry=2871.036 risk=11.748 exit=EA usd=-48.90
+  2025.03.03 05:37  S E5 entry=2863.336 risk=2.882 exit=EA usd=-3.47
+  2025.03.03 07:18  S E5 entry=2862.138 risk=2.780 exit=EA usd=-3.90
+  2025.03.04 01:15  S E5 entry=2884.457 risk=6.257 exit=EA usd=-67.05
+  2025.03.04 14:44  S E5 entry=2909.562 risk=9.677 exit=EA usd=91.17
+  2025.03.05 01:07  S E5 entry=2912.957 risk=2.395 exit=TP usd=40.16
+  2025.03.05 13:12  S E5 entry=2913.458 risk=2.628 exit=SL-LOSS usd=-40.22
+  2025.03.06 01:01  S E5 entry=2917.519 risk=1.298 exit=EA usd=-9.00
+  2025.03.06 05:52  S E5 entry=2916.956 risk=2.238 exit=EA usd=-21.74
+  2025.03.06 07:33  S E5 entry=2915.609 risk=4.412 exit=TP usd=64.17
+  2025.03.07 00:18  S E5 entry=2902.857 risk=8.753 exit=EA usd=-82.35

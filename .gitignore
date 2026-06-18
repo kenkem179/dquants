@@ -10,6 +10,7 @@ data/labels/
 *.feather
 
 # ---- Research artifacts ----
+research/optimization/*.log
 backtests/results/
 reports/*.html
 research/notebooks/.ipynb_checkpoints/

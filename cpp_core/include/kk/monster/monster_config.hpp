@@ -10,6 +10,9 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
+#include <cstdio>
+#include "kk/common/profit_manager.hpp"
 
 namespace kk::monster {
 
@@ -133,6 +136,13 @@ struct MonsterConfig {
     int    max_concurrent_per_dir = 1;     // v1: single netted position
     bool   enable_early_exit    = false;   // legacy M1+M3/M3+M5 flush
     double exit_net_min         = 0.80;
+    // multi-bar net volume (feature #1): persistence-on-entry + N-bar flip-exit
+    bool   enable_net_persist   = false;
+    int    net_persist_bars     = 3;
+    double net_persist_min      = 0.5;
+    bool   enable_net_flip_exit = false;
+    int    net_flip_bars        = 3;
+    double net_flip_min         = 0.5;
     bool   enable_m1_flush_exit = false;
     double m1_flush_net_min     = 0.80;
     int    m1_flush_bars        = 2;
@@ -154,6 +164,9 @@ struct MonsterConfig {
     double shelf_near_atr       = 0.5;
     double shelf_far_atr        = 2.5;
     double shelf_buf_atr        = 0.25;
+
+    // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
+    kk::common::PMConfig pm;
 
     // ---- sessions (UTC) ----
     bool   trade_anytime        = true;
@@ -330,6 +343,12 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     // stacking / early exit
     else if (key == "InpEnableEarlyExit") p.enable_early_exit = mbool(val);
     else if (key == "InpExitNetMin") p.exit_net_min = D();
+    else if (key == "InpEnableNetPersist") p.enable_net_persist = mbool(val);
+    else if (key == "InpNetPersistBars") p.net_persist_bars = I();
+    else if (key == "InpNetPersistMin") p.net_persist_min = D();
+    else if (key == "InpEnableNetFlipExit") p.enable_net_flip_exit = mbool(val);
+    else if (key == "InpNetFlipBars") p.net_flip_bars = I();
+    else if (key == "InpNetFlipMin") p.net_flip_min = D();
     else if (key == "InpEnableM1FlushExit") p.enable_m1_flush_exit = mbool(val);
     else if (key == "InpM1FlushNetMin") p.m1_flush_net_min = D();
     else if (key == "InpM1FlushBars") p.m1_flush_bars = I();
@@ -346,6 +365,27 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     else if (key == "InpStp2EdgeOffAtr") p.stp2_edge_off_atr = D();
     else if (key == "InpStp2MinRr") p.stp2_min_rr = D();
     else if (key == "InpStp2MaxRr") p.stp2_max_rr = D();
+    // ---- shared ProfitManager toggles ----
+    else if (key == "InpPmBeProtect") p.pm.be_protect = mbool(val);
+    else if (key == "InpPmBeTriggerR") p.pm.be_trigger_r = D();
+    else if (key == "InpPmBeBufferR") p.pm.be_buffer_r = D();
+    else if (key == "InpPmProgTrail") p.pm.prog_trail = mbool(val);
+    else if (key == "InpPmProgTriggerR") p.pm.prog_trigger_r = D();
+    else if (key == "InpPmProgIncrementR") p.pm.prog_increment_r = D();
+    else if (key == "InpPmProgStepR") p.pm.prog_step_r = D();
+    else if (key == "InpPmGiveback") p.pm.giveback = mbool(val);
+    else if (key == "InpPmGivebackArmR") p.pm.giveback_arm_r = D();
+    else if (key == "InpPmGivebackCapFrac") p.pm.giveback_cap_frac = D();
+    else if (key == "InpPmTpExtension") p.pm.tp_extension = mbool(val);
+    else if (key == "InpPmTpExtProgress") p.pm.tp_ext_progress = D();
+    else if (key == "InpPmTpExtAtrMult") p.pm.tp_ext_atr_mult = D();
+    else if (key == "InpPmTpExtMax") p.pm.tp_ext_max = I();
+    else if (key == "InpPmPreBeStructure") p.pm.pre_be_structure = mbool(val);
+    else if (key == "InpPmPreBeTriggerR") p.pm.pre_be_trigger_r = D();
+    else if (key == "InpPmPreBeBuffer") p.pm.pre_be_buffer = D();
+    else if (key == "InpPmPartialTp") p.pm.partial_tp = mbool(val);
+    else if (key == "InpPmPartialTriggerR") p.pm.partial_trigger_r = D();
+    else if (key == "InpPmPartialFrac") p.pm.partial_frac = D();
     else if (key == "InpEnableHvnShelfSl") p.enable_hvn_shelf_sl = mbool(val);
     else if (key == "InpShelfNearAtr") p.shelf_near_atr = D();
     else if (key == "InpShelfFarAtr") p.shelf_far_atr = D();
@@ -370,10 +410,27 @@ inline bool apply_kv(MonsterConfig& p, const std::string& key, const std::string
     return true;
 }
 
-// Load a .set into p. Returns # keys applied (-1 if file missing).
+// Keys the KK-MasterVP-Monster EA HARDCODES in its InputParams.mqh (NOT `input`s) — MT5 ignores any
+// .set value for them, so honoring them in C++ breaks parity. Verified 2026-06-16 against
+// KK-MasterVP-Monster/Config/InputParams.mqh (audit: research/kenkem_parity/PARAM_SURFACE_AUDIT.md).
+// best_monster_*.set were contaminated with InpNodeDecay/NeutralBand/Saturation/TouchAtr overrides.
+inline const std::unordered_set<std::string>& monster_non_input_keys() {
+    static const std::unordered_set<std::string> s = {
+        "InpAtrLen", "InpMasterMult", "InpVaPct", "InpVpFeedMode",
+        "InpNodeDecay", "InpNodeNeutralBand", "InpNodeSaturation", "InpNodeTouchAtr",
+        "InpNetWinAtr", "InpTfNetLook", "InpRevAnchorOffAtr", "InpRevPocSlOffAtr",
+        "InpWHvn", "InpWLvn", "InpWMvn",
+        // hidden spec consts (plain int, NOT inputs) — InputParams.mqh L119/L230; audit 2026-06-16
+        "InpBrkRrLookbackBars", "InpMaxTradesPerSession"};
+    return s;
+}
+
+// Load a .set into p. Returns # keys applied (-1 if file missing). EA-hardcoded keys are REFUSED
+// (kept at their EA value) so the engine cannot diverge from MT5 on a param MT5 ignores; warns once.
 inline int load_set(MonsterConfig& p, const std::string& path) {
     std::ifstream f(path);
     if (!f) return -1;
+    static std::unordered_set<std::string> warned;
     int applied = 0;
     std::string line;
     while (std::getline(f, line)) {
@@ -383,7 +440,16 @@ inline int load_set(MonsterConfig& p, const std::string& path) {
         if (line.empty()) continue;
         auto eq = line.find('=');
         if (eq == std::string::npos) continue;
-        if (apply_kv(p, detail::mtrim(line.substr(0, eq)), detail::mtrim(line.substr(eq + 1)))) applied++;
+        std::string key = detail::mtrim(line.substr(0, eq));
+        std::string val = detail::mtrim(line.substr(eq + 1));
+        if (monster_non_input_keys().count(key)) {
+            if (warned.insert(key).second)
+                std::fprintf(stderr, "[monster_config] IGNORING .set key '%s=%s' — EA hardcodes it "
+                             "(not an input); keeping EA value to preserve MT5 parity.\n",
+                             key.c_str(), val.c_str());
+            continue;
+        }
+        if (apply_kv(p, key, val)) applied++;
     }
     return applied;
 }

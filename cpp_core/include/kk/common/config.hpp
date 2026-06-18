@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
+#include "kk/common/profit_manager.hpp"
 
 namespace kk {
 
@@ -30,6 +31,7 @@ struct Params {
     double node_neutral_band  = 0.15;
     double node_saturation    = 4.0;
     int    atr_len            = 14;
+    bool   atr_mt5_mode       = false;   // false=textbook Wilder atr(); true=EMA k=2/(n+1) atr_mt5()
     // ---- regime ----
     int    ema_fast           = 24;
     int    ema_slow           = 194;
@@ -63,6 +65,33 @@ struct Params {
     bool   trail_runner       = true;
     double runner_rr          = 10.0;
     double trail_atr_mult     = 3.6;
+    // ---- multi-bar net volume (feature #1) — default OFF (inert) ----
+    // Per-bar net flow = volume-weighted body ratio (c-o)/range * min(vol/avgVol, 3).
+    // Persist: require last N closed bars all flow WITH the trade side beyond min before entry.
+    // Flip-exit: close the open position if last N closed bars all flow AGAINST it beyond min.
+    bool   enable_net_persist   = false;
+    int    net_persist_bars     = 3;
+    double net_persist_min      = 0.5;
+    bool   enable_net_flip_exit = false;
+    int    net_flip_bars        = 3;
+    double net_flip_min         = 0.5;
+    int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
+    // ---- node-structure TP (feature #2) — default OFF (inert) ----
+    // Override the final/runner target with the next HVN shelf beyond TP1, clamped in R.
+    bool   enable_struct_tp     = false;
+    double stp_hvn_frac         = 0.66;  // node vol >= frac*maxVol counts as a shelf
+    double stp_edge_off_atr     = 0.20;  // pull the target inside the shelf by this ATR
+    double stp_min_rr           = 1.2;
+    double stp_max_rr           = 3.0;
+    // ---- deferred / pullback-limit entry (shared module) — default OFF (inert) ----
+    // Instead of a market fill on the signal bar, arm a virtual limit at a more favourable
+    // price (entry pulled back by defer_pullback_atr*ATR) and fill within defer_bars if price
+    // trades through it; cancel on expiry. SL/TP recompute off the limit price.
+    bool   enable_defer_entry   = false;
+    double defer_pullback_atr   = 0.5;
+    int    defer_bars           = 3;
+    // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
+    common::PMConfig pm;
     // ---- risk ----
     int    risk_unit          = 0;       // 0=%acct,1=USD,2=Min,3=Max
     double risk_usd           = 180.0;
@@ -162,12 +191,16 @@ inline std::string trim(std::string s) {
 }
 inline bool to_bool(const std::string& v) { return v == "true" || v == "1"; }
 
-// Keys that are non-input compile-constants in InputParams.mqh (MT5 .set ignores them).
+// Keys that are non-input compile-constants in the KK-MasterVP EA's InputParams.mqh — MT5 SILENTLY
+// IGNORES any .set value for them (they are not `input`s). Honoring them in C++ makes dquants diverge
+// from MT5 on a parameter MT5 can't change. Verified 2026-06-16 against KK-MasterVP/Config/InputParams.mqh
+// (full audit: research/kenkem_parity/PARAM_SURFACE_AUDIT.md). InpAtrLen was the missing one — it is
+// "fixed at 14 for parity" in the EA yet leaked through (best_mastervp_*.set carried InpAtrLen=11/15).
 inline const std::unordered_set<std::string>& non_input_keys() {
     static const std::unordered_set<std::string> s = {
         "InpNodeGateEnabled", "InpUsePriorBarVP", "InpBrkRequireFlow", "InpSfpFlowMin",
         "InpUseAtrPctlGate", "InpRsiLen", "InpRsiMidline", "InpVpFeedMode",
-        "InpVpBins", "InpVaPct", "InpMasterMult"};
+        "InpVpBins", "InpVaPct", "InpMasterMult", "InpAtrLen"};
     return s;
 }
 }  // namespace detail
@@ -186,6 +219,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNodeNeutralBand") p.node_neutral_band = D();
     else if (key == "InpNodeSaturation") p.node_saturation = D();
     else if (key == "InpAtrLen") p.atr_len = I();
+    else if (key == "InpAtrMt5Mode") p.atr_mt5_mode = to_bool(val);
     else if (key == "InpEmaFast") p.ema_fast = I();
     else if (key == "InpEmaSlow") p.ema_slow = I();
     else if (key == "InpAdxLen") p.adx_len = I();
@@ -214,6 +248,42 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpTrailRunner") p.trail_runner = to_bool(val);
     else if (key == "InpRunnerRr") p.runner_rr = D();
     else if (key == "InpTrailAtrMult") p.trail_atr_mult = D();
+    else if (key == "InpEnableNetPersist") p.enable_net_persist = to_bool(val);
+    else if (key == "InpNetPersistBars") p.net_persist_bars = I();
+    else if (key == "InpNetPersistMin") p.net_persist_min = D();
+    else if (key == "InpEnableNetFlipExit") p.enable_net_flip_exit = to_bool(val);
+    else if (key == "InpNetFlipBars") p.net_flip_bars = I();
+    else if (key == "InpNetFlipMin") p.net_flip_min = D();
+    else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
+    else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
+    else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();
+    else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();
+    else if (key == "InpStpMinRr") p.stp_min_rr = D();
+    else if (key == "InpStpMaxRr") p.stp_max_rr = D();
+    else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
+    else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
+    else if (key == "InpDeferBars") p.defer_bars = I();
+    // ---- shared ProfitManager toggles ----
+    else if (key == "InpPmBeProtect") p.pm.be_protect = to_bool(val);
+    else if (key == "InpPmBeTriggerR") p.pm.be_trigger_r = D();
+    else if (key == "InpPmBeBufferR") p.pm.be_buffer_r = D();
+    else if (key == "InpPmProgTrail") p.pm.prog_trail = to_bool(val);
+    else if (key == "InpPmProgTriggerR") p.pm.prog_trigger_r = D();
+    else if (key == "InpPmProgIncrementR") p.pm.prog_increment_r = D();
+    else if (key == "InpPmProgStepR") p.pm.prog_step_r = D();
+    else if (key == "InpPmGiveback") p.pm.giveback = to_bool(val);
+    else if (key == "InpPmGivebackArmR") p.pm.giveback_arm_r = D();
+    else if (key == "InpPmGivebackCapFrac") p.pm.giveback_cap_frac = D();
+    else if (key == "InpPmTpExtension") p.pm.tp_extension = to_bool(val);
+    else if (key == "InpPmTpExtProgress") p.pm.tp_ext_progress = D();
+    else if (key == "InpPmTpExtAtrMult") p.pm.tp_ext_atr_mult = D();
+    else if (key == "InpPmTpExtMax") p.pm.tp_ext_max = I();
+    else if (key == "InpPmPreBeStructure") p.pm.pre_be_structure = to_bool(val);
+    else if (key == "InpPmPreBeTriggerR") p.pm.pre_be_trigger_r = D();
+    else if (key == "InpPmPreBeBuffer") p.pm.pre_be_buffer = D();
+    else if (key == "InpPmPartialTp") p.pm.partial_tp = to_bool(val);
+    else if (key == "InpPmPartialTriggerR") p.pm.partial_trigger_r = D();
+    else if (key == "InpPmPartialFrac") p.pm.partial_frac = D();
     else if (key == "InpRiskUnit") p.risk_unit = I();
     else if (key == "InpRiskUsd") p.risk_usd = D();
     else if (key == "InpRiskAccPct") p.risk_acc_pct = D();
@@ -251,6 +321,9 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNewsMinsBefore") p.news_mins_before = I();
     else if (key == "InpNewsMinsAfter") p.news_mins_after = I();
     else if (key == "InpVpFeedMode") p.vp_feed_mode = I();
+    // Account economics (NOT an MQL `input`; MT5 sources commission from the account/symbol). The
+    // engine needs it told so its $ P&L matches the tester. Importable so account type can be swapped.
+    else if (key == "CommissionPerLot" || key == "InpCommissionPerLot") p.commission_per_lot = D();
     else return false;
     return true;
 }

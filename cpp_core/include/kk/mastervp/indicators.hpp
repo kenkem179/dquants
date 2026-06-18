@@ -48,6 +48,18 @@ inline vector<double> atr(const vector<double>& h, const vector<double>& l,
     return wilder_rma(true_range(h, l, c), n);
 }
 
+// fwd decl (defined below): MT5 ExponentialMAOnBuffer, k=2/(n+1), seeded at `start`.
+inline vector<double> ema_on_buffer(const vector<double>& x, int n, size_t start);
+
+// MT5-style ATR: smooths True Range with the EMA k=2/(n+1) used by MT5's "Wilder"
+// indicators (same kernel dmi_adx_mt5 uses for +DI/-DI/DX), seeded at index 1 with
+// ema_on_buffer (TR[0] is degenerate single-bar range, so we start the EMA at TR[1]).
+// Opt-in via InpAtrMt5Mode; textbook Wilder atr() above stays the default.
+inline vector<double> atr_mt5(const vector<double>& h, const vector<double>& l,
+                              const vector<double>& c, int n) {
+    return ema_on_buffer(true_range(h, l, c), n, 1);
+}
+
 inline vector<double> rsi(const vector<double>& c, int n) {
     const size_t N = c.size();
     vector<double> gain(N, 0.0), loss(N, 0.0);
@@ -68,6 +80,43 @@ inline vector<double> rsi(const vector<double>& c, int n) {
         }
     }
     return out;
+}
+
+// MT5-faithful iRSI: Wilder smoothing seeded with the SMA of the first `n` gains/losses at index n
+// (matching MetaTrader's RSI OnCalculate). Exposes avg-gain/avg-loss so callers can take ONE more
+// Wilder step for the forming (shift-0) bar — the EA reads iRSI at shift 0 inside GetRSIAverage.
+struct RSIWilder { vector<double> rsi, ag, al; };
+inline RSIWilder rsi_wilder_mt5(const vector<double>& c, int n) {
+    const size_t N = c.size();
+    RSIWilder o; o.rsi.assign(N, 50.0); o.ag.assign(N, 0.0); o.al.assign(N, 0.0);
+    if (N == 0 || (int)N <= n) return o;
+    vector<double> g(N, 0.0), l(N, 0.0);
+    for (size_t i = 1; i < N; ++i) {
+        const double d = c[i] - c[i - 1];
+        g[i] = d > 0 ? d : 0.0;
+        l[i] = d < 0 ? -d : 0.0;
+    }
+    double sg = 0.0, sl = 0.0;
+    for (int i = 1; i <= n; ++i) { sg += g[i]; sl += l[i]; }
+    double ag = sg / n, al = sl / n;
+    o.ag[n] = ag; o.al[n] = al;
+    o.rsi[n] = (al == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + ag / al);
+    for (size_t i = n + 1; i < N; ++i) {
+        ag = (ag * (n - 1) + g[i]) / n;
+        al = (al * (n - 1) + l[i]) / n;
+        o.ag[i] = ag; o.al[i] = al;
+        o.rsi[i] = (al == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + ag / al);
+    }
+    return o;
+}
+
+// One additional Wilder RSI step for the forming bar (shift-0): given the last CLOSED bar's avg
+// gain/loss and the forming bar's close (=open at first tick), return the shift-0 RSI value.
+inline double rsi_wilder_step(double ag, double al, double prev_close, double cur_close, int n) {
+    const double d = cur_close - prev_close;
+    const double g = d > 0 ? d : 0.0, lo = d < 0 ? -d : 0.0;
+    const double nag = (ag * (n - 1) + g) / n, nal = (al * (n - 1) + lo) / n;
+    return (nal == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + nag / nal);
 }
 
 // Returns adx, +di, -di (all Wilder-smoothed, [0,100]).
@@ -114,6 +163,61 @@ inline DMI dmi_adx_mt5(const vector<double>& h, const vector<double>& l,
         dx[i] = s != 0.0 ? 100.0 * std::fabs(r.plus_di[i] - r.minus_di[i]) / s : 0.0;
     }
     r.adx = ema_on_buffer(dx, n, 1);
+    return r;
+}
+
+// One forming-bar (shift-0) step of dmi_adx_mt5 at the new bar's FIRST TICK (H=L=C=open_f). Mirrors the
+// EA reading iADX buffer index 0 in HasTrendAcceleration/IsAccelerating (ArraySetAsSeries → [0]=forming).
+// prev* = the last CLOSED bar's pd/nd/adx and that bar's H/L/C. alpha = 2/(n+1) (the dmi_adx_mt5 kernel).
+struct DmiStep { double adx, plus_di, minus_di; };
+inline DmiStep dmi_adx_mt5_form(double prevHigh, double prevLow, double prevClose,
+                                double prev_pdi, double prev_mdi, double prev_adx,
+                                double open_f, int n) {
+    double plus_dm  = open_f - prevHigh;   // h_form - h_prev
+    double minus_dm = prevLow - open_f;    // l_prev - l_form
+    if (plus_dm < 0.0)  plus_dm  = 0.0;
+    if (minus_dm < 0.0) minus_dm = 0.0;
+    if (plus_dm > minus_dm)       minus_dm = 0.0;
+    else if (minus_dm > plus_dm)  plus_dm  = 0.0;
+    else { plus_dm = 0.0; minus_dm = 0.0; }
+    const double tr = std::max(open_f, prevClose) - std::min(open_f, prevClose);
+    double pd = 0.0, nd = 0.0;
+    if (tr != 0.0) { pd = 100.0 * plus_dm / tr; nd = 100.0 * minus_dm / tr; }
+    const double k = 2.0 / (n + 1.0);
+    DmiStep r;
+    r.plus_di  = prev_pdi + k * (pd - prev_pdi);
+    r.minus_di = prev_mdi + k * (nd - prev_mdi);
+    const double s = r.plus_di + r.minus_di;
+    const double dx = s != 0.0 ? 100.0 * std::fabs(r.plus_di - r.minus_di) / s : 0.0;
+    r.adx = prev_adx + k * (dx - prev_adx);
+    return r;
+}
+
+// General forming-bar (shift-0) step of dmi_adx_mt5, given the forming bar's FULL OHLC (H/L/C). Used for
+// HTF (M3/M5) where the shift-0 bar at the M1 detection instant is the partially-accumulated bucket bar
+// (NOT a first-tick H=L=C=open bar). prev* = the last CLOSED HTF bar's H/L/C + pd/nd/adx. Same DM-zeroing
+// and TR (= max(H,prevClose) - min(L,prevClose)) as the dmi_adx_mt5 kernel.
+inline DmiStep dmi_adx_mt5_form_bar(double prevHigh, double prevLow, double prevClose,
+                                    double prev_pdi, double prev_mdi, double prev_adx,
+                                    double fHigh, double fLow, double fClose, int n) {
+    (void)fClose;
+    double plus_dm  = fHigh - prevHigh;
+    double minus_dm = prevLow - fLow;
+    if (plus_dm < 0.0)  plus_dm  = 0.0;
+    if (minus_dm < 0.0) minus_dm = 0.0;
+    if (plus_dm > minus_dm)       minus_dm = 0.0;
+    else if (minus_dm > plus_dm)  plus_dm  = 0.0;
+    else { plus_dm = 0.0; minus_dm = 0.0; }
+    const double tr = std::max(fHigh, prevClose) - std::min(fLow, prevClose);
+    double pd = 0.0, nd = 0.0;
+    if (tr != 0.0) { pd = 100.0 * plus_dm / tr; nd = 100.0 * minus_dm / tr; }
+    const double k = 2.0 / (n + 1.0);
+    DmiStep r;
+    r.plus_di  = prev_pdi + k * (pd - prev_pdi);
+    r.minus_di = prev_mdi + k * (nd - prev_mdi);
+    const double s = r.plus_di + r.minus_di;
+    const double dx = s != 0.0 ? 100.0 * std::fabs(r.plus_di - r.minus_di) / s : 0.0;
+    r.adx = prev_adx + k * (dx - prev_adx);
     return r;
 }
 

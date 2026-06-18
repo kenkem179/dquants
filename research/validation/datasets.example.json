@@ -1,0 +1,56 @@
+{
+  "_comment": "Cross-broker dataset registry for robustness validation. Copy to datasets.json, drop your raw files under data/external/<broker>/, fix the paths/columns, then run ingest_dataset.py + cross_validate.py. 'symbol' MUST be 'btc' or 'xau' (picks broker specs + synthetic-spread defaults). 'window' is optional [start,end) UTC. See ingest_dataset.py header for every supported 'format' and its required fields.",
+  "outdir": "data/external/normalized",
+  "datasets": [
+    {
+      "name": "exness_btcusd_2024",
+      "symbol": "btc",
+      "format": "mt5_tab",
+      "raw": "data/external/exness/BTCUSD_ticks_mt5_2024.csv",
+      "window": ["2024-01-01", "2025-01-01"],
+      "_note": "Standard Exness/MT5 tab-separated tick export. Same shape as our primary data/btcusd feed."
+    },
+    {
+      "name": "exness_xauusd_2024",
+      "symbol": "xau",
+      "format": "mt5_tab",
+      "raw": "data/external/exness/XAUUSD_ticks_mt5_2024.csv",
+      "window": ["2024-01-01", "2025-01-01"]
+    },
+    {
+      "name": "oanda_xauusd_2024",
+      "symbol": "xau",
+      "format": "bidask_csv",
+      "raw": "data/external/oanda/XAU_USD_2024.csv",
+      "sep": ",",
+      "ts_col": "time", "ts_format": "%Y-%m-%dT%H:%M:%S.%fZ",
+      "bid_col": "bid", "ask_col": "ask",
+      "_note": "OANDA candle/tick CSVs usually carry explicit bid+ask. If time is RFC3339, the ts_format above parses it; if it is epoch ms set ts_unit:ms instead of ts_format."
+    },
+    {
+      "name": "oanda_btcusd_2024",
+      "symbol": "btc",
+      "format": "bidask_csv",
+      "raw": "data/external/oanda/BTC_USD_2024.csv",
+      "sep": ",",
+      "ts_col": "time", "ts_unit": "ms",
+      "bid_col": "bid", "ask_col": "ask"
+    },
+    {
+      "name": "binance_btcusdt_aggtrades_2024",
+      "symbol": "btc",
+      "format": "binance_aggtrades",
+      "raw": "data/external/binance/BTCUSDT-aggTrades-2024.csv",
+      "half_spread": 1.0,
+      "_note": "Binance has no quoted spread (it is an exchange tape). half_spread is in price units; or use half_spread_bps for a relative spread. Binance has no XAU."
+    },
+    {
+      "name": "binance_btcusdt_klines_2024",
+      "symbol": "btc",
+      "format": "binance_klines",
+      "raw": "data/external/binance/BTCUSDT-1m-2024.csv",
+      "half_spread_bps": 1.0,
+      "_note": "1-minute klines (already OHLC). Ingest synthesises a 4-tick O->L->H->C tape per bar for fill timing. Coarser than real ticks — treat as a sanity cross-check, not a primary backtest."
+    }
+  ]
+}

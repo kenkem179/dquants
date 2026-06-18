@@ -1,5 +1,16 @@
 # KK-MasterVP-Monster — Full-Space Joint Optimization Findings
 
+> 🛑 **INVALID FOR DEPLOYMENT (2026-06-15) — engine/MQL5 PARITY DIVERGENCE.** The KK-Monster MQL5 run
+> in the MT5 tester (BTC M3, 2025.10→2026.05) made **ZERO trades over 8 months**. The dquants Monster
+> C++ engine, on the same config, makes 150–184 profitable trades (PF ~1.65). So the engine and the
+> deployable MQL5 disagree completely. Root cause: the C++ engine derives **net volume from tick
+> price-deltas** (so its `NetMin` gates of 0.8–0.95 pass and it trades), while the MQL5 keys off a
+> volume signal that is ~0 on the Exness feed (broker VOLUME=0 / different net calc), so the same
+> `InpBrkNetMin`/`InpImpulseNetMin` gates are NEVER met and nothing fires. **Every PF below is
+> engine-internal and does NOT transfer to MT5.** Do not deploy Monster until net-volume parity is
+> fixed AND the MQL5 is confirmed to trade in MT5. See `MT5-GROUND-TRUTH.md`. —Claude
+
+
 The **Monster edition** = the parity-validated KK-MasterVP engine with the **mean-reversion leg
 activated** (`InpEnableReversion=true`) and the **entire wired parameter space jointly optimized**
 (breakout + reversion + exits + regime + node engine + volatility gate + sizing), vs the first BTC

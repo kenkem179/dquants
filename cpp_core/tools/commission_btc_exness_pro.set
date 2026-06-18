@@ -1,0 +1,16 @@
+; ============================================================================
+; Commission — BTCUSD (Bitcoin) — Exness PRO account
+; Import: append this line to your run .set, or load alongside it (engine key
+;         CommissionPerLot, round-turn USD per 1.0 lot). Symbol specs apply
+;         BEFORE load_set, so this value overrides the preset.
+; ----------------------------------------------------------------------------
+; Exness PRO is COMMISSION-FREE — the cost is built into the spread, which the
+; tick engine already models from real bid/ask. So the correct value is 0.0.
+; Verified 2026-06-16 (Exness Pro = zero commission, spread-based execution).
+;
+; To switch account type, change the number below (round-turn = per-side x2):
+;   PRO         -> 0.0     (commission-free; this file)
+;   Raw Spread  -> 4.0     (~$2.00 per lot per side on BTC)
+;   Zero        -> 8.75    (~$4.375 per lot per side on BTC)
+; ============================================================================
+CommissionPerLot=0.0

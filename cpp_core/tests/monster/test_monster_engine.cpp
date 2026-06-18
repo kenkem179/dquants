@@ -12,6 +12,7 @@
 #include "kk/common/test.hpp"
 #include <cmath>
 #include <vector>
+#include <fstream>
 
 using kk::Bar;
 using kk::Tick;
@@ -272,10 +273,33 @@ void test_forced_sl_loss_reconciles() {
     delete eng;
 }
 
+// Trust guarantee: a .set may NOT override a param the Monster EA hardcodes (InpNodeDecay, InpAtrLen,
+// InpVaPct, ...). Such keys must be ignored and the EA value retained.
+static void test_monster_locked_keys_ignored() {
+    const char* path = "/tmp/kk_monster_locked.set";
+    std::ofstream f(path);
+    f << "InpNodeDecay=0.5\n"        // EA hardcodes 0.94 -> ignored
+      << "InpAtrLen=20\n"            // EA hardcodes 14   -> ignored
+      << "InpVaPct=80.0\n"           // EA hardcodes 70.0 -> ignored
+      << "InpBrkRrFar=2.5\n";        // real input        -> applied
+    f.close();
+    MonsterConfig p;
+    double decay0 = p.node_decay, va0 = p.va_pct;
+    int atr0 = p.atr_len;
+    int applied = kk::monster::load_set(p, path);
+    KK_CHECK(applied == 1);                       // only InpRrBrk honorable
+    KK_CHECK(std::fabs(p.node_decay - decay0) < 1e-12);  // locked, unchanged
+    KK_CHECK(p.atr_len == atr0);                  // locked
+    KK_CHECK(std::fabs(p.va_pct - va0) < 1e-12);  // locked
+    KK_CHECK(kk::monster::monster_non_input_keys().count("InpNodeDecay") == 1);
+    KK_CHECK(kk::monster::monster_non_input_keys().count("InpRrBrk") == 0);
+}
+
 void run_all() {
     KK_RUN(test_breakout_fires_and_trades);
     KK_RUN(test_determinism);
     KK_RUN(test_forced_sl_loss_reconciles);
+    KK_RUN(test_monster_locked_keys_ignored);
 }
 
 KK_TEST_MAIN()

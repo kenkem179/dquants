@@ -173,6 +173,9 @@ private:
         bool   be_applied = false;
         bool   tp1_partial_taken = false;  // whether a TP1 partial was actually realized
         double best_price = 0.0;           // for chandelier trail (runner)
+        double pm_best = 0.0;              // MFE exit-side high-water for the shared ProfitManager
+        bool   pm_partial_done = false;
+        int    pm_tp_ext = 0;
         // diagnostics carried to the journal
         double f_brk_dist_atr = 0.0, f_body_pct = 0.0, f_slope = 0.0;
         double f_net_m1 = 0.0, f_net_m3 = 0.0, f_net_m5 = 0.0, f_atr_pct = 0.0;
@@ -285,6 +288,34 @@ private:
             }
         }
 
+        // 3b) Shared ProfitManager (kk::common). All toggles default OFF => skipped (inert). Runs before
+        //     the SL/TP checks so a tightened stop is honoured on the same tick (as the trail above is).
+        //     pre_be_structure/tp_extension stay inert here (no structure/trend feed yet); SL toggles work.
+        if (kk::common::pm_any(cfg_.pm)) {
+            if (pos_.is_long) pos_.pm_best = std::max(pos_.pm_best, exitPx);
+            else              pos_.pm_best = std::min(pos_.pm_best, exitPx);
+            kk::common::PMState st;
+            st.is_long = pos_.is_long; st.entry = pos_.entry; st.sl = pos_.sl; st.tp = pos_.tp2;
+            st.cur_price = exitPx; st.best_price = pos_.pm_best;
+            st.risk = pos_.init_risk; st.atr = pos_.atr_at_entry;
+            st.tp_extensions = pos_.pm_tp_ext;
+            st.partial_done = pos_.pm_partial_done; st.be_done = pos_.be_applied;
+            st.structure_level = 0.0; st.trend_weakening = false;
+            const kk::common::PMActions act = kk::common::pm_evaluate(st, cfg_.pm);
+            if (pos_.is_long ? (act.sl > pos_.sl) : (act.sl < pos_.sl)) pos_.sl = act.sl;
+            if (pos_.is_long ? (act.tp > pos_.tp2) : (act.tp < pos_.tp2)) { pos_.tp2 = act.tp; ++pos_.pm_tp_ext; }
+            if (act.partial_frac > 0.0 && !pos_.pm_partial_done) {
+                const double closeVol = pos_.initial_vol * act.partial_frac;
+                const double remainder = pos_.cur_vol - closeVol;
+                if (closeVol > 0.0 && remainder >= cfg_.min_lot - 1e-12 && closeVol < pos_.cur_vol) {
+                    realized_accum_ += realize_(exitPx, closeVol);
+                    pos_.cur_vol = remainder;
+                    pos_.tp1_partial_taken = true;
+                }
+                pos_.pm_partial_done = true;
+            }
+        }
+
         // 4) SL. Fill at the SL price, but never BETTER than the live market — if price gapped
         // through the stop (e.g. the entry tick already sat past it), MT5 fills at the gapped
         // market, not the favourable stop. Long exits on bid: a gap below sl fills at the lower
@@ -393,6 +424,7 @@ private:
         bool haveSig = false;
         if (warm) {
             haveSig = compute_bar_signals_(j, longSig, shortSig, net);
+            net_hist_.push_back(net.netM3);   // feature #1 ring
         }
 
         // 8) EARLY EXITS on the open position (all default OFF; gated).
@@ -442,6 +474,13 @@ private:
                     exited = true;
                 }
             }
+            // multi-bar net flip exit (feature #1): flow against for N continuous bars.
+            if (!exited && cfg_.enable_net_flip_exit
+                && net_against_n_(pos_.is_long, cfg_.net_flip_bars, cfg_.net_flip_min)) {
+                const double px = pos_.is_long ? t.bid : t.ask;
+                close_remainder_(px, "NETFLIP");
+                exited = true;
+            }
             // legacy early-exit (net flush against the position on M3).
             if (!exited && cfg_.enable_early_exit) {
                 const bool against = pos_.is_long ? (net.netM3 <= -cfg_.exit_net_min)
@@ -465,6 +504,10 @@ private:
         if (haveLong && haveShort) return;            // both -> single-position EA SKIP, log nothing
         if (!haveLong && !haveShort) return;
         const Signal& sig = haveLong ? longSig : shortSig;
+
+        // feature #1: require net to PERSIST with the trade for N bars before entering.
+        if (cfg_.enable_net_persist
+            && !net_persist_n_(sig.is_long, cfg_.net_persist_bars, cfg_.net_persist_min)) return;
 
         const bool flat = !pos_.open;
         // safety gate.
@@ -518,6 +561,7 @@ private:
         np.tp1_done = false;
         np.be_applied = false;
         np.best_price = sig.is_long ? fill : fill;
+        np.pm_best = fill;
         np.entry_ts_ms = t.ts_ms;
         np.f_brk_dist_atr = sig.f_brk_dist_atr;
         np.f_body_pct = sig.f_body_pct;
@@ -628,6 +672,27 @@ private:
             } catch (...) { /* ignore malformed token */ }
         }
         return false;
+    }
+
+    // multi-bar net volume ring (feature #1): last netM3 per warm bar (oldest..newest).
+    std::vector<double> net_hist_;
+    // last `n` netM3 all AGAINST the position side (long: <= -minv ; short: >= minv).
+    bool net_against_n_(bool is_long, int n, double minv) const {
+        if (n < 1 || (int)net_hist_.size() < n) return false;
+        for (int i = (int)net_hist_.size() - n; i < (int)net_hist_.size(); ++i) {
+            double v = net_hist_[i];
+            if (is_long ? !(v <= -minv) : !(v >= minv)) return false;
+        }
+        return true;
+    }
+    // last `n` netM3 all WITH the trade side (long: >= minv ; short: <= -minv).
+    bool net_persist_n_(bool is_long, int n, double minv) const {
+        if (n < 1 || (int)net_hist_.size() < n) return false;
+        for (int i = (int)net_hist_.size() - n; i < (int)net_hist_.size(); ++i) {
+            double v = net_hist_[i];
+            if (is_long ? !(v >= minv) : !(v <= -minv)) return false;
+        }
+        return true;
     }
 
     MonsterConfig cfg_;

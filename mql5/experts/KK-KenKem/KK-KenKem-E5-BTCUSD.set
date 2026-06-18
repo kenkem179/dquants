@@ -1,0 +1,54 @@
+; ================================================================
+;  KK-KenKem — PROMOTED PRODUCTION CONFIG :: E5 only :: BTCUSD M1
+;  dquants Layer-4 deploy. Source of truth = kk::kenkem C++ engine,
+;  config research/optimization/best_kenkem_btc.set (= best_tuned_e5_btc).
+;  Validated 2026 true-OOS: PF 1.792, net +$72.9k, maxDD $2.48k,
+;  recovery 29.4, Sharpe 17.7, ~12.8 trades/day (fixed-fraction 2% on $10k).
+;  Load in Strategy Tester -> Inputs -> Load, on BTCUSD M1.
+; ================================================================
+; ---- Risk / portfolio ----
+InpRiskPerTrade=0.02
+InpRiskBaseBalance=0.0
+InpMaxConcurrent=2
+InpBlockOpposite=true
+InpMaxSpreadPrice=0.0
+; ---- Shared gates / SL (BTC-tuned) ----
+InpMinMomentumAdx=13.9663
+InpAdxHighThreshold=31.5565
+InpSidewaysBlock=48
+InpSidewaysWarn=33
+InpSlEmaDistance=15
+InpRangeLookback=18
+InpEmaAlignTolPips=23.0
+; ---- Entry toggles: E5 ONLY ----
+InpE1On=false
+InpE2On=false
+InpE4On=false
+InpE5On=true
+; ---- E5  SuperBros M1 alignment (BTC-tuned) ----
+InpE5Rr=1.2241
+InpE5MaxAge=33
+InpE5HtfMode=1
+InpE5HtfMinAdx=12.9691
+InpE5HtfMinDi=4.0
+InpE5MinMomAdx=0.2788
+InpE5AtrSlCap=1.5267
+InpE5AtrSlFloor=1.2
+InpE5PartTrig=0.2115
+InpE5PartRatio=0.4239
+InpE5Be=0.0642
+InpE5Trail=0.2712
+; ---- Periods / misc (BTC-tuned) ----
+InpEma0=12
+InpEma1=23
+InpEma2=53
+InpEma3=94
+InpEma4=210
+InpAdxLen=15
+InpRsiLen=11
+InpAtrLen=14
+InpIchiTenkan=9
+InpIchiKijun=26
+InpIchiSenkou=52
+InpRrSidewayAll=1.4642
+InpMagic=4242410
