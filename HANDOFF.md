@@ -23,19 +23,25 @@ _Last updated: 2026-06-18 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
    While armed, MT5's latch SUPPRESSES M1-fan flickers (MT5 sees 8016 M1 just-crosses, arms only 1174).
    The engine fires more → clears its latch → latch FREE when flickers hit → arms on flicker → fires →
    repeat. Cross has PRIORITY over touch for the shared latch → engine touch starves (2195 vs 3146).
-5. **Seed = arm→fire CONVERSION: engine 8.5% (531/6250) vs MT5 1.8% (78/4320).** Break this → break the loop.
+5. **Seed = arm→fire CONVERSION: engine gate PASSES 3990 vs MT5 554 (7.2×); pass→fire ratio similar
+   (13% vs 14%).** So the gate is the seed, not the post-gate routing.
+6. **⭐ SEED PINPOINTED to the `mtf` gate.** Built `KK_EMIT_GATE` (engine `EGATE,ts,dir,PASS|BLOCK` per
+   armed bar). On 41,670 bars BOTH evaluated: agree 40,868 BLOCK + 375 PASS; **engine PASS where MT5 BLOCK
+   = 277, of which 270 are MT5's `mtf` gate** (`isAllTimeframeEMAsReadyForEntry`). 150 engine-BLOCK/MT5-PASS.
+   The ~270-bar `mtf` leak is the seed that the re-arm loop amplifies into 3436 extra dormant-zone passes.
 
 ### RULED OUT this session
 - **EMA shift trap** (`KK_E1_EMA_TRAP=1` → 549 trades, WORSE; flicker count is shift-invariant).
 - **occ-before-expiry ordering** in `entries.hpp` — reordered to expiry→occ to match EA Entry1.mqh:103
   (faithful, tests pass) but NEUTRAL on results. KEPT as a correctness fix.
 
-### ▶️ NEXT ACTION (the decisive tool, not yet built)
-Add a **consumption-aware gate emission** to the tick engine: at each ARMED bar emit
-`entry_gate_ok(1,dir)` verdict (a `KKE1GATE` equivalent). Then diff PASS-rate bar-for-bar vs MT5's
-`kke1gate.csv` to pinpoint why the engine converts arms→fires 4.7× more. Secondary: make engine TOUCH
-faithful (2195→3146) so the latch is occupied like MT5's — audit the EMA200/ready read shift in
-`triggers.hpp:101-119` (touch under-fires; touch_sh sweep was flat earlier but re-test alongside the gate).
+### ▶️ NEXT ACTION — break down the `mtf` leak (270 bars)
+Engine MTF (`entries.hpp:154-165`) and EA `isAllTimeframeEMAsReadyForEntry` (KenKemExpert.mq5:1946-1994) look
+logically identical (bypass-lvl-1: `m1_ready && ((m3_ready && m5_dir) || extreme)`; extreme = M1 DI-spread≥16).
+So the leak is at the **boundary inputs** — prime suspect the `extreme` DI bypass or m1/m3 ready tolerance edge,
+a per-bar DI/EMA micro-difference. NEITHER trace carries DI today → instrument BOTH sides: add the MTF
+sub-components (m1_ready, m3_ready, m5_dir, extreme, M1 DI±) to the engine `EGATE` AND the EA `KKE1GATE,mtf`
+detail (needs a small EA recompile + one rerun), then compare at the 270 leak bars to see which sub-check flips.
 
 ## 🔁 Repro (full 2yr ≈ 2min, 5GB tick stream)
 ```
@@ -48,6 +54,7 @@ python3 research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
   --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv --kind E1
 # per-bar engine latch age:  KK_EMIT_ARMSTATE=1 ... 2>/tmp/estate.txt  (ESTATE,ts_ms,armU_age,armD_age)
 # per-arm src/tf:            KK_EMIT_ARMS=1 ...      2>/tmp/armfire.txt (ARMFIRE,ts_ms,L|S,cross|touch,tfbits)
+# per-armed-bar gate verdict:KK_EMIT_GATE=1 ...      2>/tmp/egate.txt   (EGATE,ts_ms,L|S,PASS|BLOCK)  vs MT5 kke1gate.csv
 ```
 
 ## 📦 Data & instruments

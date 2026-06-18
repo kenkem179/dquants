@@ -232,6 +232,12 @@ private:
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
+        if (emit_gate_) {   // diagnostic: at each ARMED E1 bar, the gate verdict (vs MT5 KKE1GATE PASS rate)
+            if (tg_.ema_up   != -1) std::fprintf(stderr, "EGATE,%lld,L,%s\n", (long long)bar.ts_ms,
+                                                 entry_gate_ok(1, true,  b_, snap, align, cfg_) ? "PASS" : "BLOCK");
+            if (tg_.ema_down != -1) std::fprintf(stderr, "EGATE,%lld,S,%s\n", (long long)bar.ts_ms,
+                                                 entry_gate_ok(1, false, b_, snap, align, cfg_) ? "PASS" : "BLOCK");
+        }
         if (pctile_oracle_) {   // diagnostic: replace engine percentile with MT5's logged value
             auto it = pctile_oracle_->find(bar.ts_ms);   // tick-engine bars share MT5 trace's ts grid
             if (it != pctile_oracle_->end()) snap.atr_pctile = it->second;
@@ -372,6 +378,7 @@ private:
     const bool emit_age_ = std::getenv("KK_EMIT_AGE") != nullptr;         // diagnostic: per-fire age to stderr
     const bool emit_arms_ = std::getenv("KK_EMIT_ARMS") != nullptr;       // diagnostic: per-bar E1 arm events
     const bool emit_armstate_ = std::getenv("KK_EMIT_ARMSTATE") != nullptr; // diagnostic: per-bar E1 latch age (vs MT5 KKE1ARM)
+    const bool emit_gate_ = std::getenv("KK_EMIT_GATE") != nullptr;       // diagnostic: per-armed-bar E1 gate verdict (vs MT5 KKE1GATE)
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
