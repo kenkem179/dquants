@@ -275,16 +275,19 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             bool is_long = (dir == 0);
             int fired = is_long ? cd.up : cd.down;
             if (fired < 0) continue;
-            if (occ && occ[cd.kind][dir]) continue;    // slot occupied -> block WITHOUT consuming
+            // EXPIRY FIRST — unconditional, matching the EA which runs the stale-crossing reset at the TOP
+            // of DetectE1Entry (Entry1.mqh:103-109) BEFORE the open-position guard. The engine previously
+            // checked occupancy first, which SKIPPED expiry while a same-(kind,dir) position was open -> the
+            // armed latch froze and RE-FIRED when the position closed (a primary E1 over-fire source on M1
+            // where positions routinely stay open >maxage bars).
+            // EA Entry1/2/4 RESET lastX=-1 on expiry (Entry1.mqh:103-109, Entry2.mqh:102-147,
+            // Entry4.mqh:106-108) so a later fresh cross/touch can re-arm. E5 re-arms on alignment onset
+            // (update_triggers), not age -> leave.
             if (B - fired > cd.maxage) {               // stale trigger
-                // EA Entry1/2/4 RESET lastX=-1 on expiry (Entry1.mqh:103-109, Entry2.mqh:102-147,
-                // Entry4.mqh:106-108) so a later fresh cross/touch can re-arm. The distilled engine only
-                // skipped, pinning the trigger at its first cross forever -> a re-cross (e.g. M1 cloud
-                // dips below then back above while M3 stays bullish) could never re-arm, and the entry
-                // aged out permanently. E5 re-arms on alignment onset (update_triggers), not age -> leave.
                 if (cd.kind != 5) clear_trigger(cd.kind, is_long);
                 continue;
             }
+            if (occ && occ[cd.kind][dir]) continue;    // slot occupied -> block WITHOUT consuming
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
             r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry; r.age = B - fired;
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);

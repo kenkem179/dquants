@@ -198,6 +198,15 @@ private:
             }
         }
 
+        if (emit_armstate_ && (start_ms_ == 0 || bar.ts_ms >= start_ms_)) {
+            // Per-bar E1 latch age, mirroring the EA's KKE1ARM (armU/armD = currentBar - lastEMACross).
+            // Emit only when a latch is armed (matches the EA trace's print condition). Diff bar-for-bar.
+            const int au = (tg_.ema_up   != -1) ? (f - tg_.ema_up)   : -1;
+            const int ad = (tg_.ema_down != -1) ? (f - tg_.ema_down) : -1;
+            if (au != -1 || ad != -1)
+                std::fprintf(stderr, "ESTATE,%lld,%d,%d\n", (long long)bar.ts_ms, au, ad);
+        }
+
         if (f < warmup_) return;
         if (start_ms_ && bar.ts_ms < start_ms_) return;
         if (end_ms_   && bar.ts_ms >= end_ms_)  return;
@@ -362,6 +371,7 @@ private:
     const std::unordered_map<int64_t, double>* pctile_oracle_ = nullptr;  // diagnostic only
     const bool emit_age_ = std::getenv("KK_EMIT_AGE") != nullptr;         // diagnostic: per-fire age to stderr
     const bool emit_arms_ = std::getenv("KK_EMIT_ARMS") != nullptr;       // diagnostic: per-bar E1 arm events
+    const bool emit_armstate_ = std::getenv("KK_EMIT_ARMSTATE") != nullptr; // diagnostic: per-bar E1 latch age (vs MT5 KKE1ARM)
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
