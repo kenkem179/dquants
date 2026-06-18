@@ -77,17 +77,32 @@ bar-matched vs MT5's 2761 touch arms (engine run on `/tmp/anchor_age80.set`, src
   apart. The 72% touch overlap is largely DOWNSTREAM of this (different fire/expiry history → different bars
   eligible to arm), not an independent root.
 
+## 🎯 ROUND-3 (this session) — OVER-FIRE DECOMPOSED via MT5 arm-bar reconstruction (DECISIVE)
+Reconstructed MT5's true E1 arm bars from `tester.log.gz`: expiry lines (`Expired stale … age N`) give
+`arm_idx = expiry_idx − N` (recovers the UNLOGGED cross-arms) + touch arms + fire bars → 2143 L / 1620 S.
+Method validated: **97% of MATCHED engine trades** sit on a reconstructed MT5-armed bar (control). Then:
+- **68% of the 538 OVERFIRE trades fire on a bar where MT5 had NO armed E1 trigger** (age≤80, same dir) →
+  the engine ARMS where MT5 does not.
+- **32% fire where MT5 WAS armed but did NOT fire** → a SILENT gate block (MTF 31% / momentum / RSI-div —
+  these use `TrackEntryAttempt` with NO per-bar Print; only HTF & ADX are logged per-bar) or occupancy.
+- **Mechanism = feedback loop:** the engine fires on the 32% "seed" bars (MT5 armed, silent gate blocks it)
+  → consumes+clears the trigger → re-arms sooner → fires again → manufactures the 68% spurious-arm bars.
+  (Confirmed: HTF is NOT the leak — 0% of overfire bars are MT5 HTF-block bars; engine HTF is faithful.)
+
 ## ▶️ NEXT ACTION (exact, priority order)
-1. **Attack the stateful coupling / intra-bar ordering.** In the EA, `UpdateEmaTouches()` (arming) runs at a
-   specific point in `OnTick` relative to `DetectNewEntry` — determine whether a touch armed on bar B can FIRE
-   on bar B (age 0) or only B+1, and whether the engine's order (update_triggers in `on_bar_closed_` BEFORE
-   detect) matches. A 1-bar earliest-fire offset would shift the whole entry set. Also check the cross-arm's
-   `lastEMACrossingDown=-1` opposite-clear vs the engine.
-2. **Get MT5's true per-armed-bar gate fire-rate** (the 2.3× fire-rate-per-arm gap is still unexplained):
-   mine the per-bar `[E1] ... blocked: <reason>` lines from `tester.log.gz` keyed by bar time, and compare to
-   the engine's E1 gate decisions on the SAME bars. The MT5 end-of-run histogram is HTF 58% / MTF 31% — find
-   whether the engine rejects those same bars.
+1. **Kill the 32% SEED: find the silent gate MT5 uses on armed-but-not-fired bars.** Build an E1-semantics
+   per-bar gate trace (mirror the E5 `trace_dumper` but with `entry_gate_ok(kind=1)` sub-decisions:
+   `emas_ready_entry`/`m5_directional`, price, `has_sufficient_momentum`, RSI-div). For the subset of overfire
+   bars that ARE on an MT5-armed bar (the 32%), see which engine E1 gate passes that MT5's must fail. Prime
+   suspect = `isAllTimeframeEMAsReadyForEntry` (MTF, 31% of MT5 rejections): re-examine `emas_ready_entry`'s
+   `align_tf−3` shift with PER-BAR EMA evidence (NOT matched-count — it's unreliable, see ROUND-1/2).
+2. Then the 68%: once the seed is fixed, re-measure — the fire→re-arm feedback should shrink arming toward
+   MT5's. If residual spurious arming remains, audit the cross-arm geometry (`triggers.hpp:64–84`) vs the
+   reconstructed MT5 cross-arm bars (now available from expiry reconstruction).
 3. Only after entry timing ties out: exits (A7) + cooldowns.
+
+Reusable: MT5 arm-bar reconstruction (expiry+touch+fire) is the key instrument — re-derive in Python from
+`tester.log.gz` (UTF-16) as above; `diff_kk.match()` gives matched/missed/overfire splits.
 
 ## 🧰 Tooling (all env-gated, non-regressive — default OFF reproduces baseline E1 624)
 - `KK_EMIT_AGE=1` → tick backtester emits `AGEFIRE,ts_ms,dir,Ekind,age` per fire (EntrySignal.age).
