@@ -4,6 +4,19 @@ _Last updated: 2026-06-18 (latest) by Claude (Opus 4.8). Branch `reliableBaselin
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the EA.
 
+## 🧨 2026-06-18 PIVOT — exit divergence ROOT CAUSE = C++ models the WRONG manager
+The C++ `trade_manager.hpp` is a DISTILLED model (partial→BE→single **chandelier** trail). The
+ground-truth EA `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (canonical; user said **ignore all
+`1.8.x`-suffixed files**) runs a **9-mechanism per-tick pipeline** (`TradeManager::ProcessAllTrades`):
+high-risk time-exit · broker SL/TP · pre-BE structure · **R-mult BE (0.87R)** · **TP-extension** ·
+**smart partial (eligible→weaken/retrace→fill at live price)** · **3-stage LADDER trail** · early-exit ·
+**session-end close** (the "EA" exitTag). Proof: exit-tag mix SL-WIN **engine 7% vs MT5 35%**.
+→ Full port spec written: **`research/hypotheses/KENKEM-EXIT-PARITY-SPEC.md`** (formulas + .set + §6 phased plan).
+→ The trail-risk fix I shipped (commit below, `KK_TRAIL_LIVE_RISK`, faithful to a *chandelier*) is a real but
+   tiny gain (Δpnl 60.3→56.4) and becomes **moot once the ladder replaces the chandelier**. Don't chase it further.
+→ **NEXT ACTION: port the EA pipeline per the SPEC, phase P1 first (ladder + smart-partial + correct BE),
+   re-run 2yr E1 diff, measure exitTag+Δpnl after each phase.** User approved "port ladder, verify scope first" — scope now verified.
+
 ## ✅ BUFFER-INVERSION FIX **CONFIRMED AT FULL 2yr SCALE** — the over-ARM problem is solved
 The prior handoff's open next-action ("confirm 511→~78 on the full E1-only 2yr run") is **DONE and POSITIVE**.
 The 2yr data was NOT gone — `tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` (5.17GB) and
