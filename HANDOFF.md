@@ -112,19 +112,42 @@ gate trace (`/tmp/seed_probe.py`, ±2min same-dir):
 "68% spurious-arm / 32% silent-gate (feedback loop)" reconstruction OVER-weighted the silent gate (really 5%).
 The `mtf` gate is a minor (5%) contributor; the downstream limiters are a real-but-separate 10%.
 
-## ▶️ NEXT ACTION (exact, priority order)
-1. **Fix the cross-arm geometry — this is 85% of the bug.** Reconstruct MT5's true E1 cross-arm bars from the
-   expiry lines (`Expired stale … age N` → `arm_idx = expiry_idx − N`) + fires, in
-   `RUN_..._2yr_E1only_trace/tester.log.gz`, and diff bar-for-bar against the engine's cross-arm bars
-   (`KK_EMIT_ARMS=1` src=cross). Audit `cpp_core/.../triggers.hpp:64–84` (cross detection) + the
-   consumption/`==-1` guard + re-arm timing — the engine arms fresh EMA75 crosses MT5 does not.
-2. The 5% `mtf` seed: only after arming ties out — re-examine `emas_ready_entry` `align_tf−3` with PER-BAR EMA.
-3. The 10% limiter gap (`MT5 passed but didn't execute`) → port the account-layer limiters (A-later).
-4. Also still 35 MISSED (MT5 fired, engine didn't) — revisit after arming fix; likely the same arm-desync seen
-   from the other side.
+## 🔧 IN PROGRESS — E1 cross-arm fixes (E1 ≠ EMA75! E1 = 4-EMA FAN alignment cross + EMA200 touch)
+User clarified: **E1 has nothing to do with EMA75 — EMA75 is E2's touch.** E1 arms via `UpdateEmaTouches`
+(`EMAHelpers.mqh:229-283`): (a) CROSS = full 4-EMA fan (25>75>100>200) *just became aligned* on M1/M3/M5
+(`!ready@s2 && ready@s1`, M1/M3 strict + M5 non-strict), gated by M1&M3 ready, mutual-exclusion; (b) TOUCH =
+EMA200 straddle + M1&M3 aligned. Engine `triggers.hpp` already ports this (NOT EMA75 — header comment is
+stale/wrong). Root cause of over-fire = engine **over-cross-arms**: engine 8428 arms (cross 4490) vs MT5
+~4709 episodes (~1563 cross) ≈ 1.8x (cross ≈2.9x). Direct check vs MT5 KKE1GATE armed bars: **97% of engine
+cross-arms land where MT5 is NEVER armed.** TF-source split (added `e1_cross_tf` bitmask to ARMFIRE): M3 2617
+/ M1 1820 / M5 759 — but even pure-M1 cross-arms are 90% spurious.
 
-Reusable instruments: `RUN_..._2yr_E1only_trace/kke1gate.csv` (per-bar gate decisions), `/tmp/seed_probe.py`
-(overfire decomposition), `/tmp/seed_age.py` (age profile), `diff_kk.py` (matched/missed/overfire).
+### ✅ FIX #1 LANDED — pip_size 0.01 → 0.001 (`kenkem_config.hpp:317`, `apply_xauusd_specs`).
+EA OnInit LOGS `PipSize=0.00100` (3-DIGIT Exness gold); engine assumed 2-digit (0.01) = **10x too big**,
+inflating EMA-align tol (23*pip) 10x + every pip param. Fix → arms 8428→6250, **matched 43→46, missed
+35→32, overfire 496→465**, no SL regression (Δ0.25). Test updated (`test_kenkem_config.cpp:71`). MasterVP
+golden parity UNAFFECTED (own config). ALL C++ TESTS PASS.
+
+### ⏳ REMAINING — cross-arm bar SHIFT mismatch (the dominant ~4000 spurious arms)
+Concrete evidence (`/tmp/check_emas2.py`, reads MT5 BarTrace ema1-4 at engine cross-arm bars): engine fires
+M1-cross-arms where MT5's OWN trace shows **no fan-alignment cross in a 5-bar window** (e.g. 2024-01-03 06:53 L:
+ema25<ema71 throughout, no cross even with tol). ⇒ the engine's TRIGGER-path M1 EMA read index is landing on
+a DIFFERENT bar than the EA's trapped `GetEMA`. The "EMA non-series trap" (signal path reads EMA@series-shift2 =
+`align.m1-2`, `snapshot.hpp:124`) is NOT cleanly applied in the trigger path. Tried `KK_E1_EMA_TRAP=1` (read 1
+bar staler) — produced INCONSISTENT arms (armed on stale bars), so reverted to default 0; the naive shift
+isn't right either. **NEXT: build a single-bar Rosetta-stone mapping** between (engine trigger read index
+B-1/B-2) ↔ (EA `isEMAsReadyForEntry(TF,shift)` GetEMA trapped read) ↔ (BarTrace row label), using ONE known
+MT5 cross-arm bar (reconstruct from expiry `age N` → arm bar; or a matched-trade arm) to lock the offset, then
+apply that exact offset to all `emas_ready` reads in the E1 cross + touch blocks. Verify by re-running
+`/tmp/check_emas2.py` until engine cross-arms land ON trace crosses, and `diff_kk` overfire collapses.
+
+### Then (after cross-arm ties out)
+- 35 MISSED + the touch-arm residual (engine touch 2195 vs MT5 ~3146 Prints — engine UNDER-touch-arms now).
+- 10% downstream account-limiter gap (`MT5 passed but didn't execute`) → port limiters (A-later).
+
+Reusable instruments: `RUN_..._2yr_E1only_trace/{kke1gate.csv,trace.csv}` (per-bar gate + EMA truth),
+`KK_EMIT_ARMS=1` (ARMFIRE,ts,dir,src,tf — tf=bitmask 1/2/4 for M1/M3/M5), `KK_E1_EMA_TRAP` (shift A/B),
+`/tmp/arm_cmp.py` `/tmp/arm_tf.py` `/tmp/check_emas2.py` `/tmp/seed_probe.py`, `diff_kk.py`.
 
 ## 🧰 Tooling (all env-gated, non-regressive — default OFF reproduces baseline E1 624)
 - `KK_EMIT_AGE=1` → tick backtester emits `AGEFIRE,ts_ms,dir,Ekind,age` per fire (EntrySignal.age).

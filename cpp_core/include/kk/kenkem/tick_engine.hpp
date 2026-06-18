@@ -189,10 +189,11 @@ private:
                 const char* src = (tg_.arm_e1_cross > ac0) ? "cross"
                                 : (tg_.arm_e1_touch > at0) ? "touch" : nullptr;
                 if (src) {
+                    const int tf = tg_.e1_cross_tf;  // only meaningful for cross arms
                     if (e1u0 == -1 && tg_.ema_up   != -1)
-                        std::fprintf(stderr, "ARMFIRE,%lld,L,%s\n", (long long)bar.ts_ms, src);
+                        std::fprintf(stderr, "ARMFIRE,%lld,L,%s,%d\n", (long long)bar.ts_ms, src, tf);
                     if (e1d0 == -1 && tg_.ema_down != -1)
-                        std::fprintf(stderr, "ARMFIRE,%lld,S,%s\n", (long long)bar.ts_ms, src);
+                        std::fprintf(stderr, "ARMFIRE,%lld,S,%s,%d\n", (long long)bar.ts_ms, src, tf);
                 }
             }
         }

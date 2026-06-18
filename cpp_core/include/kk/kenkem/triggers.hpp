@@ -45,6 +45,7 @@ struct TriggerState {
     int ichi_up = -1, ichi_down = -1;   // lastIchiCloudCrossUp/Down (E4, TK cross)
     int e5_up = -1, e5_down = -1;       // E5 SuperBros fresh strict-alignment onset
     long arm_e1_cross = 0, arm_e1_touch = 0;  // DIAGNOSTIC: E1 arm-event source split
+    int e1_cross_tf = 0;                // DIAGNOSTIC: bitmask of TF that tripped last cross arm (1=M1,2=M3,4=M5)
 };
 
 // Cloud (TK) bullish on a TF at absolute index idx: real Tenkan > real Kijun.
@@ -62,6 +63,17 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     const int m3s1 = align.m3 - 1,     m3s2 = align.m3 - 2;
     const int m5s1 = align.m5 - 1,     m5s2 = align.m5 - 2;
 
+    // EMA non-series TRAP (parity-critical): the EA reads EMA alignment via GetEMA(tf,ema,shift), which
+    // hits MT5's non-series CopyBuffer trap and actually returns series-shift (shift+1) — i.e. one bar
+    // STALER than the nominal closed-bar shift. The validated SIGNAL path already corrects this
+    // (snapshot.hpp:124 reads emaM1 at i1-1 = align.m1-2). The TRIGGER path historically did NOT, reading
+    // EMAs one bar too fresh → ~97% spurious E1 cross-arms. Apply the same -1 trap here. Price low/high
+    // come from iLow/iHigh (series, NOT trapped) and stay at m1s1. KK_E1_EMA_TRAP=0 reverts (A/B).
+    static const int kTrap = [] { const char* e = std::getenv("KK_E1_EMA_TRAP"); return e ? std::atoi(e) : 0; }();
+    const int m1e1 = m1s1 - kTrap, m1e2 = m1s2 - kTrap;
+    const int m3e1 = m3s1 - kTrap, m3e2 = m3s2 - kTrap;
+    const int m5e1 = m5s1 - kTrap, m5e2 = m5s2 - kTrap;
+
     // ---- E1: EMA-stack cross (M1/M3 strict, M5 non-strict); just-crossed = !ready@s2 && ready@s1 ----
     auto just_up = [&](const TfIndicators& s, int s1, int s2, bool strict) {
         return !emas_ready(s, s2, true, strict, tol) && emas_ready(s, s1, true, strict, tol);
@@ -69,27 +81,29 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     auto just_dn = [&](const TfIndicators& s, int s1, int s2, bool strict) {
         return !emas_ready(s, s2, false, strict, tol) && emas_ready(s, s1, false, strict, tol);
     };
-    bool m1Up = just_up(bundle.m1, m1s1, m1s2, true);
-    bool m3Up = just_up(bundle.m3, m3s1, m3s2, true);
-    bool m5Up = just_up(bundle.m5, m5s1, m5s2, false);
+    bool m1Up = just_up(bundle.m1, m1e1, m1e2, true);
+    bool m3Up = just_up(bundle.m3, m3e1, m3e2, true);
+    bool m5Up = just_up(bundle.m5, m5e1, m5e2, false);
     if (st.ema_up == -1 && (m1Up || m3Up || m5Up) &&
-        emas_ready(bundle.m1, m1s1, true, true, tol) && emas_ready(bundle.m3, m3s1, true, true, tol)) {
+        emas_ready(bundle.m1, m1e1, true, true, tol) && emas_ready(bundle.m3, m3e1, true, true, tol)) {
         st.ema_up = B; st.ema_down = -1; ++st.arm_e1_cross;
+        st.e1_cross_tf = (m1Up?1:0)|(m3Up?2:0)|(m5Up?4:0);
     }
-    bool m1Dn = just_dn(bundle.m1, m1s1, m1s2, true);
-    bool m3Dn = just_dn(bundle.m3, m3s1, m3s2, true);
-    bool m5Dn = just_dn(bundle.m5, m5s1, m5s2, false);
+    bool m1Dn = just_dn(bundle.m1, m1e1, m1e2, true);
+    bool m3Dn = just_dn(bundle.m3, m3e1, m3e2, true);
+    bool m5Dn = just_dn(bundle.m5, m5e1, m5e2, false);
     if (st.ema_down == -1 && (m1Dn || m3Dn || m5Dn) &&
-        emas_ready(bundle.m1, m1s1, false, true, tol) && emas_ready(bundle.m3, m3s1, false, true, tol)) {
+        emas_ready(bundle.m1, m1e1, false, true, tol) && emas_ready(bundle.m3, m3e1, false, true, tol)) {
         st.ema_down = B; st.ema_up = -1; ++st.arm_e1_cross;
+        st.e1_cross_tf = (m1Dn?1:0)|(m3Dn?2:0)|(m5Dn?4:0);
     }
 
     // ---- E1 alt: EMA200 touch with full M1+M3 alignment (EMAHelpers.mqh:259-283) ----
-    // DIAGNOSTIC: KK_TOUCH_SHIFT offsets the EMA200/alignment read (bar low/high stay at iLow shift1 = m1s1,
-    // matching the EA). The EA reads ema200/alignment via GetEMA(...,ENTRY_SHIFT) (non-series trap); this
-    // sweep finds the shift that best matches MT5's logged touch-arm bars. 0 = original (m1s1).
+    // EA: ema200 + M1/M3 alignment via GetEMA(...,ENTRY_SHIFT) (trapped => series-shift2 = m1s1-1), but
+    // bar low/high via iLow/iHigh(ENTRY_SHIFT) (series shift1 = m1s1, untrapped). KK_TOUCH_SHIFT is an
+    // additional experimental offset on top of the trap (default 0).
     static const int touch_sh = [] { const char* e = std::getenv("KK_TOUCH_SHIFT"); return e ? std::atoi(e) : 0; }();
-    const int e1t = m1s1 - touch_sh, e3t = m3s1 - touch_sh;
+    const int e1t = m1s1 - kTrap - touch_sh, e3t = m3s1 - kTrap - touch_sh;
     if (m1s1 >= 0 && e1t >= 0 && e3t >= 0) {
         const double ema200 = bundle.m1.ema[4][e1t];
         const double lo = bundle.m1.bars[m1s1].low, hi = bundle.m1.bars[m1s1].high;

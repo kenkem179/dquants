@@ -313,8 +313,11 @@ struct KenKemConfig {
     // Per-symbol overrides mirror KenKemExpert.mq5 OnInit (:122-163). Call AFTER load_set() so the
     // BTC std-lot ×2 override applies on top of the loaded MY_STANDARD_LOT_SIZE, exactly as the EA does.
     void apply_xauusd_specs() {
-        // Gold branch (:122-126): pip = 10^-digits (2-digit Exness gold -> 0.01); contract from broker.
-        pip_size = 0.01; contract_size = 100.0; tick_value = 1.00; tick_size = 0.01;
+        // Gold branch (:122-126): pip = 10^-digits. This Exness feed is 3-DIGIT gold (EA OnInit logs
+        // PipSize=0.00100), so pip_size = 0.001 — NOT 0.01. (Was 0.01 = wrong by 10x; inflated the EMA
+        // alignment tolerance 23*pip 10x and every pip-denominated param.) tick_value/tick_size left as
+        // the P&L-path values pending a separate exit-parity pass.
+        pip_size = 0.001; contract_size = 100.0; tick_value = 1.00; tick_size = 0.01;
         lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
         // no std-lot multiplier for gold
     }

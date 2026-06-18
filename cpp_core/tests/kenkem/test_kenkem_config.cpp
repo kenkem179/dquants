@@ -68,7 +68,7 @@ void test_specs() {
     KK_CHECK_NEAR(p.std_lot, 0.30, 1e-9);                    // 0.15 * 2 BTC override (EA :161)
     KenKemConfig x; x.apply_xauusd_specs();
     KK_CHECK_NEAR(x.value_per_price_per_lot(), 100.0, 1e-9); // 1.00/0.01
-    KK_CHECK_NEAR(x.pip_size, 0.01, 1e-9);                   // gold pip = 0.01 (2-digit)
+    KK_CHECK_NEAR(x.pip_size, 0.001, 1e-9);                  // 3-digit Exness gold pip = 0.001 (EA OnInit logs PipSize=0.00100)
     KK_CHECK_NEAR(x.std_lot, 0.15, 1e-9);                    // gold: no multiplier
     KK_CHECK_NEAR(x.normalize_lot(0.153), 0.15, 1e-9);
 }
