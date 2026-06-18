@@ -63,6 +63,26 @@ grep -c cross /tmp/arm.txt; grep -c touch /tmp/arm.txt   # 40 / 105 (faithful) ;
 grep -c 'EMA200 Touch' ../../kenkem/Tester/Agent-127.0.0.1-3000/logs/20260617.log   # 105
 ```
 
+## ✅ M1/M3/M5/M15 DATA INTEGRITY RE-VERIFIED on this machine (2026-06-18) — safe to proceed
+Reproduced the prior agent's bar-parity check here AND extended it to M3/M5/M15 explicitly (not just M1),
+via `trace_dumper` vs the MT5 per-bar traces with `tools/kenkem/diff_kenkem_trace.py`.
+- **paritywin** (2025-03..05, 82,112 common bars): close bit-exact on **82,109/82,112**; only 3 desync bars
+  = 00:00 on 2025-05-01 / 03-31 / 05-19 (holiday/month-end tick-export holes). **MTF proof:** every bar where
+  adx_m1/m3/m5/m15 or diP/diM drifts >1.0 is on a hole-day — **ZERO drift on any normal day** ⇒ the UTC-epoch
+  bucket aggregation (`aggregate()` in tick_backtester.cpp, `ts_ms/w*w`) is correct.
+- **Feb-2026** (27,379 bars): close/EMA(all)/ADX/DI on M1/M3/M5/M15 mean|Δ|≈0.0003, **0 bars >1.0, no holes —
+  fully clean** (this is why E1 work used it).
+- **ONE caveat — ATR:** drifts even where OHLC is bit-exact (Feb max|Δ|=12.1, ~2% typical, worst at run's
+  first bars). NOT a bar-data bug — Wilder ATR seeding/mode diff (known `InpAtrMt5Mode`,
+  [[parity-findings-front-half]]); converges after warmup. Resolve when locking ATR-based SL/gates.
+- Repro: `./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2026_m1.csv --symbol-xau --spread 0.05
+  --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/cpp_trace_feb.csv` then diff vs
+  `research/kenkem_parity/mt5_runs/RUN_2026-06-17_1.8.154_xau_feb/parity_trace.csv`.
+- Production question raised by user: EA showed **1 trade/week live** vs ~6/week in the Feb backtest (E1+E2+E4,
+  24 exec/mo, 78% of signals SKIPPED). NOT the buffer bug (it's in every backtest too) and NOT "C++ doing
+  better" (more trades was the over-fire bug; the over-firing version was LESS profitable). Likely config drift
+  / live spread / quiet regime. To diagnose: need production input set + a week of Experts-log block reasons.
+
 ## 📦 Data reality (CHANGED since last handoff)
 - The full 2yr `tools/{bars,ticks}_xauusd_2024_2026*` and the E1-only-trace `trades.csv`/`kke1gate.csv`
   are **gone** (large+gitignored, cleaned). Available XAU: `bars_xauusd_2026_m1.csv` +
