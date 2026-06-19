@@ -59,3 +59,29 @@ ones — but the base itself is OOS-negative, so it doesn't rescue M5.
 same discipline as the KenKem "don't lock an overfit entry set" lesson). Monster ships **M3 only**.
 (NB: the parallel KK-MasterVP work found M5 *beats* M3 — but that is XAU + breakout-only, a different
 instrument and strategy; it does not transfer to Monster-on-BTC.)
+
+---
+
+## Robustness re-verification (master VP length & "swept vs inherited" audit)
+Prompted by the question "is master VP length actually optimal for Monster, or just inherited from
+MasterVP?" — fair, because the first pass swept axes SEQUENTIALLY (master length under old economics,
+then economics changed). Re-verified at the LOCKED economics:
+- **Master length re-swept at locked economics:** 200 bars (50×4) is STILL best OOS (PF 1.131, lowest
+  DD 10.1%), corroborated by 210 (70×3 → 1.103). 200 wins under BOTH economics regimes (old SL 2.65 and
+  locked SL 3.7) → not a sequential artifact.
+- **Joint master × ADX (interaction check):** at master 200, ADX 26/28/32 → OOS PF 1.132/1.131/1.125,
+  impulse additive +398/+386/+400, DD ~10% — a genuine 2-D plateau; the lock is interior to it. No
+  interaction surprise (the best master length does not shift with ADX).
+- ⚠️ **Landscape is JAGGED away from 200:** 150/180/240 bars collapse OOS (PF 0.88-0.91). So 200 is a
+  robust *pocket* (200-210 × adx 26-32), NOT a wide smooth plateau — keep master length PINNED at 200.
+- **vp_bins:** inherited 40 confirmed (30 and 50 both fail the PF>1 / min-trade gate at the locked cfg).
+
+### Swept-for-Monster vs inherited (honest audit)
+- **Swept & verified for Monster:** master VP length (200), vp_bins (40), break_buf, sl_atr_brk,
+  trail_atr_mult, adx_trend_min, sessions (vs 24/7), impulse candle_atr & net_min (rr is inert under trail).
+- **Inherited (NOT Monster-re-swept), deliberately:** EMA 24/194, node params, di_spread (6),
+  ema_sep_atr, impulse entry_buf/max_dist/predict_bars/slope_bars, tp1_r/close, risk & DD limiters.
+  These sit at externally-validated values (Monster spec or the best_btc BTC cluster). They are NOT
+  fine-tuned because doing so on a single 2025-train/2026-OOS split would curve-fit the one OOS window
+  (the repeated lesson across this repo). In particular the 4 impulse-only params govern just ~26 trades
+  — tuning 4 knobs on 26 samples is overfitting, so spec defaults are the correct posture.
