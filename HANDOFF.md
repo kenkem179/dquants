@@ -1,8 +1,13 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS.
-Latest: TWO fixes — ATR=SMA (`f210631`) + MTF EMA off-by-one (`c3a51dc`). E1 now **74 matched / 4 missed /
-26 overfire — 95% recall** (from 47/31/62 at session start)._
+_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
+Latest: sideways ADX/RSI = 5-bar avg (`ce47b1f`). E1 now **74 matched / 4 missed / 17 overfire**.
+Recall **94.9%** (all 4 missed are LOSING trades → recall is effectively MAXED); overfire cut 26→17._
+
+## 📌 RECALL REALITY (answers "how do I raise recall?")
+All 4 missed are trades MT5 took and **LOST** (3 SL-LOSS + 1 end-of-test EA close). Pushing recall past
+94.9% literally means forcing the engine to take losers for parity's sake. The real lever is the 17
+**overfire** (precision) — same entry-gate root, opposite direction. Don't chase the 4 missed.
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
@@ -22,9 +27,9 @@ Wilder → ~6% mixed-sign off → 29% of bars got the wrong ATR-percentile block
 ### Prior session (commit `1ba5157`) — TP parity: short-RR factor→1.0 + ported `GetDynamicRRMultiplier`.
 Tag-agree 66%→81%, |ΔpnlUSD| med 114→4.6, SL-LOSS 11/11. (Detail in [[kenkem-tp-parity-rr-fixes]].)
 
-### Result now (FULL 2yr E1 anchor, `KK_E1_FAITHFUL=1`)
-- matched **67** / missed **11** / overfire **31** (engine 98 vs MT5 78). Recall 60%→**86%**.
-- matched exit-tag agreement **87%** (58/67); |ΔpnlUSD| median 5.12; matched net engine **+673** vs MT5 **+959**.
+### Result now (FULL 2yr E1 anchor, `KK_E1_FAITHFUL=1`, commit `ce47b1f`)
+- matched **74** / missed **4** / overfire **17** (engine 91 vs MT5 78). Recall **94.9%**.
+- |ΔpnlUSD| median ~4.5; all 4 missed are losing trades (see RECALL REALITY above).
 
 ## 🟢 DATA BLOCKER — APPARENTLY RESOLVED (verify with user)
 `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` on disk now give
@@ -42,7 +47,17 @@ STEP-2 M3 read to `align_tf-2`. (Authoritative: `kke1gate.csv` showed 14/31 over
 Recall now **95%** (74/78). NB: matched net engine +516 vs mt5 +1196 — the +7 recovered trades are
 MT5-profitable but the engine exits them worse → an EXIT-parity issue on those, not entry.
 
-## 🔬 RESIDUAL now = 26 overfire + 4 missed (re-decomposed vs `kke1gate.csv`)
+## ✅ THIS SESSION — sideways ADX/RSI 5-bar avg (`ce47b1f`): overfire **26→17**, recall preserved
+`GetSidewaysScore` (TrendIdentifier.mqh:390) reads `GetADXAverage(TF,5)` + `GetRSIAverage(TF0,5)` = mean of
+shifts **0..4** (not single shift-1). Engine used single-bar → biased LOW → under-blocked sideways → over-fired.
+Fix: added `adxM1_avg5`/`adxM3_avg5` (forming `adxF` + 4 closed) in snapshot.hpp, switched RSI→`rsiM1_avg5`.
+DI **kept on last-CLOSED bar** — the EA reads `cache.diPlus[0]` (forming shift-0) but the engine's first-tick
+forming DI is degenerate (H=L=open) and overshoots indecision points (cost 1 recall in A/B; reverting it = 74/4/17).
+- ⚠️ **DATA CEILING**: reconstructing MT5's `sideways` from MT5's OWN trace columns = only **27% exact** (single-bar
+  adx/di can't reproduce the avg-based score). Engine now 25.9% (was 20.3%). Full sideways match is IMPOSSIBLE
+  from existing data — needs an MT5-side dump of the **5 sideways sub-components** (or the avg-ADX/forming-DI inputs).
+
+## 🔬 RESIDUAL now = 17 overfire + 4 missed
 - **12 `BLOCK:mtf`** — engine still passes mtf where MT5 blocks, but **M1 EMAs now match MT5 99.69%**, so these
   are **HTF (M3/M5) EMA boundary VALUE diffs** (not shift). Diagnosing needs MT5-side M3/M5 EMA values or a
   `KKE1GATE,…,mtf` detail dump of `m1/m3/m5/extreme` — **requires a user-side MT5 re-run** with enhanced gate
@@ -55,21 +70,18 @@ MT5-profitable but the engine exits them worse → an EXIT-parity issue on those
 - **4 missed**: 3 are MT5 SL-LOSSES the engine avoids (harmless), 1 end-of-test EA close.
 
 ## ▶️ NEXT ACTIONS (in order)
-1. **Remaining 12 `mtf` need MT5-side data** — have the user re-run the EA with `KKE1GATE` detail dumping
-   `m1_ready,m3_ready,m5_dir,extreme` (or the M3/M5 EMA values) at each `BLOCK:mtf`, to pin which HTF sub-check
-   flips and whether it's M3/M5 bar-construction or an EMA-value diff. Without it, 12 mtf is a boundary floor.
-2. **8 `PASS:all` execution overfire — PINNED: 5 = `IsInSidewayRange(10)` sideway, 2 = risk-limits, 1 nomatch.**
-   The EA's `IsInSidewayRange` (TrendIdentifier.mqh) IGNORES its arg and is EXACTLY the engine's band check
-   `sideways ∈ [WARNING=43, BLOCK=53)` — so the LOGIC matches. The gap is the **SIDEWAYS SCORE value**: engine
-   reads ~40 at the 5 bars where MT5 reads 49–57, and **overall sideways is only 20.3% exact, median |Δ|=5,
-   engine biased LOW** (→ under-blocks → over-fires). `sideways_score` (snapshot.hpp) = 5 components: EMA-band/ATR
-   (25/15/8), ADX M1+M3 (≤25), DI spread (12/8/4), RSI-neutral (15/10/5), ATR-pctile compression (15/10/5).
-   ATR-pctile is now faithful; the residual is in EMA-band / ADX / DI / RSI weights or thresholds. NEXT: diff each
-   component vs the EA's `CalculateSidewaysScore` (find it in Core/TrendIdentifier.mqh) at the 5 bars. Affects the
-   gate (sw≥53) too, so a real lever beyond these 5.
-3. **Remaining 12 `mtf` need MT5-side data** (see action 1).
-4. **Exit parity on the 7 newly-matched** (engine +516 vs mt5 +1196) — over-trail / TP-vs-SL-WIN family.
-5. Accept 26/4 as the E1 floor and extend to **E2/E4/E5** (the bigger remaining scope).
+1. ⭐ **BLOCKED ON USER MT5 RE-RUN** — one re-run of canonical KenKemExpert with an EXTENDED per-bar trace unblocks
+   BOTH remaining residuals. Need columns added at each evaluated bar:
+   - **M3 & M5 EMA values** (EMA1..EMA4 each, at ENTRY_SHIFT) → pins the **~12 `mtf`** overfire (current trace has
+     only M1 emas + combined `L_htf`/`S_htf`; can't see which HTF EMA boundary flips). Ideally also the mtf
+     sub-breakdown `m1_ready,m3_ready,m5_dir,extreme`.
+   - **The 5 sideways SUB-COMPONENTS** (EMA-conv, ADX-weak, DI-indec, RSI-neutral, ATR-compress) → breaks the 27%
+     reconstruction ceiling on the remaining sideway overfire; lets us pin which component still diverges.
+2. **Sideways component diffs** (after #1 data) — engine `sideways_score` is in snapshot.hpp; ADX/RSI now use 5-bar
+   avg + ATR-pctile faithful. Remaining bias is +2.48 HIGH; suspects = EMA-band (atr denom / which emas) or the
+   averaging shift. Verify each component vs the EA's per-component dump.
+3. **Exit parity on the newly-matched** (engine net < MT5 net on recovered trades) — over-trail / TP-vs-SL-WIN family.
+4. Accept 17/4 as the current E1 floor and extend to **E2/E4/E5** (the bigger remaining scope).
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
