@@ -59,3 +59,37 @@ Then value-diff the engine's gate decision against the real path (the method tha
 `kke1gate.csv`). In parallel (engine-side, no new data): test the **ADX/close 1-bar-fresher** hypothesis —
 feed forming (shift-0) adx/close to the E5 gate, re-run 2026 AND 2025; confirmed only if 2026 recall rises
 while 2025 stays matched (currently near-perfect). Do NOT lock any entry .set until 2026 parity holds.
+
+---
+
+## UPDATE 2026-06-20 — forming-ADX experiment RESULT: hypothesis DISCONFIRMED for recall
+
+**What was tested.** Added a toggleable engine flag `E5_GATE_FORMING_ADX` (default off; commit-safe,
+golden tests byte-identical). When on, the E5 ADX floor and the E5 HTF filter read the engine's
+**forming** (shift-0) `s.adxF/diPF/diMF` instead of the closed shift-1 `s.adx/diP/diM` — i.e. the exact
+"engine gate ADX is one bar staler than MT5's `cache.adx[0]`" fix. Code: `gates.hpp` (`htf_*_src`),
+`entries.hpp` E5 branch, `kenkem_config.hpp`. A/B harness: `diff_e5_2026.py` (fresh 2026 window).
+
+**A/B (fresh 2026 window vs MT5 108 +949):**
+
+| variant            | eng_n | matched | missed | overfire | recall | net  |
+|--------------------|-------|---------|--------|----------|--------|------|
+| BASELINE (closed)  | 75    | 49      | 59     | 26       | 45.4%  | −683 |
+| FORMING-ADX (on)   | 70    | 49      | **59** | 21       | **45.4%** | −557 |
+
+**Conclusion.** Forming ADX trims 5 overfire and cleans `net` (−683→−557, mNet −127→−33) but **does
+NOT move recall** — matched stays 49/108, missed stays 59. It makes the gate *stricter* (passes fewer),
+whereas the missed-59 (MT5 fires, engine blocks) need the engine to pass *more*. So the 1-bar ADX shift
+is the WRONG direction for the core divergence. **The gate-selection break is NOT the forming-ADX shift.**
+Consistent with the earlier finding that even fully bypassing the ATR-pctile gate still misses 57/108.
+
+**Disposition.** Flag kept (default OFF — no regression) as a faithful, internally-consistent refinement
+(MT5's E5 gate genuinely reads forming `cache.adx[0]`, and engine `atr_pctile` is already forming), but
+NOT enabled — it doesn't earn parity and the default must stay byte-identical until 2026 holds.
+
+**The decisive instrument is now BUILT and waiting on a CORRECT MT5 run.** The real-path E5 trace
+(`Parity/RealTrace.mqh`, `InpExportRealTrace`) ships in the EA (compiles 0/0). The first attempt was run
+with the WRONG config (`ENABLE_E5_ENTRIES=false`, E1/E2/E4 on — see tester log 05:25) so `realtrace_*.csv`
+came back header-only. Re-run E5-only (load `reproduce.set`, which now also sets `InpExportRealTrace=true`)
+to get the per-bar real-path gate inputs (`cachedATRPercentile` vs `MIN_ENTRY_ATR_PERCENTILE`=65, real
+onset age, real `cache.adx[0]`, the gate that blocked) → then value-diff vs engine to localize the missed-59.

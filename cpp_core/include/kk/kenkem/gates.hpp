@@ -42,6 +42,29 @@ inline bool htf_tf_ok(const Snapshot& s, int tf, bool is_long, double min_adx, d
     return spread >= min_di;
 }
 
+// Forming-bar (shift-0) variant of htf_tf_ok: reads s.adxF/diPF/diMF when `forming`, else the closed
+// shift-1 values. MT5's E5 HTF filter (Entry5.mqh:245-257) reads cache.adx[2,3]/diPlus/diMinus, which are
+// iADX(...,0) = the FORMING bar — so for E5 the faithful source is forming. (Closed = current default.)
+inline bool htf_tf_ok_src(const Snapshot& s, int tf, bool is_long, double min_adx, double min_di, bool forming) {
+    const double adx = forming ? s.adxF[tf] : s.adx[tf];
+    const double dp  = forming ? s.diPF[tf] : s.diP[tf];
+    const double dm  = forming ? s.diMF[tf] : s.diM[tf];
+    if (adx < min_adx) return false;
+    double spread = is_long ? (dp - dm) : (dm - dp);
+    return spread >= min_di;
+}
+
+inline bool htf_filter_ok_src(const Snapshot& s, bool is_long, HtfMode mode, double min_adx, double min_di, bool forming) {
+    switch (mode) {
+        case HTF_DISABLED:    return true;
+        case HTF_M5_ONLY:     return htf_tf_ok_src(s, 2, is_long, min_adx, min_di, forming);
+        case HTF_M15_ONLY:    return htf_tf_ok_src(s, 3, is_long, min_adx, min_di, forming);
+        case HTF_M5_AND_M15:  return htf_tf_ok_src(s, 2, is_long, min_adx, min_di, forming) && htf_tf_ok_src(s, 3, is_long, min_adx, min_di, forming);
+        case HTF_M5_OR_M15:   return htf_tf_ok_src(s, 2, is_long, min_adx, min_di, forming) || htf_tf_ok_src(s, 3, is_long, min_adx, min_di, forming);
+    }
+    return true;
+}
+
 inline bool htf_filter_ok(const Snapshot& s, bool is_long, HtfMode mode, double min_adx, double min_di) {
     switch (mode) {
         case HTF_DISABLED:    return true;

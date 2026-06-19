@@ -284,6 +284,8 @@ struct KenKemConfig {
     HtfMode e5_htf_filter         = HTF_M5_ONLY;
     double e5_htf_min_adx         = 18.0;
     double e5_htf_min_di_spread   = 4.0;
+    bool   e5_gate_forming_adx    = false;    // EXPERIMENT: feed forming (shift-0) ADX/DI to the E5 ADX
+                                              // floor + HTF filter (MT5 cache.adx[0] is the forming bar).
     double e5_rr                  = 1.5;
     double e5_rr_sideway          = 1.2;
     double e5_partial_tp_trigger  = 0.54;
@@ -444,6 +446,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_E5_ENTRIES") p.enable_e5 = kbool(val);
     else if (key == "E5_MAX_EMA_CROSS_AGE") p.e5_max_ema_cross_age = I();
     else if (key == "E5_MIN_MOMENTUM_ADX") p.e5_min_momentum_adx = D();
+    else if (key == "E5_GATE_FORMING_ADX") p.e5_gate_forming_adx = kbool(val);
     else if (key == "E5_REQUIRE_TREND_CORE") p.e5_require_trend_core = kbool(val);
     else if (key == "MAX_ENTRIES_PER_DAY") p.max_entries_per_day = I();
     else if (key == "E5_HTF_TREND_FILTER") p.e5_htf_filter = H();

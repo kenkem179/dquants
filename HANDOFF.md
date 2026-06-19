@@ -137,12 +137,19 @@ entry-tightened .set.** Prior: E5 onset off-by-one (`d1704ab`) + exit parity (`d
    `RUN_2026-06-20_..._E5only_gatetrace/reproduce.set`. Files: `kenkem/.../KenKem/Parity/RealTrace.mqh`,
    `Entries/Entry5.mqh`, `KenKemExpert.mq5` (`KenKemExpert.ex5` recompiled 0/1-pre-existing-warn).
    **One row per ARMED/fired E5 bar** (col `interesting`); join key `ts_ms`/`dt` (UTC). E5 analog of `kke1gate.csv`.
-2. **[USER — MT5]** Re-run E5-only 2026 (same window/inputs as the archived run) with the updated `.ex5`+`.set`
-   → produces `realtrace_XAUUSD.csv`. Hand back; I diff vs engine to pin the gate-selection divergence (lead
-   suspect: engine gate ADX/atr_pctile 1 bar staler than MT5 → `min_entry_block`/`adx_pass` mismatch).
-3. **[ENGINE — no new data, can run in parallel]** Test the ADX/close 1-bar-fresher hypothesis: feed forming
-   (shift-0) adx/close to the E5 gate, re-run 2026 (recall↑ toward 108) AND full-2yr (2025 MUST stay ~+690
-   matched — regression guard).
+2. **[⚠️ USER — MT5, BLOCKER] First attempt was MISCONFIGURED — re-run needed.** The 05:25 run used a
+   FULL default `.set` (`ENABLE_E1/E2/E4=true`, **`ENABLE_E5_ENTRIES=false`**) not `reproduce.set`, so the
+   E5 path never ran → `realtrace_XAUUSD-Exness-KK.csv` came back **header-only** (trades were E1/E2/E4).
+   FIX: in the Strategy Tester Inputs tab, **Load** `reproduce.set` (E5-only: E1-E4=false, E5=true,
+   `InpExportRealTrace=true`) and confirm `ENABLE_E5_ENTRIES=true` shows before running. Same 2026 window.
+   Output → `MQL5/Files/KenKem/realtrace_*.csv`. Hand back; I diff vs engine to pin the missed-59.
+3. **[DONE — ENGINE, no new data] Forming-ADX hypothesis TESTED → DISCONFIRMED for recall.** Toggleable
+   `E5_GATE_FORMING_ADX` (default OFF, golden byte-identical) feeds forming shift-0 ADX/DI to the E5 floor +
+   HTF. A/B (2026): overfire 26→21, net −683→−557, but **recall UNCHANGED 45.4% (matched 49, missed 59)**.
+   It makes the gate stricter; the missed-59 need it looser → wrong direction. **Gate-selection break is NOT
+   the 1-bar ADX shift.** Flag kept off (faithful refinement, doesn't earn parity). Harness `diff_e5_2026.py`;
+   code `gates.hpp`/`entries.hpp`/`kenkem_config.hpp`; writeup in `E5_2026_GATETRACE_FINDINGS.md` (UPDATE section).
+   → The real-path trace (item 1) is now the SOLE decisive instrument; missed-59 is the target metric.
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`

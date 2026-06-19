@@ -162,12 +162,17 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
         bool priceOk = is_long ? (s.closeM1 > s.emaM1[1]) : (s.closeM1 < s.emaM1[1]);
         if (!priceOk) return false;
         if (c.e5_require_trend_core && trend_core_score(s, is_long, c) == 0) return false;
-        if (c.e5_min_momentum_adx > 0 && s.adx[0] < c.e5_min_momentum_adx) return false;
+        // EXPERIMENT (E5_GATE_FORMING_ADX): MT5's E5 ADX gate reads cache.adx[0]=iADX(...,0)=the FORMING
+        // bar (shift 0); the engine's closed s.adx[0] (shift 1) is one bar staler. Toggle to feed forming
+        // ADX/DI to the M1 floor + the HTF filter (the leading "gate ADX 1-bar-fresher" hypothesis).
+        const bool fm = c.e5_gate_forming_adx;
+        const double e5adx = fm ? s.adxF[0] : s.adx[0];
+        if (c.e5_min_momentum_adx > 0 && e5adx < c.e5_min_momentum_adx) return false;
         // MIN_TREND_QUALITY_E5 (Entry5.mqh:204-220): GetTrendQualityScore(state,5) — no Ichimoku,
         // no per-component hard gate, 0-11. The distilled engine omitted this entirely (only checked
         // trend_core != 0) → a primary cause of E5 over-firing vs the EA. 0 disables.
         if (c.min_tq_e5 > 0 && trend_quality_score(b, align, s, is_long, 5, c) < c.min_tq_e5) return false;
-        return htf_filter_ok(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread);
+        return htf_filter_ok_src(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread, fm);
     }
     if (trend_core_score(s, is_long, c) == 0) return false;          // hard gate (E1/E2/E4)
     // Selectivity filters the EA's .set turns on but the distilled engine parsed-and-ignored: full
