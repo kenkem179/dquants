@@ -26,6 +26,12 @@ struct Trade {
     double exit_price = 0;                  // price of the closing fill
     double mfe_r = 0;                       // max favorable excursion in R (from Position.best)
     char   exit_tag = '?';                  // 'S' stop/trail/BE, 'T' take-profit, 'E' end-of-test
+    // Diagnostic-only (KK_TRADE_DIAG): trail/HR state at close, for over-trail parity investigation.
+    bool   is_high_risk = false;            // HandleHighRiskEntry routed this trade (TP×mult, 0.55 partial)
+    int    tp_ext = 0;                      // final tpExtensions reached
+    int    ladder_stage = 0;                // final ladder stage reached
+    bool   partial_done = false;            // partial slice executed
+    double orig_tp = 0, final_tp = 0, final_sl = 0, best = 0;
 };
 
 struct BtResult {

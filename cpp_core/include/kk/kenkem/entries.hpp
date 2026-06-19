@@ -13,6 +13,7 @@
 #include "kk/kenkem/kenkem_config.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
 namespace kk::kenkem {
 
@@ -24,10 +25,17 @@ struct EntrySignal {
     int    age      = -1;         // DIAGNOSTIC: bars since the fired trigger was armed (B - fired)
 };
 
-// EA short-RR asymmetry factors (E1/E4 = 0.875, E2 = 0.867).
-inline constexpr double KK_E1_SHORT_FACTOR = 0.875;
-inline constexpr double KK_E2_SHORT_FACTOR = 0.867;
-inline constexpr double KK_E4_SHORT_FACTOR = 0.875;
+// Short-RR factors. RESOLVED (2026-06-19, commit pending): the canonical KenKemExpert.mq5
+// setMaxTPForTrade computes finalRR = entry.GetRewardRatio() * GetDynamicRRMultiplier() — a SINGLE
+// per-entry rewardRatio applied identically to LONG and SHORT (EntryBase::GetRewardRatio returns one
+// m_config.rewardRatio; there is no long/short split). The previous 0.875/0.867 factors were a
+// misattribution that made every short's TP ~12-14% too close, firing TP where MT5 trails out for a
+// smaller SL-WIN. Setting to 1.0 raised matched exit-tag agreement 66%->70% and fixed 2 SL-LOSS
+// mismatches. (Remaining matched-net gap vs MT5 is the still-unmodeled GetDynamicRRMultiplier + adaptive
+// rewardRatio drift + TP-extension, NOT this factor.) Kept named for documentation; all == 1.0.
+inline constexpr double KK_E1_SHORT_FACTOR = 1.0;
+inline constexpr double KK_E2_SHORT_FACTOR = 1.0;
+inline constexpr double KK_E4_SHORT_FACTOR = 1.0;
 
 // recentHigh/recentLow over the last `lookback` closed M1 bars ending at idx (RANGE_HI_LOW_LOOK_BACK_BARS).
 inline void recent_range(const TfIndicators& m1, int idx, int lookback, double& hi, double& lo) {
@@ -106,9 +114,33 @@ inline double per_side_rr(int kind, bool is_long, const Snapshot& s, const KenKe
     return is_long ? c.e1_rr : c.e1_rr * KK_E1_SHORT_FACTOR;
 }
 
+// Trading-session id mirroring the EA's GetCurrentSession ladder (1=ASIA/Japan, 2=EU/London, 3=US/NY,
+// 0=NONE). Free-function twin of tick_engine::session_id_ so detect_entry can reach it (UTC windows).
+inline int kk_session_id(int64_t ts_ms, const KenKemConfig& c) {
+    if (c.ignore_valid_sessions) return 1;
+    int srv = (int)(((ts_ms / 60000) % 1440 + (int64_t)c.server_gmt_offset * 60) % 1440);
+    if (srv < 0) srv += 1440;
+    auto inw = [&](int s, int e){ return srv >= (s/100)*60 + s%100 && srv <= (e/100)*60 + e%100; };
+    if (inw(c.japan_start, c.japan_end))   return 1;
+    if (inw(c.london_start, c.london_end)) return 2;
+    if (inw(c.ny_start,    c.ny_end))      return 3;
+    return 0;
+}
+
+// GetDynamicRRMultiplier (SessionManager.mqh:93): RR scaler by session + ATR percentile, clamped
+// [0.70,1.30]. Applied to rrRatio for ALL entries when USE_DYNAMIC_RR_SCALING. Stateless (no adaptive
+// learning — ENABLE_ADAPTIVE_E* are all false on the anchor, so GetRewardRatio() stays the static RR).
+inline double kk_dynamic_rr_mult(int64_t ts_ms, double atr_pctile, const KenKemConfig& c) {
+    if (!c.use_dynamic_rr) return 1.0;
+    const int sess = kk_session_id(ts_ms, c);
+    const double sessionMult = (sess == 1) ? 0.95 : (sess == 3) ? 1.15 : 1.0;   // ASIA / US / (EU,NONE)
+    const double atrMult = (atr_pctile >= 75.0) ? 1.12 : (atr_pctile <= 25.0) ? 0.88 : 1.0;
+    return std::max(0.70, std::min(1.30, sessionMult * atrMult));
+}
+
 inline double compute_tp(int kind, bool is_long, double entry, double sl, const Snapshot& s,
-                         const KenKemConfig& c) {
-    double rr = per_side_rr(kind, is_long, s, c);
+                         const KenKemConfig& c, double dyn_rr_mult = 1.0) {
+    double rr = per_side_rr(kind, is_long, s, c) * dyn_rr_mult;   // EA: rrRatio *= GetDynamicRRMultiplier()
     double risk = std::fabs(entry - sl);
     return is_long ? entry + rr * risk : entry - rr * risk;
 }
@@ -328,7 +360,8 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
             r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry; r.age = B - fired;
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);
-            r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c);
+            r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c,
+                              kk_dynamic_rr_mult(b.m1.bars[B].ts_ms, s.atr_pctile, c));
             r.risk = std::fabs(r.entry - r.sl);
             clear_trigger(cd.kind, is_long);           // consume the fired trigger (one cross/touch -> one entry)
             return r;

@@ -27,6 +27,7 @@ static KenKemConfig geom_cfg() {
     c.min_tq_e1 = c.min_tq_e2 = c.min_tq_e4 = 0;
     c.use_conviction_e1 = c.use_conviction_e2 = c.use_conviction_e4 = false;
     c.enable_rsi_div_veto = false;
+    c.use_dynamic_rr = false;   // isolate SL/TP GEOMETRY from the session/ATR RR scaler (tested separately)
     return c;
 }
 
@@ -105,12 +106,30 @@ void test_e4_requires_green_cloud() {
     KK_CHECK(detect_entry(b, c, B, a, s, tg).detected);
 }
 
+// GetDynamicRRMultiplier (SessionManager.mqh:93): session × ATR-percentile scaler, clamped [0.70,1.30].
+void test_dynamic_rr_multiplier() {
+    KenKemConfig c;   // defaults: use_dynamic_rr=true, UTC windows japan 0-330, london 500-930, ny 1200-1500
+    auto ms = [](int hhmm){ return (int64_t)((hhmm/100)*60 + hhmm%100) * 60000; };   // UTC minute-of-day -> ms
+    // Session mults at mid ATR percentile (atrMult=1.0): ASIA 0.95, EU 1.0, US 1.15, NONE 1.0.
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(100),  50.0, c), 0.95, 1e-9);   // 01:00 UTC -> Japan
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(700),  50.0, c), 1.00, 1e-9);   // 07:00 UTC -> London
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(1300), 50.0, c), 1.15, 1e-9);   // 13:00 UTC -> NY
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(1100), 50.0, c), 1.00, 1e-9);   // 11:00 UTC -> NONE
+    // ATR percentile mults: >=75 -> 1.12, <=25 -> 0.88. US high-ATR clamps to 1.30 (1.15*1.12=1.288 < 1.30).
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(700),  80.0, c), 1.12, 1e-9);   // London + high ATR
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(100),  20.0, c), 0.95*0.88, 1e-9); // ASIA + low ATR = 0.836
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(1300), 80.0, c), 1.15*1.12, 1e-9); // US + high ATR = 1.288
+    c.use_dynamic_rr = false;
+    KK_CHECK_NEAR(kk_dynamic_rr_mult(ms(1300), 80.0, c), 1.0, 1e-9);    // disabled -> neutral
+}
+
 void run_all() {
     KK_RUN(test_e1_long_fires_with_geometry);
     KK_RUN(test_stale_trigger_no_fire);
     KK_RUN(test_sideways_blocks);
     KK_RUN(test_dispatch_e1_before_e4);
     KK_RUN(test_e4_requires_green_cloud);
+    KK_RUN(test_dynamic_rr_multiplier);
 }
 
 KK_TEST_MAIN()

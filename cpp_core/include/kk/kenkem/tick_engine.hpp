@@ -322,6 +322,15 @@ private:
         Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, tp, lot, cfg_);
         p.entry_bar = f;   // entryBar = forming-bar index at fill (gates management: barsSinceEntry>0)
         p.is_high_risk = (potentialLossUSD >= entryMaxLoss);   // routes the partial-TP override (0.55/0.42)
+        if (std::getenv("KK_ENTRY_DIAG")) {
+            const double anchorRisk = std::fabs(anchorEntry - sig.sl);
+            const double baseTpDist = std::fabs(sig.tp - anchorEntry);
+            std::fprintf(stderr, "ENTRYDIAG,%lld,%c,E%d,anchor=%.3f,fill=%.3f,sl=%.3f,anchorRisk=%.3f,"
+                         "baseTP=%.3f,baseTPDist=%.3f,impliedRR=%.3f,finalTP=%.3f,hr=%d,sideways=%.1f,sess=%d\n",
+                         (long long)bar.ts_ms, sig.is_long?'L':'S', sig.kind, anchorEntry, fill, sig.sl,
+                         anchorRisk, sig.tp, baseTpDist, (anchorRisk>0?baseTpDist/anchorRisk:0.0), tp,
+                         p.is_high_risk?1:0, snap.sideways, session_id_(bar.ts_ms));
+        }
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
         last_entry_ms_ = t.ts_ms;
@@ -402,6 +411,9 @@ private:
         tr.risk = o.p.risk; tr.exit_price = o.exit_price; tr.exit_tag = o.exit_tag;
         tr.mfe_r = (o.p.risk > 0.0)
                  ? (o.p.is_long ? (o.p.best - o.p.entry) : (o.p.entry - o.p.best)) / o.p.risk : 0.0;
+        tr.is_high_risk = o.p.is_high_risk; tr.tp_ext = o.p.tp_ext; tr.ladder_stage = o.p.ladder_stage;
+        tr.partial_done = o.p.partial_done; tr.orig_tp = o.p.orig_tp; tr.final_tp = o.p.tp;
+        tr.final_sl = o.p.sl; tr.best = o.p.best;
         R_.list.push_back(tr);
         if (o.pnl_acc >= 0) { gross_win_ += o.pnl_acc; ++R_.wins; } else { gross_loss_ += -o.pnl_acc; }
         ++R_.trades;
