@@ -1,0 +1,15 @@
+LOG-ONLY RUN — trades.csv / trace.csv NOT available.
+
+This is the E5-only run with ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS=60 (run 1 of 2,
+started 23:48 on 2026-06-19). It was immediately followed by the cd=120 run (23:50),
+which OVERWROTE the MT5 tester's trades_XAUUSD-Exness-KK.csv and trace_XAUUSD-Exness-KK.csv
+(both are FILE_WRITE single-file exports, not per-run). The EA does not echo the trade
+journal into the Journal log, so the per-trade CSV and per-bar BarTrace for this 60-min
+run are not recoverable.
+
+What survives here: tester.log.gz (this run's Journal block) + inputs_echo.txt (config proof:
+E5 on, E1/E2/E4 off, cooldown=60, E5_RR=1.5).
+
+TO GET THE 60-min DATA: re-run E5-only with ENTRY_BLOCK_AFTER_CONSECUTIVE_LOSS_MINS=60 and
+copy trades.csv/trace.csv BEFORE launching any other test. The cd=120 run is fully captured
+in the sibling RUN_..._E5only_cd120 folder.
