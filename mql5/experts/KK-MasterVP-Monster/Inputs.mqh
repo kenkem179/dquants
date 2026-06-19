@@ -32,7 +32,7 @@ input int    InpEmaFast        = 24;
 input int    InpEmaSlow        = 194;
 input int    InpAdxLen         = 14;
 input double InpAdxTrendMin    = 28.0;
-input double InpDiSpreadMin     = 6.0;
+input double InpDiSpreadMin     = 4.0;     // WF re-lock 2026-06-20 (was 6.0): lifts worst fold
 input double InpEmaSepAtr       = 0.25;
 
 input group "===== Breakout (base path, fires BELOW the vol ceiling) ====="
@@ -57,14 +57,14 @@ input double InpImpulseEntryBufAtr   = 0.4;    // min close beyond master VAH/VA
 input double InpImpulseNetMin        = 0.95;   // min one-sided M1 near-price net tick volume
 input double InpImpulseMaxDistAtr    = 2.5;    // anti-chase vs the PREDICTED edge in ATR; 0 = off
 input double InpImpulseRr            = 3.0;    // impulse TP RR (inert while the trail is ON)
-input int    InpImpulseTrendSlopeBars= 10;     // master-POC slope lookback for the trend gate
+input int    InpImpulseTrendSlopeBars= 6;      // WF re-lock 2026-06-20 (was 10): dominant lever, impNet +45%
 input int    InpImpulsePredictBars   = 10;     // bars aged out for the predicted master VP; 0 = current
 input int    InpTfNetLook            = 50;     // M1 net: bars summed for the near-price net
 input double InpTfNetWinAtr           = 1.5;   // M1 net: near-price window half-width in ATR
 
 input group "===== Exit ====="
 input double InpTp1R            = 1.0;
-input double InpTp1ClosePct     = 15.0;
+input double InpTp1ClosePct     = 0.0;     // WF re-lock 2026-06-20 (was 15.0): no TP1 bank; BE-after-TP1 de-risks
 input bool   InpBeAfterTp1      = true;
 input double InpBeBufAtr        = 0.05;
 input bool   InpTrailRunner     = true;     // ATR chandelier trail on the runner

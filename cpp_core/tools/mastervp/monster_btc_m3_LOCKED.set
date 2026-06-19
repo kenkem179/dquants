@@ -4,6 +4,15 @@
 ; ADX 24) — see [[mastervp-locked-and-ea-shipped]] / MONSTER-FINDINGS. Adds ONLY the impulse-thrust
 ; delta (kind 4, fires ABOVE the vol ceiling). Reversion + all opt-in gates OFF.
 ; Load with backtester --set-all.
+;
+; 2026-06-20 WALK-FORWARD RE-LOCK (research/monster_parity/wf_monster.py, 6 disjoint folds):
+;   3 secondary params re-tuned for ROBUSTNESS (not single-split): they jointly convert the two
+;   losing 2026 folds to positive -> 6/6 folds PF>1, worst-fold PF 1.001 (was 0.867), pooled
+;   PF 1.106->1.140, dd 16.0%->13.7%. On the ORIGINAL single split: OOS PF 1.131->1.192
+;   (clears the >=1.15 deploy gate), OOS net +1,956->+3,014, OOS dd 10.1%->9.5%.
+;     InpDiSpreadMin        6.0  -> 4.0   (slightly more permissive regime gate lifts the worst fold)
+;     InpImpulseTrendSlopeBars 10 -> 6    (dominant lever: shorter impulse-slope window; impNet +45%)
+;     InpTp1ClosePct        15.0 -> 0.0   (no partial bank at TP1; BE-after-TP1 still de-risks at 1R)
 
 ; ---- VP core (Monster spec: local 50, master 50*3 = 150 bars; Wilder ATR) ----
 InpVpLookback=50
@@ -22,7 +31,7 @@ InpEmaFast=24
 InpEmaSlow=194
 InpAdxLen=14
 InpAdxTrendMin=28.0
-InpDiSpreadMin=6.0
+InpDiSpreadMin=4.0          ; WF re-lock (was 6.0): lifts worst fold
 InpEmaSepAtr=0.25
 
 ; ---- entry shared ----
@@ -53,14 +62,14 @@ InpImpulseEntryBufAtr=0.4
 InpImpulseNetMin=0.95
 InpImpulseMaxDistAtr=2.5
 InpImpulseRr=3.0
-InpImpulseTrendSlopeBars=10
+InpImpulseTrendSlopeBars=6   ; WF re-lock (was 10): dominant lever, impNet +45%
 InpImpulsePredictBars=10
 InpTfNetLook=50
 InpTfNetWinAtr=1.5
 
 ; ---- exit (best_btc: TP1 1.0R close 15%; chandelier trail ON, mult 2.05, runner 5.3R) ----
 InpTp1R=1.0
-InpTp1ClosePct=15.0
+InpTp1ClosePct=0.0           ; WF re-lock (was 15.0): no TP1 bank; BE-after-TP1 de-risks
 InpBeAfterTp1=true
 InpBeBufAtr=0.05
 InpTrailRunner=true

@@ -2,24 +2,29 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
 
-## 🟣 KK-MasterVP-Monster (BTC) — DONE this session (C++ delta → sweep → EA → M5)
-**User ask:** inherit the faithful MasterVP base, add bare-minimal Monster (impulse-thrust) in C++,
-sweep, auto-produce the MQL EA; then sweep M5. **All done** (commits 58cc0d9/4c66c5f/d6716f8/8f1cc29, pushed).
-- **C++ delta** (minimal): `impulse.hpp` (`detect_impulse`), `tf_net.hpp` (M1 near-price net from
-  tick_count), `tick_engine` impulse branch (predicted aged-out master VP + master-POC slope; impulse
-  REPLACES the base above the vol ceiling). `enable_impulse=false` → base byte-identical (golden green).
-  Backtester `--bars-m1`; 6-case `test_impulse`; all C++ tests pass.
-- **LOCKED BTC M3** `cpp_core/tools/mastervp/monster_btc_m3_LOCKED.set`: master 200b (50×4), brk buf
-  0.25/SL 3.7/RR3, trail ON 2.6/runner 5.3R, TP1 1.0R×15%, **adx 28**, impulse ON, best_btc sessions,
-  risk 0.9%. **TRAIN PF 1.071/+1047 | OOS PF 1.131/+1956/DD10.1%**, impulse +386 OOS.
-  Sweep harness `research/monster_parity/sweep_monster.py`; findings `MONSTER_M3_FINDINGS.md`.
-- **KEY:** impulse is net-additive ONLY under a SELECTIVE base (adx 28) — at a permissive base it
-  DISPLACES breakouts (single-position). Full value needs Pine-style stacking (future multi-pos work).
-- **EA SHIPPED** `mql5/experts/KK-MasterVP-Monster/` compiles **0/0**; M1-net via iVolume=tick_volume
-  (fixes old ZERO-trades broker-VOLUME bug). Preset in EA folder + `kenkem/MQL5/Presets/`. **MANUAL MT5
-  FORWARD-TEST is the next action.** `InpEnableImpulse` toggle for A/B.
-- **M5:** swept (user-requested) — NOT robust on BTC (every config collapses OOS, best 0.979). NOT
-  locked. Monster ships **M3 only**. See memory `monster-locked-and-ea-shipped`.
+## 🟣 KK-MasterVP-Monster (BTC) — WALK-FORWARD RE-LOCK this session (robustness ↑, EA re-shipped)
+**User ask (this session):** autopilot the walk-forward / multi-fold robustness path I proposed last
+time (instead of more single-split sweeping), then auto-produce the MQL EA. **DONE — committed/pushed.**
+- **WHY WF:** the prior audit left the inherited secondary params at spec defaults to avoid curve-fitting
+  one OOS window. The rigorous test (SOP `/quant-9-walkforward`) is **6 disjoint folds** (2 in the 2025
+  train ticks, 4 in the 2026 OOS ticks), adopting a change only if robust ACROSS folds (improves pooled
+  result AND the worst fold). Harness `research/monster_parity/wf_monster.py` + engine `--trade-to-ms`
+  fold cap (the latter committed by the parallel MasterVP agent — already in HEAD).
+- **RESULT — 3 secondary params re-tuned, the rest CONFIRMED at defaults:**
+  - Re-locked: `InpDiSpreadMin` 6→4, `InpImpulseTrendSlopeBars` 10→6 (dominant lever, impNet +45%),
+    `InpTp1ClosePct` 15→0 (no TP1 bank; BE-after-TP1 still de-risks at 1R). They **stack constructively**
+    (tested jointly — repo's "sequential wins can fail jointly" guard): convert the two losing 2026 folds
+    to positive → **6/6 folds PF>1, worst-fold PF 1.001** (was 0.867), pooled PF 1.106→**1.140**, dd
+    16.0→**13.7%**. On the ORIGINAL single split: **OOS PF 1.131→1.192** (now clears the ≥1.15 deploy
+    gate), OOS net +1,956→**+3,014**, OOS dd 10.1→**9.5%**, train also up (1.071→1.084).
+  - CONFIRMED inherited-correct by WF: EMA 24/194 (outright best), ema_sep 0.25, node touch 0.05 + gate
+    ON, impulse entry_buf 0.4 (flat/inert). REJECTED: impulse max_dist 3.0 (worsens worst fold). Daily-DD
+    limiters structurally INERT (6/8/10 identical) — kept 6% as live-safety floor. Full table in
+    `research/monster_parity/MONSTER_M3_FINDINGS.md` (WALK-FORWARD section).
+- **EA RE-SHIPPED** `mql5/experts/KK-MasterVP-Monster/` recompiles **0/0**; the 3 params updated in
+  `Inputs.mqh` defaults + all 4 presets (EA folder + `kenkem/MQL5/Presets/`, impulse + NoImpulse). M1-net
+  via iVolume=tick_volume. **MANUAL MT5 FORWARD-TEST is the next action.** `InpEnableImpulse` toggles A/B.
+- **M5:** still NOT robust on BTC (prior session) — Monster ships **M3 only**.
 
 ## 🔀 ACTIVE THRUST (2026-06-20): KK-MasterVP Pine-faithful rebuild → param sweep → EA
 **User pivoted** from KenKem E1–E5 parity to optimizing **KK-MasterVP on XAUUSD M3**. KenKem state
