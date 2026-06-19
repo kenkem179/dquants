@@ -55,6 +55,10 @@ Also confirmed `ENABLE_LOSS_COOLDOWNS=true` changes **0 trades** (inert). Full d
    tick, instead of the bar-frozen `(atr_closed*13+|open−prevC|)/14` in snapshot.hpp:173. ⚠️ Payoff is
    mixed — the oracle (perfect pctile) only nets overfire −15 / matched −3, and `atrM1` feeds sideways +
    trend-scoring too, so regression risk is real. Validate every step with diff_kk + matched_exit_crosstab.
+   **Clue:** MT5's implied forming-TR tracks the FULL-bar TR (median Δ≈−0.01), not first-tick `|open−prevC|`
+   (Δ≈+0.80) → MT5 iATR(0) uses accumulated range (buffer lag), not bar-frozen first-tick. First verify the
+   engine's CLOSED-bar ATR vs MT5 iATR shift-1 (a direct full-TR test was slightly worse, so the base may
+   also drift). Detail: [[kenkem-e1-overfire-is-forming-atr]].
 2. **`mtf` gate EMA-boundary leak (14 overfire).** Add per-bar m1_ready/m3_ready/m5_dir/extreme + M1 DI±
    to both engine `EGATE` and EA `KKE1GATE,mtf` detail, diff at the 14 leak bars to see which sub-check
    flips. Likely EMA-alignment rounding at `emas_ready_entry` (align−3 shift) or the DI≥16 bypass edge.
