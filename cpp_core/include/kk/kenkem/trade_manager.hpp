@@ -185,19 +185,28 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
         }
     }
 
-    // (F) Smart partial TP. Eligible at the trigger; (non-E5) executes on a significant retrace from the
-    // peak-since-eligible (IsTrendWeakening unmodeled -> false). Fills at the LIVE price; then SL -> BE.
+    // (F) Smart partial TP. Eligible at the trigger. E5 executes IMMEDIATELY at the trigger level with no
+    // weakness/retrace gate and BE = entry + 2*spread (TradeManager :695-718, Pine SuperBros parity); all
+    // other entries wait for a significant retrace from peak-since-eligible then BE = entry + origTPDist*
+    // be_buffer. Both fill the slice at the LIVE price.
     if (c.allow_partial_tp && origTPDist > 0.0) {
         if (!p.partial_eligible && pnl_bar >= partial_trigger * origTPDist) {
             p.partial_eligible = true; p.best_since_eligible = bar_px;
         }
         if (p.partial_eligible && !p.partial_done) {
-            if (p.is_long ? (bar_px > p.best_since_eligible) : (bar_px < p.best_since_eligible))
-                p.best_since_eligible = bar_px;
-            double gained  = sgn * (p.best_since_eligible - p.entry);
-            double retrace = sgn * (p.best_since_eligible - bar_px);
-            bool sig_retrace = gained > 0.0 && (retrace / gained) >= c.partial_tp_retrace;
-            if (sig_retrace) {
+            bool do_partial; double be;
+            if (p.kind == 5) {
+                do_partial = true;                                  // immediate, no retrace gate
+                be = p.entry + sgn * 2.0 * c.spread_price;          // E5 breakeven = entry + 2*spread
+            } else {
+                if (p.is_long ? (bar_px > p.best_since_eligible) : (bar_px < p.best_since_eligible))
+                    p.best_since_eligible = bar_px;
+                double gained  = sgn * (p.best_since_eligible - p.entry);
+                double retrace = sgn * (p.best_since_eligible - bar_px);
+                do_partial = gained > 0.0 && (retrace / gained) >= c.partial_tp_retrace;
+                be = p.entry + sgn * origTPDist * m.be_buffer;
+            }
+            if (do_partial) {
                 // Partial slice: round(init*ratio) to the volume step, bumped up to min_lot, capped < lot
                 // (EA ExecutePartialTakeProfit: NormalizeLotSize then clamp to SYMBOL_VOLUME_MIN).
                 double q = p.init_lot * partial_ratio;
@@ -206,12 +215,11 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
                 if (q < p.lot) { fills.push_back({ live_px, q, 'P' }); p.lot -= q; }
                 double actual_pnl = sgn * (live_px - p.entry);
                 if (actual_pnl > 0.0) {
-                    double be = p.entry + sgn * origTPDist * m.be_buffer;
                     bool improves = p.is_long ? (be > p.sl) : (be < p.sl);
                     if (improves) { raise_sl(be); p.sl_moved_to_be = true; }
                 }
                 p.partial_done = true;
-                trail_now = true;              // EA trails once right after the partial executes
+                trail_now = true;
             }
         }
     }
@@ -230,11 +238,11 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
         }
     }
 
-    // (T) CalculateTrailingSLForTrade — bar-frozen best. E5 trails only at the EA's discrete events
-    // (trail_now: post-partial / post-TP-extension); E1/E2/E4 keep the continuous eligible|partial trail.
-    // adaptiveTrailingDistance = origTPDist*trailF/(tpExt+1) * GetVolatilityMultiplier() (live, [0.7,1.5]).
-    const bool trail_gate = (p.kind == 5) ? trail_now : (p.partial_eligible || p.partial_done);
-    if (trail_gate) {
+    // (T) CalculateTrailingSLForTrade — bar-frozen best; the EA trails every tick once
+    // partialTPEligible || hasTakenPartialProfit (TradeManager :811). adaptiveTrailingDistance =
+    // origTPDist*trailF/(tpExt+1) * GetVolatilityMultiplier() (live, [0.7,1.5]).
+    (void)trail_now;
+    if (p.partial_eligible || p.partial_done) {
         double trail_dist = origTPDist * m.trailing_factor / (double)(p.tp_ext + 1) * vol_mult;
         raise_sl(p.best - sgn * trail_dist);
     }

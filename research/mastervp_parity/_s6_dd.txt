@@ -1,0 +1,22 @@
+  [ 10] {'InpMaxPeakDDPct': 20, 'InpMaxDailyDDPct': 10}  n=257 win=59.9 PF=1.214 net=7,942 dd=19.0% tp2=1% calmar=1.88
+  [ 11] {'InpMaxPeakDDPct': 20, 'InpMaxDailyDDPct': 0}  n=262 win=59.9 PF=1.235 net=8,875 dd=19.0% tp2=1% calmar=2.00
+  [ 12] {'InpMaxPeakDDPct': 25, 'InpMaxDailyDDPct': 4}  n=193 win=59.6 PF=1.100 net=2,129 dd=24.3% tp2=1% calmar=0.55
+  [ 13] {'InpMaxPeakDDPct': 25, 'InpMaxDailyDDPct': 6}  n=211 win=58.8 PF=1.187 net=5,302 dd=24.4% tp2=0% calmar=1.07
+  [ 14] {'InpMaxPeakDDPct': 25, 'InpMaxDailyDDPct': 10}  n=284 win=59.9 PF=1.166 net=6,869 dd=23.9% tp2=1% calmar=1.30
+  [ 15] {'InpMaxPeakDDPct': 25, 'InpMaxDailyDDPct': 0}  n=288 win=60.1 PF=1.187 net=7,788 dd=23.7% tp2=1% calmar=1.41
+  [ 16] {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 4}  n=908 win=55.7 PF=1.003 net=235 dd=60.0% tp2=0% calmar=0.02
+  [ 17] {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 6}  n=1290 win=55.4 PF=1.017 net=2,631 dd=62.0% tp2=0% calmar=0.20
+  [ 18] {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 10}  n=1630 win=56.4 PF=1.084 net=20,731 dd=51.3% tp2=1% calmar=1.31
+  [ 19] {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 0}  n=1705 win=56.8 PF=1.072 net=17,428 dd=56.5% tp2=1% calmar=1.13
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=400 & PF>1) — s6_dd ===
+  PF=1.084 net=20,731 dd=51.3% win=56.4 tp2=1% n=1630 calmar=1.31  {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 10}
+  PF=1.072 net=17,428 dd=56.5% win=56.8 tp2=1% n=1705 calmar=1.13  {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 0}
+  PF=1.017 net=2,631 dd=62.0% win=55.4 tp2=0% n=1290 calmar=0.20  {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 6}
+  PF=1.003 net=235 dd=60.0% win=55.7 tp2=0% n=908 calmar=0.02  {'InpMaxPeakDDPct': 0, 'InpMaxDailyDDPct': 4}
+  PF=0.889 net=-141 dd=9.1% win=53.8 tp2=0% n=13 calmar=-0.14  {'InpMaxPeakDDPct': 10, 'InpMaxDailyDDPct': 4}
+  PF=0.886 net=-145 dd=9.1% win=53.8 tp2=0% n=13 calmar=-0.15  {'InpMaxPeakDDPct': 10, 'InpMaxDailyDDPct': 6}
+  PF=1.091 net=156 dd=7.8% win=60.0 tp2=0% n=20 calmar=0.18  {'InpMaxPeakDDPct': 10, 'InpMaxDailyDDPct': 10}
+  PF=1.091 net=156 dd=7.8% win=60.0 tp2=0% n=20 calmar=0.18  {'InpMaxPeakDDPct': 10, 'InpMaxDailyDDPct': 0}
+  PF=0.755 net=-621 dd=13.5% win=47.8 tp2=0% n=23 calmar=-0.42  {'InpMaxPeakDDPct': 15, 'InpMaxDailyDDPct': 4}
+  PF=0.611 net=-719 dd=14.4% win=43.8 tp2=0% n=16 calmar=-0.46  {'InpMaxPeakDDPct': 15, 'InpMaxDailyDDPct': 6}

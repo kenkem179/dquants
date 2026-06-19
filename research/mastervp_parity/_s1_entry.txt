@@ -1,0 +1,14 @@
+  [ 34] {'InpBreakBufAtr': 1.0, 'InpAdxTrendMin': 28, 'InpDiSpreadMin': 8}  n=1563 win=57.1 PF=0.996 net=-430 dd=65.6% tp2=0% calmar=-0.04
+  [ 35] {'InpBreakBufAtr': 1.0, 'InpAdxTrendMin': 28, 'InpDiSpreadMin': 14}  n=1456 win=56.4 PF=1.027 net=3,790 dd=57.0% tp2=1% calmar=0.39
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=500 & PF>1) — s1_entry ===
+  PF=1.072 net=17,428 dd=56.5% win=56.8 tp2=1% n=1705 calmar=1.13  {'InpBreakBufAtr': 0.7, 'InpAdxTrendMin': 22, 'InpDiSpreadMin': 8}
+  PF=1.066 net=12,426 dd=49.4% win=57.0 tp2=1% n=1641 calmar=1.12  {'InpBreakBufAtr': 0.7, 'InpAdxTrendMin': 28, 'InpDiSpreadMin': 4}
+  PF=1.082 net=19,507 dd=62.5% win=56.7 tp2=1% n=1772 calmar=1.06  {'InpBreakBufAtr': 0.7, 'InpAdxTrendMin': 18, 'InpDiSpreadMin': 4}
+  PF=1.064 net=16,417 dd=56.7% win=56.8 tp2=1% n=1739 calmar=1.00  {'InpBreakBufAtr': 0.7, 'InpAdxTrendMin': 22, 'InpDiSpreadMin': 4}
+  PF=1.061 net=14,265 dd=65.0% win=56.3 tp2=1% n=1802 calmar=0.91  {'InpBreakBufAtr': 0.5, 'InpAdxTrendMin': 18, 'InpDiSpreadMin': 4}
+  PF=1.040 net=8,250 dd=55.2% win=56.6 tp2=0% n=1663 calmar=0.69  {'InpBreakBufAtr': 1.0, 'InpAdxTrendMin': 22, 'InpDiSpreadMin': 8}
+  PF=1.044 net=8,878 dd=54.8% win=56.6 tp2=1% n=1702 calmar=0.68  {'InpBreakBufAtr': 1.0, 'InpAdxTrendMin': 22, 'InpDiSpreadMin': 4}
+  PF=1.037 net=6,429 dd=55.4% win=57.0 tp2=1% n=1668 calmar=0.68  {'InpBreakBufAtr': 0.5, 'InpAdxTrendMin': 28, 'InpDiSpreadMin': 4}
+  PF=1.041 net=8,250 dd=69.8% win=56.4 tp2=1% n=1732 calmar=0.55  {'InpBreakBufAtr': 0.5, 'InpAdxTrendMin': 22, 'InpDiSpreadMin': 8}
+  PF=1.046 net=8,971 dd=77.8% win=56.3 tp2=1% n=1735 calmar=0.48  {'InpBreakBufAtr': 0.7, 'InpAdxTrendMin': 18, 'InpDiSpreadMin': 8}

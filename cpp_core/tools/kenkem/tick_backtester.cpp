@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
         int n = load_set(cfg, set_path);
         std::fprintf(stderr, "[set] applied %d keys from %s\n", n, set_path.c_str());
     }
+    cfg.spread_price = spread;   // for the E5 partial breakeven (entry + 2*spread)
     if (const char* e = std::getenv("KK_E1_FAITHFUL")) cfg.e1_faithful_trigger = std::atoi(e) != 0;
     if (const char* e = std::getenv("KK_TRAIL_LIVE_RISK")) cfg.trail_live_risk = std::atoi(e) != 0;
 

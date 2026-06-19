@@ -146,6 +146,10 @@ struct KenKemConfig {
     double rsi_div_min_price_pips = 60.0;
     double rsi_div_min_rsi_diff   = 6.5;
 
+    // Nominal spread in price (matches the backtester --spread). Drives the E5 partial breakeven
+    // (entry + 2*spread, TradeManager :711) — set by the backtester from the run's spread.
+    double spread_price           = 0.05;
+
     // ---- stop-loss ----
     int    sl_ema_distance        = 27;       // pips
     double min_sl_spread_mult     = 0.5;
