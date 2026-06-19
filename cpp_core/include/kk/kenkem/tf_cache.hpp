@@ -39,7 +39,8 @@ struct TfIndicators {
     std::vector<double> ema[5];      // EMA0..4 (periods from cfg)
     std::vector<double> adx, diP, diM;        // dmi_adx_mt5(adx_len)
     std::vector<double> adxS, diPS, diMS;     // dmi_adx_mt5(9), built iff has_short
-    std::vector<double> atr;                  // atr(14)
+    std::vector<double> atr;                  // MT5 iATR(14) = rolling SMA of True Range (NOT Wilder)
+    std::vector<double> tr;                   // True Range series (feeds atr SMA + forming shift-0 slide)
     std::vector<double> rsi;                  // rsi(rsi_len), built iff has_rsi (MT5-faithful Wilder)
     std::vector<double> rsi_ag, rsi_al;       // Wilder avg-gain/avg-loss series (for forming shift-0 step)
     kk::ind::IchimokuBuf ichi;                // built iff has_ichi
@@ -84,7 +85,8 @@ inline TfIndicators build_tf_indicators(std::vector<kk::Bar> bars, const KenKemC
     const kk::ind::DMI d = kk::ind::dmi_adx_mt5(H, L, C, cfg.adx_len);
     s.adx = d.adx; s.diP = d.plus_di; s.diM = d.minus_di;
 
-    s.atr = kk::ind::atr(H, L, C, KENKEM_CACHE_ATR_PERIOD);
+    s.tr  = kk::ind::true_range(H, L, C);
+    s.atr = kk::ind::atr_sma_from_tr(s.tr, KENKEM_CACHE_ATR_PERIOD);   // MT5 iATR = SMA(TR,14)
 
     if (want_short) {
         const kk::ind::DMI d9 = kk::ind::dmi_adx_mt5(H, L, C, KENKEM_ADX_SHORT_PERIOD);

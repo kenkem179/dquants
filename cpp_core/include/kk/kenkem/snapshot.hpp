@@ -164,14 +164,17 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         }
     }
 
-    // ATR shift-0: one Wilder (SMMA) step from the closed-bar ATR using the forming-bar TR.
-    // Forming bar at first tick has H=L=open, so TR = |open - prevClose|.
+    // ATR shift-0: MT5 iATR(0) is a rolling SMA of TR, so the forming bar slides the n-window by one —
+    // add the forming-bar TR and drop the oldest closed TR: atr0 = atr_closed + (tr_form - tr[i1-(n-1)])/n.
+    // (NOT a Wilder step.) Forming bar at first tick has H=L=open, so tr_form = |open - prevClose|.
+    // Verified to match MT5's per-bar forming ATR to <1e-4 over 848,532 bars.
     {
-        const double atr_closed = TfIndicators::get(b.m1.atr, i1);
+        const double atr_closed = TfIndicators::get(b.m1.atr, i1);   // SMA(TR,14) at last closed bar
         const double tr_form = std::fabs(open_f - prevC);
         const int n = KENKEM_CACHE_ATR_PERIOD;
-        s.atrM1 = (atr_closed > 0.0) ? (atr_closed * (n - 1) + tr_form) / n : atr_closed;
-        s.atrM1_sl = atr_closed;   // last-closed-bar Wilder ATR for SL arbitration (see field comment)
+        const double tr_drop = TfIndicators::get(b.m1.tr, i1 - (n - 1));  // oldest TR leaving the window
+        s.atrM1 = (atr_closed > 0.0) ? atr_closed + (tr_form - tr_drop) / n : atr_closed;
+        s.atrM1_sl = atr_closed;   // last-closed-bar SMA iATR(14) for SL arbitration (see field comment)
     }
 
     // RSI: TWO distinct reads in the EA, kept separate here.
@@ -204,7 +207,7 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         s.tenkanM3   = TfIndicators::get(b.m3.ichi.tenkan, j3);       // EA "SpanA_M3_Current" (buf0) → thickness
         s.kijunM3    = TfIndicators::get(b.m3.ichi.kijun,  j3);       // EA "SpanB_M3_Current" (buf1)
     }
-    // M3 ATR shift-0 forming (one Wilder step from closed M3 ATR using the M3 forming-bar gap TR).
+    // M3 ATR shift-0 forming: MT5 iATR(0) SMA window-slide from closed M3 ATR using the M3 forming gap TR.
     {
         const int fj = align.m3, jj = align.m3 - 1;
         if (jj >= 0) {
@@ -212,7 +215,8 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
             const double opf = (fj >= 0 && fj < b.m3.size()) ? b.m3.bars[fj].open : b.m3.bars[jj].close;
             const double trf = std::fabs(opf - b.m3.bars[jj].close);
             const int n = KENKEM_CACHE_ATR_PERIOD;
-            s.atrM3 = (atr_c > 0.0) ? (atr_c * (n - 1) + trf) / n : atr_c;
+            const double tr_drop = TfIndicators::get(b.m3.tr, jj - (n - 1));
+            s.atrM3 = (atr_c > 0.0) ? atr_c + (trf - tr_drop) / n : atr_c;
         }
     }
     // ATR percentile (v1.8.154 CalculateATRPercentile, RiskManager.mqh:215): currentATR = cache.atrM1

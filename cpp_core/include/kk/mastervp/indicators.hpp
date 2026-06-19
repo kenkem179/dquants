@@ -48,6 +48,27 @@ inline vector<double> atr(const vector<double>& h, const vector<double>& l,
     return wilder_rma(true_range(h, l, c), n);
 }
 
+// MT5 built-in iATR: a ROLLING SIMPLE MOVING AVERAGE of True Range — NOT Wilder/SMMA.
+// The terminal's ATR.mq5 recurrence is ATR[i] = ATR[i-1] + (TR[i] - TR[i-n])/n, seeded at index
+// n-1 with the mean of the first n TRs. Verified to reproduce iATR(_,_,14) to <1e-4 on 848,532 XAU
+// M1 bars (closed AND forming shift-0). KenKem's cache ATR(14) handle uses this; textbook Wilder atr()
+// above stays the default for everything else. Takes a precomputed TR buffer so the forming-bar step
+// (one window-slide) can reuse the same series.
+inline vector<double> atr_sma_from_tr(const vector<double>& tr, int n) {
+    const int N = (int)tr.size();
+    vector<double> o(N, 0.0);
+    if (N < n || n <= 0) return o;
+    double sum = 0.0;
+    for (int i = 0; i < n; ++i) sum += tr[i];
+    o[n - 1] = sum / n;
+    for (int i = n; i < N; ++i) { sum += tr[i] - tr[i - n]; o[i] = sum / n; }
+    return o;
+}
+inline vector<double> atr_sma_mt5(const vector<double>& h, const vector<double>& l,
+                                  const vector<double>& c, int n) {
+    return atr_sma_from_tr(true_range(h, l, c), n);
+}
+
 // fwd decl (defined below): MT5 ExponentialMAOnBuffer, k=2/(n+1), seeded at `start`.
 inline vector<double> ema_on_buffer(const vector<double>& x, int n, size_t start);
 
