@@ -40,3 +40,22 @@ deploy gate (OOS PF ≥ 1.15) but in the same band MasterVP shipped at (OOS 1.11
 forward-test required. `InpEnableImpulse` is a live toggle for A/B in MT5.
 
 Harness: `research/monster_parity/sweep_monster.py` (BTC, --bars-m1, IMP/BRK split, auto-OOS).
+
+---
+
+## M5 sweep (user-requested) — NOT robust on BTC; M3 is the deployable TF
+Swept master length × adx × SL on M5 (train 2025 / OOS 2026), same harness (`--tf m5`).
+**Every train-profitable config collapses OOS (best OOS PF 0.979; most 0.84–0.97).** M5 makes far
+fewer trades (~150–260 vs ~350 on M3) so configs over-fit the train window with no OOS edge. The
+impulse contribution is OOS-negative at permissive bases and only marginally positive at selective
+ones — but the base itself is OOS-negative, so it doesn't rescue M5.
+
+| TF | best OOS PF | OOS net | OOS DD | verdict |
+|----|-------------|---------|--------|---------|
+| **M3** | **1.131** | **+$1,956** | **10.1%** | LOCKED, EA shipped |
+| M5 | 0.979 | −$197 | 17.3% | NOT locked (overfit; no OOS edge) |
+
+**Decision:** do NOT lock an M5 Monster `.set` (locking an OOS-negative config would deploy a loser —
+same discipline as the KenKem "don't lock an overfit entry set" lesson). Monster ships **M3 only**.
+(NB: the parallel KK-MasterVP work found M5 *beats* M3 — but that is XAU + breakout-only, a different
+instrument and strategy; it does not transfer to Monster-on-BTC.)
