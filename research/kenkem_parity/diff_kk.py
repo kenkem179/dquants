@@ -51,10 +51,17 @@ def main():
     ap.add_argument("--engine", required=True); ap.add_argument("--mt5", required=True)
     ap.add_argument("--lag-min", type=float, default=5); ap.add_argument("--kind", default=None)
     ap.add_argument("--show", type=int, default=0)
+    ap.add_argument("--from", dest="dfrom", default=None, help="include trades with entry >= this date (YYYY.MM.DD)")
+    ap.add_argument("--to", dest="dto", default=None, help="include trades with entry <= this date (YYYY.MM.DD)")
     a = ap.parse_args()
     mt5, eng = load(a.mt5), load(a.engine)
     if a.kind:
         mt5 = [r for r in mt5 if r["kind"] == a.kind]; eng = [r for r in eng if r["kind"] == a.kind]
+    if a.dfrom or a.dto:
+        lo = datetime.strptime(a.dfrom, "%Y.%m.%d") if a.dfrom else datetime.min
+        hi = datetime.strptime(a.dto, "%Y.%m.%d") if a.dto else datetime.max
+        win = lambda r: lo <= r["t"] <= hi
+        mt5 = [r for r in mt5 if win(r)]; eng = [r for r in eng if win(r)]
     # window-filter engine to MT5 entry span
     if mt5:
         lo, hi = mt5[0]["t"], mt5[-1]["t"]

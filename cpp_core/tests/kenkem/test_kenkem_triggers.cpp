@@ -64,8 +64,9 @@ void test_ema75_touch_trigger() {
     TfBundle bundle;
     bundle.m1 = blank_tf(B + 1); bundle.m3 = blank_tf(B + 1); bundle.m5 = blank_tf(B + 1);
     bundle.m15 = blank_tf(B + 1);
-    // EMA75 (ema[2]) at B-1 = 100; bar straddles it and closes ABOVE -> touch up.
-    bundle.m1.ema[2][B - 1] = 100.0;
+    // FAITHFUL EA buffer-inversion (EMAHelpers.mqh:285-288): ema75 = GetEMA(EMA2,shift1) -> B-2 (trapped),
+    // bar low/high/close = iLow/iHigh/iClose(shift1) -> B-1 (untrapped). So EMA75 at B-2, bar at B-1.
+    bundle.m1.ema[2][B - 2] = 100.0;
     bundle.m1.bars[B - 1].low = 99.5; bundle.m1.bars[B - 1].high = 100.5; bundle.m1.bars[B - 1].close = 100.3;
     TfBundle::Align align{ B, 10, 6, 2 };
 

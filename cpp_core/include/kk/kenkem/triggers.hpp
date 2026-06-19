@@ -140,8 +140,13 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     }
 
     // ---- E2: EMA75 touch; direction by close vs EMA75; stores B (= Bars-1) ----
-    if (m1s1 >= 0) {
-        const double ema75 = bundle.m1.ema[2][m1s1];
+    // EA (EMAHelpers.mqh:285-288): ema75 = GetEMA(TF0,EMA2,ENTRY_SHIFT) — TRAPPED (inverted buffer) =>
+    // series-shift2 = B-2; bar low/high/close = iLow/iHigh/iClose(ENTRY_SHIFT=1) — series shift1 = B-1
+    // (untrapped). Same buffer-inversion trap as the E1 EMA200 touch above (which used e1t), previously
+    // missed here. Mirror it: EMA75 at e2t (B-2 faithful), bar lo/hi/cl stay at m1s1 (B-1).
+    const int e2t = (kFaithful ? m1s2 : m1s1 - kTrap) - touch_sh;
+    if (m1s1 >= 0 && e2t >= 0) {
+        const double ema75 = bundle.m1.ema[2][e2t];
         const double lo = bundle.m1.bars[m1s1].low, hi = bundle.m1.bars[m1s1].high, cl = bundle.m1.bars[m1s1].close;
         if (lo <= ema75 && hi >= ema75) {
             if (cl > ema75)      { st.e75_up = B; st.e75_down = -1; }
