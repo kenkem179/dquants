@@ -31,23 +31,37 @@ Fresh baseline on complete data (162.7M ticks, ~24s/run), all matches exact-minu
   `MY_STANDARD_LOT_SIZE=100` (MT5 account limiters choke E1 to 78), the E1E2 set runs 0.15 (limiters off,
   183 fire). Not a real entry interaction.
 
-## 🟡 RESIDUAL = E1 overfire (67 full / 29 gap-free). E2 overfire 23/14.
-- E1 overfire are NOT re-fires (only 5/68 within 80min of an MT5 E1). **56/68 are novel bars >8h from any
-  MT5 E1** → engine gate-passes where MT5 never fired = unmodeled MT5 **execution-layer limiters**
-  (the known wall: [[atr-percentile-parity-wall]], [[kenkem-e1-residual-is-intrabar-exec]] — MT5
-  gate-pass ≫ fire). Engine's daily-loss/aggregate-risk limiters are STRUCTURALLY INERT; do not re-attempt
-  the inert ports.
-- **To resolve overfire needs USER:** one MT5 re-run at the E1E2 config (lot=0.15) dumping the per-armed-bar
-  E1 gate+execution verdict (kke1gate-style) so the 56 novel overfire can be localized to the blocking
-  layer. Without it we can only confirm the engine over-passes, not which MT5 limiter stops it.
+## 🟡 RESIDUAL = E1 overfire (68 full / 29 gap-free) — NOW LOCALIZED at trade level. E2 overfire 23/14.
+Using the new MT5 gate trace (`RUN_2026-06-19_..._E1E2_gatetrace/kke1gate.csv`, 104k per-armed-bar E1
+verdicts, aligned at engine = MT5 + 60s), each of the 68 overfire trades was matched to MT5's verdict:
+- **41/68 = MT5_BLOCK:mtf** → the engine's MTF (M3/M5 EMA-alignment) gate is too PERMISSIVE; MT5 armed the
+  cross and blocked it on MTF, the engine passed & fired. Confusion matrix: 240 bar-evals engine-PASS where
+  MT5=mtf (+10 trend_quality); EVERY other gate matches ~100% (htf 58,672/58,832, price_pos/momentum/
+  trend_strength/rsi_div clean). NOT a shift bug — M3/M5 reads already use `align_tf-2` (gates.hpp:88,94).
+  It's genuine M3/M5 EMA VALUE divergence near the `tol` band.
+- **22/68 = MT5_not_armed** → engine arms an E1 cross MT5 never armed (cross-DETECTION divergence).
+  INVESTIGABLE NOW from the committed `kke1arm.csv.gz` (509,662 KKE1ARM rows = MT5 cross-arm inputs).
+- 5/68 = MT5_PASS (benign timing/occupancy near-miss).
+- Reverse (engine BLOCK where MT5 PASS) is tiny: 8 conviction + 2 mtf + 1 tq = the engine-only conviction
+  gate slightly over-blocks → a minor missed-entry source.
 
 ## ▶️ NEXT ACTIONS (in order)
-1. **[committed this session]** `E1_MAX_CROSS_AGE=80` in `anchor_E1E2.set`. Note: `kenkem_config.hpp:199`
-   default stays 28 (live-trading optimization) — parity is driven by the `.set`, leave the default.
-2. **[USER]** MT5 E1E2-config gate/execution trace (above) → localize the 56 novel E1 overfire.
-3. E4/E5 parity still blocked — **no E4-only or E5-only MT5 reference run committed**; need a user MT5
-   E4 (and E5) run before either can be measured.
-4. After E1→E5 LOCKED: pip→ATR-relative conversion per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
+1. **[committed]** `E1_MAX_CROSS_AGE=80` in `anchor_E1E2.set` (E1 recall 50→93%). `kenkem_config.hpp:199`
+   default stays 28 (live-trading opt) — parity is driven by the `.set`.
+2. **[ENGINE, no new MT5 data]** Mine `kke1arm.csv.gz` vs the engine's E1 arm decisions to fix the 22
+   MT5_not_armed overfire (cross-detection divergence). diff against the engine's cross-arm logic
+   (`triggers.hpp` ema cross arming).
+3. **[USER]** One MT5 re-run dumping **M3/M5 EMA1..4 at ENTRY_SHIFT** (the BarTrace lacks them — only M1
+   ema0..4 + per-TF ADX/DI present). Needed to value-diff the 41 MTF-gate overfire. This is the long-standing
+   M3/M5-alignment ceiling, now pinpointed to exactly the MTF gate.
+4. E4/E5 parity still blocked — **no E4-only or E5-only MT5 reference run committed**; need user MT5 runs.
+5. After E1→E5 LOCKED: pip→ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
+
+## 📁 NEW: MT5 gate-trace run (committed this session)
+`research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E1E2_gatetrace/` — from
+`MT5_E1E2_GATETRACE.set` (≡ reference run + E1_GATE_TRACE/E1_ARM_TRACE). trades.csv (325, **byte-identical
+to the reference** → trace didn't perturb logic), kke1gate.csv (104,221), kke1arm.csv.gz (509,662),
+trace.csv.gz (per-bar BarTrace), tester.log.gz, inputs_echo.txt. Confusion tool: `diff_gate_reason.py`.
 
 ## 🔁 Repro (~24s/run)
 ```
