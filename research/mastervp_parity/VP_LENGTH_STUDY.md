@@ -50,3 +50,17 @@ master bars ( hrs) |             TRAIN PF/dd%/net/n |               OOS PF/dd%/n
 VERDICT: short master VPs (1-6h) are noise on this feed (1-2h LOSE on train, dd 67-77%);
 12-15h die OOS. Robust region is 18-24h+. 9h (180b) is the only short bright spot (OOS PF 1.050).
 Shipped KK-MasterVP-XAUUSD-9h.set (60x3) as an A/B variant; 24h (120x4) remains the primary lock.
+
+## M5 first-look (user: "maybe M5 worth a look?")
+Built combined M5 bars (cpp_core/tools/bars_xauusd_2025_2026_m5.csv). Transplanted the M3-locked
+params (NOT re-swept for M5). Same train/OOS tick cuts (ticks are TF-agnostic).
+```
+config                                 TRAIN PF/dd%/net/n            OOS PF/dd%/net/n
+M3 baseline (120x4, locked)            PF1.264 dd29.5 net21,769 n1317  PF1.114 dd17.5 net4,575 n669
+M5 same-bars (120x4 ema24/194 atr14)   PF1.148 dd17.2 net 7,813 n1076  PF1.102 dd14.3 net2,715 n497
+M5 time-matched (72x4 ema14/116 atr8)  PF1.037 dd43.5 net 1,803 n1135  PF1.179 dd20.2 net5,961 n558
+```
+VERDICT: M5 is COMPETITIVE on un-optimized transplanted params — same-bars gives comparable OOS PF
+at LOWER drawdown (14.3% vs 17.5%, fewer cleaner signals); time-matched has the highest OOS PF (1.179)
+but weak/inconsistent train. M3 stays the shipped/validated base. NEXT: a dedicated M5 sweep (VP-length +
+entry/exit + risk, train->OOS) would likely beat these transplants — promising enough to pursue on request.
