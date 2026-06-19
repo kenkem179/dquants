@@ -1,15 +1,56 @@
 # HANDOFF — read me first, update me last
 
 _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-Latest: sideways ADX/RSI = 5-bar avg (`ce47b1f`). E1 now **74 matched / 4 missed / 17 overfire**.
-Recall **94.9%** (all 4 missed are LOSING trades → recall is effectively MAXED); overfire cut 26→17._
+Latest: started **E2**. E2's own port is solid (**95.8% recall, 136/142**); the dominant E1E2 divergence is
+an **E1↔E2 interaction** — engine lacks the EA's account-equity entry-block. E1-only is locked at 74/4/17._
 
-## 📌 RECALL REALITY (answers "how do I raise recall?")
-All 4 missed are trades MT5 took and **LOST** (3 SL-LOSS + 1 end-of-test EA close). Pushing recall past
-94.9% literally means forcing the engine to take losers for parity's sake. The real lever is the 17
-**overfire** (precision) — same entry-gate root, opposite direction. Don't chase the 4 missed.
+## 🎯 Goal: KenKem entry parity engine⇄MT5. **NOW ON: E2 / the E1↔E2 interaction.** Then E4, E5.
+Ground truth = the canonical EA (`kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5`).
 
-## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
+## ⭐ CURRENT FOCUS — E1↔E2 interaction (user chose: "diagnose interaction first")
+**Diff: engine `anchor_E1E2.set` vs MT5 `RUN_2026-06-18_1.8.154_xau_2yr_E1E2/trades.csv` (325 MT5 trades):**
+
+| kind | MT5 | eng | matched | missed | overfire | recall |
+|------|-----|-----|---------|--------|----------|--------|
+| E1   | 183 | 124 | 92      | **91** | 32       | 50%    |
+| E2   | 142 | 162 | 136     | 6      | 25       | **95.8%** |
+
+- **E2 entry logic is GOOD** (95.8%). 6 missed are all marginal (EA-close/SL-WIN, tiny pnl). User's intuition
+  (E2 ⊆ E1 factors → ports easily) holds. The E2-specific residual (25 overfire) is secondary.
+- **The headline problem is E1, not E2.** E1 recall collapses 95%→50% when E2 is enabled.
+
+### ✅ ROOT-CAUSED (code-verified): engine lacks the EA's account-EQUITY entry-block
+- The EA gates **ALL** entries through `GetEntryBlockReason()` / `CanCreateNewEntry()`
+  (`TradeManagement/RiskManager.mqh:241-344`): black-swan cooldown, spread, ATR-pctile, **drawdown-limit /
+  recovery-mode / profit-protection** (all driven by `peakAccountBalance` vs live balance).
+- E1 and E2 **share the account equity**. Enabling E2 reshapes the equity curve → changes WHEN the drawdown
+  entry-block is active → MT5 E1 swings **78 (E2 off) → 183 (E2 on)**. Same conviction=7, same MAX_CONCURRENT=2;
+  the ONLY input diff is `ENABLE_E2_ENTRIES`.
+- The **engine does NOT model this entry-block**: it tracks `balance_`/`peak_` but uses `ddPct` ONLY to resize
+  lots (`tick_engine.hpp:351-352 mult*=1.2`); there is NO equity-based entry block. So engine E1 is ~insensitive
+  to E2: **91 (E2 off) → 124 (E2 on)** — hence 50% recall in the combined run.
+- Secondary coupling (real but not the driver): E1/E2 share GLOBAL arm state `lastEMACrossingUp/Down`,
+  `lastEma75TouchUp/Down` (`Core/GlobalState.mqh:441-444`). Dispatch is **E1 first, E2 only if E1 didn't fire**
+  (`KenKemExpert.mq5:2222`), so E2 does NOT directly steal E1 bars — the coupling is via the shared ACCOUNT, not
+  the arm flags.
+
+### ▶️ NEXT ACTION (E2)
+1. **Port the EA's account-equity entry-block into the engine** (the dominant lever). Model
+   `GetEntryBlockReason`'s drawdown-limit / recovery-mode / profit-protection on the engine's live `balance_`/
+   `peak_`, blocking entries (not just resizing lots). Read `RiskManager.mqh` `IsWithinDrawdownLimit` +
+   `CheckProfitProtection` (340-430) + `GetEntryBlockReason` (241-344) for exact thresholds/params.
+   Validate vs committed `…_E1E2/trades.csv`; expect MT5's 78↔183 E1 swing to reproduce and E1 recall to climb.
+2. Then revisit E2's own 25 overfire (likely partly downstream of #1 — shared account state).
+3. **Repro:** `KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester --bars-m1 tools/bars_xauusd_2024_2026_m1.csv
+   --ticks tools/ticks_xauusd_2024_2026.csv --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1E2.set
+   --out /tmp/e1e2.csv` then `python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5
+   research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/trades.csv [--kind E1|E2] [--show N]`.
+   Committed E1E2 data: `trades.csv` (diff target), `trace.csv.gz` (per-bar MT5), `cpp_trades.csv`,
+   `mt5_e1_touch_arms_utc.csv`, `inputs_echo.txt`, `tester.log.gz`.
+
+## 📌 E1-ONLY — LOCKED at 74/4/17 (recall 94.9%, effectively MAXED)
+All 4 E1-only missed are trades MT5 took and **LOST** (3 SL-LOSS + 1 end-of-test). Don't chase them. The 17
+E1-only overfire need the user MT5 re-run (M3/M5 EMA values + sideways sub-components) — see old NEXT ACTIONS below.
 
 ## ✅ THIS SESSION — ATR FIXED (commit `f210631`): overfire **62→31**, missed **31→11**, matched **47→67**
 The forming-bar ATR divergence is SOLVED. The prior diagnosis ("track forming H/L tick-by-tick") was a
