@@ -2,6 +2,25 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
 
+## 🟣 KK-MasterVP-Monster (BTC) — DONE this session (C++ delta → sweep → EA → M5)
+**User ask:** inherit the faithful MasterVP base, add bare-minimal Monster (impulse-thrust) in C++,
+sweep, auto-produce the MQL EA; then sweep M5. **All done** (commits 58cc0d9/4c66c5f/d6716f8/8f1cc29, pushed).
+- **C++ delta** (minimal): `impulse.hpp` (`detect_impulse`), `tf_net.hpp` (M1 near-price net from
+  tick_count), `tick_engine` impulse branch (predicted aged-out master VP + master-POC slope; impulse
+  REPLACES the base above the vol ceiling). `enable_impulse=false` → base byte-identical (golden green).
+  Backtester `--bars-m1`; 6-case `test_impulse`; all C++ tests pass.
+- **LOCKED BTC M3** `cpp_core/tools/mastervp/monster_btc_m3_LOCKED.set`: master 200b (50×4), brk buf
+  0.25/SL 3.7/RR3, trail ON 2.6/runner 5.3R, TP1 1.0R×15%, **adx 28**, impulse ON, best_btc sessions,
+  risk 0.9%. **TRAIN PF 1.071/+1047 | OOS PF 1.131/+1956/DD10.1%**, impulse +386 OOS.
+  Sweep harness `research/monster_parity/sweep_monster.py`; findings `MONSTER_M3_FINDINGS.md`.
+- **KEY:** impulse is net-additive ONLY under a SELECTIVE base (adx 28) — at a permissive base it
+  DISPLACES breakouts (single-position). Full value needs Pine-style stacking (future multi-pos work).
+- **EA SHIPPED** `mql5/experts/KK-MasterVP-Monster/` compiles **0/0**; M1-net via iVolume=tick_volume
+  (fixes old ZERO-trades broker-VOLUME bug). Preset in EA folder + `kenkem/MQL5/Presets/`. **MANUAL MT5
+  FORWARD-TEST is the next action.** `InpEnableImpulse` toggle for A/B.
+- **M5:** swept (user-requested) — NOT robust on BTC (every config collapses OOS, best 0.979). NOT
+  locked. Monster ships **M3 only**. See memory `monster-locked-and-ea-shipped`.
+
 ## 🔀 ACTIVE THRUST (2026-06-20): KK-MasterVP Pine-faithful rebuild → param sweep → EA
 **User pivoted** from KenKem E1–E5 parity to optimizing **KK-MasterVP on XAUUSD M3**. KenKem state
 preserved below (📌 PAUSED) — not abandoned.
