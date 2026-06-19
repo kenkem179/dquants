@@ -4,85 +4,78 @@ _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
-## ✅ THIS SESSION — SL/TP LEVEL GAP **CLOSED** (the entry-side ATR root cause, FIXED)
-The handoff's #1 NEXT ACTION is DONE. Root cause was the **forming-bar ATR shrink** feeding the binding
-4.0× ATR-SL cap. Fix (1 commit, see below): `compute_sl` now arbitrates against the **last-closed-bar**
-Wilder ATR (`snap.atrM1_sl`) instead of the forming `snap.atrM1`.
+## ✅ THIS SESSION — HIGH-RISK CASCADE FIXED (commit `2644cc7`); matched net −348 → **+527**
+The previous "TRAILING-SL overshoot / SL-WIN under-reproduction" residual was a 3-link cascade, ALL
+keyed off one fact: the canonical run flags **ALL 78 E1 entries as high-risk** (`tester.log`: every
+entry = "High risk/far SL with strong trend"). The engine was firing the high-risk path on only 4/95.
+Root causes (all fixed):
+1. **Risk-ratio not propagated.** `COMMON_MAX_RISK_PER_TRADE=0.01` was parsed into `common_max_risk`
+   but the per-entry `max_loss_ratio_e*` kept their 0.02-based defaults (EA computes them as globals:
+   E1×1.05/E2×1.00/E4×1.02/E5×1.00, InputParams.mqh:62-69). → engine budget 2× too high → high-risk
+   threshold 2× too high.
+2. **Stale set lot.** `anchor_E1_only_trace.set` had `MY_STANDARD_LOT_SIZE=0.15`; the reference run
+   used **100** (`tester.log` input echo). With std_lot=100 the lot is always risk/margin-capped, so
+   `potentialLoss ≈ maxLoss×riskDistPips ≥ maxLoss` → every trade trips HandleHighRiskEntry (TP×0.65
+   multiplier + 0.55 partial). With 0.15 the scaled term bound and almost nothing read as high-risk.
+3. **HR partial override un-ported.** High-risk trades arm the smart-partial/trail at
+   `HIGH_RISK_PARTIAL_TP_TRIGGER=0.55` (vs E1=0.90) & slice 0.42 (TradeManager.mqh:680-684). Added
+   cfg fields + `Position.is_high_risk` + wiring in `manage_tick`.
 
-### The mechanism (empirically proven, not theorized)
-- Engine `s.atrM1` = forming Wilder step `(ATR*13 + |open−prevClose|)/14`. On continuous XAU ticks the
-  bar-open gap ≈ 0, so this mechanically **shrinks ATR by ~1/14 ≈ 7%** (13/14 = 0.9286).
-- Measured at the 78 MT5 E1 entry bars (engine `trace_dumper` `atr` vs `trace.csv` `atr`, joined on
-  `engine.ts_ms − 60000 = mt5.ts_ms`, 99.98% close-match): forming ATR ratio **0.933** (92% below MT5);
-  **last-closed-bar Wilder ATR ratio 1.003** (balanced, |log| 0.048 — best fit). MT5's `cache.atrM1=iATR(0)`
-  is read on the first tick *after* the bar boundary, when the forming bar already carries real range — so
-  it tracks the closed value, NOT the engine's degenerate first-tick gap.
-- The **4.0× ATR-SL CAP binds** on most E1 trades (risk/atr clusters at ~4.0; the 1.2× floor never binds),
-  so the 7% ATR shrink fed a ~7% TIGHT SL directly.
-- Note: across ALL 848k bars the forming model fits better (1.014) than closed (1.089) — the relationship
-  FLIPS at entry bars (a volatile, biased subset). So the fix is scoped to `compute_sl` ONLY; `atrM1`
-  (forming) is unchanged for sideways-spread + atr_pctile (both still validated against the trace).
+### Result (2yr E1 anchor, `anchor_E1_only_trace.set`, `KK_E1_FAITHFUL=1`)
+- **Matched net: engine +527.1 vs MT5 +454.0** (was −348; sign flipped, magnitude now matches).
+- |ΔpnlUSD| median **66→20**; |Δrisk| **0.080→0.036**; overfire **96→40**; 27/29 exact-minute.
+- Engine now slightly **OVER-trails** (5 of MT5's 9 matched SL-WINs ride to a bigger TP) — the
+  opposite (and far healthier) problem vs the prior under-arming losses. matched tag-agree 59%.
 
-### Result (full 2yr E1, `anchor_E1_only_trace.set`)
-- **Matched risk ratio (eng/mt5): 0.949 → 1.0000** (median); |Δrisk| **0.248 → 0.080**; frac eng<mt5 0.78→0.39.
-- **Matched SL-LOSS exits now agree 11/11 exactly**; matched tag-agreement **67%**.
-- Net 1456.63 → **1786.48**, PF 1.374, 149 trades.
+## ⚠️ DATA BLOCKER (the one thing that needs the USER)
+The complete tick source that produced the committed reference (5.17 GB ticks → **848,532** bars,
+78 trades) is **GONE** from disk. Regenerating from the surviving raw CSVs
+(`data/xauusd/XAUUSD_ticks_mt5_*.csv` via `cpp_core/tools/common/build_anchor_2yr.py`) yields only
+**577,739** bars — large holes in **2024-H2** (raw 2024 file ends 2024-12-22) and **2025-H2**
+(see [[xau-data-gap-2025h2]]). So absolute matched/missed/overfire counts are NOT the baseline's
+(49 "missed" is inflated by ~20 pure data-hole days). **Matched-pair comparison is the only valid
+signal** until the user re-provides the complete Exness export. The fixes above are code-confirmed
+against the EA + `tester.log`, independent of the holes.
 
-## 🧱 RESIDUAL (smaller now) — trail doesn't catch on ~5 matched trades; entry-count still off
-Levels match but SL-WIN exit-tag is still low. On the 46 matched pairs, of MT5's **14 SL-WIN** trades the
-engine reproduces **6 SL-WIN**, but **5 ride to TP** (trail not catching the retrace), 2→EA, 1→SL-LOSS.
-Matched net eng **280.6** vs mt5 **885.0** — so the handoff's "levels were the dominant lever for SL-WIN"
-is now **partly disproven**: levels are fixed yet the TRAILING SL still overshoots on a handful. This is the
-next exit-mechanics target (not levels). Entry-count gap UNCHANGED (matched 46 / missed 32 / overfire 96).
+## ▶️ NEXT ACTIONS (in order)
+1. **Reconcile the rest of the anchor set** against the reference `tester.log` input echo (dump:
+   `grep -P "\\tTester\\t  \\S+=" tester.log`). I fixed MY_STANDARD_LOT_SIZE; OTHER keys may also be
+   stale — that's the cheapest remaining parity win and needs no new data.
+2. **Tune the slight over-trail** (engine +527 > MT5 +454). On the 5 matched "engine-TP vs MT5-SL-WIN"
+   pairs (printed by `matched_exit_crosstab.py`) the engine rides past MT5's trailing-SL exit. Suspect
+   the live volMult clamp or partial-eligibility timing now arming a touch early. MINOR — levels + HR
+   path are correct; this is fine-tuning.
+3. **Entry-count gap (40 overfire):** re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters),
+   per [[atr-percentile-parity-wall]] — over-fire = unmodeled account limiters.
+4. Get the user to re-provide the complete 2024-2026 Exness tick export to restore exact-baseline counts.
 
-## 🔬 Standing evidence (still valid) — MT5 `tester.log.gz` (RUN 1.8.154, 78 trades)
-Mechanism fire counts: **TRAILING SL 290** · PARTIAL 93 · PANIC 24 · R-MULT BE 20 · BE 18 · SIDEWAY 15 ·
-EARLY 9 · PRE-BE 6 · TP-EXT 1 · LADDER 0. Ladder + TP-ext are INERT in MT5 (ports correctly near-inert).
-volMult=0.70 confirmed; bar-frozen `bestPrice==marketPrice` model confirmed.
-
-## ▶️ NEXT ACTION — chase the residual TRAILING-SL overshoot, then entry-count
-1. Take the **5 matched "engine-TP vs MT5-SL-WIN"** trades (ad-hoc python below reproduces the match set).
-   For each, trace the engine trail vs the MT5 `tester.log.gz` `TRAILING SL` lines for that ticket: is the
-   engine arming the trail LATE (0.90 partial-eligibility timing) or trailing too LOOSE (`0.40*origTPDist`
-   distance / volMult)? Now that levels match, origTPDist is correct, so suspect partial/best-price timing
-   or the live volMult per-tick (forming-bar range / atr14 clamp 0.7–1.5).
-2. THEN re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters) to collapse the 96 overfire / 32 missed
-   (entry-count, unchanged). See [[atr-percentile-parity-wall]]: over-fire = unmodeled account limiters.
-
-## 🔁 Repro (full 2yr, ~23s)
+## 🔁 Repro (full 2yr, ~30s; data must be regenerated first if missing — see DATA BLOCKER)
 ```
-cd cpp_core && make test                       # 29 checks, green
+# regenerate anchor (holes-affected): ~/miniforge3/envs/kenkem/bin/python \
+#   cpp_core/tools/common/build_anchor_2yr.py --sym xauusd \
+#   --raw-glob 'data/xauusd/XAUUSD_ticks_mt5_*.csv' --from 2024-01-01 --to 2026-06-01 --out-dir cpp_core/tools
+cd cpp_core && make test                        # 29 checks, green
 KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
   --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --ticks tools/ticks_xauusd_2024_2026.csv \
   --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/e.csv
 python research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
   --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv
-# ATR-at-entry-bar diagnostic (proves the closed-ATR fit): engine bar-level trace via
-#   ./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --symbol-xau \
-#     --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/engine_trace.csv
-#   then join engine.ts_ms-60000 == mt5 trace.csv ts_ms, compare `atr` at the 78 entry bars.
-# matched exit-tag crosstab + risk-ratio: ad-hoc python in this session's transcript.
+python research/kenkem_parity/matched_exit_crosstab.py --engine /tmp/e.csv \
+  --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv
 ```
-Current diff: matched 46 / missed 32 / overfire 96; |Δrisk| **0.080**; matched tag-agree **67%**; exit-tag
-(all trades) engine SL-WIN 9% TP 32% SL-LOSS 35% EA 24%  vs  MT5 SL-WIN 35% TP 21% SL-LOSS 28% EA 17%
-(engine dist confounded by the 96 overfire — use the MATCHED crosstab, where SL-LOSS=11/11).
+Current diff (holes-affected data): matched 29 / missed 49 / overfire 40; |Δrisk| 0.036;
+|ΔpnlUSD| median 20; matched net engine **+527** vs mt5 **+454**.
 
 ## 📦 Data / instruments
-- Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv (5.17GB)}`
-  (gitignored — too large; regenerate via the import pipeline if missing).
-- **MT5 ref run NOW COMMITTED TO GIT** (verified internally consistent: 78 trades, 848,532 bars, one run,
-  EA=canonical KenKemExpert, XAU 2024.01.01→2026.06.01) at
-  `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`:
-  - `trades.csv` (78 trades — the diff target) · `kke1gate.csv` (55,748 gate rows) · `tester.log.gz`
-    (mechanism fire counts + `TRAILING SL` lines for the residual work).
-  - `trace.csv.gz` (67MB; the 278MB per-bar trace, has the `atr` col) — **gunzip before use**:
-    `gunzip -k research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trace.csv.gz`.
-    These four `.csv` are force-added (the repo `.gitignore` excludes `*.csv`).
+- Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` —
+  REGENERATED this session from `data/xauusd/` symlinked raws; **incomplete** (577,738 bars). gitignored.
+- **MT5 ref run (committed)** at `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`:
+  `trades.csv` (78, the diff target) · `kke1gate.csv` · `tester.log.gz` (input echo + mechanism counts +
+  `TRAILING SL` lines) · `trace.csv.gz` (gunzip before use). EA=canonical KenKemExpert, XAU 2024.01→2026.06.
+  **Input echo confirms MY_STANDARD_LOT_SIZE=100, COMMON_MAX_RISK_PER_TRADE=0.01, leverage 1:500.**
 - Ground-truth EA = `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (+ `TradeManagement/TradeManager.mqh`,
-  `Entries/EntryBase.mqh`). NOTE: dquants `mql5/experts/KenKem/` is the THIN KK-rewrite (Engine.mqh), NOT
-  this EA — do not confuse them. Exit port spec: `research/hypotheses/KENKEM-EXIT-PARITY-SPEC.md`
-  (its P1/P3 emphasis is now superseded by the log evidence above — TRAILING SL + SL-levels are the levers).
+  `Config/InputParams.mqh`). dquants `mql5/experts/KenKem/` is the THIN KK-rewrite — NOT this EA.
 
 ## 🧱 After E1→E5 parity LOCKED (user's explicit next phase)
-Convert pip-denominated params to ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before — parity is
-ground truth. See [[goal-pip-to-atr-relative]].
+Convert pip-denominated params to ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before — parity
+is ground truth. See [[goal-pip-to-atr-relative]].
