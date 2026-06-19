@@ -1,7 +1,8 @@
 # HANDOFF — read me first, update me last
 
 _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS.
-Latest: ATR ROOT-CAUSED & FIXED (commit `f210631`) — MT5 iATR is SMA-of-TR, not Wilder. Big parity jump._
+Latest: TWO fixes — ATR=SMA (`f210631`) + MTF EMA off-by-one (`c3a51dc`). E1 now **74 matched / 4 missed /
+26 overfire — 95% recall** (from 47/31/62 at session start)._
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
@@ -32,37 +33,35 @@ Tag-agree 66%→81%, |ΔpnlUSD| med 114→4.6, SL-LOSS 11/11. (Detail in [[kenke
 feared. All this session's numbers use the complete data. **Confirm with the user** whether they
 restored the full Exness export (or it was never actually deleted) before trusting absolute counts.
 
-## 🔬 RESIDUAL DECOMPOSED (31 overfire + 11 missed) — ROOT = bar-open vs intrabar execution-gate eval
-Matched ALL 31 overfire to MT5 tester.log SKIPPED lines (by entry price): **every one is a trade MT5
-classified HIGH-RISK** (`potentialLoss ≥ getMaxLossUSD`) **then blocked at the execution layer** —
-440 "high-risk blocked by risk limits" (≈ATR per debug), 19 "Market in sideway range", 15 weak-momentum.
-Cross-ref of the 12 cleanest ("MT5 gate fire=1, no trade"): pctile 65.6–87.5 at **bar-open**, several `sess=0`.
+## ✅ MTF EMA off-by-one FIXED (commit `c3a51dc`) — matched 67→74, missed 11→4, overfire 31→26
+The EA reads MTF EMAs via `GetEMA(tf,ema,ENTRY_SHIFT=1)`; `EMAHelpers.GetEMAValues` fills `emaBuffers` with a
+**NON-series** `CopyBuffer(h,0,0,bufferSize=4,dst)` → order REVERSES (`dst[0]=B-3 … dst[3]=B`), so
+`GetEMA(…,1)=dst[1]=B-2` (one bar BEFORE last closed). Engine read `align_tf-3` (=B-3) — one too stale, while
+`s.emaM1` everywhere else correctly reads `ema[i1-1]=B-2`. Fixed `emas_ready_entry`+`m5_directional_ok`+E4
+STEP-2 M3 read to `align_tf-2`. (Authoritative: `kke1gate.csv` showed 14/31 overfire were `BLOCK:mtf`.)
+Recall now **95%** (74/78). NB: matched net engine +516 vs mt5 +1196 — the +7 recovered trades are
+MT5-profitable but the engine exits them worse → an EXIT-parity issue on those, not entry.
 
-**The two un-ported stateful limiters are STRUCTURALLY INERT here — DO NOT re-attempt for this run:**
-- `MAX_AGGREGATE_RISK_RATIO` = `MAX_LOSS_RATIO_E1 × 4`, but `MAX_CONCURRENT_POSITIONS_ALLOWED = 2` caps
-  exposure at ≤2× per-trade risk → 4× cap can NEVER bind. Provably dead.
-- Daily-loss (`MAX_DAILY_LOSS_RATIO=0.072`) needs ~7 losses/day; at ~0.13 trades/day it's never reached.
-- A/B: both ported faithfully into tick_engine and tested → **0 trade change**. Reverted (kept the tree lean).
-  Position-limit IS already enforced (tick_engine.hpp:236). `ENABLE_LOSS_COOLDOWNS` also inert (0 change).
-
-**TRUE residual cause = the EA evaluates execution gates (ATR-pctile / sideways / session) at the FIRING
-TICK intrabar** (its `cachedATRPercentile` updates every tick; the trigger fires mid-bar), **while the
-engine decides at bar-open on closed bars.** By the firing tick the forming bar's range has expanded →
-pctile rises over the 90 ceiling (ATR-HIGH block) etc. The engine already tracks the intrabar range
-(`cur_bar_hi_/cur_bar_lo_`) but FIRES at the first tick, so a pure ATR-read change buys nothing — faithfully
-closing this needs **intrabar trigger/entry evaluation**, a real architectural shift (regression risk to the
-67 matched). The 11 missed are the mirror image (MT5 catches an intrabar fire the bar-open engine doesn't).
+## 🔬 RESIDUAL now = 26 overfire + 4 missed (re-decomposed vs `kke1gate.csv`)
+- **12 `BLOCK:mtf`** — engine still passes mtf where MT5 blocks, but **M1 EMAs now match MT5 99.69%**, so these
+  are **HTF (M3/M5) EMA boundary VALUE diffs** (not shift). Diagnosing needs MT5-side M3/M5 EMA values or a
+  `KKE1GATE,…,mtf` detail dump of `m1/m3/m5/extreme` — **requires a user-side MT5 re-run** with enhanced gate
+  trace. Likely boundary rounding from M3/M5 bar construction (engine aggregates M1 → native M3/M5).
+- **8 `PASS:all`** — gate passed, blocked at EXECUTION (high-risk path). The earlier "intrabar" theory was
+  WRONG: `DetectNewEntry`+`UpdateIndicatorCache` run ONCE per bar at the new-bar event (KenKemExpert.mq5:2429,
+  2491), NOT per-tick — MT5 decides at bar-open like the engine. Sub-reason not yet pinned (spread off;
+  daily-loss/aggregate-risk provably inert — see [[kenkem-e1-residual-is-intrabar-exec]]).
+- **6 no-row** — MT5 never evaluated E1 there (arming/age timing).
+- **4 missed**: 3 are MT5 SL-LOSSES the engine avoids (harmless), 1 end-of-test EA close.
 
 ## ▶️ NEXT ACTIONS (in order)
-1. **DECISION NEEDED (architectural):** pursue intrabar execution-gate evaluation? It's the only faithful way
-   to close the bulk of the 31/11, is ATR-centric (user's #1 priority), but risks the 67 matched. Scope: move
-   the E1 trigger/fire + execution gates (ATR-pctile, IsInSidewayRange(10), session) from the bar-open
-   `on_bar_closed_` to a per-tick path using `cur_bar_hi_/cur_bar_lo_`. Validate every step with diff_kk +
-   matched_exit_crosstab. If not worth it, **31/11 is an acceptable long-tail floor** — move to E2/E4/E5.
-2. **Over-trail TP-vs-SL-WIN (3 matched):** 2024-12-02, 2024-05-10, 2025-11-20 — engine runs to TP where MT5
-   trails out for a smaller SL-WIN. `tpExt` still 0. Cheap, isolated, no architectural change.
-3. **Sanity-check `|Δrisk(SL)|`** (median 0.081→0.181 on the larger 67-trade set); SL now uses SMA `atrM1_sl`.
-4. After E1 converges (or 31/11 accepted), repeat for E2/E4/E5.
+1. **Remaining 12 `mtf` need MT5-side data** — have the user re-run the EA with `KKE1GATE` detail dumping
+   `m1_ready,m3_ready,m5_dir,extreme` (or the M3/M5 EMA values) at each `BLOCK:mtf`, to pin which HTF sub-check
+   flips and whether it's M3/M5 bar-construction or an EMA-value diff. Without it, 12 mtf is a boundary floor.
+2. **8 `PASS:all` execution overfire** — pin the GetEntryBlockReason / HandleHighRiskEntry sub-reason
+   (IsInSidewayRange(10)? CheckMomentumForLevel?) by matching each to its tester.log SKIPPED line.
+3. **Exit parity on the 7 newly-matched** (engine +516 vs mt5 +1196) — over-trail / TP-vs-SL-WIN family.
+4. Accept 26/4 as the E1 floor and extend to **E2/E4/E5** (the bigger remaining scope).
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
