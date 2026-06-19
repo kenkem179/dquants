@@ -246,7 +246,7 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
             // STEP 2 — EMA stack: M1 (25>71>97) ALWAYS + (M3 same OR extreme M1 DI spread >= 16).
             auto stk = [&](double e1,double e2,double e3){ return is_long ? (e1>e2 && e2>e3) : (e1<e2 && e2<e3); };
             if (!stk(s.emaM1[1], s.emaM1[2], s.emaM1[3])) return false;
-            const int m3i = align.m3 - 3;   // M3 EMA at the same non-series lag as M1 (closed-2)
+            const int m3i = align.m3 - 2;   // M3 EMA at GetEMA(ENTRY_SHIFT=1) non-series lag = forming-2 (= M1's B-2)
             bool m3Aligned = stk(TfIndicators::get(b.m3.ema[1], m3i),
                                  TfIndicators::get(b.m3.ema[2], m3i),
                                  TfIndicators::get(b.m3.ema[3], m3i));

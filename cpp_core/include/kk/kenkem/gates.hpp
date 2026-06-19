@@ -80,13 +80,18 @@ inline bool htf_block_counter_ok(const Snapshot& s, bool is_long, HtfMode mode, 
 // the Stage-1-validated snapshot uses. The trigger machine reads raw closed-bar shifts; the GATES must
 // use this entry shift to match isEMAsReadyForEntry / isAllTimeframeEMAsReadyForEntry.
 inline bool emas_ready_entry(const TfIndicators& s, int align_tf, bool is_long, bool strict, double tol) {
-    return emas_ready(s, align_tf - 3, is_long, strict, tol);
+    // Non-series CopyBuffer trap: GetEMAValues fills emaBuffers via CopyBuffer(h,0,0,bufferSize=4,dst) into
+    // a NON-series array -> dst[0]=B-3 … dst[3]=B(forming). GetEMA(tf,ema,ENTRY_SHIFT=1) = dst[1] = B-2.
+    // align_tf = forming bar B, so the matching cache index is align_tf-2 (same lag as s.emaM1 = ema[i1-1]
+    // = ema[B-2]). The prior align_tf-3 (B-3) was one bar too stale -> a boundary-flip generator on the MTF
+    // gate (engine passed where MT5 logged BLOCK:mtf). Fixed to -2.
+    return emas_ready(s, align_tf - 2, is_long, strict, tol);
 }
 
 // M5 directional check for E1 MTF bypass (isAllTimeframeEMAsReadyForEntry, KenKemExpert.mq5:1960-1965):
 // LONG: e25>e75 && e75>e100 && e25>e200 (NOTE: e100>e200 NOT required; e25>e200 IS). Mirror for short.
 inline bool m5_directional_ok(const TfIndicators& m5, int align_m5, bool is_long) {
-    const int idx = align_m5 - 3;
+    const int idx = align_m5 - 2;   // GetEMA(TF2,ema,ENTRY_SHIFT=1) non-series read = forming-2 (see emas_ready_entry)
     if (idx < 0 || idx >= m5.size()) return false;
     const double e25 = m5.ema[1][idx], e75 = m5.ema[2][idx], e100 = m5.ema[3][idx], e200 = m5.ema[4][idx];
     return is_long ? (e25 > e75 && e75 > e100 && e25 > e200)
