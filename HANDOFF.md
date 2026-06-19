@@ -1,106 +1,73 @@
 # HANDOFF — read me first, update me last
 
 _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-Commit `e3b3e70` (E2 fix) + data rebuilds. **DATA NOW 98.45% COMPLETE (all 3 export holes filled by user).
-E2 baseline on near-complete data = ~45% (handoff's 95.8% confirmed WRONG, not a data issue). Pinpointed
-culprit = sideways over-block. See ✅/🔬 below.**_
+Data 98.45% complete. **E1 + E2 entry parity now BOTH ~93–96% recall** after the cross-age fix below.
+The prior HANDOFF's "E1 50% / sideways over-block is the culprit" was WRONG — see ▶️ THIS SESSION._
 
-## 🎯 Goal: KenKem entry parity engine⇄MT5. NOW ON: E2, then E4, E5.
-Ground truth = the canonical EA (`kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5`).
+## 🎯 Goal: KenKem entry parity engine⇄MT5. E1+E2 recall now solved; residual = OVERFIRE.
+Ground truth = MT5 run `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/`
+(echoed inputs in `inputs_echo.txt`; engine `.set` must mirror them exactly).
 
-## ✅ BLOCKER 1 (DATA) — essentially RESOLVED (98.45% of MT5 bars present)
-- User supplied all 3 export holes as Exness monthly CSVs `~/Downloads/Exness_XAUUSD_{2024_11,2024_12,
-  2025_07..12,2026_04,2026_05}.csv`. **Verified bit-identical to the MT5-tab raws on overlap days** (July +
-  Nov-08; same UTC clock, same feed) → merged.
-- **Rebuilt** via `cpp_core/tools/common/build_xau_full_2yr.py` (monthly owns the 3 hole windows
-  `[2024-11-19,2025-01-01) ∪ [2025-07-17,2026-01-01) ∪ [2026-04-01,2026-06-01)`; tab raws own the rest).
-  Now **836,890 bars / 160.55M ticks**, range 2024-01-01 → 2026-05-31.
-- **Completeness vs MT5 `trace.csv.gz` (848,532 bars): missing only 13,192 (1.55%)** — scattered single
-  trading days in tab-raw months WITHOUT a monthly replacement (2024-05/08/09, 2025-03/04/05/06; some are
-  Good-Friday/holiday). 99%+ of MT5 trades now scoreable.
-- ✅ **All research parquets refreshed** (naive UTC TIMESTAMP, schema matched):
-  `data/processed/ticks_xauusd_{2024,2025,2026}.parquet` → 39.2M / 74.6M / 46.7M rows. XAU sweep unblocked.
-- **USER ACTION (optional, for 100%):** export the scattered missing days (months 2024-05/08/09,
-  2025-03/04/05/06) if exact full-period counts are ever needed; impact now negligible.
+## ▶️ THIS SESSION — re-ran E1/E2 on this machine; found+fixed the real E1 blocker
+Fresh baseline on complete data (162.7M ticks, ~24s/run), all matches exact-minute (pure selection problem):
 
-## 🔬 E2 GATE DIAGNOSIS (this session, complete data + trace_dumper vs MT5 trace.csv.gz)
-Aligned engine trace to MT5 at **engine ts − 60000 = MT5 ts** (close 100% exact, adx_m1 99.7%).
-**ALL observable M1 E2 gate inputs are FAITHFUL (≥98% bit-exact):** close (100%), adx_m1/m3/m5/m15
-(97.8–99.7%), diP/diM all-TF (98.2–99.8%), rsi (99.1%), and EMAs 10/25/71/97/192 (98.3–99.7% — note the
-trace_dumper dumps EMAs one bar offset from close/adx, so EMAs align at shift 0, everything else at −60000;
-a DUMP quirk, not a trading bug). ⇒ the E2 mis-selection is NOT in the M1 inputs.
-**The ONE confirmed real divergence = `sideways`** (on near-complete data, 834,624 bars):
-engine sideways **biased HIGH: mean/median diff +4.0** vs MT5 (engine mean 37.9 vs MT5 33.9); **engine
-over-blocks 8.93% of bars (eng>53 & mt5≤53) vs under-blocks 3.69%** → causes the missed E1/E2 entries.
-It's STRUCTURAL, not a constant offset (31.6% of bars >10 high, 7.1% >10 low, only 24% within ±3), so ≥1
-of the 5 sub-components systematically over-scores. Shared global pre-gate → fixing it lifts BOTH E1+E2.
-Other (un-observable) suspects: M3/M5 EMA *alignment* (MTF gate; M3/M5 EMAs not dumped) + trend-quality 0-11.
+| Kind | Window | MT5 | Eng | Matched | Missed | Overfire | Recall |
+|------|--------|-----|-----|---------|--------|----------|--------|
+| E1 | Full      | 183 | 238 | **171** | 12 | 67 | **93.4%** |
+| E1 | Gap-free  |  82 | 107 |  **78** |  4 | 29 | **95.1%** |
+| E2 | Full      | 142 | 159 | **136** |  6 | 23 | **95.8%** |
+| E2 | Gap-free  |  69 |  79 |  **65** |  4 | 14 | **94.2%** |
 
-### ▶️ NEXT ACTION = fix the sideways over-block (highest-leverage, affects E1+E2)
-Audit the engine `GetSidewaysScore` port (`snapshot.hpp` sideways_score) vs EA `TrendIdentifier.mqh:390`.
-Prior suspects: EMA-band ATR denominator / which EMAs / averaging shift. Engine over-blocks by ~5pp →
-its score is too high. Hard part remains the MT5 sub-component dump (27% reconstruction ceiling), but the
-DIRECTION (over-block) is now confirmed, so a port-bug hunt can proceed. **USER (to break the ceiling):**
-one MT5 re-run dumping the **5 sideways sub-components** + M3/M5 EMA1..4 at ENTRY_SHIFT.
+**ROOT CAUSE of the old "E1 50% recall" = a single config mismatch, NOT an engine bug.**
+- `anchor_E1E2.set` had `E1_MAX_CROSS_AGE=28` but the MT5 run echoed **80**. (28 was a live-trading
+  "cut over-trading" cap baked into both the set and `kenkem_config.hpp:199` default.) A full set-vs-echo
+  diff showed this was the **ONLY** value mismatch of 193 keys.
+- Effect: engine expired armed crosses at age 28 while MT5 held them to 80 → MT5 fired E1 on bars the
+  engine had already dropped. **Fixed set → E1 recall 50%→93.4%** (matched 92→171, missed 91→12). E2 unchanged.
+- Diagnostic that nailed it (reproducible): categorized the old 91 missed E1 via `KK_EMIT_GATE_REASON`:
+  56 = armed-then-expired (cross-age!), 18 = never-armed, only **17 gate-blocks (1 sideways)**. The prior
+  HANDOFF's "sideways over-block, highest-leverage" was wrong — sideways blocks 1 of 91.
+- Also corrected: the "E1↔E2 interaction (78→183 E1)" was a **lot-size artifact** — the E1-only set runs
+  `MY_STANDARD_LOT_SIZE=100` (MT5 account limiters choke E1 to 78), the E1E2 set runs 0.15 (limiters off,
+  183 fire). Not a real entry interaction.
 
-## 🔴 HONEST BASELINE — re-measured on COMPLETE data; "E2 95.8%" still does NOT reproduce
-Engine COUNTS now match the handoff (engine E1 **124**, E2 **145** — handoff said 124/162), confirming the
-data is right. But the MATCHING is ~42%, NOT 95.8%:
-- Full period, near-complete data (836,890 bars): **E2 matched 64 / missed 78 / overfire 93** (of 142, ~45%);
-  **E1 matched 54 / missed 129 / overfire 87** (of 183, ~30%). Engine fires E1 143, E2 160.
-- **NOT a timing artifact:** raising the match lag 5→240 min barely moves matched. The engine genuinely
-  fires E2 on DIFFERENT bars than MT5 (matched ones are exact-minute). The prior 95.8%/136-matched is WRONG.
-- E2 arms **62,422×** → fires 160 ⇒ the bottleneck is the GATE selection, not the trigger.
-
-## ✅ THIS SESSION — verified-correct E2 fix (commit `e3b3e70`), + two INERT negative results
-- **E2 EMA75-touch shift FIXED** (`triggers.hpp:142-150`): EA reads ema75 via `GetEMA` (trapped,
-  inverted buffer ⇒ B-2) but bar lo/hi/cl via `iLow/iHigh/iClose(1)` (untrapped ⇒ B-1)
-  (EMAHelpers.mqh:285-288). Engine read EMA75 at B-1 — the same trap fixed for E1's EMA200 touch but
-  missed for E2. Now reads `e2t` (B-2 faithful). Test updated to faithful semantics; 28 checks green.
-  ⚠️ **Numerically INERT** on XAU 2yr (EMA75 barely moves bar-to-bar; touch outcome rarely flips). Kept
-  for correctness/faithfulness. **E2 arms 42,849× → fires only 113 ⇒ the trigger is NOT the bottleneck.**
-- **Conviction-consume divergence — measured INERT.** Audit flagged that the EA consumes the E2 touch
-  when non-conviction gates pass then drops on conviction<10 post-detect (Entry2.mqh:136 + post-detect
-  `ProcessEntryConvictionAndConfidence`), whereas the engine folds conviction into the gate (no-consume,
-  re-arms). REAL divergence, BUT: E2 fires **113 with conviction ON == 113 with `USE_CONVICTION_SCORING_E2=false`**
-  → conviction blocks ZERO E2 on this data. Not the cause of the residual. (Also a cross-kind change that
-  would risk the E1 baseline — do not attempt blind.)
-- **Port audit (data-independent) done** vs `Entry2.mqh`: HTF-M15 filter, MTF-EMA, price-vs-EMA25, RSI-div,
-  all e2_* config defaults, trigger age/expiry — **all MATCH**. The one remaining code-level suspect is the
-  **trend-quality acceleration approximation** (`scoring.hpp:209-218,234-238` awards 2-or-0, never the EA's
-  1-pt accel3-only case; `TrendIdentifier.mqh:48-86` n=5 majority) — can flip the 0-11 score around E2's
-  strict cutoff of 9. Unvalidatable without the E2 gate trace (Blocker 2).
+## 🟡 RESIDUAL = E1 overfire (67 full / 29 gap-free). E2 overfire 23/14.
+- E1 overfire are NOT re-fires (only 5/68 within 80min of an MT5 E1). **56/68 are novel bars >8h from any
+  MT5 E1** → engine gate-passes where MT5 never fired = unmodeled MT5 **execution-layer limiters**
+  (the known wall: [[atr-percentile-parity-wall]], [[kenkem-e1-residual-is-intrabar-exec]] — MT5
+  gate-pass ≫ fire). Engine's daily-loss/aggregate-risk limiters are STRUCTURALLY INERT; do not re-attempt
+  the inert ports.
+- **To resolve overfire needs USER:** one MT5 re-run at the E1E2 config (lot=0.15) dumping the per-armed-bar
+  E1 gate+execution verdict (kke1gate-style) so the 56 novel overfire can be localized to the blocking
+  layer. Without it we can only confirm the engine over-passes, not which MT5 limiter stops it.
 
 ## ▶️ NEXT ACTIONS (in order)
-1. **[USER]** Provide Blocker-1 data (2025 H2 re-export) → rebuild → re-measure full-period E1/E2.
-2. **[USER]** Provide Blocker-2 E2 gate trace → localize the 61-missed/57-overfire E2 to a specific gate.
-3. Once #2 lands: fix the divergent gate (leading suspect = trend-quality accel fidelity, `scoring.hpp`);
-   validate front-window E2 recall climbs. Only then revisit conviction-consume if still needed.
-4. E4 parity is blocked too — there is **no E4-only MT5 reference run committed** (only E1only + E1E2);
-   need a user MT5 E4 run before E4 can be measured at all.
+1. **[committed this session]** `E1_MAX_CROSS_AGE=80` in `anchor_E1E2.set`. Note: `kenkem_config.hpp:199`
+   default stays 28 (live-trading optimization) — parity is driven by the `.set`, leave the default.
+2. **[USER]** MT5 E1E2-config gate/execution trace (above) → localize the 56 novel E1 overfire.
+3. E4/E5 parity still blocked — **no E4-only or E5-only MT5 reference run committed**; need a user MT5
+   E4 (and E5) run before either can be measured.
+4. After E1→E5 LOCKED: pip→ATR-relative conversion per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
 
-## 🔁 Repro (full complete data, ~34s backtest)
+## 🔁 Repro (~24s/run)
 ```
-# (re)build complete data if tools/*.csv missing or stale:
-python cpp_core/tools/common/build_xau_full_2yr.py     # 740,572 bars / 142.98M ticks
-cd cpp_core && make test                                   # 28 checks, green
+cd cpp_core && make test                     # 28 checks green
 KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
   --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --ticks tools/ticks_xauusd_2024_2026.csv \
   --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1E2.set --out /tmp/e1e2.csv
 M=research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/trades.csv
-python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2   # full period
-python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2 --from 2025.01.01 --to 2026.04.06  # gap-free
+python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E1   # 171/12/67
+python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2   # 136/6/23
+# gate-reason diagnostic (categorize missed E1):
+KK_E1_FAITHFUL=1 KK_EMIT_GATE_REASON=1 ./build/kenkem/tick_backtester ... 2>/tmp/gr.txt
 ```
 
 ## 📦 Data / instruments
-- MT5 ref run (committed) `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/`:
-  `trades.csv` (325, diff target) · `cpp_trades.csv` (a NON-faithful engine dump — do not trust as baseline)
-  · `trace.csv.gz` (848,532 bars, full 2yr — MT5 had the data) · `inputs_echo.txt` · `tester.log.gz`.
-  Also E1-only run `RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`.
-- E1E2 set `research/kenkem_parity/anchor_E1E2.set` (E1+E2 on; MADE_FOR_PROP_TRADING=false; DD-slowdown 10.5%,
-  recovery-trigger 9.45%, daily-loss 7.2%, std-lot 0.15, risk 1%).
-- Ground-truth EA = `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (+ `Entries/Entry2.mqh`,
-  `Core/Indicators/EMAHelpers.mqh`, `TradeManagement/RiskManager.mqh`).
-
-## 🧱 After E1→E5 parity LOCKED (user's explicit next phase)
-Convert pip-denominated params to ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before. [[goal-pip-to-atr-relative]].
+- Complete data: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` (849,963 M1
+  bars / 162.7M ticks, 2024-01 → 2026-05). Research parquets `data/processed/ticks_xauusd_{2024,2025,2026}.parquet`.
+- MT5 ref runs: `RUN_2026-06-18_1.8.154_xau_2yr_E1E2/` (325 trades = 183 E1 + 142 E2; the diff target) and
+  `..._E1only_trace/` (78 E1, lot=100, has `kke1gate.csv`).
+- Sets: `anchor_E1E2.set` (E1+E2, lot 0.15, now E1_MAX_CROSS_AGE=80 ✓), `anchor_E1_only_trace.set`
+  (E1 only, lot=100 — limiter regime, do not use for the free-fire baseline).
+- 3 core engine fixes confirmed PRESENT in this branch (verified by code read): ATR=SMA-of-TR
+  (`tf_cache.hpp:42`), MTF-EMA shift (`snapshot.hpp:131`), sideways 5-bar-avg (`snapshot.hpp:85-98`).
