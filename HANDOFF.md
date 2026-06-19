@@ -53,10 +53,19 @@ preserved below (📌 PAUSED) — not abandoned.
   net 7,886 / n 442** vs M3 lock OOS PF 1.114 / dd 17.5%, AND more tail-robust (M5 top-10 = 121% of net vs
   M3 208%). Engine lock `cpp_core/tools/mastervp/kkmastervp_xau_m5_LOCKED.set`; EA preset
   `mql5/experts/KK-MasterVP/KK-MasterVP-XAUUSD-M5.set` (+ kenkem Presets) — attach EA to an **M5** chart.
-- **▶️ NEXT (when user returns):** manual MT5 forward-test — **M5 preset is the new front-runner** (M3 still
-  shipped/valid as A/B). Then optionally walk-forward + Monte-Carlo on the M5 lock, BTCUSD-M5 cross-instrument
-  robustness, and the local/HTF-VP breakout-agreement gate. Note: EA news/session overlays diverge
-  intentionally from the backtest (live-safety), so forward results may show fewer trades than the OOS PF.
+- **✅ BTCUSD SWEEP DONE (this session, NO-SESSION 24/7, M3+M5):** `research/mastervp_parity/BTC_SWEEP_FINDINGS.md`.
+  **M3 BTC = NO edge** (train tunes to PF 1.13 but every config collapses OOS PF 0.72–0.83, dd 57–75% — overfit;
+  train/OOS anti-correlated; NOT shipped). **M5 BTC = modest plateau-robust edge** at a LONG master: master
+  **720 bars (60h) = VpLookback24×MasterMult30 · adx30 · break_buf1.0 · sl2.2 · trail6.0**, 24/7 sessions.
+  Positive on BOTH train+OOS across a 4-D plateau (master×adx×sl×trail): **TRAIN PF 1.155/dd13.9% · OOS PF
+  1.214/dd14.2%/win57.4/net+4,228**. ⚠️ tail-skewed (OOS top10=219% of net — lower-conviction than XAU; the
+  trend-breakout fat-tail shape). Lock `cpp_core/tools/mastervp/kkmastervp_btc_m5_LOCKED.set`; EA preset
+  `KK-MasterVP-BTCUSD-M5.set` (+ kenkem Presets, attach to BTCUSD M5 chart). `sweep.py` now has `--symbol btc`;
+  combined BTC bars `bars_btcusd_2025_2026_{m3,m5}.csv` built (gitignored). Train win only 3.5mo = main limiter.
+- **▶️ NEXT (when user returns):** manual MT5 forward-test — XAU **M5 preset is the front-runner** (XAU M3
+  A/B; BTCUSD-M5 candidate but lower-conviction/tail-skewed). Then optionally walk-forward + Monte-Carlo on the
+  locks, and the local/HTF-VP breakout-agreement gate. Note: EA news/session overlays diverge intentionally from
+  the backtest (live-safety), so forward results may show fewer trades than the OOS PF.
 - **Data:** combined bars `cpp_core/tools/bars_xauusd_2025_2026_m3.csv`; full ticks `ticks_xauusd_2024_2026.csv`
   (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
 

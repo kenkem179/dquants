@@ -1,0 +1,17 @@
+# sweep btc_m3_masterlen: 7 combos over ['InpVpLookback', 'InpMasterMult']  (ticks=ticks_btcusd_2025_window.csv)
+  [  0] {'InpVpLookback': 24, 'InpMasterMult': 4}  n=1324 win=50.5 PF=0.776 net=-7,504 dd=79.5% tp2=1% calmar=-0.86
+  [  1] {'InpVpLookback': 24, 'InpMasterMult': 6}  n=1307 win=52.0 PF=0.739 net=-7,611 dd=76.7% tp2=1% calmar=-0.99
+  [  2] {'InpVpLookback': 24, 'InpMasterMult': 10}  n=1243 win=54.2 PF=0.815 net=-6,551 dd=70.0% tp2=1% calmar=-0.91
+  [  3] {'InpVpLookback': 24, 'InpMasterMult': 16}  n=1108 win=52.8 PF=0.721 net=-7,423 dd=77.0% tp2=0% calmar=-0.92
+  [  4] {'InpVpLookback': 24, 'InpMasterMult': 20}  n=1030 win=52.8 PF=0.756 net=-7,094 dd=71.3% tp2=0% calmar=-0.99
+  [  5] {'InpVpLookback': 24, 'InpMasterMult': 24}  n=986 win=53.0 PF=0.738 net=-6,850 dd=69.4% tp2=1% calmar=-0.99
+  [  6] {'InpVpLookback': 24, 'InpMasterMult': 30}  n=919 win=53.6 PF=0.923 net=-2,704 dd=37.6% tp2=1% calmar=-0.72
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=100 & PF>1) — btc_m3_masterlen ===
+  PF=0.776 net=-7,504 dd=79.5% win=50.5 tp2=1% n=1324 calmar=-0.86  {'InpVpLookback': 24, 'InpMasterMult': 4}
+  PF=0.739 net=-7,611 dd=76.7% win=52.0 tp2=1% n=1307 calmar=-0.99  {'InpVpLookback': 24, 'InpMasterMult': 6}
+  PF=0.815 net=-6,551 dd=70.0% win=54.2 tp2=1% n=1243 calmar=-0.91  {'InpVpLookback': 24, 'InpMasterMult': 10}
+  PF=0.721 net=-7,423 dd=77.0% win=52.8 tp2=0% n=1108 calmar=-0.92  {'InpVpLookback': 24, 'InpMasterMult': 16}
+  PF=0.756 net=-7,094 dd=71.3% win=52.8 tp2=0% n=1030 calmar=-0.99  {'InpVpLookback': 24, 'InpMasterMult': 20}
+  PF=0.738 net=-6,850 dd=69.4% win=53.0 tp2=1% n=986 calmar=-0.99  {'InpVpLookback': 24, 'InpMasterMult': 24}
+  PF=0.923 net=-2,704 dd=37.6% win=53.6 tp2=1% n=919 calmar=-0.72  {'InpVpLookback': 24, 'InpMasterMult': 30}

@@ -44,9 +44,9 @@ def write_set(base_kv, overrides, path):
         for k, v in d.items():
             f.write(f"{k}={v}\n")
 
-def run_bt(set_path, ticks, frm, out_csv, bars=DEF_BARS):
+def run_bt(set_path, ticks, frm, out_csv, bars=DEF_BARS, symbol="xau"):
     cmd = [str(BT), "--bars", str(bars), "--ticks", str(ticks),
-           "--set-all", str(set_path), "--symbol-xau", "--trade-from-ms", str(frm),
+           "--set-all", str(set_path), f"--symbol-{symbol}", "--trade-from-ms", str(frm),
            "--out", str(out_csv)]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
@@ -86,6 +86,7 @@ def main():
     ap.add_argument("--min-trades", type=int, default=150)
     ap.add_argument("--ticks", default=str(DEF_TRAIN))
     ap.add_argument("--bars", default=str(DEF_BARS))
+    ap.add_argument("--symbol", default="xau", choices=["xau", "btc"])
     ap.add_argument("--from-ms", type=int, default=TRAIN_FROM)
     ap.add_argument("--max-combos", type=int, default=200)
     a = ap.parse_args()
@@ -104,7 +105,7 @@ def main():
         ov = dict(zip(keys, vals))
         sp = tmpd / f"c{i}.set"; oc = tmpd / f"t{i}.csv"
         write_set(base_kv, ov, sp)
-        if run_bt(sp, a.ticks, a.from_ms, oc, bars=a.bars) is None:
+        if run_bt(sp, a.ticks, a.from_ms, oc, bars=a.bars, symbol=a.symbol) is None:
             print(f"  [{i}] FAILED {ov}", flush=True); continue
         m = metrics(oc); m["_ov"] = ov; m["_sc"] = score(m, a.min_trades)
         rows.append(m)

@@ -1,0 +1,29 @@
+# sweep btc_m3_sltrail: 16 combos over ['InpVpLookback', 'InpMasterMult', 'InpSlAtrBrk', 'InpTrailAtrMult']  (ticks=ticks_btcusd_2025_window.csv)
+  [  0] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 2.0}  n=947 win=53.0 PF=0.909 net=-3,118 dd=44.5% tp2=1% calmar=-0.70
+  [  1] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 3.0}  n=928 win=52.7 PF=0.956 net=-1,509 dd=46.8% tp2=3% calmar=-0.32
+  [  2] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 4.0}  n=917 win=52.9 PF=0.949 net=-1,690 dd=45.1% tp2=4% calmar=-0.37
+  [  3] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 6.0}  n=911 win=52.4 PF=0.875 net=-3,745 dd=54.1% tp2=5% calmar=-0.69
+  [  4] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 2.0}  n=891 win=54.1 PF=0.936 net=-2,423 dd=35.9% tp2=1% calmar=-0.63
+  [  5] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 3.0}  n=865 win=54.3 PF=0.986 net=-544 dd=33.0% tp2=2% calmar=-0.15
+  [  6] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 4.0}  n=832 win=53.8 PF=0.953 net=-1,623 dd=36.3% tp2=3% calmar=-0.42
+  [  7] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 6.0}  n=793 win=54.4 PF=0.941 net=-1,834 dd=42.0% tp2=4% calmar=-0.41
+  [  8] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 2.0}  n=857 win=54.5 PF=0.941 net=-2,098 dd=41.7% tp2=0% calmar=-0.44
+  [  9] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 3.0}  n=810 win=55.1 PF=1.010 net=345 dd=41.2% tp2=1% calmar=0.07
+  [ 10] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 4.0}  n=773 win=54.1 PF=0.968 net=-1,038 dd=42.4% tp2=1% calmar=-0.20
+  [ 11] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 6.0}  n=692 win=54.3 PF=1.078 net=2,509 dd=29.5% tp2=3% calmar=0.60
+  [ 12] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 2.2, 'InpTrailAtrMult': 2.0}  n=814 win=54.8 PF=0.950 net=-1,621 dd=33.2% tp2=0% calmar=-0.47
+  [ 13] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 2.2, 'InpTrailAtrMult': 3.0}  n=739 win=54.3 PF=0.973 net=-784 dd=40.4% tp2=0% calmar=-0.18
+  [ 14] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 2.2, 'InpTrailAtrMult': 4.0}  n=672 win=53.6 PF=0.945 net=-1,389 dd=42.4% tp2=0% calmar=-0.31
+  [ 15] {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 2.2, 'InpTrailAtrMult': 6.0}  n=563 win=52.9 PF=1.011 net=255 dd=39.4% tp2=2% calmar=0.06
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=100 & PF>1) — btc_m3_sltrail ===
+  PF=1.078 net=2,509 dd=29.5% win=54.3 tp2=3% n=692 calmar=0.60  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 6.0}
+  PF=1.010 net=345 dd=41.2% win=55.1 tp2=1% n=810 calmar=0.07  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.6, 'InpTrailAtrMult': 3.0}
+  PF=1.011 net=255 dd=39.4% win=52.9 tp2=2% n=563 calmar=0.06  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 2.2, 'InpTrailAtrMult': 6.0}
+  PF=0.909 net=-3,118 dd=44.5% win=53.0 tp2=1% n=947 calmar=-0.70  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 2.0}
+  PF=0.956 net=-1,509 dd=46.8% win=52.7 tp2=3% n=928 calmar=-0.32  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 3.0}
+  PF=0.949 net=-1,690 dd=45.1% win=52.9 tp2=4% n=917 calmar=-0.37  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 4.0}
+  PF=0.875 net=-3,745 dd=54.1% win=52.4 tp2=5% n=911 calmar=-0.69  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 0.8, 'InpTrailAtrMult': 6.0}
+  PF=0.936 net=-2,423 dd=35.9% win=54.1 tp2=1% n=891 calmar=-0.63  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 2.0}
+  PF=0.986 net=-544 dd=33.0% win=54.3 tp2=2% n=865 calmar=-0.15  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 3.0}
+  PF=0.953 net=-1,623 dd=36.3% win=53.8 tp2=3% n=832 calmar=-0.42  {'InpVpLookback': 24, 'InpMasterMult': 30, 'InpSlAtrBrk': 1.2, 'InpTrailAtrMult': 4.0}
