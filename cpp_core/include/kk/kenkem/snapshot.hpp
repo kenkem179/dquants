@@ -29,6 +29,8 @@ struct Snapshot {
     double diMF[4] = {0,0,0,0};
     // M1 ADX(9) "short".
     double adxS = 0, diPS = 0, diMS = 0;
+    // Mean ADX(14) over shifts 0..4 (forming + 4 closed) — GetADXAverage(TF,5), used by GetSidewaysScore.
+    double adxM1_avg5 = 0, adxM3_avg5 = 0;
     // M1 EMA0..4 at shift 1 (for SL structure + sideways).
     double emaM1[5] = {0,0,0,0,0};
     double atrM1 = 0;        // M1 ATR(14) shift 0 (forming bar) — used by sideways/atr_pctile (per-bar, validated)
@@ -67,7 +69,8 @@ inline double atr_percentile(const TfIndicators& m1, int ref_idx, double ref_atr
 }
 
 // Sideways score 0-100 (distilled from TrendIdentifier GetSidewaysScore): EMA convergence(25) +
-// ADX weakness(25) + DI indecision(20) + RSI neutral(15) + ATR compression(15). Single shift-1 reads.
+// ADX weakness(25) + DI indecision(20) + RSI neutral(15) + ATR compression(15). ADX/RSI use 5-bar
+// (shift 0..4) means (GetADXAverage/GetRSIAverage); DI uses the FORMING bar (cache.diPlus[0]).
 inline int sideways_score(const Snapshot& s, const KenKemConfig& cfg) {
     int score = 0;
     // 1. EMA convergence (EMA1..4 band width in ATR units).
@@ -77,21 +80,22 @@ inline int sideways_score(const Snapshot& s, const KenKemConfig& cfg) {
     if (spread < cfg.ema_spread_tight_atr)         score += 25;
     else if (spread < cfg.ema_spread_moderate_atr) score += 15;
     else if (spread < cfg.ema_spread_wide_atr)     score += 8;
-    // 2. ADX weakness (M1 + M3).
+    // 2. ADX weakness (M1 + M3). EA uses GetADXAverage(TF,5) = mean of shifts 0..4, NOT single shift-1.
     int adxScore = 0;
-    if (s.adx[0] < 15)      adxScore += 15;
-    else if (s.adx[0] < 20) adxScore += 10;
-    else if (s.adx[0] < 25) adxScore += 5;
-    if (s.adx[1] < 18)      adxScore += 10;
-    else if (s.adx[1] < 22) adxScore += 5;
+    if (s.adxM1_avg5 < 15)      adxScore += 15;
+    else if (s.adxM1_avg5 < 20) adxScore += 10;
+    else if (s.adxM1_avg5 < 25) adxScore += 5;
+    if (s.adxM3_avg5 < 18)      adxScore += 10;
+    else if (s.adxM3_avg5 < 22) adxScore += 5;
     score += std::min(25, adxScore);
-    // 3. DI indecision (M1).
+    // 3. DI indecision (M1). EA reads cache.diPlus[0]/diMinus[0]; engine's first-tick forming DI is
+    // degenerate (H=L=open), so use the last-CLOSED M1 DI here (empirically closer to MT5 sideways).
     double di = std::fabs(s.diP[0] - s.diM[0]);
     if (di < 2.0)      score += 12;
     else if (di < 4.0) score += 8;
     else if (di < 6.0) score += 4;
-    // 4. RSI neutral.
-    double r = s.rsiM1;
+    // 4. RSI neutral. EA uses GetRSIAverage(TF0,RSI_LEN,5) = mean of shifts 0..4, NOT raw shift-1.
+    double r = s.rsiM1_avg5;
     if (r >= 45 && r <= 55)      score += 15;
     else if (r >= 40 && r <= 60) score += 10;
     else if (r >= 35 && r <= 65) score += 5;
@@ -161,6 +165,25 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
                 T.bars[ci].high, T.bars[ci].low, T.bars[ci].close,
                 T.diP[ci], T.diM[ci], T.adx[ci], fH, fL, open_f, cfg.adx_len);
             s.adxF[t] = st.adx; s.diPF[t] = st.plus_di; s.diMF[t] = st.minus_di;
+        }
+    }
+
+    // GetADXAverage(TF,5): mean of ADX(14) over shifts 0..4 (forming + 4 closed), with the EA's v>0
+    // filter. shift0 = forming Wilder step (adxF), shifts1..4 = closed series at idx..idx-3.
+    {
+        const int adxTf[2] = { 0, 1 };               // M1, M3
+        const int adxIdx[2] = { idx[0], idx[1] };    // align.m{1,3}-1 (closed shift-1)
+        double* dst[2] = { &s.adxM1_avg5, &s.adxM3_avg5 };
+        for (int k = 0; k < 2; ++k) {
+            const int t = adxTf[k];
+            double sum = 0.0; int valid = 0;
+            const double v0 = s.adxF[t];             // shift 0 (forming)
+            if (v0 > 0.0) { sum += v0; ++valid; }
+            for (int sh = 1; sh <= 4; ++sh) {        // shifts 1..4 (closed)
+                const double v = TfIndicators::get(tf[t]->adx, adxIdx[k] - (sh - 1));
+                if (v > 0.0) { sum += v; ++valid; }
+            }
+            *dst[k] = valid > 0 ? sum / valid : 0.0;
         }
     }
 
