@@ -1,0 +1,21 @@
+# sweep q1_atrpctl: 9 combos over ['InpUseAtrPctlGate', 'InpAtrPctlLow', 'InpAtrPctlHigh']  (ticks=ticks_xau_train.csv)
+  [  0] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 80}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  1] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 90}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  2] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 99}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  3] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 80}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  4] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 90}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  5] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 99}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  6] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 80}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  7] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 90}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  8] {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 99}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=300 & PF>1) — q1_atrpctl ===
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 80}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 90}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 20, 'InpAtrPctlHigh': 99}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 80}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 90}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 30, 'InpAtrPctlHigh': 99}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 80}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 90}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpUseAtrPctlGate': 'true', 'InpAtrPctlLow': 40, 'InpAtrPctlHigh': 99}

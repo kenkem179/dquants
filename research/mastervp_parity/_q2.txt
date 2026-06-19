@@ -1,0 +1,13 @@
+# sweep q2_antichase: 5 combos over ['InpBreakMaxAtr']  (ticks=ticks_xau_train.csv)
+  [  0] {'InpBreakMaxAtr': 2}  n=1317 win=55.2 PF=0.972 net=-1,655 dd=48.5% tp2=1% calmar=-0.25
+  [  1] {'InpBreakMaxAtr': 3}  n=1512 win=56.2 PF=1.022 net=1,566 dd=49.8% tp2=0% calmar=0.23
+  [  2] {'InpBreakMaxAtr': 5}  n=1652 win=56.7 PF=1.036 net=3,224 dd=39.9% tp2=0% calmar=0.51
+  [  3] {'InpBreakMaxAtr': 8}  n=1697 win=56.8 PF=1.065 net=6,369 dd=37.5% tp2=1% calmar=1.02
+  [  4] {'InpBreakMaxAtr': 1000000}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=400 & PF>1) — q2_antichase ===
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpBreakMaxAtr': 1000000}
+  PF=1.065 net=6,369 dd=37.5% win=56.8 tp2=1% n=1697 calmar=1.02  {'InpBreakMaxAtr': 8}
+  PF=1.036 net=3,224 dd=39.9% win=56.7 tp2=0% n=1652 calmar=0.51  {'InpBreakMaxAtr': 5}
+  PF=1.022 net=1,566 dd=49.8% win=56.2 tp2=0% n=1512 calmar=0.23  {'InpBreakMaxAtr': 3}
+  PF=0.972 net=-1,655 dd=48.5% win=55.2 tp2=1% n=1317 calmar=-0.25  {'InpBreakMaxAtr': 2}

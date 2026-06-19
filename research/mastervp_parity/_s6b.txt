@@ -1,0 +1,24 @@
+  [  6] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.0}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [  7] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.5}  n=1687 win=56.6 PF=1.080 net=13,608 dd=45.4% tp2=1% calmar=1.27
+  [  8] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 2.0}  n=1630 win=56.4 PF=1.084 net=20,731 dd=51.3% tp2=1% calmar=1.31
+  [  9] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.0}  n=1660 win=56.4 PF=1.052 net=5,207 dd=34.8% tp2=1% calmar=0.82
+  [ 10] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.5}  n=1654 win=56.6 PF=1.047 net=7,933 dd=46.4% tp2=1% calmar=0.71
+  [ 11] {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 4, 'InpRiskAccPct': 2.0}  n=1602 win=56.4 PF=1.039 net=9,443 dd=57.3% tp2=1% calmar=0.54
+  [ 12] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.0}  n=1705 win=56.8 PF=1.090 net=9,201 dd=33.1% tp2=1% calmar=1.45
+  [ 13] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.5}  n=1702 win=56.7 PF=1.078 net=13,164 dd=46.1% tp2=1% calmar=1.23
+  [ 14] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 2.0}  n=1674 win=56.5 PF=1.071 net=17,435 dd=57.3% tp2=1% calmar=1.11
+  [ 15] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.0}  n=1660 win=56.4 PF=1.052 net=5,207 dd=34.8% tp2=1% calmar=0.82
+  [ 16] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.5}  n=1657 win=56.5 PF=1.041 net=6,843 dd=46.6% tp2=1% calmar=0.63
+  [ 17] {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 4, 'InpRiskAccPct': 2.0}  n=1640 win=56.5 PF=1.037 net=9,573 dd=58.3% tp2=1% calmar=0.51
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=400 & PF>1) — s6b ===
+  PF=1.091 net=16,383 dd=41.4% win=56.5 tp2=1% n=1642 calmar=1.50  {'InpMaxDailyDDPct': 8, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.5}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.0}
+  PF=1.090 net=9,201 dd=33.1% win=56.8 tp2=1% n=1705 calmar=1.45  {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.0}
+  PF=1.090 net=9,121 dd=33.8% win=56.7 tp2=1% n=1702 calmar=1.41  {'InpMaxDailyDDPct': 8, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.0}
+  PF=1.084 net=20,731 dd=51.3% win=56.4 tp2=1% n=1630 calmar=1.31  {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 2.0}
+  PF=1.080 net=13,608 dd=45.4% win=56.6 tp2=1% n=1687 calmar=1.27  {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.5}
+  PF=1.078 net=13,164 dd=46.1% win=56.7 tp2=1% n=1702 calmar=1.23  {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 1.5}
+  PF=1.071 net=17,435 dd=57.3% win=56.5 tp2=1% n=1674 calmar=1.11  {'InpMaxDailyDDPct': 12, 'InpLossStreakCount': 0, 'InpRiskAccPct': 2.0}
+  PF=1.053 net=5,314 dd=33.6% win=56.5 tp2=1% n=1657 calmar=0.86  {'InpMaxDailyDDPct': 8, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.0}
+  PF=1.052 net=5,207 dd=34.8% win=56.4 tp2=1% n=1660 calmar=0.82  {'InpMaxDailyDDPct': 10, 'InpLossStreakCount': 4, 'InpRiskAccPct': 1.0}

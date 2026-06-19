@@ -1,0 +1,28 @@
+# sweep s8b_vprefine: 15 combos over ['InpVpLookback', 'InpMasterMult']  (ticks=ticks_xau_train.csv)
+  [  0] {'InpVpLookback': 60, 'InpMasterMult': 3}  n=1659 win=56.5 PF=1.113 net=11,020 dd=21.9% tp2=1% calmar=2.40
+  [  1] {'InpVpLookback': 60, 'InpMasterMult': 4}  n=1542 win=55.2 PF=1.041 net=2,711 dd=41.6% tp2=1% calmar=0.51
+  [  2] {'InpVpLookback': 60, 'InpMasterMult': 5}  n=1476 win=55.5 PF=1.124 net=9,921 dd=34.5% tp2=1% calmar=1.44
+  [  3] {'InpVpLookback': 70, 'InpMasterMult': 3}  n=1591 win=55.2 PF=1.047 net=3,720 dd=48.0% tp2=1% calmar=0.54
+  [  4] {'InpVpLookback': 70, 'InpMasterMult': 4}  n=1494 win=55.5 PF=1.155 net=14,464 dd=33.5% tp2=1% calmar=1.77
+  [  5] {'InpVpLookback': 70, 'InpMasterMult': 5}  n=1435 win=56.2 PF=1.242 net=17,538 dd=18.7% tp2=1% calmar=3.41
+  [  6] {'InpVpLookback': 85, 'InpMasterMult': 3}  n=1516 win=56.3 PF=1.121 net=9,704 dd=31.8% tp2=1% calmar=1.55
+  [  7] {'InpVpLookback': 85, 'InpMasterMult': 4}  n=1430 win=56.6 PF=1.271 net=25,333 dd=15.4% tp2=1% calmar=4.65
+  [  8] {'InpVpLookback': 85, 'InpMasterMult': 5}  n=1352 win=56.9 PF=1.228 net=17,345 dd=23.8% tp2=1% calmar=2.67
+  [  9] {'InpVpLookback': 100, 'InpMasterMult': 3}  n=1476 win=55.5 PF=1.124 net=9,921 dd=34.5% tp2=1% calmar=1.44
+  [ 10] {'InpVpLookback': 100, 'InpMasterMult': 4}  n=1375 win=56.6 PF=1.186 net=12,829 dd=27.6% tp2=1% calmar=2.04
+  [ 11] {'InpVpLookback': 100, 'InpMasterMult': 5}  n=1315 win=55.7 PF=1.214 net=15,895 dd=30.8% tp2=1% calmar=1.97
+  [ 12] {'InpVpLookback': 120, 'InpMasterMult': 3}  n=1435 win=55.9 PF=1.239 net=17,729 dd=18.1% tp2=1% calmar=3.54
+  [ 13] {'InpVpLookback': 120, 'InpMasterMult': 4}  n=1317 win=56.3 PF=1.264 net=21,769 dd=29.5% tp2=1% calmar=2.33
+  [ 14] {'InpVpLookback': 120, 'InpMasterMult': 5}  n=1295 win=54.0 PF=1.099 net=5,423 dd=24.2% tp2=1% calmar=1.45
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=300 & PF>1) — s8b_vprefine ===
+  PF=1.271 net=25,333 dd=15.4% win=56.6 tp2=1% n=1430 calmar=4.65  {'InpVpLookback': 85, 'InpMasterMult': 4}
+  PF=1.239 net=17,729 dd=18.1% win=55.9 tp2=1% n=1435 calmar=3.54  {'InpVpLookback': 120, 'InpMasterMult': 3}
+  PF=1.242 net=17,538 dd=18.7% win=56.2 tp2=1% n=1435 calmar=3.41  {'InpVpLookback': 70, 'InpMasterMult': 5}
+  PF=1.228 net=17,345 dd=23.8% win=56.9 tp2=1% n=1352 calmar=2.67  {'InpVpLookback': 85, 'InpMasterMult': 5}
+  PF=1.113 net=11,020 dd=21.9% win=56.5 tp2=1% n=1659 calmar=2.40  {'InpVpLookback': 60, 'InpMasterMult': 3}
+  PF=1.264 net=21,769 dd=29.5% win=56.3 tp2=1% n=1317 calmar=2.33  {'InpVpLookback': 120, 'InpMasterMult': 4}
+  PF=1.186 net=12,829 dd=27.6% win=56.6 tp2=1% n=1375 calmar=2.04  {'InpVpLookback': 100, 'InpMasterMult': 4}
+  PF=1.214 net=15,895 dd=30.8% win=55.7 tp2=1% n=1315 calmar=1.97  {'InpVpLookback': 100, 'InpMasterMult': 5}
+  PF=1.155 net=14,464 dd=33.5% win=55.5 tp2=1% n=1494 calmar=1.77  {'InpVpLookback': 70, 'InpMasterMult': 4}
+  PF=1.121 net=9,704 dd=31.8% win=56.3 tp2=1% n=1516 calmar=1.55  {'InpVpLookback': 85, 'InpMasterMult': 3}
