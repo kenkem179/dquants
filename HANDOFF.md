@@ -1,10 +1,60 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-Data 98.45% complete. **E1 + E2 entry parity now BOTH ~93–96% recall** after the cross-age fix below.
-The prior HANDOFF's "E1 50% / sideways over-block is the culprit" was WRONG — see ▶️ THIS SESSION._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
+**THIS SESSION: E5 (SuperBros) parity. Fixed the E5 entry onset off-by-one (committed `d1704ab`)** →
+E5 matched 295→399, exact-minute 66→342, |Δentry| 0.286→0. NEXT BLOCKER = E5 EXIT parity (engine
+matched net −489 vs MT5 +733). E1+E2 entry parity from prior sessions still ~93–96% (unchanged)._
 
-## 🎯 Goal: KenKem entry parity engine⇄MT5. E1+E2 recall now solved; residual = OVERFIRE.
+## 🎯 Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
+Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`
+(trades.csv 656 trades net +1267 PF 1.10; trace.csv.gz per-bar E5 TraceBar; inputs_echo.txt).
+
+## ▶️ THIS SESSION (2026-06-20) — E5 entry onset FIXED; E5 exit parity is the next blocker
+1. **[committed d1704ab] E5 onset off-by-one** — `triggers.hpp` E5 read M1 alignment at B-1/B-2 (1 bar
+   too fresh); MT5's trapped GetEMA → onset = aligned@B-2 && !aligned@B-3. Gated on `kFaithful`
+   (e5_cur=m1s2, e5_prv=m1s2-1). Result (MT5_E5_ONLY.set vs E5only_cd120):
+   matched **295→399**, missed 361→257, overfire 344→233, exact-minute **66→342**, |Δentry| **0.286→0**.
+   See memory [[kenkem-e5-onset-trap-fix]]. Tool added: `research/kenkem_parity/diff_e5_trace.py`.
+2. **[DIAGNOSED, not fixed] E5 EXIT parity = the P&L gap.** On 399 matched trades: tag-agree 61%,
+   engine net **−489 vs MT5 +733** (Δ −1222). Per-cell P&L drain:
+   - **EA→SL-LOSS (67): Δ −1826** — MT5 cuts losers early ("EA"); engine rides to full SL. #1 drain.
+   - **TP→SL-WIN (25): Δ −1050** — engine trails too tight, exits before MT5 reaches TP.
+   - (the full MT5-"EA" row nets ~even +21; the killers are specifically EA→SL-LOSS and TP→SL-WIN.)
+   ROOT (partly localized): `exits.hpp:55-63` `panic_exit_enabled`/`score_drop_enabled` for E5
+   FALL THROUGH to the E1 flags (stale comment "E3/E5 not used"). In the E5 set E1-panic=true so panic
+   IS on, but fidelity differs (per-tick vs once-per-bar ADX-collapse; unmodeled `minADXToHold=18`
+   hold-exit + `ENABLE_PRE_BE_STRUCTURE_PROTECTION=true` PRE_BE_TRIGGER_R=0.5 structure SL move +
+   E5_TRAILING_SL_FACTOR=0.38 / E5_PARTIAL_TP_TRIGGER=0.8 trailing). Needs E5-specific exit fields +
+   panic/pre-BE/trail parity pass.
+
+## ▶️ NEXT ACTIONS (in order)
+1. **E5 exit parity**: add `panic_exit_e5`/`score_drop_e5`/`di_flip_e5` config fields + parse
+   `ENABLE_*_E5`; route `panic_exit_enabled(5)`→e5 flag. Then attack EA→SL-LOSS (panic ADX-collapse
+   fidelity / minADXToHold=18 hold-exit) and TP→SL-WIN (trailing/PRE-BE). Re-diff with
+   `matched_exit_crosstab.py`; target matched-net sign-match + tag-agree >80%.
+2. **Then E5 sweep** on the C++ engine over real ticks (existing harness: `research/optimization/
+   sweep_e5_exits.py`; 9-col table via `report_metrics.py`). Lock best combo in a `.set` under
+   `kenkem/MQL5/Presets`. Candidate knobs: E5_MAX_EMA_CROSS_AGE, MIN_TREND_QUALITY_E5,
+   E5_MIN_MOMENTUM_ADX, E5_RR, E5_HTF_*, trailing/partial, MIN_ENTRY_ATR_PERCENTILE.
+3. Then repeat for E1 (entry parity already ~93%; focus E1 exits + sweep).
+4. After E1→E5 locked: pip→ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
+
+## 🔁 Repro E5 (~24s tick run, ~4s trace)
+```
+cd cpp_core && make test && make kenkem_trace kenkem_tick
+./build/kenkem/tick_backtester --bars-m1 tools/bars_xauusd_2024_2026_m1.csv \
+  --ticks tools/ticks_xauusd_2024_2026.csv --symbol-xau --spread 0.05 \
+  --set ../research/kenkem_parity/MT5_E5_ONLY.set --out /tmp/e5.csv
+M=research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/trades.csv
+python research/kenkem_parity/diff_kk.py --engine /tmp/e5.csv --mt5 $M --kind E5         # 399/257/233
+python research/kenkem_parity/matched_exit_crosstab.py --engine /tmp/e5.csv --mt5 $M     # exit P&L cells
+./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --symbol-xau \
+  --spread 0.05 --set ../research/kenkem_parity/MT5_E5_ONLY.set --out /tmp/e5_trace_eng.csv
+python research/kenkem_parity/diff_e5_trace.py --eng /tmp/e5_trace_eng.csv \
+  --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/trace.csv.gz
+```
+
+## 📌 E1 context (prior sessions, unchanged this session)
 Ground truth = MT5 run `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/`
 (echoed inputs in `inputs_echo.txt`; engine `.set` must mirror them exactly).
 
