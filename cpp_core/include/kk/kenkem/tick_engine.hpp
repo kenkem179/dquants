@@ -325,10 +325,7 @@ private:
         if (potentialLossUSD >= entryMaxLoss) {
             // HandleHighRiskEntry. CanCreateNewEntry()==GetEntryBlockReason()=="" (ATR + min-seconds
             // subset ported), then opposing-dir, accept-flag, per-session cap, sideway warning, momentum.
-            // EXPERIMENT (E5 2026 selection break): high-risk entries bypass the MIN_ENTRY_ATR_PERCENTILE
-            // volatility-regime block (keep only the black-swan low/high). Empirically MT5 fires E5 trades
-            // at pctile 0-60 (engine w/65-block=75, no-block=218, MT5=108 => intermediate = HR bypass).
-            if (high_risk_blocked_by_atr(snap, cfg_)) return;
+            if (entry_blocked_by_atr(snap, cfg_)) return;
             if (min_sec_blocked) return;
             if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
             if (!accept_high_risk(sig.kind, cfg_)) return;

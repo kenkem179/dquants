@@ -62,19 +62,37 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
-## 🟢 KenKem E5 — entry sweep done; bug RE-LOCALIZED to a 2026 selection-parity break (2026-06-20)
-_Built `research/kenkem_parity/sweep_e5_entry.py` (profitability+parity per combo, full 2yr window).
-**The "tighten entry gates → cut overfire → win" thesis is a mirage.** Time-split proved it:
-the only big net lever (`MIN_ENTRY_ATR_PERCENTILE` 65→80 → net −480→+732, PF 1.12) is **overfit to 2025**
-— it just discards the broken-2026 trades. **2025 is in near-perfect parity** (eng +690 vs MT5 +696);
-the whole-run −480 is a **2026 selection break**: engine MISSES 59 trades MT5 makes (+727) and fires 28
-losers (−411). NOT data coverage (fires every 2026 month). Hypothesis = pip-hardcoded tolerances at
-2026's 2× price level (~4540) → [[goal-pip-to-atr-relative]]. Full writeup:
-`research/kenkem_parity/E5_ENTRY_SWEEP_FINDINGS.md`. **DO NOT lock an entry-tightened .set** (would deploy
-a 2025-overfit config losing in 2024+2026). NEXT: localize 2026 break (need MT5 E5 gate-trace over 2026,
-or engine-side armed-vs-gated dump of the 59 missed) + the uniform −820 exit residual (separate track)._
-_Prior: fixed E5 onset off-by-one (`d1704ab`) + E5 exit parity (`d4d2f28`,`5e34b0c` → matched net sign-match
-+124 vs MT5 +945). E1+E2 entry parity ~93–96%. C++ tests PASS (28)._
+## 🟢 KenKem E5 — 2026 selection break LOCALIZED to gate-selection (NOT arming/ATR/pip/limit) (2026-06-20)
+_User ran a **2026-only E5 gate trace** (2026-01-01→06-01); archived
+`mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_gatetrace/` (108 E5 +949). Engine fresh-window repro
+(set `MT5_E5_2026.set`, `--from-ms 1767225600000 --to-ms 1780272000000`) = **75 E5 −683**, matched 49 /
+missed 59 / overfire 26. Full writeup: **`research/kenkem_parity/E5_2026_GATETRACE_FINDINGS.md`**._
+
+_**Decisively KILLED 5 hypotheses:** NOT config (every selection key matches incl E5_MAX_EMA_CROSS_AGE=28),
+NOT limit orders (`ENABLE_LIMIT_ORDERS=false`), NOT pip-tolerance (price/htf <5%), NOT ATR computation
+(engine ATR + atr_pctile EXACT vs MT5 offset-corrected), **NOT cross-arming** (E5 onsets reconstructed from
+the exact EMA cols are identical: LONG 680 vs 681, SHORT 655 vs 655; consume-on-fire matches Entry5.mqh:359).
+**IT IS a pervasive multi-bar GATE-SELECTION divergence** among identical onsets — engine gates pass 75 vs
+MT5 108. Single-gate A/B failed: disable MIN_ENTRY_ATR_PERCENTILE → 218; high-risk-bypass → 167 but recall
+only 49→51 / overfire 26→114 (REVERTED — MT5's low-pctile entries are selective). Even ATR fully bypassed
+still misses 57/108 → no single gate is the lever; leading suspect = **systemic gate ADX/close 1-bar shift**
+(engine gate ADX is one bar staler than MT5: trace eng[k]==mt5[k-1] @99.9%, EMA matches shift 0)._
+
+_⚠️ **Two trace traps** (cost time — record): (1) `trace_dumper` logs close/adx/atr/rsi 1 bar staler than
+EMA; (2) `Entry5.TraceBar` gate cols use a SEPARATE `m_tr_` state AND `L_atrlo` uses ATR_PERCENTILE_LOW=20,
+not the real `MIN_ENTRY_ATR_PERCENTILE`=65 (which lives in `GetEntryBlockReason`, ABSENT from the trace).
+So `diff_e5_trace.py` gate-blame is UNRELIABLE for arming/ATR — trust EMA-derived onsets + the engine's own gate logic._
+
+_No engine code changed (2 speculative fixes tried + reverted; build GREEN, 28 tests pass). **DO NOT lock an
+entry-tightened .set.** Prior: E5 onset off-by-one (`d1704ab`) + exit parity (`d4d2f28`,`5e34b0c`). E1+E2 ~93–96%._
+
+### ▶️ NEXT for E5 (one MT5 run + one engine experiment)
+1. **[USER — MT5]** Add a **real-path** E5 entry trace (NOT the existing `TraceBar`): in
+   `DetectNewEntry`/`HandleHighRiskEntry`, per E5 signal bar log `m_lastBullishSignal` age, `isHighRiskTrade`,
+   `cachedATRPercentile`, the `GetEntryBlockReason()` string, and `cache.adx[0]`/`currentPrice` used. Re-run
+   E5-only 2026 (same window/inputs as the archived run). This is the E5 analog of `kke1gate.csv`.
+2. **[ENGINE — no new data]** Test the ADX/close 1-bar-fresher hypothesis: feed forming (shift-0) adx/close
+   to the E5 gate, re-run 2026 (recall↑ toward 108) AND full-2yr (2025 MUST stay ~+690 matched — regression guard).
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`
