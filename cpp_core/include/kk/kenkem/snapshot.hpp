@@ -30,7 +30,10 @@ struct Snapshot {
     // M1 ADX(9) "short".
     double adxS = 0, diPS = 0, diMS = 0;
     // Mean ADX(14) over shifts 0..4 (forming + 4 closed) — GetADXAverage(TF,5), used by GetSidewaysScore.
-    double adxM1_avg5 = 0, adxM3_avg5 = 0;
+    double adxM1_avg5 = 0, adxM3_avg5 = 0, adxM5_avg5 = 0;
+    // Forming-anchored RSI 5-avg per TF — GetRSIAverage(TF,RSI_LEN,5), used by GetSidewaysScoreForTF (E5
+    // multi-TF sideway exit). M1's is rsiM1_avg5 below.
+    double rsiM3_avg5 = 50, rsiM5_avg5 = 50;
     // M1 EMA0..4 at shift 1 (for SL structure + sideways).
     double emaM1[5] = {0,0,0,0,0};
     double atrM1 = 0;        // M1 ATR(14) shift 0 (forming bar) — used by sideways/atr_pctile (per-bar, validated)
@@ -106,6 +109,60 @@ inline int sideways_score(const Snapshot& s, const KenKemConfig& cfg) {
     return score;
 }
 
+// Per-TF sideways score (TrendIdentifier GetSidewaysScoreForTF :503): same 5 components as sideways_score
+// but anchored on one TF's own series at closed index `ci`. Approximations vs the EA: ADX/RSI/DI 5-avgs
+// are anchored at ci (the EA's GetADXAverage/GetRSIAverage are forming-anchored shift0..4 and ignore the
+// barShift; DI uses CopyBuffer(barShift,5)); ATR denominator uses the closed-bar iATR (EA uses forming
+// cache.atrM*). Good enough as a chop detector for the E5 multi-TF sideway EXIT (A/B-validated).
+inline int sideways_score_tf(const TfIndicators& T, int ci, double adxAvg, double rsiAvg,
+                             const KenKemConfig& cfg) {
+    if (ci < 5) return 0;
+    const double atr = TfIndicators::get(T.atr, ci);   // EA uses forming cache.atrM*; closed iATR ≈ it
+    if (atr <= 0.0) return 0;
+    int score = 0;
+    // 1. EMA convergence (EMA1..4 band width in ATR units), at this shift.
+    double mx = std::max({ TfIndicators::get(T.ema[1], ci), TfIndicators::get(T.ema[2], ci),
+                           TfIndicators::get(T.ema[3], ci), TfIndicators::get(T.ema[4], ci) });
+    double mn = std::min({ TfIndicators::get(T.ema[1], ci), TfIndicators::get(T.ema[2], ci),
+                           TfIndicators::get(T.ema[3], ci), TfIndicators::get(T.ema[4], ci) });
+    double spread = (mx - mn) / atr;
+    if (spread < cfg.ema_spread_tight_atr)         score += 25;
+    else if (spread < cfg.ema_spread_moderate_atr) score += 15;
+    else if (spread < cfg.ema_spread_wide_atr)     score += 8;
+    // 2. ADX weakness (forming-anchored GetADXAverage; same value in both Pine slots).
+    int adxScore = 0;
+    if (adxAvg < 15)      adxScore += 15; else if (adxAvg < 20) adxScore += 10; else if (adxAvg < 25) adxScore += 5;
+    if (adxAvg < 18)      adxScore += 10; else if (adxAvg < 22) adxScore += 5;
+    score += std::min(25, adxScore);
+    // 3. DI indecision (DI averaged over this shift..+4 — shift-dependent, per CopyBuffer(barShift,5)).
+    double dpSum = 0, dmSum = 0;
+    for (int s = 0; s < 5; ++s) { dpSum += TfIndicators::get(T.diP, ci - s); dmSum += TfIndicators::get(T.diM, ci - s); }
+    double diSpread = std::fabs(dpSum - dmSum) / 5.0;
+    if (diSpread < 2.0)      score += 12; else if (diSpread < 4.0) score += 8; else if (diSpread < 6.0) score += 4;
+    // 4. RSI neutral (forming-anchored GetRSIAverage).
+    if (rsiAvg >= 45 && rsiAvg <= 55)      score += 15; else if (rsiAvg >= 40 && rsiAvg <= 60) score += 10;
+    else if (rsiAvg >= 35 && rsiAvg <= 65) score += 5;
+    // 5. ATR compression (percentile over 100 closed bars ending at ci).
+    double pctl = atr_percentile(T, ci, atr, 100);
+    if (pctl < 15)      score += 15; else if (pctl < 25) score += 10; else if (pctl < 35) score += 5;
+    return score;
+}
+
+// IsMultiTfSideway (TrendIdentifier :608): 2-of-3 TFs (M1/M3/M5) sideways on the latest closed bar, OR on
+// the prior bar. M1 uses shift1/2, M3/M5 use shift0/1 — all map to align.tf-1 (last closed) then one older.
+// ADX/RSI averages are forming-anchored (shift-independent, from the snapshot); EMA/DI/ATRpctile vary by shift.
+inline bool is_multi_tf_sideway(const TfBundle& b, const TfBundle::Align& align,
+                                const Snapshot& s, const KenKemConfig& cfg, int thr) {
+    const int m1c = align.m1 - 1, m3c = align.m3 - 1, m5c = align.m5 - 1;
+    if (m1c < 1 || m3c < 1 || m5c < 1) return false;
+    auto cnt = [&](int d) {
+        return (sideways_score_tf(b.m1, m1c - d, s.adxM1_avg5, s.rsiM1_avg5, cfg) >= thr ? 1 : 0)
+             + (sideways_score_tf(b.m3, m3c - d, s.adxM3_avg5, s.rsiM3_avg5, cfg) >= thr ? 1 : 0)
+             + (sideways_score_tf(b.m5, m5c - d, s.adxM5_avg5, s.rsiM5_avg5, cfg) >= thr ? 1 : 0);
+    };
+    return cnt(0) >= 2 || cnt(1) >= 2;
+}
+
 // Build the snapshot for forming M1 bar B. Requires shift-1 available on M1 (align.m1 >= 1).
 inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B,
                                const TfBundle::Align& align) {
@@ -171,10 +228,10 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
     // GetADXAverage(TF,5): mean of ADX(14) over shifts 0..4 (forming + 4 closed), with the EA's v>0
     // filter. shift0 = forming Wilder step (adxF), shifts1..4 = closed series at idx..idx-3.
     {
-        const int adxTf[2] = { 0, 1 };               // M1, M3
-        const int adxIdx[2] = { idx[0], idx[1] };    // align.m{1,3}-1 (closed shift-1)
-        double* dst[2] = { &s.adxM1_avg5, &s.adxM3_avg5 };
-        for (int k = 0; k < 2; ++k) {
+        const int adxTf[3] = { 0, 1, 2 };            // M1, M3, M5
+        const int adxIdx[3] = { idx[0], idx[1], idx[2] };  // align.m{1,3,5}-1 (closed shift-1)
+        double* dst[3] = { &s.adxM1_avg5, &s.adxM3_avg5, &s.adxM5_avg5 };
+        for (int k = 0; k < 3; ++k) {
             const int t = adxTf[k];
             double sum = 0.0; int valid = 0;
             const double v0 = s.adxF[t];             // shift 0 (forming)
@@ -218,6 +275,29 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         for (double v : vals) if (v > 0.0) { sum += v; ++cnt; }
         s.rsiM1_avg5 = cnt > 0 ? sum / cnt : 0.0;
     } else { s.rsiM1 = 50.0; s.rsiM1_avg5 = 50.0; }
+
+    // Forming-anchored RSI 5-avg for M3/M5 (GetRSIAverage), for the E5 multi-TF sideway exit. Same shape as
+    // M1: one Wilder forming step on the TF's gap open-prevClose, then 4 closed shifts, count v>0.
+    {
+        const int n = cfg.rsi_len;
+        const int fjs[2] = { align.m3, align.m5 };
+        const TfIndicators* rt[2] = { &b.m3, &b.m5 };
+        double* dst[2] = { &s.rsiM3_avg5, &s.rsiM5_avg5 };
+        for (int k = 0; k < 2; ++k) {
+            const TfIndicators& T = *rt[k];
+            const int fj = fjs[k], jj = fj - 1;
+            if (!T.has_rsi || jj < 3) { *dst[k] = 50.0; continue; }
+            const double pc  = T.bars[jj].close;
+            const double opf = (fj >= 0 && fj < T.size()) ? T.bars[fj].open : pc;
+            double rf = kk::ind::rsi_wilder_step(TfIndicators::get(T.rsi_ag, jj),
+                                                 TfIndicators::get(T.rsi_al, jj), pc, opf, n);
+            double vals[5] = { rf, TfIndicators::get(T.rsi, jj), TfIndicators::get(T.rsi, jj - 1),
+                               TfIndicators::get(T.rsi, jj - 2), TfIndicators::get(T.rsi, jj - 3) };
+            double sm = 0.0; int c = 0;
+            for (double v : vals) if (v > 0.0) { sm += v; ++c; }
+            *dst[k] = c > 0 ? sm / c : 50.0;
+        }
+    }
 
     // close = last closed bar; high/low = forming bar (shift 0) which is a single point at its open.
     s.closeM1 = prevC;

@@ -65,6 +65,10 @@ public:
             bar_bid_ = t.bid;
             cur_bar_hi_ = cur_bar_lo_ = t.bid;   // reset forming-bar running range (bid, like iHigh/iLow(0))
             atr14_ = compute_atr14_(forming);    // 14-bar TR average (completed bars) for the vol multiplier
+            // Refresh the bar-constant panic reversal flags off the just-closed bar's ADX/DI buffers.
+            const TfBundle::Align pa = b_.align_at(b_.m1.bars[forming].ts_ms);
+            panic_rev_long_  = panic_reversal(true,  b_, pa, cfg_);
+            panic_rev_short_ = panic_reversal(false, b_, pa, cfg_);
         }
         // Track the forming bar's live bid range INCLUDING this tick (EA GetVolatilityMultiplier reads the
         // live iHigh(0)-iLow(0) each tick), then derive the trail's volatility multiplier (clamped [0.7,1.5]).
@@ -87,6 +91,20 @@ public:
                 o.pnl_acc += f.lot * pts * vppl_ - f.lot * cfg_.commission_per_lot;
                 if (f.reason == 'P') o.partial_taken = true;                            // real partial slice
                 else { o.exit_price = f.price; o.exit_tag = f.reason; }                  // closing fill
+            }
+            // Intrabar fast-ADX panic exit (EA evaluates panic EVERY tick). GATED behind a flag: porting it
+            // worsened E5 parity because the engine's M1+M3 reversal-accel confirmation diverges from MT5's
+            // HasTrendAcceleration, so it fired wrongly. Kept off by default; revisit with reversal-flag
+            // parity. (cfg_.panic_intrabar default false.)
+            if (cfg_.panic_intrabar && o.p.open && manage_allowed && forming >= warmup_
+                && panic_exit_enabled(o.p.kind, cfg_)) {
+                const bool rev = o.p.is_long ? panic_rev_long_ : panic_rev_short_;
+                if (rev && panic_price_gate(o.p.is_long, o.p.entry, o.p.sl, px,
+                                            o.p.best, o.p.partial_done, cfg_)) {
+                    const double pts = o.p.is_long ? (px - o.p.entry) : (o.p.entry - px);
+                    o.pnl_acc += o.p.lot * pts * vppl_ - o.p.lot * cfg_.commission_per_lot;
+                    o.p.open = false; o.exit_price = px; o.exit_tag = 'X';
+                }
             }
             if (!o.p.open) { realize_(o, t.ts_ms); open_.erase(open_.begin() + k); }
             else ++k;
@@ -178,9 +196,19 @@ private:
             // (EA :149). Tag 'X' (DEAL_REASON_EXPERT = "EA"). barsSinceEntry = f - entry_bar (M1 bars).
             if (!close && o.p.is_high_risk && cfg_.high_risk_max_bars > 0
                 && (f - o.p.entry_bar) >= cfg_.high_risk_max_bars) { close = true; tag = 'X'; }
+            // E5 Multi-TF sideway early exit (TradeManager :1178): close once 2/3 TFs (M1/M3/M5) are
+            // sideways, after barsSinceEntry > 1. No SL/reversal gate — kills trades that stall in chop.
+            if (!close && o.p.kind == 5 && cfg_.e5_allow_sideway_early_exit
+                && (f - o.p.entry_bar) > 1 && snap.valid
+                && is_multi_tf_sideway(b_, align, snap, cfg_, cfg_.e5_sideways_block_thr)) {
+                close = true; tag = 'X';
+            }
+            // Bar-level panic (default) + once-per-bar score-drop. When panic_intrabar is on the per-tick
+            // loop owns panic, so skip it here to avoid double evaluation.
             if (!close && snap.valid) {
-                bool pe = panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, px,
-                                              o.p.best, o.p.partial_done, b_, align, cfg_);
+                bool pe = !cfg_.panic_intrabar
+                          && panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, px,
+                                                 o.p.best, o.p.partial_done, b_, align, cfg_);
                 bool se = !pe && score_drop_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.tp, px,
                                                      o.p.partial_done, snap, cfg_, o.exit_st);
                 if (pe || se) { close = true; tag = 'X'; }
@@ -447,6 +475,9 @@ private:
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)
     int high_risk_count_ = 0;   // highRiskTradesInSession (reset per session)
+    // Cached per-new-bar panic reversal flags (M1+M3 accel in the reversed dir). Bar-constant; the price
+    // gate is re-checked per tick against the live price so panic fires intrabar like the EA.
+    bool panic_rev_long_ = false, panic_rev_short_ = false;
     int64_t last_entry_ms_ = 0; // lastEntryTime (for MIN_SECONDS_BETWEEN_ENTRIES)
     int arm_e1_ = 0, arm_e2_ = 0;   // diagnostic: trigger ARM events in-window
     int consec_losses_ = 0;     // global consecutiveLosses (persists; OnInit-reset only)

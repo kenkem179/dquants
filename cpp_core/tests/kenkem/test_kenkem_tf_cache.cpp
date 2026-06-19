@@ -24,10 +24,11 @@ void test_buffers_built() {
     }
     TfBundle b = build_tf_bundle(m1, m3, m5, m15, cfg);
 
-    // M1 carries short ADX + RSI + Ichimoku; M3 carries RSI (conviction/RSI-veto) + Ichimoku; HTFs differ.
+    // M1 carries short ADX + RSI + Ichimoku; M3 carries RSI (conviction/RSI-veto) + Ichimoku; M5 carries
+    // RSI (E5 multi-TF sideway score) but no short ADX / Ichimoku; M15 differs.
     KK_CHECK(b.m1.has_short && b.m1.has_rsi && b.m1.has_ichi);
     KK_CHECK(b.m3.has_ichi && b.m3.has_rsi && !b.m3.has_short);
-    KK_CHECK(!b.m5.has_short && !b.m5.has_rsi && !b.m5.has_ichi);
+    KK_CHECK(!b.m5.has_short && b.m5.has_rsi && !b.m5.has_ichi);
     KK_CHECK(!b.m15.has_ichi);
 
     // All five EMA buffers sized to the series; last EMA value is finite & below last close (rising series).

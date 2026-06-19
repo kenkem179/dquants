@@ -1,0 +1,4 @@
+[bt] applied 60 keys from tools/mastervp/_pine_be_off.set (ALL keys, Pine-faithful)
+[bt] loaded 166107 bars from tools/bars_xauusd_2025_2026_m3.csv
+[bt] streamed 162761235 ticks
+[bt] 2477 trades -> tools/trades_mvp_be_off.csv | final balance 11788.93, peak 28848.25, raw signals 32731

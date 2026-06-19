@@ -182,6 +182,7 @@ struct KenKemConfig {
     bool   panic_exit_e2          = true;
     bool   panic_exit_e4          = true;
     bool   panic_exit_e5          = true;
+    bool   panic_intrabar         = false;   // KK_PANIC_INTRABAR / PANIC_INTRABAR: eval panic per-tick
     double panic_min_sl_used      = 0.6;
     double panic_min_profit_giveback = 0.5;
     bool   score_drop_e1          = false;
@@ -565,6 +566,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E2") p.panic_exit_e2 = kbool(val);
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E4") p.panic_exit_e4 = kbool(val);
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E5") p.panic_exit_e5 = kbool(val);
+    else if (key == "PANIC_INTRABAR") p.panic_intrabar = kbool(val);
     else if (key == "PANIC_MIN_SL_USED_RATIO") p.panic_min_sl_used = D();
     else if (key == "PANIC_MIN_PROFIT_GIVEBACK") p.panic_min_profit_giveback = D();
     else if (key == "ENABLE_SCORE_DROP_EXIT_E1") p.score_drop_e1 = kbool(val);

@@ -125,7 +125,7 @@ inline TfBundle build_tf_bundle(std::vector<kk::Bar> m1, std::vector<kk::Bar> m3
     // M3 carries RSI too: the conviction RSI-momentum component and the RSI-divergence veto both read
     // M3 RSI(14). The EA builds rsiHandlesTF[1]=iRSI(_Symbol,M3,14) (KenKemExpert.mq5:785).
     b.m3  = build_tf_indicators(std::move(m3),  cfg, 180, false, /*rsi*/true, /*ichi*/true);
-    b.m5  = build_tf_indicators(std::move(m5),  cfg, 300, false, false, false);
+    b.m5  = build_tf_indicators(std::move(m5),  cfg, 300, false, /*rsi*/true, false);  // M5 RSI: E5 sideway score
     b.m15 = build_tf_indicators(std::move(m15), cfg, 900, false, false, false);
     return b;
 }

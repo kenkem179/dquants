@@ -71,31 +71,42 @@ inline int score_drop_threshold(int kind, const KenKemConfig& c) {
     return c.score_drop_thr_e1;
 }
 
-// Fast-ADX panic exit decision. cur_price = decision-time price (bar open). best = position high-water
-// price. partial_done = a partial TP has been taken. Returns true to close at market.
-inline bool panic_exit_triggers(int kind, bool is_long, double entry, double sl, double cur_price,
-                                double best, bool partial_done, const TfBundle& b,
-                                const TfBundle::Align& align, const KenKemConfig& c) {
-    if (!panic_exit_enabled(kind, c)) return false;
+// Panic PRICE gate (TradeManager :1363-1393, Scenario A profit-giveback / B SL-used). Per-tick in the
+// EA, so cur_price is the LIVE tick price. best = position high-water price. partial_done = partial taken.
+inline bool panic_price_gate(bool is_long, double entry, double sl, double cur_price,
+                             double best, bool partial_done, const KenKemConfig& c) {
     double floatingPnL = is_long ? (cur_price - entry) : (entry - cur_price);
-    bool gate = false;
     if (partial_done && floatingPnL > 0.0) {
         double mfe = is_long ? (best - entry) : (entry - best);
-        if (mfe > 0.0) {
-            double giveback = (mfe - floatingPnL) / mfe;
-            gate = giveback >= c.panic_min_profit_giveback;
-        }
+        if (mfe > 0.0 && (mfe - floatingPnL) / mfe >= c.panic_min_profit_giveback) return true;
     }
-    if (!gate && floatingPnL < 0.0) {
+    if (floatingPnL < 0.0) {
         double slDist = std::fabs(sl - entry);
-        if (slDist > 0.0) gate = ((-floatingPnL) / slDist) >= c.panic_min_sl_used;
+        if (slDist > 0.0 && ((-floatingPnL) / slDist) >= c.panic_min_sl_used) return true;
     }
-    if (!gate) return false;
+    return false;
+}
+
+// Panic REVERSAL confirm (TradeManager :1402-1406): M1(ADX9)+M3(ADX14) both accelerate in the reversed
+// direction. Bar-constant within a forming bar, so the tick engine caches it once per new bar.
+inline bool panic_reversal(bool is_long, const TfBundle& b, const TfBundle::Align& align,
+                           const KenKemConfig& c) {
+    (void)c;
     bool reversed = !is_long;
     const int i1 = align.m1 - 1, j3 = align.m3 - 1;
     bool m1rev = b.m1.has_short && kk_accel_buf(b.m1.adxS, b.m1.diPS, b.m1.diMS, i1, reversed);
     bool m3rev = kk_accel_buf(b.m3.adx, b.m3.diP, b.m3.diM, j3, reversed);
     return m1rev && m3rev;
+}
+
+// Fast-ADX panic exit decision (bar-granular convenience: gate@cur_price + reversal). Retained for the
+// bar engine; the tick engine evaluates the gate per-tick against the cached reversal flag.
+inline bool panic_exit_triggers(int kind, bool is_long, double entry, double sl, double cur_price,
+                                double best, bool partial_done, const TfBundle& b,
+                                const TfBundle::Align& align, const KenKemConfig& c) {
+    if (!panic_exit_enabled(kind, c)) return false;
+    if (!panic_price_gate(is_long, entry, sl, cur_price, best, partial_done, c)) return false;
+    return panic_reversal(is_long, b, align, c);
 }
 
 // Score-drop exit decision (updates st). tp_dist/profit gate per the EA: close only when a partial has
