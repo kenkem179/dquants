@@ -35,10 +35,19 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
-## 📌 PAUSED — KenKem E1–E5 parity (resume after MasterVP, or if user redirects)
-_E5 (SuperBros): fixed E5 entry onset off-by-one (committed `d1704ab`) → matched 295→399, exact-minute
-66→342, |Δentry| 0.286→0. NEXT KenKem BLOCKER = E5 EXIT parity (engine net −489 vs MT5 +733). E1+E2 entry
-parity ~93–96%. C++ tests PASS (28)._
+## 🟢 KenKem E5 — entry sweep done; bug RE-LOCALIZED to a 2026 selection-parity break (2026-06-20)
+_Built `research/kenkem_parity/sweep_e5_entry.py` (profitability+parity per combo, full 2yr window).
+**The "tighten entry gates → cut overfire → win" thesis is a mirage.** Time-split proved it:
+the only big net lever (`MIN_ENTRY_ATR_PERCENTILE` 65→80 → net −480→+732, PF 1.12) is **overfit to 2025**
+— it just discards the broken-2026 trades. **2025 is in near-perfect parity** (eng +690 vs MT5 +696);
+the whole-run −480 is a **2026 selection break**: engine MISSES 59 trades MT5 makes (+727) and fires 28
+losers (−411). NOT data coverage (fires every 2026 month). Hypothesis = pip-hardcoded tolerances at
+2026's 2× price level (~4540) → [[goal-pip-to-atr-relative]]. Full writeup:
+`research/kenkem_parity/E5_ENTRY_SWEEP_FINDINGS.md`. **DO NOT lock an entry-tightened .set** (would deploy
+a 2025-overfit config losing in 2024+2026). NEXT: localize 2026 break (need MT5 E5 gate-trace over 2026,
+or engine-side armed-vs-gated dump of the 59 missed) + the uniform −820 exit residual (separate track)._
+_Prior: fixed E5 onset off-by-one (`d1704ab`) + E5 exit parity (`d4d2f28`,`5e34b0c` → matched net sign-match
++124 vs MT5 +945). E1+E2 entry parity ~93–96%. C++ tests PASS (28)._
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`
