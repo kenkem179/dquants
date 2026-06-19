@@ -29,11 +29,12 @@ Aligned engine trace to MT5 at **engine ts − 60000 = MT5 ts** (close 100% exac
 (97.8–99.7%), diP/diM all-TF (98.2–99.8%), rsi (99.1%), and EMAs 10/25/71/97/192 (98.3–99.7% — note the
 trace_dumper dumps EMAs one bar offset from close/adx, so EMAs align at shift 0, everything else at −60000;
 a DUMP quirk, not a trading bug). ⇒ the E2 mis-selection is NOT in the M1 inputs.
-**The ONE confirmed real divergence = `sideways`:** engine blocks **20.4%** of bars vs MT5 **15.2%**
-(disagree on the >53 threshold 12.6% of bars), i.e. engine sideways is biased HIGH → **over-blocks → causes
-the missed E1/E2 entries** (E1 134 missed, E2 83 missed). This is a shared global pre-gate, so fixing it
-lifts BOTH. Matches the prior "+2.48 HIGH bias" note. Other (un-observable) suspects: M3/M5 EMA *alignment*
-(MTF gate; M3/M5 EMAs not dumped) + trend-quality 0-11 composition.
+**The ONE confirmed real divergence = `sideways`** (on near-complete data, 834,624 bars):
+engine sideways **biased HIGH: mean/median diff +4.0** vs MT5 (engine mean 37.9 vs MT5 33.9); **engine
+over-blocks 8.93% of bars (eng>53 & mt5≤53) vs under-blocks 3.69%** → causes the missed E1/E2 entries.
+It's STRUCTURAL, not a constant offset (31.6% of bars >10 high, 7.1% >10 low, only 24% within ±3), so ≥1
+of the 5 sub-components systematically over-scores. Shared global pre-gate → fixing it lifts BOTH E1+E2.
+Other (un-observable) suspects: M3/M5 EMA *alignment* (MTF gate; M3/M5 EMAs not dumped) + trend-quality 0-11.
 
 ### ▶️ NEXT ACTION = fix the sideways over-block (highest-leverage, affects E1+E2)
 Audit the engine `GetSidewaysScore` port (`snapshot.hpp` sideways_score) vs EA `TrendIdentifier.mqh:390`.
