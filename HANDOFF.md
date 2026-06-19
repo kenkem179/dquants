@@ -32,19 +32,37 @@ Tag-agree 66%→81%, |ΔpnlUSD| med 114→4.6, SL-LOSS 11/11. (Detail in [[kenke
 feared. All this session's numbers use the complete data. **Confirm with the user** whether they
 restored the full Exness export (or it was never actually deleted) before trusting absolute counts.
 
-## ▶️ NEXT ACTIONS (in order)
-1. **Decompose the residual E1 gap: 31 overfire + 11 missed** (down from 62/31). Re-run the gate-trace +
-   tester.log block-reason cross-ref now that ATR-pctile is faithful (block-category 100%). The ATR-pctile
-   bucket should be largely gone; expect the residual to be **`mtf` gate** (EMA-boundary) + a few spurious.
-   ⚠️ User said they may DROP MTF gating from the algos entirely — confirm before sinking effort into the
-   mtf leak. Per-bar m1_ready/m3_ready/m5_dir/extreme + M1 DI± to both engine `EGATE` and EA `KKE1GATE,mtf`.
-2. **Over-trail TP-vs-SL-WIN (3 matched):** 2024-12-02, 2024-05-10, 2025-11-20 — engine runs to TP where MT5
-   trails out for a smaller SL-WIN. `tpExt` still 0. Same family as the prior over-trail residual.
-3. **Sanity-check `|Δrisk(SL)|`** (median ticked 0.081→0.181, but on the larger 67-trade matched set). The SL
-   now uses the faithful SMA `atrM1_sl`; confirm the 4.0× ATR cap binds correctly on the few cap-bound trades.
-4. After E1 net+counts converge, repeat for E2/E4/E5.
+## 🔬 RESIDUAL DECOMPOSED (31 overfire + 11 missed) — ROOT = bar-open vs intrabar execution-gate eval
+Matched ALL 31 overfire to MT5 tester.log SKIPPED lines (by entry price): **every one is a trade MT5
+classified HIGH-RISK** (`potentialLoss ≥ getMaxLossUSD`) **then blocked at the execution layer** —
+440 "high-risk blocked by risk limits" (≈ATR per debug), 19 "Market in sideway range", 15 weak-momentum.
+Cross-ref of the 12 cleanest ("MT5 gate fire=1, no trade"): pctile 65.6–87.5 at **bar-open**, several `sess=0`.
 
-NOTE: `ENABLE_LOSS_COOLDOWNS=true` is INERT here (A/B = 0 trade change) — stop chasing it.
+**The two un-ported stateful limiters are STRUCTURALLY INERT here — DO NOT re-attempt for this run:**
+- `MAX_AGGREGATE_RISK_RATIO` = `MAX_LOSS_RATIO_E1 × 4`, but `MAX_CONCURRENT_POSITIONS_ALLOWED = 2` caps
+  exposure at ≤2× per-trade risk → 4× cap can NEVER bind. Provably dead.
+- Daily-loss (`MAX_DAILY_LOSS_RATIO=0.072`) needs ~7 losses/day; at ~0.13 trades/day it's never reached.
+- A/B: both ported faithfully into tick_engine and tested → **0 trade change**. Reverted (kept the tree lean).
+  Position-limit IS already enforced (tick_engine.hpp:236). `ENABLE_LOSS_COOLDOWNS` also inert (0 change).
+
+**TRUE residual cause = the EA evaluates execution gates (ATR-pctile / sideways / session) at the FIRING
+TICK intrabar** (its `cachedATRPercentile` updates every tick; the trigger fires mid-bar), **while the
+engine decides at bar-open on closed bars.** By the firing tick the forming bar's range has expanded →
+pctile rises over the 90 ceiling (ATR-HIGH block) etc. The engine already tracks the intrabar range
+(`cur_bar_hi_/cur_bar_lo_`) but FIRES at the first tick, so a pure ATR-read change buys nothing — faithfully
+closing this needs **intrabar trigger/entry evaluation**, a real architectural shift (regression risk to the
+67 matched). The 11 missed are the mirror image (MT5 catches an intrabar fire the bar-open engine doesn't).
+
+## ▶️ NEXT ACTIONS (in order)
+1. **DECISION NEEDED (architectural):** pursue intrabar execution-gate evaluation? It's the only faithful way
+   to close the bulk of the 31/11, is ATR-centric (user's #1 priority), but risks the 67 matched. Scope: move
+   the E1 trigger/fire + execution gates (ATR-pctile, IsInSidewayRange(10), session) from the bar-open
+   `on_bar_closed_` to a per-tick path using `cur_bar_hi_/cur_bar_lo_`. Validate every step with diff_kk +
+   matched_exit_crosstab. If not worth it, **31/11 is an acceptable long-tail floor** — move to E2/E4/E5.
+2. **Over-trail TP-vs-SL-WIN (3 matched):** 2024-12-02, 2024-05-10, 2025-11-20 — engine runs to TP where MT5
+   trails out for a smaller SL-WIN. `tpExt` still 0. Cheap, isolated, no architectural change.
+3. **Sanity-check `|Δrisk(SL)|`** (median 0.081→0.181 on the larger 67-trade set); SL now uses SMA `atrM1_sl`.
+4. After E1 converges (or 31/11 accepted), repeat for E2/E4/E5.
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
