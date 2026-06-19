@@ -21,7 +21,7 @@
 #include "kk/common/trade_journal.hpp"
 
 int main(int argc, char** argv) {
-    std::string bars_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
+    std::string bars_path, bars_m1_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
     int64_t trade_from_ms = 0;
     bool symbol_xau = false;
     bool set_all = false;   // apply ALL .set keys incl. MQL non-inputs (Pine-faithful mode)
@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
         const std::string a = argv[i];
         auto next = [&]() { return (i + 1 < argc) ? std::string(argv[++i]) : std::string(); };
         if      (a == "--bars")  bars_path  = next();
+        else if (a == "--bars-m1") bars_m1_path = next();   // Monster: M1 series for impulse M1-net
         else if (a == "--ticks") ticks_path = next();
         else if (a == "--out")   out_path   = next();
         else if (a == "--set")   set_path   = next();
@@ -63,7 +64,14 @@ int main(int argc, char** argv) {
         const char* dt = std::getenv("KKVP_DBG_TO");
         eng.set_debug_window(std::stoll(df), dt ? std::stoll(dt) : std::stoll(df) + 86400000LL);
     }
-    eng.load_bars(bars, trade_from_ms);
+    if (!bars_m1_path.empty()) {
+        const auto m1 = kk::load_bars_csv(bars_m1_path);
+        std::fprintf(stderr, "[bt] loaded %zu M1 bars from %s (impulse M1-net)\n",
+                     m1.size(), bars_m1_path.c_str());
+        eng.load_bars(bars, m1, trade_from_ms);
+    } else {
+        eng.load_bars(bars, trade_from_ms);
+    }
 
     // Stream the tick CSV (ts_ms,bid,ask). Skip the header line. fscanf keeps memory flat
     // over the ~50M-row window; the engine holds only bars + precomputed arrays.

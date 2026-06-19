@@ -1,0 +1,21 @@
+# sweep m5_masterlen: 9 combos over ['InpVpLookback', 'InpMasterMult']  (ticks=ticks_xau_train.csv)
+  [  0] {'InpVpLookback': 24, 'InpMasterMult': 6}  n=1308 win=57.3 PF=1.105 net=6,516 dd=31.7% tp2=1% calmar=1.21
+  [  1] {'InpVpLookback': 24, 'InpMasterMult': 8}  n=1250 win=58.2 PF=1.135 net=8,219 dd=34.7% tp2=0% calmar=1.29
+  [  2] {'InpVpLookback': 24, 'InpMasterMult': 10}  n=1174 win=56.3 PF=1.077 net=4,341 dd=31.1% tp2=1% calmar=0.95
+  [  3] {'InpVpLookback': 24, 'InpMasterMult': 12}  n=1149 win=56.0 PF=1.064 net=3,296 dd=41.3% tp2=0% calmar=0.59
+  [  4] {'InpVpLookback': 24, 'InpMasterMult': 14}  n=1149 win=55.5 PF=1.108 net=6,660 dd=31.2% tp2=0% calmar=1.26
+  [  5] {'InpVpLookback': 24, 'InpMasterMult': 16}  n=1118 win=55.8 PF=1.085 net=4,347 dd=30.7% tp2=0% calmar=0.97
+  [  6] {'InpVpLookback': 24, 'InpMasterMult': 18}  n=1097 win=55.9 PF=1.126 net=7,972 dd=28.3% tp2=1% calmar=1.54
+  [  7] {'InpVpLookback': 24, 'InpMasterMult': 21}  n=1074 win=56.6 PF=1.131 net=6,785 dd=18.4% tp2=1% calmar=2.18
+  [  8] {'InpVpLookback': 24, 'InpMasterMult': 24}  n=1052 win=55.6 PF=1.100 net=5,052 dd=20.2% tp2=1% calmar=1.65
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=300 & PF>1) — m5_masterlen ===
+  PF=1.131 net=6,785 dd=18.4% win=56.6 tp2=1% n=1074 calmar=2.18  {'InpVpLookback': 24, 'InpMasterMult': 21}
+  PF=1.100 net=5,052 dd=20.2% win=55.6 tp2=1% n=1052 calmar=1.65  {'InpVpLookback': 24, 'InpMasterMult': 24}
+  PF=1.126 net=7,972 dd=28.3% win=55.9 tp2=1% n=1097 calmar=1.54  {'InpVpLookback': 24, 'InpMasterMult': 18}
+  PF=1.135 net=8,219 dd=34.7% win=58.2 tp2=0% n=1250 calmar=1.29  {'InpVpLookback': 24, 'InpMasterMult': 8}
+  PF=1.108 net=6,660 dd=31.2% win=55.5 tp2=0% n=1149 calmar=1.26  {'InpVpLookback': 24, 'InpMasterMult': 14}
+  PF=1.105 net=6,516 dd=31.7% win=57.3 tp2=1% n=1308 calmar=1.21  {'InpVpLookback': 24, 'InpMasterMult': 6}
+  PF=1.085 net=4,347 dd=30.7% win=55.8 tp2=0% n=1118 calmar=0.97  {'InpVpLookback': 24, 'InpMasterMult': 16}
+  PF=1.077 net=4,341 dd=31.1% win=56.3 tp2=1% n=1174 calmar=0.95  {'InpVpLookback': 24, 'InpMasterMult': 10}
+  PF=1.064 net=3,296 dd=41.3% win=56.0 tp2=0% n=1149 calmar=0.59  {'InpVpLookback': 24, 'InpMasterMult': 12}

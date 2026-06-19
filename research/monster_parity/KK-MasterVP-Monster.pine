@@ -1,0 +1,1644 @@
+//@version=6
+// =============================================================================
+// KK - Master VP Monster
+// Standalone Volume-Profile breakout + 4-variant mean-reversion scalper, built
+// to master-vp-monster.md VERBATIM. Entries fire off a FRESH master-level CROSS
+// (cross bar-index within a freshness window, CONSUMED on every entry), confirmed
+// by multi-timeframe near-price NET TICK VOLUME (M1/M3/M5). M3 = chart/entry TF,
+// M5 = regime veto, M1+M3 = early-exit. Stacking allowed (one trade per fresh
+// cross, capped per direction). Exit = fixed SL + fixed/POC TP, TP1 partial
+// scale-out (split Breakout/Reversion close% AND distance), break-even-after-TP1,
+// optional chandelier runner-trail.
+//   VP engine / node-flow / net-tick-volume / per-entry registry / visuals /
+//   Discord alerts: ported VERBATIM from KK-MasterVP.pine.
+//   Entry + SL/TP math: master-vp-monster.md, verbatim.
+//   Curated panel: only deploy-relevant knobs are inputs; engine internals +
+//   experimental paths are hidden consts at spec defaults.
+// =============================================================================
+strategy("KK - Master VP Monster", overlay=true, pyramiding=20,
+     initial_capital=10000, currency=currency.USD,
+     default_qty_type=strategy.fixed, default_qty_value=20,
+     commission_type=strategy.commission.cash_per_order, commission_value=0.50,
+     slippage=8, margin_long=0.5, margin_short=0.5,
+     calc_on_every_tick=true, process_orders_on_close=false, use_bar_magnifier=true,
+     max_bars_back=500,
+     max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+// =============================================================================
+// SAFETY NETS + RISK MANAGEMENT
+// =============================================================================
+gRisk = "High-level Risk Management"
+allowTrading        = true  // hidden — master kill-switch
+maxTradesPerSession = 50    // hidden — loose cap; the real caps are 'Max concurrent per direction' + Daily DD (resets per session, or per UTC day when Trade Anytime)
+maxDailyDDPct       = input.float(5.0, "Max Daily Drawdown (%)", minval=0.0, maxval=70.0, step=0.5, group=gRisk, tooltip="Daily drawdown cap from the day's STARTING equity. PREDICTIVE: a new entry is refused if that trade's worst-case loss (its risk budget) added to the day's drop so far would reach this limit. 0 = disabled. Prop context: FundedNext 3% / FTMO 5%.")
+useRiskSizing = true
+riskUnit               = input.string("% Account Balance", "Risk Unit", options=["% Account Balance", "USD", "Min of USD or % Acc Balance", "Max of USD or % Acc Balance"], group=gRisk, tooltip="How the per-trade risk budget is read. '% Account Balance' = percent of (initial capital + closed net profit). 'USD' = fixed dollar loss at the stop. Min/Max combine both.")
+riskPerTradeUSD        = input.float(180.0, "Risk Per Trade — USD", minval=0.1, step=10, group=gRisk, tooltip="Fixed dollar loss at the stop. Used by the USD/Min/Max risk units.")
+riskPerTradeAccPercent = input.float(1.6, "Risk Per Trade — % Account Balance", minval=0.1, step=0.1, group=gRisk, tooltip="Percent of (initial capital + closed net profit) risked per trade. Keep small (0.5-2%) on a high-frequency strategy.")
+
+// --- TP1 partial (toggle; default 1R / 20%) ---
+useTp1Partial = input.bool(true, "Use TP1 partial scale-out", group=gRisk, tooltip="ON (default): each entry banks 'TP1 close %' of size at 'TP1 distance (R)', remainder runs to the spec TP / trail. OFF: single clean SL+TP bracket per entry. Break-even and runner-trail only act when this is ON.")
+tp1RrBrk = input.float(1.05, "TP1 distance (R) — Breakout", minval=0.2, maxval=3.0, step=0.1, group=gRisk, tooltip="BREAKOUT TP1 distance = this x stop distance (risk R). Default 1.0 = TP1 at 1R. Keep TP1 far enough that the partial clears spread+commission net.")
+tp1RrRev = input.float(1.0, "TP1 distance (R) — Mean-Reversion", minval=0.2, maxval=3.0, step=0.1, group=gRisk, tooltip="MEAN-REVERSION TP1 distance = this x stop distance (risk R). Default 1.0 = TP1 at 1R.")
+tp1CloseBrk = input.float(10, "TP1 close % — Breakout", minval=5, maxval=90, step=5, group=gRisk, tooltip="Fraction of a BREAKOUT entry closed at TP1 (at 'TP1 distance' R). 20 = bank 20% at TP1, let 80% run to the spec TP / trail.")
+tp1CloseRev = input.float(15, "TP1 close % — Mean-Reversion", minval=5, maxval=90, step=5, group=gRisk, tooltip="Fraction of a MEAN-REVERSION entry closed at TP1 (at 'TP1 distance' R).")
+
+// --- Break-even after TP1 (toggle) ---
+enableBeAfterTp1 = input.bool(true, "Move SL to break-even after TP1", group=gRisk, tooltip="After the TP1 partial fills, pull the remaining runner's stop to entry +/- the BE buffer so it can no longer round-trip to a loss. Requires 'Use TP1 partial scale-out' ON. Monotonic (only ever tightens).")
+beBufAtr = input.float(0.05, "BE buffer (ATR past entry)", minval=0.0, maxval=0.5, step=0.01, group=gRisk, tooltip="After TP1, the runner's break-even stop is placed this x ATR BEYOND entry (in profit) so the remaining position locks a small net gain instead of true flat. Default 0.05. Only used when 'Move SL to break-even after TP1' is ON.")
+
+// --- Runner trail after TP1 (toggle) ---
+trailRunner  = false // input.bool(false, "Trail runner after TP1 (chandelier)", group=gRisk, tooltip="ON: after the TP1 partial, OVERRIDE the fixed TP — the runner's stop ratchets to (best price seen -/+ trail width x ATR) and TP2 becomes a far backstop so a real run can extend. OFF (default): TP2 stays the spec fixed/POC target. Requires 'Use TP1 partial scale-out' ON.")
+runnerRr     = 10 // input.float(10,  "Runner backstop RR (x risk R)", minval=2.0, maxval=30.0, step=0.5, group=gRisk, tooltip="TP2 distance (in risk-R) set at entry when 'Trail runner' is ON. The chandelier trail normally exits before this ceiling.")
+trailAtrMult = 3.6 // input.float(3.6, "Chandelier trail width (ATR)",  minval=1.0, maxval=8.0, step=0.1, group=gRisk, tooltip="Runner trail width in ATR units: the stop ratchets to (best price seen -/+ this x ATR), only ever tightening.")
+
+minAtrPct = input.float(0.04, "Min volatility to trade — ATR % of price", minval=0.0, maxval=5.0, step=0.001, group=gRisk, tooltip="Volatility FLOOR. A new entry needs ATR as a percent of price (atr/close*100) to be at least this, so the strategy stays out of dead, low-volatility bars where spread/commission eats the edge. 0 = no floor. Default 0.0156.")
+maxAtrPct = input.float(0.2,  "Max volatility to trade — ATR % of price", minval=0.0, maxval=10.0, step=0.001, group=gRisk, tooltip="Volatility CEILING. A new entry is blocked when ATR as a percent of price (atr/close*100) exceeds this, to avoid entering into volatility spikes / news chaos. 0 = no ceiling. Default 0.158.")
+
+// =============================================================================
+// SESSIONS (UTC)
+// =============================================================================
+gSess = "Sessions"
+tradeAnytime = input.bool(true, "Trade anytime (ignore sessions)", group=gSess, tooltip="ON: disable ALL session detection — new entries are allowed in any hour and the Asia/London/NY windows below are ignored. Session-end force-close stops applying (news force-close still works); the trade counter resets per UTC day instead of per session.")
+enableAsia   = input.bool(false, "Trade Asia session",     group=gSess, tooltip="Master toggle for Asia-window entries. Asia is low-vol/mean-reverting. Ignored when 'Trade anytime' is ON.")
+enableLondon = input.bool(false, "Trade London session",   group=gSess, tooltip="Master toggle for London-window entries. London is directional.")
+enableNY     = input.bool(false, "Trade New York session", group=gSess, tooltip="Master toggle for NY-window entries. NY is highest-vol, news-heavy.")
+forceCloseSessNews = input.bool(false, "Force closed before session end / High impact news", group=gSess, tooltip="ON: any OPEN position is force-closed (next bar open) the moment its session ends or a news-avoidance window opens. New entries are already vetoed out-of-session / in-news; this adds the matching exit.")
+asia = input.session("0000-0600", "Asia", group=gSess)
+ldn  = input.session("0700-1100", "London", group=gSess)
+ny   = input.session("1230-1630", "New York", group=gSess)
+blockedHoursStr = ""  // hidden — old-config hour blocking removed for the new strategy (empty = no blocking)
+
+// =============================================================================
+// NEWS AVOIDANCE (UTC) — pause NEW entries around high-impact USD releases.
+// =============================================================================
+gNews = "News Avoidance"
+avoidNews      = input.bool(false, "Avoid News Trading", group=gNews, tooltip="ON: new entries pause around high-impact USD releases (NFP, CPI, FOMC/rate, GDP, Jobless Claims). Open positions keep their SL/TP. Blue background marks the window.")
+newsMinsBefore = input.int(15, "Minutes Before News to Avoid", minval=1, maxval=120, step=5, group=gNews)
+newsMinsAfter  = input.int(15, "Minutes After News to Avoid",  minval=1, maxval=120, step=5, group=gNews)
+
+// =============================================================================
+// VOLUME PROFILE CORE (master + local VP/TPO proxy)
+// =============================================================================
+gVP = "Master VP Core"
+vpLookback      = input.int(50, "VP block bars (local window)", minval=20, maxval=300, step=5, group=gVP, tooltip="Number of completed chart bars used for the local volume-profile window. The master profile uses this value multiplied by the master multiplier. Lower = faster/reactive levels but noisier POC/VAH/VAL; higher = smoother/more stable levels but slower to adapt. Default 50.")
+vpBins          = input.int(40, "VP bins", minval=12, maxval=120, step=2, group=gVP, tooltip="Number of price buckets used to build the local and master volume profiles. Higher = finer POC/VAH/VAL and node-state resolution, but more per-bar loop work; lower = faster and smoother but less precise. Default 40.")
+histBins        = 120   // display histogram bins
+vaPct           = 70.0 // value-area %
+masterMult      = 3    // master window = vpLookback x this
+nodeTouchAtr    = 0.05 // node touch distance (ATR)
+nodeDecay       = 0.94 // node memory decay (~half-life 11 bars)
+nodeNeutralBand = 0.15 // node neutral band
+nodeSaturation  = 4.0  // node saturation (touch count) for DEAD detection
+atrLen          = 14   // ATR length
+
+// =============================================================================
+// MULTI-TF NET TICK VOLUME (the entry-confirmation engine)
+// =============================================================================
+gNet = "Net Tick Volume (M1/M3/M5)"
+tfNetLook      = 50    // hidden — net-vol lookback bars (each TF sums this many recent bars for near-price net)
+netWinAtr      = 1.5   // hidden — near-price net window half-width (ATR); spec +/- 1.5 ATR around price
+useWeightedNet = input.bool(true, "Weight chart-TF net by HVN/MED/LVN", group=gNet, tooltip="EXPERIMENTAL (default OFF). ON: the chart-TF near-net weights each price bin by its volume-profile tier (HVN > 66% of near-window max counts more, LVN < 33% less). OFF = every bin weighted equally.")
+netConfirmM1orM3 = input.bool(false, "Confirm net on M1 OR M3 (default: M3 only)", group=gNet, tooltip="Which timeframe must show the confirming near-price net (>= min net in the TRADE DIRECTION) for an entry. OFF (default): M3 only (the chart/entry TF) must confirm — stricter, fewer entries. ON: EITHER M1 or M3 reaching the min confirms — looser, more entries. Applies to BOTH breakout (brkNetMin) and mean-reversion (revNetMin) confirming gates. Does NOT affect the opposing-net veto (still M3 & M5).")
+netConfirmM5     = input.bool(true, "Also allow M5 to confirm net", group=gNet, tooltip="OFF (default). ON: the confirming near-price net ALSO passes if M5 reaches the min net in the trade direction (added to M3, and M1 when its toggle is on). Catches setups where M5 net is strong (e.g. 99%) but M3 is just under the bar. Applies to breakout (brkNetMin) and mean-reversion (revNetMin). Opposing-net veto (M3 & M5) unchanged.")
+wHvn = 1.5  // hidden — tier weight (HIGH-volume node), used only when 'Weight chart-TF net' is ON
+wMvn = 1.0  // hidden — tier weight (MED-volume node)
+wLvn = 0.5  // hidden — tier weight (LOW-volume node)
+
+// =============================================================================
+// STRATEGY: BREAKOUT (break beyond a FRESH master VAH/VAL cross)
+// =============================================================================
+gBrk = "--- Strategy: Breakout ---"
+enableBreakout    = input.bool(true, "Enable Breakout strategy", group=gBrk, tooltip="Master switch for the breakout mode (enter on a fresh confirmed break beyond the master value-area edge).")
+brkFreshBars      = input.int(7, "Breakout: cross freshness (bars)", minval=1, maxval=50, group=gBrk, tooltip="The master-VAH (long) / master-VAL (short) cross arms the entry for this many bars. The arm is CONSUMED on entry, so one cross = at most one trade; a fresh re-cross is required for the next. Spec default 6.")
+brkLocalTolAtr    = input.float(0.1, "Breakout: local-VAH tolerance (ATR)", minval=0.0, maxval=8.0, step=0.05, group=gBrk, tooltip="Long requires local VAH <= master VAH + this x ATR (mirror local VAL >= master VAL - this for shorts). Raise it to ALLOW breakouts when the local profile has built ABOVE master VAH (local VAH/POC elevated); set high to effectively disable this gate. Spec default 0.1.")
+brkEntryBufAtr    = input.float(1.0, "Breakout: entry buffer (ATR)", minval=0.1, maxval=4.0, step=0.05, group=gBrk, tooltip="Long needs prev close >= master VAH + this x ATR (mirror master VAL for shorts). Spec default 1.0.")
+brkMaxDistAtr     = input.float(1.8, "Max breakout distance from VAL/VAH to current price (ATR)", minval=0.0, maxval=8.0, step=0.1, group=gBrk, tooltip="How far past the broken Key level the price may be and still take the breakout. Key level = master VAH for longs, master VAL for shorts. If the current price is MORE than this many ATR beyond that level, the breakout is skipped (don't chase a move that already ran). Default 1.8 ATR. Set 0 to turn this OFF (no max-distance limit).")
+brkNetMin         = input.float(0.80, "Breakout: min confirming net (M1 / M5 legs)", minval=0.0, maxval=1.0, step=0.01, group=gBrk, tooltip="Breakout requires near-price net tick volume >= this in the trade direction. This threshold governs the M1 leg (when 'Confirm net on M1 OR M3' is ON) and the M5 leg (when 'Also allow M5 to confirm net' is ON). The M3 leg uses the SEPARATE 'Breakout: min confirming net (M3 only)' knob below. Spec 0.80 (>=80% net).")
+brkNetMinM3       = input.float(0.80, "Breakout: min confirming net (M3 only)", minval=0.0, maxval=1.0, step=0.01, group=gBrk, tooltip="Dedicated M3-leg confirming-net floor for breakouts, decoupled from the M1/M5 knob. With 'Confirm net on M1 OR M3' OFF (default = M3 only) and M5 OFF, this is the SOLE breakout net gate. Set to 0 to remove the M3 net floor entirely when testing M3-only behavior. Spec 0.80.")
+brkOppMax         = input.float(0.80, "Breakout: max opposing net (M3 & M5)", minval=0.0, maxval=1.0, step=0.01, group=gBrk, tooltip="Breakout is blocked if near-price net is opposing the trade by more than this on M3 or M5 ('not bearish more than 80%' for a long). Spec 0.80.")
+brkSlBufAtr       = input.float(0.25, "Breakout: SL buffer (ATR)", minval=0.05, maxval=2.0, step=0.05, group=gBrk, tooltip="SL anchor = master VAH - this x ATR (long). Spec default 0.2.")
+brkSlAtrMult      = input.float(2.0, "Breakout: SL prev-close distance (ATR)", minval=0.5, maxval=5.0, step=0.1, group=gBrk, tooltip="The 'prev close - this x ATR' term in the breakout SL. SL = min(masterVAH - SL buffer, prev close - this x ATR) for longs. Spec default 2.0.")
+brkRrLookbackBars = 25    // hidden — recent-entry lookback (bars): no same-dir entry within -> FAR RR, else NEAR RR. Spec 25.
+brkRrFar          = input.float(3.0, "Breakout: RR (no recent entry)", minval=0.5, maxval=8.0, step=0.1, group=gBrk, tooltip="Reward:risk for breakout TP when no same-direction entry occurred in the lookback. Spec 1:3.")
+brkRrNear         = input.float(2.0, "Breakout: RR (recent entry)",    minval=0.5, maxval=8.0, step=0.1, group=gBrk, tooltip="Reward:risk for breakout TP when a same-direction entry occurred within the lookback. Spec 1:2.")
+// --- Breakout: overhead-supply veto (opt-in, default OFF) -----------------------
+// Hypothesis (falsifiable): a long breakout that breaks UP into a large, SELL-dominant
+// master-VP node band overhead (mirror for shorts) is walking into resting supply and is
+// a high-probability fade. Reuses the node-state buy/sell arrays (no new VP math). OFF =
+// baseline byte-identical. Calibrate brkOverheadNetMax via A/B on TRAIN + a true OOS window.
+brkOverheadVeto   = input.bool(false, "Breakout: overhead-supply veto", group=gBrk, tooltip="OFF (default) = exact baseline, no entry changed. ON = block a breakout when the value-area path it is breaking INTO holds a MAJOR node (high band volume) whose net pressure OPPOSES the trade (sell-dominant overhead for a long, buy-dominant below for a short). Targets the 'broke up into a 91%-sell node and reversed' loss pattern.")
+brkProjAtr        = input.float(1.5, "Breakout: overhead scan distance (ATR)", minval=0.1, maxval=6.0, step=0.1, group=gBrk, tooltip="How far ahead of price (in ATR) to scan master-VP nodes for opposing supply/demand. Long scans [close, close + this x ATR]; short scans [close - this x ATR, close]. Covers the path toward TP1/TP2. Default 1.5.")
+brkOverheadLook   = input.int(200, "Breakout: overhead band-volume lookback (bars)", minval=20, maxval=1000, group=gBrk, tooltip="Percentrank lookback used to decide whether the scanned band is a MAJOR (high-volume) node. Default 200.")
+brkOverheadHvnPct = input.float(70, "Breakout: overhead HVN percentile", minval=0, maxval=100, step=5, group=gBrk, tooltip="The scanned band counts as a major node only when its total node volume ranks at/above this percentile over the lookback. Below it the band is a thin LVN (vacuum) and the veto stays silent. Default 70.")
+brkOverheadNetMax = input.float(0.5, "Breakout: overhead opposing-net threshold", minval=0.0, maxval=1.0, step=0.05, group=gBrk, tooltip="The scanned band must oppose the trade by at least this net pressure to veto (band net <= -this for a long, >= +this for a short). 0.5 = overhead is >=50% sell-dominant. PRIMARY sweep variable. Default 0.5.")
+showOverheadVeto  = input.bool(false, "Breakout: show overhead-veto markers (debug)", group=gBrk, tooltip="Plots a marker on bars where the overhead band WOULD veto (computed even when the veto itself is OFF), so you can calibrate the thresholds visually in replay before enabling the gate.")
+// =============================================================================
+// STRATEGY: IMPULSE-THRUST (the conditional high-volatility path)
+// Fires ONLY in the volatility band the normal ceiling (maxAtrPct) vetoes — a single
+// decisive >= impulseCandleAtr x ATR candle that closes a full entry-buffer beyond the
+// master value-area edge, trend-aligned (price + local POC on the broken side of master
+// POC) on extreme one-sided M1 near-price net. This REPLACES the dead brkBigCandle idea.
+// =============================================================================
+gImp = "--- Strategy: Impulse-thrust Breakout ---"
+enableImpulse      = input.bool(true, "Enable Impulse-thrust path (bypasses vol ceiling)", group=gImp, tooltip="Master switch for the impulse path. It activates ONLY when ATR% is ABOVE the 'Max volatility to trade' ceiling — i.e. exactly the high-volatility bars the normal breakout/reversion refuse. Below the ceiling this path never fires and the existing logic is unchanged.")
+impulseCandleAtr   = input.float(1.7, "Impulse: min thrust candle range (ATR)", minval=0.5, maxval=6.0, step=0.1, group=gImp, tooltip="The trigger bar's range (high-low) must be at least this x ATR — a single decisive initiative candle, not choppy expansion. Default 2.0. This is the primary discriminator separating a real value-area-rejection thrust from high-vol chop.")
+impulseEntryBufAtr = input.float(0.4, "Impulse: entry buffer beyond VAL/VAH (ATR)", minval=0.1, maxval=4.0, step=0.05, group=gImp, tooltip="The thrust must CLOSE at least this x ATR beyond the master edge (close <= master VAL - this for a short / >= master VAH + this for a long). Default 1.0.")
+impulseNetMin      = input.float(0.95, "Impulse: min M1 confirming net", minval=0.0, maxval=1.0, step=0.01, group=gImp, tooltip="The M1 near-price net tick volume must be at least this one-sided in the thrust direction (>= for long, <= -this for short). Default 0.95 (>=95%). The impulse leans on M1 flow as the carry signal.")
+impulseMaxDistAtr  = input.float(2.5, "Impulse: max chase distance from VAL/VAH (ATR)", minval=0.0, maxval=8.0, step=0.1, group=gImp, tooltip="Anti-chase ceiling: skip the impulse if the close is MORE than this x ATR beyond the broken master edge (don't enter a thrust that already ran). 0 = OFF. Default 2.5.")
+impulseRr          = input.float(3.0, "Impulse: RR target", minval=0.5, maxval=8.0, step=0.1, group=gImp, tooltip="Reward:risk for the impulse TP (TP = close -/+ this x stop distance). Default 1:3, matching the hand-traded setups.")
+impulseTrendSlopeBars = input.int(10, "Impulse: master-POC slope lookback (bars)", minval=1, maxval=100, group=gImp, tooltip="Dominant-trend gate: the impulse only takes shorts when the master POC is DECLINING over this many bars (longs when rising). Uses the master-POC SLOPE, not its instantaneous position, so a single bounce candle can't flip the trend read. Default 10.")
+impulsePredictBars    = input.int(10, "Impulse: predicted-POC age-out (bars)", minval=0, maxval=100, group=gImp, tooltip="The master VP is a lagging window; as it rolls, old high-volume nodes expire and the POC/VAH/VAL JUMP. This ages out the oldest N bars to PREDICT where the master levels migrate next. Used to confirm trend direction and to measure the anti-chase distance against the level price is heading toward (not the stale one). 0 = use current levels (no prediction). Default 10.")
+
+// =============================================================================
+// REGIME GATE (trend/range router) — opt-in cross-mode veto
+// Breakout and reversion are opposite bets (trend vs range). With the gate OFF the
+// two compete on the same bars and cancel over long windows (365d Deep PF 0.876).
+// With it ON, breakout fires only when the master-POC slope is trending in its
+// direction, reversion only when the slope is flat (ranging); the neutral band
+// between tauLow and tauHigh trades nothing. Default OFF = exact pre-gate baseline.
+// =============================================================================
+gRegime = "--- Regime Gate (trend/range router) ---"
+enableRegimeGate = input.bool(false, "Enable regime gate (route brk->trend, rev->range)", group=gRegime, tooltip="OFF (default) = exact pre-gate baseline, no signal is changed. ON = breakout only fires in a TREND regime aligned to its direction, reversion only in a RANGE regime, and the neutral band between the two thresholds trades nothing. Stops the two opposite modes cancelling each other on long windows. Calibrate the thresholds from the dbgSlopeBins table before trusting an ON result.")
+regimeTauHigh    = input.float(0.5,  "Regime: TREND threshold |slope| (ATR over slope lookback)", minval=0.0, maxval=5.0, step=0.05, group=gRegime, tooltip="TREND regime when the master-POC slope magnitude is >= this. Units = ATRs the master POC drifted over the impulse slope lookback (impulseTrendSlopeBars). Breakout long needs slope >= +this, short needs slope <= -this. Higher = stricter trend, fewer breakouts. PLACEHOLDER default 0.5 pending dbgSlopeBins calibration.")
+regimeTauLow     = input.float(0.25, "Regime: RANGE threshold |slope| (ATR over slope lookback)", minval=0.0, maxval=5.0, step=0.05, group=gRegime, tooltip="RANGE regime when the master-POC slope magnitude is <= this (flat POC). Reversion only fires inside this band. Keep this BELOW the TREND threshold; the gap between them is a neutral dead zone that trades nothing. This is the 'tau_low' the baseline was reserved for. PLACEHOLDER default 0.25 pending dbgSlopeBins calibration.")
+
+// =============================================================================
+// MASTER-POC STABILITY GATE (opt-in, per strategy)
+// Hypothesis: a setup is more reliable when the master value structure is SETTLED.
+// The predicted master POC (pMPoc -- the same window with the oldest impulsePredictBars
+// aged out) shows where value is migrating. When |pMPoc - mPoc| is small the POC is
+// "stable" (value consolidated, the level is trustworthy); a large gap = value relocating,
+// so a level-referenced entry is built on a POC about to move. When the per-strategy
+// toggle is ON, a detected setup whose POC is NOT stable is skipped. Both toggles default
+// OFF = exact baseline, and the gate auto-NO-OPs when impulsePredictBars = 0 (pMPoc==mPoc).
+// =============================================================================
+gPocStab = "--- Master-POC Stability Gate (opt-in) ---"
+pocStableMaxAtr     = input.float(0.2, "POC stability: max predicted-vs-current gap (ATR)", minval=0.0, maxval=5.0, step=0.05, group=gPocStab, tooltip="The master POC counts as 'stable' when the predicted next master POC (pMPoc) sits within this x ATR of the current master POC (mPoc): abs(pMPoc - mPoc) <= this x ATR. A larger gap means value is migrating and the setup is skipped (when the per-strategy toggle below is ON). PRIMARY sweep variable. Default 0.2. Has no effect unless impulsePredictBars > 0.")
+brkRequirePocStable = input.bool(false, "Breakout: require stable master POC", group=gPocStab, tooltip="OFF (default) = exact baseline, no breakout changed. ON = a breakout setup only executes when the master POC is stable (gap threshold above). Skips breaks fired while the master value structure is relocating.")
+revRequirePocStable = input.bool(false, "Reversion: require stable master POC", group=gPocStab, tooltip="OFF (default) = exact baseline, no reversion changed. ON = a mean-reversion setup only executes when the master POC is stable. A fade referenced to a POC that is about to migrate is the weakest fade.")
+
+// =============================================================================
+// STRATEGY: MEAN-REVERSION (4 variants off fresh master POC / VAL / VAH crosses)
+// =============================================================================
+gRev = "--- Strategy: Mean-Reversion ---"
+enableReversion = input.bool(false, "Enable Mean-Reversion strategy", group=gRev, tooltip="Master switch for the mean-reversion mode (fade a fresh master POC / VAL / VAH cross back toward the value area).")
+revFreshBars    = input.int(6, "Reversion: cross freshness (bars)", minval=1, maxval=50, group=gRev, tooltip="A master POC/VAL/VAH cross arms the matching reversion entry for this many bars; CONSUMED on entry. Spec default 6.")
+revAnchorOffAtr = 0.06  // hidden — entry anchor offset (ATR) on the master level (e.g. master POC + this for a long). Spec 0.06.
+revPocSlOffAtr  = 0.1   // hidden — POC SL anchor offset (ATR) for the POC-family SL. Spec 0.1.
+revEntryDistAtr = input.float(1.0, "Reversion: entry distance (ATR)", minval=0.1, maxval=4.0, step=0.05, group=gRev, tooltip="Prev close must be beyond the entry anchor by this x ATR (the spec's '+ ATR' / '- ATR' term). Spec default 1.0.")
+revMaxDistAtr   = input.float(2.0, "Reversion: max distance from POC/VAL/VAH (ATR)", minval=0.0, maxval=8.0, step=0.1, group=gRev, tooltip="Anti-chase ceiling. When ON (> 0): skip the mean-reversion if prev close is more than this x ATR beyond the key level that armed it (master POC for the POC-cross variants, master VAL for the VAL-cross long, master VAH for the VAH-cross short) — don't fade a move that has already extended too far. 0 = OFF (no max-distance gate). Default 2.0.")
+revNetMin       = input.float(0.80, "Reversion: min confirming net (M1 or M3)", minval=0.0, maxval=1.0, step=0.01, group=gRev, tooltip="Reversion requires near-price net tick volume >= this in the trade direction on EITHER M1 or M3. Spec 0.80. CONFIGURABLE 80% GATE.")
+revOppMax       = input.float(0.80, "Reversion: max opposing net (M3 & M5)", minval=0.0, maxval=1.0, step=0.01, group=gRev, tooltip="Reversion is blocked if near-price net opposes the trade by more than this on M3 or M5. Spec 0.80.")
+revSlBufAtr     = input.float(0.2, "Reversion: SL buffer (ATR)", minval=0.05, maxval=2.0, step=0.05, group=gRev, tooltip="SL buffer added beyond the SL anchor. Spec default 0.2.")
+revSlAtrMult    = input.float(2.0, "Reversion: SL prev-close distance (ATR)", minval=0.5, maxval=5.0, step=0.1, group=gRev, tooltip="The 'prev close -/+ this x ATR' protective term in the reversion SL. Spec default 2.0.")
+revMinRR        = input.float(1.5, "Reversion: min RR to take", minval=0.5, maxval=4.0, step=0.1, group=gRev, tooltip="Skip a reversion entry whose target-based reward:risk is below this. Spec 1:1.5.")
+
+// =============================================================================
+// STACKING + EARLY-EXIT
+// =============================================================================
+gStack = "Stacking / Early-Exit"
+maxConcurrentPerDir = 3     // hidden — spec: stacking ON (>1 same-direction trade); cap concurrent per direction
+enableEarlyExit     = false // hidden — LEGACY M1-AND-M3 net-volume flush early-exit (requires both TFs to agree); default OFF
+exitNetMin          = 0.80  // hidden — opposing-net flush threshold for the LEGACY early-exit
+
+// M1-LEAD flush early-exit (separate from the legacy one above). The legacy exit
+// requires M1 AND M3 to flush together, so it never fires when M3 lags the M1
+// reversal (the trade-6 loss pattern: M1 flips to 100% opposing ~4 bars before
+// the SL while M3 only bleeds 100->59->neutral). This one watches M1 ALONE and
+// is gated on the position being underwater so it only cuts losers.
+enableM1FlushExit = input.bool(false, "M1-flush early exit", group=gStack, tooltip="Close the position when the M1 net tick-volume flushes against it for the configured number of bars. Decoupled from M3 (unlike the legacy flush exit) so it reacts while M3 still lags the reversal. Default OFF — A/B before relying on it.")
+m1FlushNetMin     = input.float(0.80, "M1-flush: opposing net threshold", minval=0.50, maxval=1.0, step=0.05, group=gStack, tooltip="How strongly M1 net volume must oppose the trade to count as a flush bar (0.80 = 80% net against; 1.00 = a fully one-sided M1 bar). Trade-6 hit -1.00, so 0.80 catches it with margin.")
+m1FlushBars       = input.int(2, "M1-flush: confirm bars", minval=1, maxval=10, group=gStack, tooltip="Consecutive M1 bars (counted natively on the 1-minute TF) that must flush against the trade before exiting. 1 = fastest cut, more noise; higher = safer, gives back early-exit window. Trade-6 still exits well before SL at 2.")
+m1FlushUnderwater = input.bool(true, "M1-flush: only when underwater", group=gStack, tooltip="Only allow the M1-flush exit when the position is in unrealized loss (strategy.openprofit < 0). Keeps it from cutting winners that briefly see opposing M1 volume. Recommended ON.")
+enableOverheadExit     = input.bool(false, "Overhead-supply early exit", group=gStack, tooltip="OFF (default). ON = close the position early when the path AHEAD of price builds a MAJOR opposing Volume-Profile node (the SAME overhead read as the breakout entry veto: sell-dominant supply above an open long, buy-dominant demand below an open short). Independent of the entry veto — toggle either, both, or neither. Uses the gBrk overhead thresholds (scan distance / lookback / HVN% / opposing-net). close_all, matching the other early-exits.")
+overheadExitUnderwater = input.bool(true, "Overhead-exit: only when underwater", group=gStack, tooltip="Only allow the overhead-supply exit when the position is in unrealized loss (strategy.openprofit < 0). Keeps it from cutting a winner that is running into supply it will punch through. Recommended ON.")
+
+allowAlerts = true  // hidden — alerts always emit valid Discord JSON (entry / TP1 / close)
+
+// =============================================================================
+// VISUALS
+// =============================================================================
+// Visuals — hidden from the input panel; edit these consts to toggle.
+showVpLegend   = true
+showTradeViz   = true   // entry/SL/TP lines + WON/LOST labels
+showLocalNode  = true
+showMasterNode = true
+showMasterHist = true
+showHistogram  = true
+histMaxBars    = 50
+showFullVPText = false
+gViz           = "Visuals"
+atrMeasureMult = input.float(1.0, "Display ATR measurement (x ATR, 0=hide)", minval=0.0, maxval=10.0, step=0.5, group=gViz, tooltip="Draws two horizontal guide lines at the live price +/- this x ATR, from the current bar extending 4 bars to the right — a quick visual ruler for ATR distance. Default 1 = +/- 1 x ATR. 0 = hidden.")
+showPredictedPoc = input.bool(false, "Show predicted master POC (age-out)", group=gViz, tooltip="OFF by default. ON: plot the PREDICTED master POC — where the POC migrates once the oldest 'predicted-POC age-out' bars expire from the master window. A forward look at the master-level jump the impulse path anticipates.")
+dbgSlopeBins = input.bool(false, "Debug: slope-bin trade table", group=gViz, tooltip="DIAGNOSTIC (default OFF). Buckets every CLOSED trade fill by the master-POC slope at its ENTRY (aligned to trade direction, normalized by ATR) and renders a bottom-left table of #fills / win% / total P&L / avg P&L per slope bin. Falsification test for adaptive RR: if win% and avg P&L do NOT rise as aligned slope increases, master-POC slope carries no regime edge and adaptive RR is curve-fit. Display-only — changes NO entry/exit/SL/TP logic.")
+dbgOverheadBins = input.bool(false, "Debug: overhead-veto selectivity table", group=gViz, tooltip="DIAGNOSTIC (default OFF). For every CLOSED breakout trade, classifies it by whether the overhead-supply veto WOULD trip at its entry (evaluated at the CURRENT gBrk overhead thresholds, re-computed on every input change) and renders a table of #trades / win% / total P&L / avg P&L for the WOULD-VETO vs KEPT vs ALL-breakout sets. Sweep the overhead thresholds and watch the WOULD-VETO win%: if it is well BELOW the KEPT win%, the veto is removing losers (real edge). If WOULD-VETO win% is similar to KEPT, the veto is thinning at random (overfit). Display-only — changes NO entry/exit logic. Populates over the chart-loaded window only, NOT a deep backtest.")
+
+// =============================================================================
+// DECISION TELEMETRY (debug) — full per-decision / per-veto capture. ADDITIVE:
+// changes NO entry/exit/SL/TP logic. Two CSV sinks: (1) taken trades carry a
+// compact decision vector in the strategy comment -> rides the trade-list CSV
+// "Signal" column; (2) per-bar veto bitmasks + context are plot()ted (display
+// hidden) -> exportable via TradingView "Export chart data" for the WHOLE window
+// incl. no-trade bars. Plus a live cockpit table and an optional log.info line.
+// VETO BIT LAYOUT — breakout (vBrkL/vBrkS): 1=stale 2=localTol 4=entryBuf
+//   8=maxDistChase 16=net 32=oppNet 64=risk<=0 128=regime 256=htf 512=overhead
+//   1024=pocStable. Reversion v1 (vRevL/vRevS): 1=stale 2=entryDist 4=maxDist
+//   8=net 16=oppNet 32=risk<=0 64=tpInvalid 128=rrFloor 256=regime 512=pocStable.
+//   mask 0 = full candidate (would have fired but for position/session/sizing).
+// =============================================================================
+gTel = "Decision Telemetry (debug)"
+debugTelemetry = input.bool(false, "Enable decision telemetry", group=gTel, tooltip="MASTER OFF (default). ON: pack a compact decision vector into the trade-list comment for every taken entry / early-exit, AND plot per-bar veto bitmasks + multi-TF context as hidden series for full-window 'Export chart data' forensics. Changes NO entry/exit/SL/TP logic. See the VETO BIT LAYOUT comment in source for how to decode the masks in pandas.")
+telTable       = input.bool(true,  "  show live cockpit table", group=gTel, tooltip="When telemetry is ON: render a top-right panel with the current-bar M1/M3/M5/M15 net, ATR%, master-POC slope, regime, and the live breakout/reversion veto reason. Live eyeballing only — has no history, not a forensic sink.")
+telLog         = input.bool(false, "  log.info per confirmed bar", group=gTel, tooltip="When telemetry is ON: emit one guarded log.info line per CONFIRMED bar with the decision vector. Readable live via the Pine Logs console / MCP mid-session. NOT history (console keeps only recent entries, latest run). Default OFF.")
+telShadowM1    = input.bool(true,  "  M1-shadow reversion experiment", group=gTel, tooltip="When telemetry is ON: for reversion CANDIDATE bars, estimate how much better an M1-timed entry would fill than the M3-close entry, in R (best favorable M1 sub-bar close within the M3 bar vs the M3 close). Logged in the vector (m1r=) and plotted (tel_m1r). Median m1r across reversion candidates answers 'is reversion better timed on M1 than M3'. Adds one request.security_lower_tf M1 call.")
+
+// =============================================================================
+// HTF NET-VOLUME SCENARIO GATE (opt-in) — "don't fight the higher-timeframe flow"
+// Breakouts only fire when the M5 + M15 near-price net tick-volume balance is not
+// opposing the trade (lenient) or actively agrees (strict). Net-volume only — no
+// lagging indicators. Default OFF = exact baseline. Appended at the end of the input
+// list on purpose so existing input IDs do not shift. The richer scenario (session
+// VWAP + live/DEAD node structure + bias-flip early-exit, per /daily-bias) is the
+// planned next iteration; this is the minimal first cut of the M5/M15 bias hypothesis.
+// =============================================================================
+gHtf = "HTF Net-Volume Scenario"
+enableHtfBias   = input.bool(false, "Enable HTF net-volume bias gate (M5+M15)", group=gHtf, tooltip="OFF (default) = exact baseline. ON = a BREAKOUT only fires when the higher-timeframe (M5 AND M15) near-price net tick-volume balance is not fighting it. The point is to stop taking breakouts INTO the bigger flow. Applies to breakout entries only for now (impulse/reversion unchanged).")
+htfBiasMin      = input.float(0.5, "HTF: min net to call a directional bias", minval=0.0, maxval=1.0, step=0.05, group=gHtf, tooltip="How one-sided the M5 and M15 near-price net must be to count as a HTF bias. Bullish HTF = BOTH M5 and M15 net >= +this; bearish = BOTH <= -this; otherwise BALANCED. Higher = only strong HTF flow blocks/permits. Default 0.5.")
+htfRequireAlign = input.bool(false, "HTF: require ACTIVE alignment (strict)", group=gHtf, tooltip="OFF (default, lenient): a breakout is blocked ONLY when the HTF bias actively OPPOSES it (don't fight the flow); BALANCED is allowed. ON (strict): a breakout requires the HTF bias to actively AGREE (BALANCED is blocked too).")
+
+// Near-price verdict tag — hidden from the input panel; edit these consts to toggle.
+showNearVerdict     = true
+nearVerdictAtr      = 1.2
+nearVerdictBalanced = 15
+nearVolLook         = 100
+nearVolStrongPct    = 70
+nearVolWeakPct      = 35
+
+float riskPctUSD    = math.max((strategy.initial_capital + strategy.netprofit) * riskPerTradeAccPercent / 100.0, 0.0)
+float riskBudgetUSD = riskUnit == "% Account Balance" ? riskPctUSD : riskUnit == "USD" ? riskPerTradeUSD : riskUnit == "Min of USD or % Acc Balance" ? math.min(riskPerTradeUSD, riskPctUSD) : math.max(riskPerTradeUSD, riskPctUSD)
+
+// =============================================================================
+// SESSION / NEWS / TF PLUMBING
+// =============================================================================
+inSess(sess) => not na(time(timeframe.period, sess))
+inAsia = enableAsia and inSess(asia)
+inLdn  = enableLondon and inSess(ldn)
+inNy   = enableNY and inSess(ny)
+inAnySession = tradeAnytime or inAsia or inLdn or inNy
+// When Trade Anytime is ON there are no sessions, so key the counter to the UTC day
+// (the day number changes each day -> newSession fires -> per-day reset).
+sessionId = tradeAnytime ? dayofmonth(time, "UTC") : (inAsia ? 1 : inLdn ? 2 : inNy ? 3 : 0)
+newSession = sessionId != nz(sessionId[1], 0)
+
+parseBlockedHoursOnce(string s) =>
+    array<int> result = array.new<int>()
+    if str.length(s) > 0
+        string clean = str.replace_all(s, " ", "")
+        array<string> parts = str.split(clean, ",")
+        if array.size(parts) > 0
+            for i = 0 to array.size(parts) - 1
+                string p = array.get(parts, i)
+                if str.length(p) > 0
+                    if str.contains(p, "-")
+                        array<string> rng = str.split(p, "-")
+                        if array.size(rng) == 2
+                            float aF = str.tonumber(array.get(rng, 0))
+                            float bF = str.tonumber(array.get(rng, 1))
+                            if not na(aF) and not na(bF)
+                                int lo = math.min(math.round(aF), math.round(bF))
+                                int hi = math.max(math.round(aF), math.round(bF))
+                                for h = lo to hi
+                                    if h >= 0 and h <= 23 and not array.includes(result, h)
+                                        array.push(result, h)
+                    else
+                        float hF = str.tonumber(p)
+                        if not na(hF)
+                            int h = math.round(hF)
+                            if h >= 0 and h <= 23 and not array.includes(result, h)
+                                array.push(result, h)
+    result
+var array<int> blockedHoursList = parseBlockedHoursOnce(blockedHoursStr)
+bool isBlockedHour = array.size(blockedHoursList) > 0 and array.includes(blockedHoursList, hour(time, "UTC"))
+
+float ecoNFP = request.economic("US", "NONFARM", barmerge.gaps_on, true)
+float ecoCPI = request.economic("US", "CPI",     barmerge.gaps_on, true)
+float ecoIR  = request.economic("US", "IR",      barmerge.gaps_on, true)
+float ecoGDP = request.economic("US", "GDP",     barmerge.gaps_on, true)
+float ecoJC  = request.economic("US", "JC",      barmerge.gaps_on, true)
+bool newsReleasedThisBar = not na(ecoNFP) or not na(ecoCPI) or not na(ecoIR) or not na(ecoGDP) or not na(ecoJC)
+
+var int newsSlot1 = na, var int newsSlot2 = na, var int newsSlot3 = na, var int newsSlot4 = na, var int newsSlot5 = na
+int curMinUtc = hour(time, "UTC") * 60 + minute(time, "UTC")
+if newsReleasedThisBar
+    bool dup = (not na(newsSlot1) and math.abs(newsSlot1 - curMinUtc) <= 2) or (not na(newsSlot2) and math.abs(newsSlot2 - curMinUtc) <= 2) or (not na(newsSlot3) and math.abs(newsSlot3 - curMinUtc) <= 2) or (not na(newsSlot4) and math.abs(newsSlot4 - curMinUtc) <= 2) or (not na(newsSlot5) and math.abs(newsSlot5 - curMinUtc) <= 2)
+    if not dup
+        if na(newsSlot1)
+            newsSlot1 := curMinUtc
+        else if na(newsSlot2)
+            newsSlot2 := curMinUtc
+        else if na(newsSlot3)
+            newsSlot3 := curMinUtc
+        else if na(newsSlot4)
+            newsSlot4 := curMinUtc
+        else if na(newsSlot5)
+            newsSlot5 := curMinUtc
+
+f_inNewsWin(int slot) => not na(slot) and curMinUtc >= slot - newsMinsBefore and curMinUtc <= slot + newsMinsAfter
+bool inNewsWindow = avoidNews and (f_inNewsWin(newsSlot1) or f_inNewsWin(newsSlot2) or f_inNewsWin(newsSlot3) or f_inNewsWin(newsSlot4) or f_inNewsWin(newsSlot5))
+bgcolor(inNewsWindow ? color.new(color.blue, 85) : na, title="News Avoidance Window", editable=false)
+
+validTf = (timeframe.isseconds and timeframe.multiplier == 30) or (timeframe.isminutes and (timeframe.multiplier == 1 or timeframe.multiplier == 3 or timeframe.multiplier == 5 or timeframe.multiplier == 15))
+
+atr = ta.atr(atrLen)
+atrPct = atr / close * 100.0
+
+f_clamp(v, lo, hi) => math.max(lo, math.min(hi, v))
+
+// =============================================================================
+// VOLUME PROFILE — local + master VAH/VAL/POC
+// =============================================================================
+// _skipOld > 0 ages out the OLDEST _skipOld bars (the next window-roll), giving a
+// PREDICTED profile of where POC/VAH/VAL migrate once those bars expire. 0 = current.
+f_vp(_len, _bins, _vaPct, _skipOld) =>
+    int useLen = math.max(_bins, _len - _skipOld)
+    float lo = ta.lowest(low, useLen)
+    float hi = ta.highest(high, useLen)
+    float step = (hi - lo) / _bins
+    float poc = na
+    float vah = na
+    float val = na
+    if step > 0
+        float[] hist = array.new_float(_bins, 0.0)
+        for i = 0 to useLen - 1
+            float p = hlc3[i]
+            int bi = int(f_clamp(math.floor((p - lo) / step), 0, _bins - 1))
+            array.set(hist, bi, array.get(hist, bi) + volume[i])
+        float total = 0.0
+        int pocIdx = 0
+        float pocVol = -1.0
+        for b = 0 to _bins - 1
+            float hv = array.get(hist, b)
+            total += hv
+            if hv > pocVol
+                pocVol := hv
+                pocIdx := b
+        float target = total * (_vaPct * 0.01)
+        float acc = array.get(hist, pocIdx)
+        int loIdx = pocIdx
+        int hiIdx = pocIdx
+        while acc < target and (loIdx > 0 or hiIdx < _bins - 1)
+            float nextL = loIdx > 0 ? array.get(hist, loIdx - 1) : -1.0
+            float nextH = hiIdx < _bins - 1 ? array.get(hist, hiIdx + 1) : -1.0
+            if nextH >= nextL
+                hiIdx += 1
+                acc += array.get(hist, hiIdx)
+            else
+                loIdx -= 1
+                acc += array.get(hist, loIdx)
+        poc := lo + (pocIdx + 0.5) * step
+        vah := lo + (hiIdx + 1.0) * step
+        val := lo + loIdx * step
+    [poc, vah, val, hi, lo]
+
+[poc, vah, val, ph, pl] = f_vp(vpLookback, vpBins, vaPct, 0)
+[mPoc, mVah, mVal, mPh, mPl] = f_vp(vpLookback * masterMult, vpBins, vaPct, 0)
+// Predicted master profile: same window with the oldest impulsePredictBars aged out —
+// anticipates the POC/VAH/VAL "jump" when the current master node expires.
+[pMPoc, pMVah, pMVal, pMPh, pMPl] = f_vp(vpLookback * masterMult, vpBins, vaPct, impulsePredictBars)
+// Predicted master POC is rendered as a 3-bar solid line extended to the right
+// in the viz section (see PREDICTED MASTER POC LINE block).
+
+// =============================================================================
+// NODE STATE ENGINE (synthetic buy/sell pressure + absorption)
+// =============================================================================
+var float[] nodeBuy = array.new_float()
+var float[] nodeSell = array.new_float()
+var float[] nodeTouch = array.new_float()
+var float[] histBuy   = array.new_float()
+var float[] histSell  = array.new_float()
+var float[] histTouch = array.new_float()
+
+if array.size(nodeBuy) != vpBins
+    nodeBuy := array.new_float(vpBins, 0.0)
+    nodeSell := array.new_float(vpBins, 0.0)
+    nodeTouch := array.new_float(vpBins, 0.0)
+if array.size(histBuy) != histBins
+    histBuy   := array.new_float(histBins, 0.0)
+    histSell  := array.new_float(histBins, 0.0)
+    histTouch := array.new_float(histBins, 0.0)
+
+float mLo = ta.lowest(low, vpLookback * masterMult)
+float mHi = ta.highest(high, vpLookback * masterMult)
+float mStep = (mHi - mLo) / vpBins
+float touchDist = math.max(nodeTouchAtr * atr, 2 * syminfo.mintick)
+float dirProxy = (close - open) / math.max(high - low, syminfo.mintick)
+float buyProxy = volume * math.max(dirProxy, 0.0)
+float sellProxy = volume * math.max(-dirProxy, 0.0)
+
+if mStep > 0 and barstate.isconfirmed
+    for b = 0 to vpBins - 1
+        array.set(nodeBuy, b, array.get(nodeBuy, b) * nodeDecay)
+        array.set(nodeSell, b, array.get(nodeSell, b) * nodeDecay)
+        array.set(nodeTouch, b, array.get(nodeTouch, b) * nodeDecay)
+    int lowIdx = int(f_clamp(math.floor((low - mLo) / mStep), 0, vpBins - 1))
+    int highIdx = int(f_clamp(math.floor((high - mLo) / mStep), 0, vpBins - 1))
+    for b = lowIdx to highIdx
+        float nodePx = mLo + (b + 0.5) * mStep
+        bool touched = math.abs(close - nodePx) <= touchDist or (low <= nodePx and high >= nodePx)
+        if touched
+            array.set(nodeTouch, b, array.get(nodeTouch, b) + 1.0)
+            array.set(nodeBuy, b, array.get(nodeBuy, b) + buyProxy / math.max(highIdx - lowIdx + 1, 1))
+            array.set(nodeSell, b, array.get(nodeSell, b) + sellProxy / math.max(highIdx - lowIdx + 1, 1))
+    float hStepF = (mHi - mLo) / histBins
+    if hStepF > 0
+        for b = 0 to histBins - 1
+            array.set(histBuy,   b, array.get(histBuy, b)   * nodeDecay)
+            array.set(histSell,  b, array.get(histSell, b)  * nodeDecay)
+            array.set(histTouch, b, array.get(histTouch, b) * nodeDecay)
+        int loF = int(f_clamp(math.floor((low - mLo) / hStepF), 0, histBins - 1))
+        int hiF = int(f_clamp(math.floor((high - mLo) / hStepF), 0, histBins - 1))
+        float spanF = math.max(hiF - loF + 1, 1)
+        for b = loF to hiF
+            float nodePxF = mLo + (b + 0.5) * hStepF
+            if math.abs(close - nodePxF) <= touchDist or (low <= nodePxF and high >= nodePxF)
+                array.set(histTouch, b, array.get(histTouch, b) + 1.0)
+                array.set(histBuy,   b, array.get(histBuy, b)   + buyProxy / spanF)
+                array.set(histSell,  b, array.get(histSell, b)  + sellProxy / spanF)
+
+f_node_state(_idx, _neutralBand, _saturation) =>
+    float b = array.get(nodeBuy, _idx)
+    float s = array.get(nodeSell, _idx)
+    float t = array.get(nodeTouch, _idx)
+    if not barstate.isconfirmed and mStep > 0
+        int loI = int(f_clamp(math.floor((low  - mLo) / mStep), 0, vpBins - 1))
+        int hiI = int(f_clamp(math.floor((high - mLo) / mStep), 0, vpBins - 1))
+        if _idx >= loI and _idx <= hiI
+            float binPx = mLo + (_idx + 0.5) * mStep
+            if math.abs(close - binPx) <= touchDist or (low <= binPx and high >= binPx)
+                float spanI = math.max(hiI - loI + 1, 1)
+                b += buyProxy  / spanI
+                s += sellProxy / spanI
+    float net = (b - s) / math.max(b + s, 1.0)
+    bool absorbed = t >= _saturation and math.abs(net) <= _neutralBand
+    int state = absorbed ? 0 : net > _neutralBand ? 1 : net < -_neutralBand ? -1 : 0
+    [state, net, t, absorbed]
+
+f_pick_idx(_px) =>
+    mStep > 0 ? int(f_clamp(math.floor((_px - mLo) / mStep), 0, vpBins - 1)) : 0
+
+[mPocState, mPocNet, mPocTouch, mPocAbs] = f_node_state(f_pick_idx(mPoc), nodeNeutralBand, nodeSaturation)
+[mVahState, mVahNet, mVahTouch, mVahAbs] = f_node_state(f_pick_idx(mVah), nodeNeutralBand, nodeSaturation)
+[mValState, mValNet, mValTouch, mValAbs] = f_node_state(f_pick_idx(mVal), nodeNeutralBand, nodeSaturation)
+[lPocState, lPocNet, lPocTouch, lPocAbs] = f_node_state(f_pick_idx(poc), nodeNeutralBand, nodeSaturation)
+[lVahState, lVahNet, lVahTouch, lVahAbs] = f_node_state(f_pick_idx(vah), nodeNeutralBand, nodeSaturation)
+[lValState, lValNet, lValTouch, lValAbs] = f_node_state(f_pick_idx(val), nodeNeutralBand, nodeSaturation)
+
+f_tag_bg(_state, _absorbed) =>
+    _absorbed   ? color.new(#3E3E3E, 10) :
+     _state > 0 ? color.new(#1B5E20, 12) :
+     _state < 0 ? color.new(#8B1A1A, 12) :
+     color.new(#3E3E3E, 55)
+f_tag_txt(_state, _absorbed, _net) =>
+    int _pct = int(math.round((_absorbed ? (1.0 - math.abs(_net)) : math.abs(_net)) * 100.0))
+    _absorbed   ? "~" + str.tostring(_pct) + "%" :
+     _state > 0 ? "▲"  + str.tostring(_pct) + "%" :
+     _state < 0 ? "▼" + str.tostring(_pct) + "%" :
+     "flat"
+
+// =============================================================================
+// MULTI-TF NEAR-PRICE NET TICK VOLUME  (M1 / M3 / M5)
+// =============================================================================
+f_tfNetNear(int _look, float _winAtr) =>
+    float a  = ta.atr(atrLen)
+    float px = close
+    float tB = 0.0
+    float tS = 0.0
+    if not na(a) and a > 0
+        for i = 0 to _look - 1
+            float rng_i = math.max(high[i] - low[i], syminfo.mintick)
+            float dp    = (close[i] - open[i]) / rng_i
+            float p     = hlc3[i]
+            if math.abs(p - px) <= _winAtr * a
+                tB += volume[i] * math.max(dp, 0.0)
+                tS += volume[i] * math.max(-dp, 0.0)
+    float tot = tB + tS
+    tot > 0 ? (tB - tS) / tot : 0.0
+
+f_tfNetPrev() =>
+    float v = f_tfNetNear(tfNetLook, netWinAtr)
+    v[1]
+
+// M1 bundle — computes the near-price net AND the consecutive-flush counters in a
+// SINGLE M1 security context so f_tfNetNear (a 50-bar loop) runs once on M1, not
+// twice. Evaluated INSIDE the M1 context so the count is M1-native (one increment
+// per completed 1-minute bar), not M3-cadence. Uses the completed bar (v[1]) +
+// lookahead_off => repaint-safe. Returns [prevNet, downCount, upCount]; prevNet is
+// identical to the old f_tfNetPrev() result, [dn,up] identical to f_tfFlushCounts.
+f_tfM1Bundle(int _look, float _winAtr, float _thr) =>
+    float v0 = f_tfNetNear(_look, _winAtr)
+    float v  = v0[1]
+    var int dn = 0
+    var int up = 0
+    if na(v)
+        dn := 0
+        up := 0
+    else
+        dn := v <= -_thr ? dn + 1 : 0
+        up := v >=  _thr ? up + 1 : 0
+    [v, dn, up]
+
+f_near_net_weighted(float _px, float _winAtr, bool _on) =>
+    float tB = 0.0
+    float tS = 0.0
+    if mStep > 0
+        float nd = _winAtr * atr
+        float mx = 0.0
+        if _on
+            for b = 0 to vpBins - 1
+                float bpxw = mLo + (b + 0.5) * mStep
+                if math.abs(bpxw - _px) <= nd
+                    mx := math.max(mx, array.get(nodeBuy, b) + array.get(nodeSell, b))
+        for b = 0 to vpBins - 1
+            float bpxw = mLo + (b + 0.5) * mStep
+            if math.abs(bpxw - _px) <= nd
+                float bvw = array.get(nodeBuy, b)
+                float svw = array.get(nodeSell, b)
+                float w   = 1.0
+                if _on and mx > 0
+                    float tier = (bvw + svw) / mx
+                    w := tier > 0.66 ? wHvn : (tier < 0.33 ? wLvn : wMvn)
+                if bvw > svw
+                    tB += (bvw - svw) * w
+                else
+                    tS += (svw - bvw) * w
+    float tot = tB + tS
+    tot > 0 ? (tB - tS) / tot : 0.0
+
+float netM3c = f_near_net_weighted(close, netWinAtr, useWeightedNet)
+// Single M1 security call returns near-price net + flush counters (was two calls,
+// each re-running the f_tfNetNear 50-bar loop over the full M1 series).
+[netM1c, m1FlushDn, m1FlushUp] = request.security(syminfo.tickerid, "1", f_tfM1Bundle(tfNetLook, netWinAtr, m1FlushNetMin), lookahead=barmerge.lookahead_off)
+float netM5c = request.security(syminfo.tickerid, "5", f_tfNetPrev(), lookahead=barmerge.lookahead_off)
+// M15 near-price net (HTF scenario read) — same repaint-safe convention as netM5c.
+float netM15c = request.security(syminfo.tickerid, "15", f_tfNetPrev(), lookahead=barmerge.lookahead_off)
+
+// M1-SHADOW (telemetry) — the M1 sub-bar closes inside the CURRENT M3 bar, used to
+// estimate whether an M1-timed reversion entry would fill better than the M3 close.
+// Global scope (request.* must be unconditional); reduced to a per-bar improvement-R
+// in the telemetry block. lookahead_off implicit for security_lower_tf (current bar).
+array<float> m1ShCloses = request.security_lower_tf(syminfo.tickerid, "1", close)
+
+// =============================================================================
+// BREAKOUT OVERHEAD-SUPPLY READ (feeds the opt-in veto) — scan the master-VP node
+// band the breakout is breaking INTO for a MAJOR node whose net pressure OPPOSES the
+// trade. Repaint-safe: reads the confirmed-bar node arrays, no request.security, no
+// lookahead. ta.percentrank is called every bar (series-consistent). See gBrk inputs.
+// =============================================================================
+f_band_node(float _lo, float _hi) =>
+    float bv = 0.0
+    float sv = 0.0
+    if mStep > 0 and _hi > _lo
+        for b = 0 to vpBins - 1
+            float bpx = mLo + (b + 0.5) * mStep
+            if bpx >= _lo and bpx <= _hi
+                bv += array.get(nodeBuy, b)
+                sv += array.get(nodeSell, b)
+    float tot = bv + sv
+    [tot, tot > 0 ? (bv - sv) / tot : 0.0]
+
+[ovhLongVol,  ovhLongNet]  = f_band_node(close, close + brkProjAtr * atr)
+[ovhShortVol, ovhShortNet] = f_band_node(close - brkProjAtr * atr, close)
+float ovhLongVolPr  = ta.percentrank(ovhLongVol,  brkOverheadLook)
+float ovhShortVolPr = ta.percentrank(ovhShortVol, brkOverheadLook)
+// Raw block conditions (independent of the master toggle, so the debug markers can be
+// calibrated with the veto OFF); the gated versions drive the entry signals.
+bool brkOvhRawL   = not na(ovhLongVolPr)  and ovhLongVolPr  >= brkOverheadHvnPct and ovhLongNet  <= -brkOverheadNetMax
+bool brkOvhRawS   = not na(ovhShortVolPr) and ovhShortVolPr >= brkOverheadHvnPct and ovhShortNet >=  brkOverheadNetMax
+bool brkOvhBlockL = brkOverheadVeto and brkOvhRawL
+bool brkOvhBlockS = brkOverheadVeto and brkOvhRawS
+plotshape(showOverheadVeto and brkOvhRawL ? high : na, "Overhead veto (long)",  style=shape.triangledown, location=location.abovebar, color=color.new(color.red,  0), size=size.tiny)
+plotshape(showOverheadVeto and brkOvhRawS ? low  : na, "Overhead veto (short)", style=shape.triangleup,   location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny)
+
+// =============================================================================
+// FRESH-CROSS ARMING — record the bar index of each master-level cross. Freshness
+// = (bar_index - crossIdx) <= freshBars. Consumed (set to na) on the matching
+// entry (spec: "clear the touched index"). Crossover booleans computed every bar
+// for consistent ta history; index recorded only on confirmed bars (repaint-safe).
+// =============================================================================
+// ta.* crossover calls are lifted to their own lines so they execute every bar
+// (Pine's `and` short-circuits; a ta.* call on the right of `and` may be skipped,
+// corrupting its historical state). The na-guard is applied after.
+bool rawUpVah = ta.crossover(close, mVah)
+bool rawDnVal = ta.crossunder(close, mVal)
+bool rawUpPoc = ta.crossover(close, mPoc)
+bool rawDnPoc = ta.crossunder(close, mPoc)
+bool rawUpVal = ta.crossover(close, mVal)
+bool rawDnVah = ta.crossunder(close, mVah)
+bool coUpVah = not na(mVah) and rawUpVah
+bool coDnVal = not na(mVal) and rawDnVal
+bool coUpPoc = not na(mPoc) and rawUpPoc
+bool coDnPoc = not na(mPoc) and rawDnPoc
+bool coUpVal = not na(mVal) and rawUpVal
+bool coDnVah = not na(mVah) and rawDnVah
+
+var int xiUpVah = na  // breakout long
+var int xiDnVal = na  // breakout short
+var int xiUpPoc = na  // reversion long  (POC up)  -> VAH-family TP
+var int xiDnPoc = na  // reversion short (POC dn)  -> VAL-family TP
+var int xiUpVal = na  // reversion long  (VAL up)  -> POC-family TP
+var int xiDnVah = na  // reversion short (VAH dn)  -> POC-family TP
+if barstate.isconfirmed
+    if coUpVah
+        xiUpVah := bar_index
+    if coDnVal
+        xiDnVal := bar_index
+    if coUpPoc
+        xiUpPoc := bar_index
+    if coDnPoc
+        xiDnPoc := bar_index
+    if coUpVal
+        xiUpVal := bar_index
+    if coDnVah
+        xiDnVah := bar_index
+
+f_fresh(int _xi, int _bars) => not na(_xi) and (bar_index - _xi) <= _bars
+
+// =============================================================================
+// ENTRY SIGNALS — master-vp-monster.md, verbatim. Decision locks on the confirmed
+// bar (close = the spec's "prev close"); order fills next bar open. All reads are
+// confirmed/committed -> no look-ahead.
+// =============================================================================
+var int lastLongEntryBar  = na
+var int lastShortEntryBar = na
+float atrv = atr
+bool  lvlsOk = not na(mVah) and not na(mVal) and not na(mPoc) and not na(vah) and not na(val) and not na(poc)
+
+// Shared net gates
+bool netLongOk  = (netM3c >=  brkNetMinM3) or (netConfirmM1orM3 and not na(netM1c) and netM1c >=  brkNetMin) or (netConfirmM5 and not na(netM5c) and netM5c >=  brkNetMin)
+bool netShortOk = (netM3c <= -brkNetMinM3) or (netConfirmM1orM3 and not na(netM1c) and netM1c <= -brkNetMin) or (netConfirmM5 and not na(netM5c) and netM5c <= -brkNetMin)
+bool oppLongOk  = (netM3c > -brkOppMax) and (na(netM5c) or netM5c > -brkOppMax)
+bool oppShortOk = (netM3c <  brkOppMax) and (na(netM5c) or netM5c <  brkOppMax)
+bool rNetLongOk  = (netM3c >=  revNetMin) or (netConfirmM1orM3 and not na(netM1c) and netM1c >=  revNetMin) or (netConfirmM5 and not na(netM5c) and netM5c >=  revNetMin)
+bool rNetShortOk = (netM3c <= -revNetMin) or (netConfirmM1orM3 and not na(netM1c) and netM1c <= -revNetMin) or (netConfirmM5 and not na(netM5c) and netM5c <= -revNetMin)
+bool rOppLongOk  = (netM3c > -revOppMax) and (na(netM5c) or netM5c > -revOppMax)
+bool rOppShortOk = (netM3c <  revOppMax) and (na(netM5c) or netM5c <  revOppMax)
+
+// ---- REGIME GATE (trend/range router) ----
+// Master-POC slope over impulseTrendSlopeBars, ATR-normalized. Signed +up / -down.
+// Hoisted here (was diagnostic-only, computed below the signals) so the breakout and
+// reversion signals can read it; the same value is captured per entry for dbgSlopeBins.
+float slopeNorm = (atrv > 0 and not na(mPoc[impulseTrendSlopeBars])) ? (mPoc - mPoc[impulseTrendSlopeBars]) / atrv : na
+bool  regimeKnown = not na(slopeNorm)
+// Each gate is a NO-OP when enableRegimeGate is OFF (-> exact baseline). When ON:
+// breakout needs a TREND slope aligned to its direction; reversion needs a flat RANGE
+// slope. The band between tauLow and tauHigh arms neither (the neutral dead zone).
+bool  gateBrkL = not enableRegimeGate or (regimeKnown and slopeNorm >=  regimeTauHigh)
+bool  gateBrkS = not enableRegimeGate or (regimeKnown and slopeNorm <= -regimeTauHigh)
+bool  gateRev  = not enableRegimeGate or (regimeKnown and math.abs(slopeNorm) <= regimeTauLow)
+
+// ---- MASTER-POC STABILITY (opt-in gate; see gPocStab inputs) ----
+// Stable = predicted master POC within pocStableMaxAtr x ATR of the current master POC.
+// Fail-open: na prediction / na POC / non-positive ATR -> treat as stable, so the OFF path
+// and the early-bar / impulsePredictBars=0 cases stay byte-identical to baseline.
+bool pocStable = (na(pMPoc) or na(mPoc) or na(atrv) or atrv <= 0) ? true : math.abs(pMPoc - mPoc) <= pocStableMaxAtr * atrv
+bool brkPocOk  = not brkRequirePocStable or pocStable
+bool revPocOk  = not revRequirePocStable or pocStable
+
+// ---- HTF NET-VOLUME SCENARIO GATE (opt-in) — "don't fight the higher-TF flow" ----
+// Bias = agreement of the M5 + M15 near-price net tick-volume balance. Lenient mode
+// (default) only BLOCKS a breakout when the HTF flow actively opposes it; strict mode
+// requires the HTF flow to actively AGREE. NO-OP when enableHtfBias is OFF (= baseline).
+bool  htfBull = not na(netM5c) and not na(netM15c) and netM5c >=  htfBiasMin and netM15c >=  htfBiasMin
+bool  htfBear = not na(netM5c) and not na(netM15c) and netM5c <= -htfBiasMin and netM15c <= -htfBiasMin
+bool  gateHtfL = not enableHtfBias or (htfRequireAlign ? htfBull : not htfBear)
+bool  gateHtfS = not enableHtfBias or (htfRequireAlign ? htfBear : not htfBull)
+
+// ---- BREAKOUT ----
+// Entry-distance trigger: spec = prev close a full entry-buffer BEYOND the edge.
+float candleH    = high - low
+bool  brkEntryOkL = close >= mVah + brkEntryBufAtr * atrv
+bool  brkEntryOkS = close <= mVal - brkEntryBufAtr * atrv
+
+float slBrkL   = math.min(mVah - brkSlBufAtr * atrv, close - brkSlAtrMult * atrv)
+float riskBrkL = close - slBrkL
+bool  recentLong = not na(lastLongEntryBar) and (bar_index - lastLongEntryBar) <= brkRrLookbackBars
+float rrBrkL   = recentLong ? brkRrNear : brkRrFar
+float tpBrkL   = close + rrBrkL * riskBrkL
+bool  sigBrkL = enableBreakout and lvlsOk and f_fresh(xiUpVah, brkFreshBars) and (vah <= mVah + brkLocalTolAtr * atrv) and brkEntryOkL and (brkMaxDistAtr <= 0 or close <= mVah + brkMaxDistAtr * atrv) and netLongOk and oppLongOk and riskBrkL > 0 and gateBrkL and gateHtfL and not brkOvhBlockL and brkPocOk
+
+float slBrkS   = math.max(mVal + brkSlBufAtr * atrv, close + brkSlAtrMult * atrv)
+float riskBrkS = slBrkS - close
+bool  recentShort = not na(lastShortEntryBar) and (bar_index - lastShortEntryBar) <= brkRrLookbackBars
+float rrBrkS   = recentShort ? brkRrNear : brkRrFar
+float tpBrkS   = close - rrBrkS * riskBrkS
+bool  sigBrkS = enableBreakout and lvlsOk and f_fresh(xiDnVal, brkFreshBars) and (val >= mVal - brkLocalTolAtr * atrv) and brkEntryOkS and (brkMaxDistAtr <= 0 or close >= mVal - brkMaxDistAtr * atrv) and netShortOk and oppShortOk and riskBrkS > 0 and gateBrkS and gateHtfS and not brkOvhBlockS and brkPocOk
+
+// ---- MEAN-REVERSION — variant 1: master POC cross (VAH/VAL-family TP) ----
+float slRevL1   = math.min(close - revSlAtrMult * atrv, math.max(mPoc + revPocSlOffAtr * atrv, poc) - revSlBufAtr * atrv)
+float riskRevL1 = close - slRevL1
+float tpRevL1   = (mVah > vah + atrv) ? mVah : math.max(mVah, vah)
+float rrRevL1   = riskRevL1 > 0 ? (tpRevL1 - close) / riskRevL1 : na
+bool  sigRevL1 = enableReversion and lvlsOk and f_fresh(xiUpPoc, revFreshBars) and (close >= math.max(mPoc + revAnchorOffAtr * atrv, poc) + revEntryDistAtr * atrv) and (revMaxDistAtr <= 0 or close <= mPoc + revMaxDistAtr * atrv) and rNetLongOk and rOppLongOk and riskRevL1 > 0 and tpRevL1 > close and not na(rrRevL1) and rrRevL1 >= revMinRR and gateRev and revPocOk
+
+float slRevS1   = math.max(close + revSlAtrMult * atrv, math.min(mPoc - revPocSlOffAtr * atrv, poc) + revSlBufAtr * atrv)
+float riskRevS1 = slRevS1 - close
+float tpRevS1   = (mVal < val - atrv) ? mVal : math.min(mVal, val)
+float rrRevS1   = riskRevS1 > 0 ? (close - tpRevS1) / riskRevS1 : na
+bool  sigRevS1 = enableReversion and lvlsOk and f_fresh(xiDnPoc, revFreshBars) and (close <= math.min(mPoc - revAnchorOffAtr * atrv, poc) - revEntryDistAtr * atrv) and (revMaxDistAtr <= 0 or close >= mPoc - revMaxDistAtr * atrv) and rNetShortOk and rOppShortOk and riskRevS1 > 0 and tpRevS1 < close and not na(rrRevS1) and rrRevS1 >= revMinRR and gateRev and revPocOk
+
+// ---- MEAN-REVERSION — variant 2: master VAL/VAH cross (POC-family TP) ----
+float slRevL2   = math.min(close - revSlAtrMult * atrv, math.max(mVal + revAnchorOffAtr * atrv, val) - revSlBufAtr * atrv)
+float riskRevL2 = close - slRevL2
+float tpRevL2   = (mPoc > poc + atrv) ? mPoc : math.max(mPoc, poc)
+float rrRevL2   = riskRevL2 > 0 ? (tpRevL2 - close) / riskRevL2 : na
+bool  sigRevL2 = enableReversion and lvlsOk and f_fresh(xiUpVal, revFreshBars) and (close >= math.max(mVal + revAnchorOffAtr * atrv, val) + revEntryDistAtr * atrv) and (revMaxDistAtr <= 0 or close <= mVal + revMaxDistAtr * atrv) and rNetLongOk and rOppLongOk and riskRevL2 > 0 and tpRevL2 > close and not na(rrRevL2) and rrRevL2 >= revMinRR and gateRev and revPocOk
+
+float slRevS2   = math.max(close + revSlAtrMult * atrv, math.min(mVah - revAnchorOffAtr * atrv, vah) + revSlBufAtr * atrv)
+float riskRevS2 = slRevS2 - close
+float tpRevS2   = (mPoc < poc - atrv) ? mPoc : math.min(mPoc, poc)
+float rrRevS2   = riskRevS2 > 0 ? (close - tpRevS2) / riskRevS2 : na
+bool  sigRevS2 = enableReversion and lvlsOk and f_fresh(xiDnVah, revFreshBars) and (close <= math.min(mVah - revAnchorOffAtr * atrv, vah) - revEntryDistAtr * atrv) and (revMaxDistAtr <= 0 or close >= mVah - revMaxDistAtr * atrv) and rNetShortOk and rOppShortOk and riskRevS2 > 0 and tpRevS2 < close and not na(rrRevS2) and rrRevS2 >= revMinRR and gateRev and revPocOk
+
+// ---- IMPULSE-THRUST — the conditional high-vol path (kind 4) ----
+// Volatility regime split: normal kinds (1/2/3) trade at/below the ceiling; the impulse
+// path trades ABOVE it. Mutually exclusive by atrPct, so the two never compete on a bar.
+bool atrCeilOk     = (maxAtrPct <= 0) or (atrPct <= maxAtrPct)
+bool inVolCeilBand = (maxAtrPct > 0) and (atrPct > maxAtrPct)
+bool impThrustBull = close > open and candleH >= impulseCandleAtr * atrv
+bool impThrustBear = close < open and candleH >= impulseCandleAtr * atrv
+bool impNetLongOk  = not na(netM1c) and netM1c >=  impulseNetMin
+bool impNetShortOk = not na(netM1c) and netM1c <= -impulseNetMin
+// Dominant-trend gate = master-POC SLOPE (not its instantaneous position), confirmed by
+// the PREDICTED POC (where value migrates as old nodes expire). A single bounce candle can
+// no longer flip the trend read — the v1 lagging-mPOC defect that let counter-trend longs in.
+float pPocRef = na(pMPoc) ? mPoc : pMPoc
+float pVahRef = na(pMVah) ? mVah : pMVah
+float pValRef = na(pMVal) ? mVal : pMVal
+bool  mPocSlopeDn = not na(mPoc[impulseTrendSlopeBars]) and mPoc < mPoc[impulseTrendSlopeBars]
+bool  mPocSlopeUp = not na(mPoc[impulseTrendSlopeBars]) and mPoc > mPoc[impulseTrendSlopeBars]
+// slopeNorm (master-POC slope, ATR-normalized, signed +up/-down) is hoisted into the
+// REGIME GATE block above so the brk/rev signals can read it; reused here for dbgSlopeBins.
+bool impTrendLong  = mPocSlopeUp and pPocRef >= mPoc
+bool impTrendShort = mPocSlopeDn and pPocRef <= mPoc
+// Break beyond the CURRENT edge; anti-chase measured against the PREDICTED edge (where
+// value is heading), so a fast thrust past a stale VAL isn't mis-flagged as a chase.
+bool impEntryL = (close >= mVah + impulseEntryBufAtr * atrv) and (impulseMaxDistAtr <= 0 or close <= pVahRef + impulseMaxDistAtr * atrv)
+bool impEntryS = (close <= mVal - impulseEntryBufAtr * atrv) and (impulseMaxDistAtr <= 0 or close >= pValRef - impulseMaxDistAtr * atrv)
+
+float slImpL   = math.min(mVah - brkSlBufAtr * atrv, close - brkSlAtrMult * atrv)
+float riskImpL = close - slImpL
+float tpImpL   = close + impulseRr * riskImpL
+bool  sigImpL = enableImpulse and inVolCeilBand and lvlsOk and impThrustBull and impEntryL and impTrendLong and impNetLongOk and riskImpL > 0
+
+float slImpS   = math.max(mVal + brkSlBufAtr * atrv, close + brkSlAtrMult * atrv)
+float riskImpS = slImpS - close
+float tpImpS   = close - impulseRr * riskImpS
+bool  sigImpS = enableImpulse and inVolCeilBand and lvlsOk and impThrustBear and impEntryS and impTrendShort and impNetShortOk and riskImpS > 0
+
+// ---- Pick one entry per direction this bar. Below the vol ceiling: breakout preferred,
+//      else the higher-RR reversion variant. Above it: the impulse path only.
+//      kind: 1=brk 2=rev1 3=rev2 4=impulse.
+int   longKind = 0
+float longSLv = na
+float longTP2v = na
+float longRiskV = na
+if sigImpL
+    longKind := 4
+    longSLv := slImpL
+    longTP2v := tpImpL
+    longRiskV := riskImpL
+else if atrCeilOk and sigBrkL
+    longKind := 1
+    longSLv := slBrkL
+    longTP2v := tpBrkL
+    longRiskV := riskBrkL
+else if atrCeilOk and sigRevL1 and (not sigRevL2 or nz(rrRevL1, -1) >= nz(rrRevL2, -1))
+    longKind := 2
+    longSLv := slRevL1
+    longTP2v := tpRevL1
+    longRiskV := riskRevL1
+else if atrCeilOk and sigRevL2
+    longKind := 3
+    longSLv := slRevL2
+    longTP2v := tpRevL2
+    longRiskV := riskRevL2
+float longTP1v = close + (longKind == 1 or longKind == 4 ? tp1RrBrk : tp1RrRev) * nz(longRiskV)
+
+int   shortKind = 0
+float shortSLv = na
+float shortTP2v = na
+float shortRiskV = na
+if sigImpS
+    shortKind := 4
+    shortSLv := slImpS
+    shortTP2v := tpImpS
+    shortRiskV := riskImpS
+else if atrCeilOk and sigBrkS
+    shortKind := 1
+    shortSLv := slBrkS
+    shortTP2v := tpBrkS
+    shortRiskV := riskBrkS
+else if atrCeilOk and sigRevS1 and (not sigRevS2 or nz(rrRevS1, -1) >= nz(rrRevS2, -1))
+    shortKind := 2
+    shortSLv := slRevS1
+    shortTP2v := tpRevS1
+    shortRiskV := riskRevS1
+else if atrCeilOk and sigRevS2
+    shortKind := 3
+    shortSLv := slRevS2
+    shortTP2v := tpRevS2
+    shortRiskV := riskRevS2
+float shortTP1v = close - (shortKind == 1 or shortKind == 4 ? tp1RrBrk : tp1RrRev) * nz(shortRiskV)
+
+// =============================================================================
+// DECISION TELEMETRY — per-bar veto bitmasks + context + M1-shadow. ADDITIVE.
+// Masks mirror the sig* AND-chains: named clauses are referenced directly (always
+// in sync); only freshness / tolerance / dist / tp clauses are inline-mirrored.
+// na = family structurally off this bar; 0 = full candidate (see BIT LAYOUT above).
+// =============================================================================
+float tel_vBrkL = na
+float tel_vBrkS = na
+float tel_vRevL = na
+float tel_vRevS = na
+if debugTelemetry and lvlsOk
+    int mL = (f_fresh(xiUpVah, brkFreshBars) ? 0 : 1) + ((vah <= mVah + brkLocalTolAtr * atrv) ? 0 : 2) + (brkEntryOkL ? 0 : 4) + ((brkMaxDistAtr <= 0 or close <= mVah + brkMaxDistAtr * atrv) ? 0 : 8) + (netLongOk ? 0 : 16) + (oppLongOk ? 0 : 32) + (riskBrkL > 0 ? 0 : 64) + (gateBrkL ? 0 : 128) + (gateHtfL ? 0 : 256) + (brkOvhBlockL ? 512 : 0) + (brkPocOk ? 0 : 1024)
+    int mS = (f_fresh(xiDnVal, brkFreshBars) ? 0 : 1) + ((val >= mVal - brkLocalTolAtr * atrv) ? 0 : 2) + (brkEntryOkS ? 0 : 4) + ((brkMaxDistAtr <= 0 or close >= mVal - brkMaxDistAtr * atrv) ? 0 : 8) + (netShortOk ? 0 : 16) + (oppShortOk ? 0 : 32) + (riskBrkS > 0 ? 0 : 64) + (gateBrkS ? 0 : 128) + (gateHtfS ? 0 : 256) + (brkOvhBlockS ? 512 : 0) + (brkPocOk ? 0 : 1024)
+    tel_vBrkL := mL
+    tel_vBrkS := mS
+if debugTelemetry and lvlsOk
+    int mL = (f_fresh(xiUpPoc, revFreshBars) ? 0 : 1) + ((close >= math.max(mPoc + revAnchorOffAtr * atrv, poc) + revEntryDistAtr * atrv) ? 0 : 2) + ((revMaxDistAtr <= 0 or close <= mPoc + revMaxDistAtr * atrv) ? 0 : 4) + (rNetLongOk ? 0 : 8) + (rOppLongOk ? 0 : 16) + (riskRevL1 > 0 ? 0 : 32) + (tpRevL1 > close ? 0 : 64) + ((not na(rrRevL1) and rrRevL1 >= revMinRR) ? 0 : 128) + (gateRev ? 0 : 256) + (revPocOk ? 0 : 512)
+    int mS = (f_fresh(xiDnPoc, revFreshBars) ? 0 : 1) + ((close <= math.min(mPoc - revAnchorOffAtr * atrv, poc) - revEntryDistAtr * atrv) ? 0 : 2) + ((revMaxDistAtr <= 0 or close >= mPoc - revMaxDistAtr * atrv) ? 0 : 4) + (rNetShortOk ? 0 : 8) + (rOppShortOk ? 0 : 16) + (riskRevS1 > 0 ? 0 : 32) + (tpRevS1 < close ? 0 : 64) + ((not na(rrRevS1) and rrRevS1 >= revMinRR) ? 0 : 128) + (gateRev ? 0 : 256) + (revPocOk ? 0 : 512)
+    tel_vRevL := mL
+    tel_vRevS := mS
+
+// M1-shadow improvement (R): best favorable M1 sub-bar close within the M3 bar vs the
+// M3-close entry, sized in the reversion-variant-1 risk. Long side fades above mPOC.
+float tel_m1r = na
+if debugTelemetry and telShadowM1 and not na(m1ShCloses) and array.size(m1ShCloses) > 0
+    if close >= mPoc and riskRevL1 > 0
+        tel_m1r := (close - array.min(m1ShCloses)) / riskRevL1
+    else if close < mPoc and riskRevS1 > 0
+        tel_m1r := (array.max(m1ShCloses) - close) / riskRevS1
+
+// Compact decision-vector string for the trade-list comment + log.info. Reads the
+// multi-TF context globals directly. tag = setup label, kind 1=brk 2=rev1 3=rev2 4=imp.
+f_telVec(string _tag, int _kind, float _veto, float _rr, float _m1r) =>
+    "v1|" + _tag + "|k=" + str.tostring(_kind) + "|n1=" + str.tostring(nz(netM1c), "#.##") + "|n3=" + str.tostring(nz(netM3c), "#.##") + "|n5=" + str.tostring(nz(netM5c), "#.##") + "|n15=" + str.tostring(nz(netM15c), "#.##") + "|atrp=" + str.tostring(atrPct, "#.###") + "|slp=" + str.tostring(nz(slopeNorm), "#.##") + "|dpoc=" + str.tostring(atrv > 0 ? (close - mPoc) / atrv : na, "#.##") + "|rr=" + str.tostring(nz(_rr), "#.##") + "|veto=" + str.tostring(_veto) + "|m1r=" + str.tostring(nz(_m1r), "#.##")
+
+// Hidden series (Data Window + "Export chart data") — full-window veto/context history.
+plot(debugTelemetry ? tel_vBrkL : na, "tel_vBrkL", display=display.data_window)
+plot(debugTelemetry ? tel_vBrkS : na, "tel_vBrkS", display=display.data_window)
+plot(debugTelemetry ? tel_vRevL : na, "tel_vRevL", display=display.data_window)
+plot(debugTelemetry ? tel_vRevS : na, "tel_vRevS", display=display.data_window)
+plot(debugTelemetry ? longKind * 10 + shortKind : na, "tel_kind", display=display.data_window)
+plot(debugTelemetry ? atrPct : na, "tel_atrp", display=display.data_window)
+plot(debugTelemetry ? slopeNorm : na, "tel_slope", display=display.data_window)
+plot(debugTelemetry ? netM1c : na, "tel_net1", display=display.data_window)
+plot(debugTelemetry ? netM3c : na, "tel_net3", display=display.data_window)
+plot(debugTelemetry ? netM5c : na, "tel_net5", display=display.data_window)
+plot(debugTelemetry ? netM15c : na, "tel_net15", display=display.data_window)
+plot(debugTelemetry ? tel_m1r : na, "tel_m1r", display=display.data_window)
+
+// Live log.info — only on a trade fire OR a full candidate (mask 0) that didn't fire.
+bool telCand = (not na(tel_vBrkL) and tel_vBrkL == 0) or (not na(tel_vBrkS) and tel_vBrkS == 0) or (not na(tel_vRevL) and tel_vRevL == 0) or (not na(tel_vRevS) and tel_vRevS == 0)
+if debugTelemetry and telLog and barstate.isconfirmed and (longKind != 0 or shortKind != 0 or telCand)
+    log.info(f_telVec("bar", longKind * 10 + shortKind, nz(tel_vBrkL, -1) + 100000 * nz(tel_vRevL, -1), na, tel_m1r))
+
+// =============================================================================
+// SIZING + RISK GATES
+// =============================================================================
+f_riskQty(float _stopDist) =>
+    float pv = na(syminfo.pointvalue) or syminfo.pointvalue <= 0 ? 1.0 : syminfo.pointvalue
+    (useRiskSizing and _stopDist > 0 and riskBudgetUSD > 0) ? riskBudgetUSD / (_stopDist * pv) : na
+
+// =============================================================================
+// DISCORD ALERT HELPERS (canonical JSON — escaped \\n / \\uXXXX, na-guarded)
+// =============================================================================
+formatDiscordMsg(string msg) =>
+    string m    = na(msg) ? "" : msg
+    string safe = str.replace_all(m, '"', '\\"')
+    '{"content":"- (c) kenkem.biz . Bot logs, not financial advice -\\n' + safe + '"}'
+
+f_entry_alert(bool _isLong, float _e, float _sl, float _tp1, float _tp2, string _magic) =>
+    string emoji = _isLong ? "\\ud83d\\udfe2" : "\\ud83d\\udd34"
+    string dir   = _isLong ? "BUY" : "SELL"
+    formatDiscordMsg(emoji + " " + dir + " " + syminfo.ticker + " " + _magic +
+         "\\nEntry: " + str.tostring(_e,   format.mintick) +
+         "\\nSL: "   + str.tostring(_sl,  format.mintick) +
+         "\\nTP1: "  + str.tostring(_tp1, format.mintick) +
+         "\\nTP2: "  + str.tostring(_tp2, format.mintick))
+
+f_trade_txt(_isLong, _tag, _status, _qty, _e, _sl, _tp1, _tp2, _tp1Hit, _tp2Hit) =>
+    (_isLong ? "BUY" : "SELL") + "  " + _tag + "  " + _status +
+     "\nQty " + str.tostring(_qty, "#.##") +
+     "\nE   " + str.tostring(_e,   format.mintick) +
+     "\nSL  " + str.tostring(_sl,  format.mintick) +
+     "\nTP1 " + str.tostring(_tp1, format.mintick) + (_tp1Hit ? " ✅" : "") +
+     "\nTP2 " + str.tostring(_tp2, format.mintick) + (_tp2Hit ? " ✅" : "")
+
+var int tradesThisSession = 0
+if newSession
+    tradesThisSession := 0
+
+varip float dayStartEquity = na
+bool newDay = na(dayStartEquity) or dayofmonth(time, "UTC") != dayofmonth(time[1], "UTC")
+if newDay
+    dayStartEquity := strategy.equity
+float ddProjPct = dayStartEquity > 0 ? math.max(0.0, (dayStartEquity - strategy.equity + nz(riskBudgetUSD)) / dayStartEquity * 100.0) : 0.0
+bool dailyDDHit = maxDailyDDPct > 0 and ddProjPct >= maxDailyDDPct
+bgcolor(dailyDDHit ? color.new(color.red, 90) : na, title="Daily DD Breaker", editable=false)
+
+// =============================================================================
+// PER-ENTRY REGISTRY (stacking) — one slot per OPEN entry, each with its own
+// SL/TP bracket + optional TP1 partial / BE / runner-trail.
+// =============================================================================
+var array<string> rId    = array.new<string>()
+var array<int>    rDir   = array.new<int>()
+var array<float>  rEntry = array.new<float>()
+var array<float>  rQty   = array.new<float>()
+var array<float>  rRisk  = array.new<float>()
+var array<float>  rSL    = array.new<float>()
+var array<float>  rTP1   = array.new<float>()
+var array<float>  rTP2   = array.new<float>()
+var array<float>  rPeak  = array.new<float>()
+var array<float>  rStop  = array.new<float>()
+var array<bool>   rTp1D  = array.new<bool>()
+var array<bool>   rTp1S  = array.new<bool>()
+var array<bool>   rTp1H  = array.new<bool>()
+var array<bool>   rTp2H  = array.new<bool>()
+var array<string> rKind  = array.new<string>()
+var array<int>    rPend  = array.new<int>()
+var array<line>   rLnE   = array.new<line>()
+var array<line>   rLnSL  = array.new<line>()
+var array<line>   rLnT1  = array.new<line>()
+var array<line>   rLnT2  = array.new<line>()
+var array<label>  rLbl   = array.new<label>()
+var int entrySeq = 0
+// Diagnostic store (dbgSlopeBins): aligned master-POC slope at entry, keyed by entry id.
+// Read at the last bar to bin every closed trade fill by regime. Independent of the registry.
+var map<string, float> dbgSlope = map.new<string, float>()
+// Diagnostic store (dbgOverheadBins): 1.0 if the overhead veto WOULD trip at this entry,
+// else 0.0; keyed by entry id, BREAKOUT entries only. Recomputed on every input change.
+var map<string, float> dbgOvhV  = map.new<string, float>()
+
+int openLongs  = 0
+int openShorts = 0
+if strategy.opentrades > 0
+    for k = 0 to strategy.opentrades - 1
+        float psz = strategy.opentrades.size(k)
+        if psz > 0
+            openLongs += 1
+        else if psz < 0
+            openShorts += 1
+
+// Volatility ceiling is applied PER-KIND below (the impulse path, kind 4, intentionally
+// trades above it); safetyOk keeps every other gate including the minAtrPct floor.
+safetyOk = allowTrading and validTf and inAnySession and atrPct >= minAtrPct and tradesThisSession < maxTradesPerSession and not inNewsWindow and not dailyDDHit and not isBlockedHour
+
+bool flatOrLong  = strategy.position_size >= 0
+bool flatOrShort = strategy.position_size <= 0
+
+enterLong  = barstate.isconfirmed and safetyOk and (longKind  == 4 or atrCeilOk) and flatOrLong  and openLongs  < maxConcurrentPerDir and longKind  != 0
+enterShort = barstate.isconfirmed and safetyOk and (shortKind == 4 or atrCeilOk) and flatOrShort and openShorts < maxConcurrentPerDir and shortKind != 0
+
+// --- LONG entry ---
+if enterLong
+    float sl   = longSLv
+    float tp1  = longTP1v
+    float tp2  = longTP2v
+    float risk = longRiskV
+    float qty  = f_riskQty(risk)
+    entrySeq  += 1
+    string kindTxt = longKind == 1 ? "BRK" : (longKind == 4 ? "IMP" : "MR")
+    string eid   = "L" + str.tostring(entrySeq)
+    if dbgSlopeBins
+        map.put(dbgSlope, eid, slopeNorm)
+    if dbgOverheadBins and longKind == 1
+        map.put(dbgOvhV, eid, brkOvhRawL ? 1.0 : 0.0)
+    string magic = "#" + str.format_time(time, "MMdd-HHmm", "GMT+9")
+    string msg   = f_entry_alert(true, close, sl, tp1, tp2, magic)
+    string cmt   = debugTelemetry ? f_telVec(kindTxt, longKind, 0, risk > 0 ? (tp2 - close) / risk : na, tel_m1r) : na
+    strategy.entry(eid, strategy.long, qty=qty, comment=cmt, alert_message=msg)
+    if useTp1Partial
+        strategy.exit(eid + "p", from_entry=eid, stop=sl, limit=tp1, qty_percent=(longKind == 1 or longKind == 4 ? tp1CloseBrk : tp1CloseRev), alert_message=msg)
+    strategy.exit(eid + "r", from_entry=eid, stop=sl, limit=tp2, alert_message=msg)
+    // Consume the fresh cross that fired this entry (spec: clear the touched index).
+    if longKind == 1
+        xiUpVah := na
+    else if longKind == 2
+        xiUpPoc := na
+    else if longKind == 3
+        xiUpVal := na
+    lastLongEntryBar := bar_index
+    tradesThisSession += 1
+    line le = na
+    line ls = na
+    line l1 = na
+    line l2 = na
+    label lb = na
+    if showTradeViz
+        le := line.new(bar_index, close, bar_index + 2, close, color=color.new(color.yellow, 20), width=1)
+        ls := line.new(bar_index, sl,    bar_index + 2, sl,    color=color.new(color.red, 20),    width=1)
+        l1 := line.new(bar_index, tp1,   bar_index + 2, tp1,   color=color.new(color.orange, 20), width=1, style=line.style_dotted)
+        l2 := line.new(bar_index, tp2,   bar_index + 2, tp2,   color=color.new(color.green, 20),  width=1)
+        lb := label.new(bar_index - 2, close, f_trade_txt(true, kindTxt, "OPEN", qty, close, sl, tp1, tp2, false, false), style=label.style_label_right, color=color.new(color.teal, 78), textcolor=color.new(color.white, 10), size=size.small)
+    array.push(rId, eid)
+    array.push(rDir, 1)
+    array.push(rEntry, close)
+    array.push(rQty, qty)
+    array.push(rRisk, risk)
+    array.push(rSL, sl)
+    array.push(rTP1, tp1)
+    array.push(rTP2, tp2)
+    array.push(rPeak, na)
+    array.push(rStop, na)
+    array.push(rTp1D, false)
+    array.push(rTp1S, false)
+    array.push(rTp1H, false)
+    array.push(rTp2H, false)
+    array.push(rKind, kindTxt)
+    array.push(rPend, 0)
+    array.push(rLnE, le)
+    array.push(rLnSL, ls)
+    array.push(rLnT1, l1)
+    array.push(rLnT2, l2)
+    array.push(rLbl, lb)
+    if allowAlerts
+        alert(msg, alert.freq_once_per_bar)
+
+// --- SHORT entry ---
+if enterShort
+    float sl   = shortSLv
+    float tp1  = shortTP1v
+    float tp2  = shortTP2v
+    float risk = shortRiskV
+    float qty  = f_riskQty(risk)
+    entrySeq  += 1
+    string kindTxt = shortKind == 1 ? "BRK" : (shortKind == 4 ? "IMP" : "MR")
+    string eid   = "S" + str.tostring(entrySeq)
+    if dbgSlopeBins
+        map.put(dbgSlope, eid, na(slopeNorm) ? na : -slopeNorm)
+    if dbgOverheadBins and shortKind == 1
+        map.put(dbgOvhV, eid, brkOvhRawS ? 1.0 : 0.0)
+    string magic = "#" + str.format_time(time, "MMdd-HHmm", "GMT+9")
+    string msg   = f_entry_alert(false, close, sl, tp1, tp2, magic)
+    string cmt   = debugTelemetry ? f_telVec(kindTxt, shortKind, 0, risk > 0 ? (close - tp2) / risk : na, tel_m1r) : na
+    strategy.entry(eid, strategy.short, qty=qty, comment=cmt, alert_message=msg)
+    if useTp1Partial
+        strategy.exit(eid + "p", from_entry=eid, stop=sl, limit=tp1, qty_percent=(shortKind == 1 or shortKind == 4 ? tp1CloseBrk : tp1CloseRev), alert_message=msg)
+    strategy.exit(eid + "r", from_entry=eid, stop=sl, limit=tp2, alert_message=msg)
+    if shortKind == 1
+        xiDnVal := na
+    else if shortKind == 2
+        xiDnPoc := na
+    else if shortKind == 3
+        xiDnVah := na
+    lastShortEntryBar := bar_index
+    tradesThisSession += 1
+    line le = na
+    line ls = na
+    line l1 = na
+    line l2 = na
+    label lb = na
+    if showTradeViz
+        le := line.new(bar_index, close, bar_index + 2, close, color=color.new(color.yellow, 20), width=1)
+        ls := line.new(bar_index, sl,    bar_index + 2, sl,    color=color.new(color.red, 20),    width=1)
+        l1 := line.new(bar_index, tp1,   bar_index + 2, tp1,   color=color.new(color.orange, 20), width=1, style=line.style_dotted)
+        l2 := line.new(bar_index, tp2,   bar_index + 2, tp2,   color=color.new(color.green, 20),  width=1)
+        lb := label.new(bar_index - 2, close, f_trade_txt(false, kindTxt, "OPEN", qty, close, sl, tp1, tp2, false, false), style=label.style_label_right, color=color.new(color.maroon, 78), textcolor=color.new(color.white, 10), size=size.small)
+    array.push(rId, eid)
+    array.push(rDir, -1)
+    array.push(rEntry, close)
+    array.push(rQty, qty)
+    array.push(rRisk, risk)
+    array.push(rSL, sl)
+    array.push(rTP1, tp1)
+    array.push(rTP2, tp2)
+    array.push(rPeak, na)
+    array.push(rStop, na)
+    array.push(rTp1D, false)
+    array.push(rTp1S, false)
+    array.push(rTp1H, false)
+    array.push(rTp2H, false)
+    array.push(rKind, kindTxt)
+    array.push(rPend, 0)
+    array.push(rLnE, le)
+    array.push(rLnSL, ls)
+    array.push(rLnT1, l1)
+    array.push(rLnT2, l2)
+    array.push(rLbl, lb)
+    if allowAlerts
+        alert(msg, alert.freq_once_per_bar)
+
+// =============================================================================
+// EXITS — force-close at session/news + opposing net-volume flush early-exit.
+// =============================================================================
+if forceCloseSessNews and strategy.position_size != 0 and (not inAnySession or inNewsWindow)
+    string _xMsg = formatDiscordMsg((inNewsWindow ? "\\ud83d\\udcf0 News exit - " : "\\ud83d\\udeaa Session-end exit - ") + syminfo.ticker)
+    strategy.close_all(comment = inNewsWindow ? "News exit" : "Session-end exit", alert_message=_xMsg)
+
+bool flushSell = (not na(netM1c) and netM1c <= -exitNetMin and netM3c <= -exitNetMin) or (netM3c <= -exitNetMin and not na(netM5c) and netM5c <= -exitNetMin)
+bool flushBuy  = (not na(netM1c) and netM1c >=  exitNetMin and netM3c >=  exitNetMin) or (netM3c >=  exitNetMin and not na(netM5c) and netM5c >=  exitNetMin)
+if enableEarlyExit and strategy.position_size > 0 and flushSell
+    strategy.close_all(comment="NetVol flush exit" + (debugTelemetry ? " " + f_telVec("EEnvL", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b NetVol flush exit (long) - " + syminfo.ticker))
+if enableEarlyExit and strategy.position_size < 0 and flushBuy
+    strategy.close_all(comment="NetVol flush exit" + (debugTelemetry ? " " + f_telVec("EEnvS", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b NetVol flush exit (short) - " + syminfo.ticker))
+
+// M1-LEAD flush early-exit — decoupled from M3, underwater-gated, configurable
+// confirm-bar count. Fires when M1 net volume has flushed against the position
+// for >= m1FlushBars completed M1 bars and (optionally) the trade is underwater.
+bool m1FlushLong  = m1FlushDn >= m1FlushBars
+bool m1FlushShort = m1FlushUp >= m1FlushBars
+bool m1Underwater = (not m1FlushUnderwater) or strategy.openprofit < 0
+if enableM1FlushExit and m1Underwater and strategy.position_size > 0 and m1FlushLong
+    strategy.close_all(comment="M1 flush exit" + (debugTelemetry ? " " + f_telVec("EEm1L", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b M1 NetVol flush exit (long) - " + syminfo.ticker))
+if enableM1FlushExit and m1Underwater and strategy.position_size < 0 and m1FlushShort
+    strategy.close_all(comment="M1 flush exit" + (debugTelemetry ? " " + f_telVec("EEm1S", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b M1 NetVol flush exit (short) - " + syminfo.ticker))
+
+// Overhead-supply early-exit — the open position's path AHEAD has built a MAJOR opposing
+// node (same read as the entry veto: brkOvhRawL = sell supply above a long, brkOvhRawS =
+// buy demand below a short). Independent toggle, underwater-gated by default. close_all
+// matches the other early-exits.
+bool ovhExitUW = (not overheadExitUnderwater) or strategy.openprofit < 0
+if enableOverheadExit and ovhExitUW and strategy.position_size > 0 and brkOvhRawL
+    strategy.close_all(comment="Overhead supply exit" + (debugTelemetry ? " " + f_telVec("EEovhL", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b Overhead-supply exit (long) - " + syminfo.ticker))
+if enableOverheadExit and ovhExitUW and strategy.position_size < 0 and brkOvhRawS
+    strategy.close_all(comment="Overhead supply exit" + (debugTelemetry ? " " + f_telVec("EEovhS", 0, na, na, tel_m1r) : ""), alert_message=formatDiscordMsg("\\ud83d\\udd3b Overhead-supply exit (short) - " + syminfo.ticker))
+
+// =============================================================================
+// REGISTRY MAINTENANCE — per-entry TP1/BE/trail amend, viz extend, alerts, removal.
+// rPend = bars since entry (a market entry fills next open, so pend>=2 + not-open
+// => the trade has closed/round-tripped).
+// =============================================================================
+int rn = array.size(rId)
+if rn > 0
+    for j = rn - 1 to 0
+        string eid  = array.get(rId, j)
+        int    dir  = array.get(rDir, j)
+        bool   isLong = dir > 0
+        if barstate.isconfirmed
+            array.set(rPend, j, array.get(rPend, j) + 1)
+        bool stillOpen = false
+        if strategy.opentrades > 0
+            for k = 0 to strategy.opentrades - 1
+                if strategy.opentrades.entry_id(k) == eid
+                    stillOpen := true
+                    break
+        if stillOpen
+            float ent     = array.get(rEntry, j)
+            float tp1     = array.get(rTP1, j)
+            float tp2     = array.get(rTP2, j)
+            float slo     = array.get(rSL, j)
+            bool  tp1Done = array.get(rTp1D, j)
+            float peak    = array.get(rPeak, j)
+            float runStop = array.get(rStop, j)
+            bool  tp1H    = array.get(rTp1H, j) or (isLong ? high >= tp1 : low <= tp1)
+            bool  tp2H    = array.get(rTp2H, j) or (isLong ? high >= tp2 : low <= tp2)
+            array.set(rTp1H, j, tp1H)
+            array.set(rTp2H, j, tp2H)
+            if useTp1Partial and (enableBeAfterTp1 or trailRunner)
+                if not tp1Done and (isLong ? high >= tp1 : low <= tp1)
+                    tp1Done := true
+                if tp1Done
+                    float beStop = isLong ? ent + beBufAtr * atr : ent - beBufAtr * atr
+                    float floorStop = enableBeAfterTp1 ? beStop : slo
+                    runStop := na(runStop) ? floorStop : (isLong ? math.max(runStop, floorStop) : math.min(runStop, floorStop))
+                    if trailRunner
+                        peak := na(peak) ? (isLong ? high : low) : (isLong ? math.max(peak, high) : math.min(peak, low))
+                        float cand = isLong ? peak - trailAtrMult * atr : peak + trailAtrMult * atr
+                        runStop := isLong ? math.max(runStop, cand) : math.min(runStop, cand)
+                    strategy.exit(eid + "r", from_entry=eid, stop=runStop, limit=tp2)
+                    array.set(rPeak, j, peak)
+                    array.set(rStop, j, runStop)
+                array.set(rTp1D, j, tp1Done)
+            if allowAlerts and useTp1Partial and not array.get(rTp1S, j) and (isLong ? high >= tp1 : low <= tp1)
+                alert(formatDiscordMsg("\\ud83c\\udfaf TP1 hit - " + syminfo.ticker + " " + eid), alert.freq_once_per_bar)
+                array.set(rTp1S, j, true)
+            if showTradeViz
+                line le = array.get(rLnE, j)
+                if not na(le)
+                    line.set_x2(le, bar_index + 2)
+                    line.set_x2(array.get(rLnSL, j), bar_index + 2)
+                    line.set_x2(array.get(rLnT1, j), bar_index + 2)
+                    line.set_x2(array.get(rLnT2, j), bar_index + 2)
+                    float rsViz = array.get(rStop, j)
+                    if useTp1Partial and (enableBeAfterTp1 or trailRunner) and not na(rsViz)
+                        line.set_y1(array.get(rLnSL, j), rsViz)
+                        line.set_y2(array.get(rLnSL, j), rsViz)
+                        line.set_color(array.get(rLnSL, j), color.new(color.teal, 0))
+                label lbO = array.get(rLbl, j)
+                if not na(lbO)
+                    label.set_text(lbO, f_trade_txt(isLong, array.get(rKind, j), "OPEN", array.get(rQty, j), ent, array.get(rSL, j), tp1, tp2, tp1H, tp2H))
+        else if barstate.isconfirmed and array.get(rPend, j) >= 2
+            float ent = array.get(rEntry, j)
+            bool  tp1Hit = array.get(rTp1H, j) or (isLong ? high >= array.get(rTP1, j) : low <= array.get(rTP1, j))
+            bool  tp2Hit = array.get(rTp2H, j) or (isLong ? high >= array.get(rTP2, j) : low <= array.get(rTP2, j))
+            bool  won = (useTp1Partial and tp1Hit) ? true : (isLong ? close >= ent : close <= ent)
+            if showTradeViz and not na(array.get(rLbl, j))
+                label lb = array.get(rLbl, j)
+                label.set_text(lb, f_trade_txt(isLong, array.get(rKind, j), won ? "WON" : "LOST", array.get(rQty, j), ent, array.get(rSL, j), array.get(rTP1, j), array.get(rTP2, j), tp1Hit, tp2Hit))
+                label.set_color(lb, won ? color.new(#1B5E20, 12) : color.new(color.black, 45))
+                label.set_textcolor(lb, color.new(color.white, 10))
+            if allowAlerts
+                string _em = won ? "\\u2705" : "\\u274c"
+                alert(formatDiscordMsg(_em + " Trade closed " + (won ? "WON" : "LOST") + " - " + syminfo.ticker + " " + eid), alert.freq_once_per_bar)
+            array.remove(rId, j)
+            array.remove(rDir, j)
+            array.remove(rEntry, j)
+            array.remove(rQty, j)
+            array.remove(rRisk, j)
+            array.remove(rSL, j)
+            array.remove(rTP1, j)
+            array.remove(rTP2, j)
+            array.remove(rPeak, j)
+            array.remove(rStop, j)
+            array.remove(rTp1D, j)
+            array.remove(rTp1S, j)
+            array.remove(rTp1H, j)
+            array.remove(rTp2H, j)
+            array.remove(rKind, j)
+            array.remove(rPend, j)
+            array.remove(rLnE, j)
+            array.remove(rLnSL, j)
+            array.remove(rLnT1, j)
+            array.remove(rLnT2, j)
+            array.remove(rLbl, j)
+
+// =============================================================================
+// VP NODE VISUALS
+// =============================================================================
+color cLocal  = #FFA726
+color cMaster = #2962FF
+
+plot(showMasterHist ? mVah : na, "mVAH trail", color=color.new(cMaster, 80), linewidth=1)
+plot(showMasterHist ? mVal : na, "mVAL trail", color=color.new(cMaster, 80), linewidth=1)
+
+var array<box> histLines = array.new<box>(0)
+var array<box> histGray  = array.new<box>(0)
+
+var line  lnLPoc = na
+var line  lnLVah = na
+var line  lnLVal = na
+var line  lnMPoc = na
+var line  lnMVah = na
+var line  lnMVal = na
+var label lbLPoc = na
+var label lbLVah = na
+var label lbLVal = na
+var label lbMPoc = na
+var label lbMVah = na
+var label lbMVal = na
+
+f_paint(_ln, _lb, _show, _x1, _x2, _price, _lineCol, _bg, _name, _txt) =>
+    if _show and not na(_price)
+        line.set_xy1(_ln, _x1, _price)
+        line.set_xy2(_ln, _x2, _price)
+        line.set_color(_ln, _lineCol)
+        label.set_xy(_lb, _x2, _price)
+        label.set_text(_lb, showFullVPText ? _name + "\n" + _txt : _txt)
+        label.set_color(_lb, _bg)
+        label.set_textcolor(_lb, color.white)
+    else
+        line.set_color(_ln, color.new(color.gray, 100))
+        label.set_text(_lb, "")
+        label.set_color(_lb, color.new(color.gray, 100))
+        label.set_textcolor(_lb, color.new(color.gray, 100))
+
+if barstate.islast
+    int xR  = bar_index + 8
+    int xRm = bar_index + 19
+    int xLl = math.max(0, bar_index - vpLookback + 1)
+    int xLm = math.max(0, bar_index - vpLookback * masterMult + 1)
+    if na(lnMPoc)
+        lnLPoc := line.new(bar_index, close, bar_index, close, color=cLocal,                 style=line.style_solid,  width=2)
+        lnLVah := line.new(bar_index, close, bar_index, close, color=color.new(cLocal, 45),  style=line.style_dashed, width=1)
+        lnLVal := line.new(bar_index, close, bar_index, close, color=color.new(cLocal, 45),  style=line.style_dashed, width=1)
+        lnMPoc := line.new(bar_index, close, bar_index, close, color=cMaster,                style=line.style_solid,  width=3)
+        lnMVah := line.new(bar_index, close, bar_index, close, color=cMaster, style=line.style_dashed, width=1)
+        lnMVal := line.new(bar_index, close, bar_index, close, color=cMaster, style=line.style_dashed, width=1)
+        lbLPoc := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+        lbLVah := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+        lbLVal := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+        lbMPoc := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+        lbMVah := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+        lbMVal := label.new(bar_index, close, "", style=label.style_label_left, textcolor=color.white, size=size.small)
+    f_paint(lnLPoc, lbLPoc, showLocalNode,  xLl, xR, poc,  cLocal,                 f_tag_bg(lPocState, lPocAbs), "POC",  f_tag_txt(lPocState, lPocAbs, lPocNet))
+    f_paint(lnLVah, lbLVah, showLocalNode,  xLl, xR, vah,  color.new(cLocal, 45),  f_tag_bg(lVahState, lVahAbs), "VAH",  f_tag_txt(lVahState, lVahAbs, lVahNet))
+    f_paint(lnLVal, lbLVal, showLocalNode,  xLl, xR, val,  color.new(cLocal, 45),  f_tag_bg(lValState, lValAbs), "VAL",  f_tag_txt(lValState, lValAbs, lValNet))
+    f_paint(lnMPoc, lbMPoc, showMasterNode, xLm, xRm, mPoc, cMaster, f_tag_bg(mPocState, mPocAbs), "mPOC", f_tag_txt(mPocState, mPocAbs, mPocNet))
+    f_paint(lnMVah, lbMVah, showMasterNode, xLm, xRm, mVah, cMaster, f_tag_bg(mVahState, mVahAbs), "mVAH", f_tag_txt(mVahState, mVahAbs, mVahNet))
+    f_paint(lnMVal, lbMVal, showMasterNode, xLm, xRm, mVal, cMaster, f_tag_bg(mValState, mValAbs), "mVAL", f_tag_txt(mValState, mValAbs, mValNet))
+
+    if showHistogram and (mHi - mLo) > 0
+        float hStepR = (mHi - mLo) / histBins
+        bool  liveOn  = not barstate.isconfirmed and hStepR > 0
+        int   liveLoB = liveOn ? int(f_clamp(math.floor((low  - mLo) / hStepR), 0, histBins - 1)) : 0
+        int   liveHiB = liveOn ? int(f_clamp(math.floor((high - mLo) / hStepR), 0, histBins - 1)) : -1
+        float liveSpn = math.max(liveHiB - liveLoB + 1, 1)
+        float maxTot = 0.0
+        for b = 0 to histBins - 1
+            float liveAdd = 0.0
+            if liveOn and b >= liveLoB and b <= liveHiB
+                float nodePxL = mLo + (b + 0.5) * hStepR
+                if math.abs(close - nodePxL) <= touchDist or (low <= nodePxL and high >= nodePxL)
+                    liveAdd := (buyProxy + sellProxy) / liveSpn
+            maxTot := math.max(maxTot, array.get(histBuy, b) + array.get(histSell, b) + liveAdd)
+        color cInvis = color.new(color.gray, 100)
+        while array.size(histLines) < histBins
+            array.push(histLines, box.new(bar_index, close, bar_index, close, border_color=cInvis, bgcolor=cInvis))
+        while array.size(histGray) < histBins
+            array.push(histGray, box.new(bar_index, close, bar_index, close, border_color=cInvis, bgcolor=cInvis))
+        int   hRight = bar_index + 41 + histMaxBars
+        float halfH  = hStepR / 2
+        for b = 0 to histBins - 1
+            box  hln   = array.get(histLines, b)
+            box  gln   = array.get(histGray, b)
+            float bv    = array.get(histBuy, b)
+            float sv    = array.get(histSell, b)
+            float binPx = mLo + (b + 0.5) * hStepR
+            float binTop = binPx + halfH
+            float binBot = binPx - halfH
+            if liveOn and b >= liveLoB and b <= liveHiB
+                if math.abs(close - binPx) <= touchDist or (low <= binPx and high >= binPx)
+                    bv := bv + buyProxy  / liveSpn
+                    sv := sv + sellProxy / liveSpn
+            float tot   = bv + sv
+            if maxTot > 0 and tot > 0
+                int   barLen  = math.max(1, int(math.round(histMaxBars * tot / maxTot)))
+                float net     = (bv - sv) / tot
+                int   liveLen = int(math.round(barLen * math.abs(net)))
+                bool  outVA   = not na(mVal) and not na(mVah) and (binPx > mVah or binPx < mVal)
+                int   netTr   = outVA ? 50 : 15
+                int   grayTr  = outVA ? 65 : 40
+                color liveCol = net >= 0 ? color.new(#43A047, netTr) : color.new(#E53935, netTr)
+                color hCol = liveLen > 0 ? liveCol : cInvis
+                box.set_lefttop(hln, hRight - liveLen, binTop)
+                box.set_rightbottom(hln, hRight, binBot)
+                box.set_bgcolor(hln, hCol)
+                color gCol = (barLen - liveLen) > 0 ? color.new(color.gray, grayTr) : cInvis
+                box.set_lefttop(gln, hRight - barLen, binTop)
+                box.set_rightbottom(gln, hRight - liveLen, binBot)
+                box.set_bgcolor(gln, gCol)
+            else
+                box.set_bgcolor(hln, cInvis)
+                box.set_bgcolor(gln, cInvis)
+    else
+        color cInvisOff = color.new(color.gray, 100)
+        if array.size(histLines) > 0
+            for b = 0 to array.size(histLines) - 1
+                box.set_bgcolor(array.get(histLines, b), cInvisOff)
+        if array.size(histGray) > 0
+            for b = 0 to array.size(histGray) - 1
+                box.set_bgcolor(array.get(histGray, b), cInvisOff)
+
+// Legend
+var table vpLeg = na
+if showVpLegend and barstate.islast
+    if na(vpLeg)
+        vpLeg := table.new(position.top_right, 2, 6, frame_color=color.new(color.gray, 50), frame_width=1)
+    table.cell(vpLeg, 0, 0, "VP NODE",        text_color=color.white,  bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(vpLeg, 1, 0, "tag = live state", text_color=color.silver, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(vpLeg, 0, 1, "mPOC/mVAH/mVAL", text_color=cMaster,       bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 1, 1, "master (3x win)", text_color=color.silver, bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 0, 2, "POC/VAH/VAL",    text_color=cLocal,        bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 1, 2, "local node",     text_color=color.silver,  bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 0, 3, "BUY",            text_color=color.white,   bgcolor=color.new(#1B5E20, 12),     text_size=size.small)
+    table.cell(vpLeg, 1, 3, "buy still live", text_color=color.silver,  bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 0, 4, "SELL",           text_color=color.white,   bgcolor=color.new(#8B1A1A, 12),     text_size=size.small)
+    table.cell(vpLeg, 1, 4, "sell still live", text_color=color.silver, bgcolor=color.new(color.black, 30), text_size=size.small)
+    table.cell(vpLeg, 0, 5, "DEAD",           text_color=color.white,   bgcolor=color.new(#3E3E3E, 10),     text_size=size.small)
+    table.cell(vpLeg, 1, 5, "balanced ≥" + str.tostring(nodeSaturation, "#.#") + "x", text_color=color.silver, bgcolor=color.new(color.black, 30), text_size=size.small)
+
+// =============================================================================
+// NEAR-PRICE VERDICT
+// =============================================================================
+float nearVolBar = 0.0
+if mStep > 0
+    float ndMag = nearVerdictAtr * atr
+    for b = 0 to vpBins - 1
+        float bpxMag = mLo + (b + 0.5) * mStep
+        if math.abs(bpxMag - close) <= ndMag
+            nearVolBar += array.get(nodeBuy, b) + array.get(nodeSell, b)
+float nearVolPr = ta.percentrank(nearVolBar, nearVolLook)
+
+var label nearVerdictLbl = na
+var line nearHiLn = na
+var line nearLoLn = na
+if showNearVerdict and barstate.islast and mStep > 0
+    float nearDist = nearVerdictAtr * atr
+    float totalBuy  = 0.0
+    float totalSell = 0.0
+    bool  liveBar = not barstate.isconfirmed
+    int   liveLo  = liveBar ? int(f_clamp(math.floor((low  - mLo) / mStep), 0, vpBins - 1)) : 0
+    int   liveHi  = liveBar ? int(f_clamp(math.floor((high - mLo) / mStep), 0, vpBins - 1)) : -1
+    float liveSpn = math.max(liveHi - liveLo + 1, 1)
+    for b = 0 to vpBins - 1
+        float binPx = mLo + (b + 0.5) * mStep
+        if math.abs(binPx - close) <= nearDist
+            float bv = array.get(nodeBuy, b)
+            float sv = array.get(nodeSell, b)
+            if liveBar and b >= liveLo and b <= liveHi
+                if math.abs(close - binPx) <= touchDist or (low <= binPx and high >= binPx)
+                    bv += buyProxy  / liveSpn
+                    sv += sellProxy / liveSpn
+            if bv > sv
+                totalBuy  += (bv - sv)
+            else
+                totalSell += (sv - bv)
+    float verdTot = totalBuy + totalSell
+    float verdNet = verdTot > 0 ? (totalBuy - totalSell) / verdTot : 0.0
+    int   verdPct = int(math.round(math.abs(verdNet) * 100.0))
+    bool  isBal   = verdPct < nearVerdictBalanced or verdTot <= 0
+    int remSec  = int(math.max(0.0, math.floor((time_close - timenow) / 1000.0)))
+    int remMin  = int(math.floor(remSec / 60.0))
+    int remRemS = remSec - remMin * 60
+    string cdTxt = "⌛ " + str.tostring(remMin) + "m " + str.tostring(remRemS) + "s"
+    string magTag = na(nearVolPr) ? "" : (nearVolPr >= nearVolStrongPct ? "HIGH" : (nearVolPr <= nearVolWeakPct ? "LOW" : "med"))
+    string magSuffix = magTag == "" ? "" : "  ·  " + magTag
+    string biasTxt = isBal ? "Net Vol: ~" : (verdNet > 0 ? "Net Vol ▲ " : "Net Vol ▼ ") + str.tostring(verdPct) + "%" + magSuffix
+    string verdTxt = biasTxt + "\n" + cdTxt
+    color verdBg = isBal ? color.new(#3E3E3E, 25) : (verdNet > 0 ? color.new(#1B5E20, 15) : color.new(#8B1A1A, 15))
+    if na(nearVerdictLbl)
+        nearVerdictLbl := label.new(bar_index, close, "", style=label.style_label_down, textcolor=color.white, size=size.normal)
+    int   verdX = bar_index + 41 + histMaxBars
+    float verdY = mHi + (mHi - mLo) / histBins
+    label.set_xy(nearVerdictLbl, verdX, verdY)
+    label.set_text(nearVerdictLbl, verdTxt)
+    label.set_color(nearVerdictLbl, verdBg)
+    int xLnL = bar_index + 41
+    int xLnR = verdX
+    color guideCol = color.new(isBal ? color.gray : (verdNet > 0 ? color.lime : color.red), 70)
+    if na(nearHiLn)
+        nearHiLn := line.new(bar_index, close, bar_index, close, color=guideCol, style=line.style_dotted, width=1)
+        nearLoLn := line.new(bar_index, close, bar_index, close, color=guideCol, style=line.style_dotted, width=1)
+    line.set_xy1(nearHiLn, xLnL, close + nearDist)
+    line.set_xy2(nearHiLn, xLnR, close + nearDist)
+    line.set_xy1(nearLoLn, xLnL, close - nearDist)
+    line.set_xy2(nearLoLn, xLnR, close - nearDist)
+    line.set_color(nearHiLn, guideCol)
+    line.set_color(nearLoLn, guideCol)
+else if not showNearVerdict and not na(nearVerdictLbl)
+    label.set_text(nearVerdictLbl, "")
+    label.set_color(nearVerdictLbl, color.new(color.gray, 100))
+    if not na(nearHiLn)
+        line.set_color(nearHiLn, color.new(color.gray, 100))
+        line.set_color(nearLoLn, color.new(color.gray, 100))
+
+// =============================================================================
+// ATR MEASUREMENT BANDS — two thin lines at live price +/- ATR, 4 bars wide.
+// =============================================================================
+var line atrHiLn = na
+var line atrLoLn = na
+if barstate.islast
+    if na(atrHiLn)
+        atrHiLn := line.new(bar_index, close, bar_index + 4, close, color=color.new(color.gray, 40), style=line.style_solid, width=1)
+        atrLoLn := line.new(bar_index, close, bar_index + 4, close, color=color.new(color.gray, 40), style=line.style_solid, width=1)
+    if atrMeasureMult > 0 and not na(atr)
+        line.set_xy1(atrHiLn, bar_index, close + atrMeasureMult * atr)
+        line.set_xy2(atrHiLn, bar_index + 4, close + atrMeasureMult * atr)
+        line.set_xy1(atrLoLn, bar_index, close - atrMeasureMult * atr)
+        line.set_xy2(atrLoLn, bar_index + 4, close - atrMeasureMult * atr)
+        line.set_color(atrHiLn, color.new(color.gray, 40))
+        line.set_color(atrLoLn, color.new(color.gray, 40))
+    else
+        line.set_color(atrHiLn, color.new(color.gray, 100))
+        line.set_color(atrLoLn, color.new(color.gray, 100))
+
+// PREDICTED MASTER POC LINE — 3-bar solid line at pMPoc, extended to the right.
+// =============================================================================
+var line pMPocLn = na
+if barstate.islast
+    if na(pMPocLn)
+        pMPocLn := line.new(bar_index, close, bar_index + 3, close, color=color.new(color.blue, 0), style=line.style_solid, width=2)
+    if showPredictedPoc and not na(pMPoc)
+        line.set_xy1(pMPocLn, bar_index, pMPoc)
+        line.set_xy2(pMPocLn, bar_index + 3, pMPoc)
+        line.set_color(pMPocLn, color.new(color.blue, 0))
+    else
+        line.set_color(pMPocLn, color.new(color.blue, 100))
+
+bgcolor(not validTf ? color.new(color.red, 85) : na, title="Invalid TF")
+
+// =============================================================================
+// TELEMETRY COCKPIT — live current-bar multi-TF + veto snapshot (no history).
+// =============================================================================
+var table telTbl = na
+if debugTelemetry and telTable and barstate.islast
+    if na(telTbl)
+        telTbl := table.new(position.middle_right, 2, 9, border_width=1, frame_color=color.new(color.gray, 50), frame_width=1)
+    color _kc = color.new(color.gray, 60)
+    color _vc = color.new(color.black, 50)
+    table.cell(telTbl, 0, 0, "TELEMETRY", text_color=color.white, text_size=size.small, bgcolor=color.new(color.teal, 40))
+    table.cell(telTbl, 1, 0, str.tostring(timeframe.period), text_color=color.white, text_size=size.small, bgcolor=color.new(color.teal, 40))
+    table.cell(telTbl, 0, 1, "net M1/M3", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 1, str.tostring(nz(netM1c), "#.##") + " / " + str.tostring(nz(netM3c), "#.##"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 2, "net M5/M15", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 2, str.tostring(nz(netM5c), "#.##") + " / " + str.tostring(nz(netM15c), "#.##"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 3, "ATR% / slope", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 3, str.tostring(atrPct, "#.###") + " / " + str.tostring(nz(slopeNorm), "#.##"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 4, "regime gate", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 4, not enableRegimeGate ? "off" : (na(slopeNorm) ? "n/a" : (math.abs(slopeNorm) >= regimeTauHigh ? "TREND" : (math.abs(slopeNorm) <= regimeTauLow ? "RANGE" : "dead"))), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 5, "veto brk L/S", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 5, str.tostring(nz(tel_vBrkL, -1), "#") + " / " + str.tostring(nz(tel_vBrkS, -1), "#"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 6, "veto rev L/S", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 6, str.tostring(nz(tel_vRevL, -1), "#") + " / " + str.tostring(nz(tel_vRevS, -1), "#"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 7, "kind L/S", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 7, str.tostring(longKind) + " / " + str.tostring(shortKind), text_color=color.white, text_size=size.small, bgcolor=_vc)
+    table.cell(telTbl, 0, 8, "M1-shadow R", text_color=color.white, text_size=size.small, bgcolor=_kc)
+    table.cell(telTbl, 1, 8, str.tostring(tel_m1r, "#.##"), text_color=color.white, text_size=size.small, bgcolor=_vc)
+
+// =============================================================================
+// DEBUG: SLOPE-BIN TRADE TABLE — falsification test for the adaptive-RR hypothesis.
+// Bins every CLOSED trade fill by aligned master-POC slope at entry. If win% / avg P&L
+// do NOT rise across the bins (counter -> strong-aligned), POC-slope is not a regime
+// edge and adaptive RR is curve-fit. NOTE: #fills counts each partial (TP1 + runner)
+// as a separate fill of the same entry, so #fills > #entries when TP1 partials are on.
+// =============================================================================
+var table dbgTbl = na
+if dbgSlopeBins and barstate.islast
+    int NB = 5
+    array<float> cnt = array.new_float(NB, 0.0)
+    array<float> win = array.new_float(NB, 0.0)
+    array<float> pnl = array.new_float(NB, 0.0)
+    if strategy.closedtrades > 0
+        for i = 0 to strategy.closedtrades - 1
+            string id = strategy.closedtrades.entry_id(i)
+            if map.contains(dbgSlope, id)
+                float s = map.get(dbgSlope, id)
+                if not na(s)
+                    int b = s < -0.5 ? 0 : (s < 0.0 ? 1 : (s < 0.5 ? 2 : (s < 1.0 ? 3 : 4)))
+                    float p = strategy.closedtrades.profit(i)
+                    array.set(cnt, b, array.get(cnt, b) + 1.0)
+                    array.set(pnl, b, array.get(pnl, b) + p)
+                    if p > 0
+                        array.set(win, b, array.get(win, b) + 1.0)
+    if na(dbgTbl)
+        dbgTbl := table.new(position.bottom_left, 5, NB + 1, frame_color=color.new(color.gray, 40), frame_width=1, border_width=1)
+    table.cell(dbgTbl, 0, 0, "aligned slope (ATR)", text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(dbgTbl, 1, 0, "#fills",   text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(dbgTbl, 2, 0, "win%",     text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(dbgTbl, 3, 0, "total P&L",text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(dbgTbl, 4, 0, "avg P&L",  text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    array<string> lbls = array.from("< -0.5  counter", "-0.5..0  weak ctr", "0..0.5  weak aln", "0.5..1.0  aligned", ">= 1.0  strong")
+    for b = 0 to NB - 1
+        float c = array.get(cnt, b)
+        float w = array.get(win, b)
+        float p = array.get(pnl, b)
+        float wr = c > 0 ? w / c * 100.0 : na
+        float ap = c > 0 ? p / c : na
+        color rowBg = p > 0 ? color.new(#1B5E20, 30) : (p < 0 ? color.new(#8B1A1A, 30) : color.new(color.black, 30))
+        table.cell(dbgTbl, 0, b + 1, array.get(lbls, b),                 text_color=color.silver, bgcolor=rowBg, text_size=size.small)
+        table.cell(dbgTbl, 1, b + 1, str.tostring(c, "#"),                text_color=color.white,  bgcolor=rowBg, text_size=size.small)
+        table.cell(dbgTbl, 2, b + 1, na(wr) ? "-" : str.tostring(wr, "#.#"), text_color=color.white, bgcolor=rowBg, text_size=size.small)
+        table.cell(dbgTbl, 3, b + 1, str.tostring(p, "#"),                text_color=color.white,  bgcolor=rowBg, text_size=size.small)
+        table.cell(dbgTbl, 4, b + 1, na(ap) ? "-" : str.tostring(ap, "#.#"), text_color=color.white, bgcolor=rowBg, text_size=size.small)
+
+// =============================================================================
+// DEBUG: OVERHEAD-VETO SELECTIVITY TABLE — does the overhead veto remove LOSERS?
+// For every CLOSED breakout trade, dbgOvhV holds 1.0 if the veto WOULD trip at its entry
+// (at the CURRENT gBrk overhead thresholds), else 0.0. Buckets WOULD-VETO vs KEPT vs ALL
+// and reports #trades / win% / total P&L / avg P&L. Sweep the thresholds via inputs and
+// re-read: if WOULD-VETO win% << KEPT win%, the veto removes losers (edge). Display-only.
+// =============================================================================
+var table ovhTbl = na
+if dbgOverheadBins and barstate.islast
+    // [0]=WOULD-VETO  [1]=KEPT  [2]=ALL
+    array<float> ocnt = array.new_float(3, 0.0)
+    array<float> owin = array.new_float(3, 0.0)
+    array<float> opnl = array.new_float(3, 0.0)
+    if strategy.closedtrades > 0
+        for i = 0 to strategy.closedtrades - 1
+            string id = strategy.closedtrades.entry_id(i)
+            if map.contains(dbgOvhV, id)
+                float v = map.get(dbgOvhV, id)
+                float p = strategy.closedtrades.profit(i)
+                int bkt = v > 0.5 ? 0 : 1
+                array.set(ocnt, bkt, array.get(ocnt, bkt) + 1.0)
+                array.set(opnl, bkt, array.get(opnl, bkt) + p)
+                if p > 0
+                    array.set(owin, bkt, array.get(owin, bkt) + 1.0)
+                array.set(ocnt, 2, array.get(ocnt, 2) + 1.0)
+                array.set(opnl, 2, array.get(opnl, 2) + p)
+                if p > 0
+                    array.set(owin, 2, array.get(owin, 2) + 1.0)
+    if na(ovhTbl)
+        ovhTbl := table.new(position.bottom_right, 5, 4, frame_color=color.new(color.gray, 40), frame_width=1, border_width=1)
+    table.cell(ovhTbl, 0, 0, "overhead veto (brk)", text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(ovhTbl, 1, 0, "#trades",  text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(ovhTbl, 2, 0, "win%",     text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(ovhTbl, 3, 0, "total P&L",text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    table.cell(ovhTbl, 4, 0, "avg P&L",  text_color=color.white, bgcolor=color.new(color.black, 10), text_size=size.small)
+    array<string> olbls = array.from("WOULD-VETO (remove)", "KEPT", "ALL breakout")
+    for b = 0 to 2
+        float c = array.get(ocnt, b)
+        float w = array.get(owin, b)
+        float p = array.get(opnl, b)
+        float wr = c > 0 ? w / c * 100.0 : na
+        float ap = c > 0 ? p / c : na
+        color rowBg = b == 0 ? color.new(#4A148C, 25) : (p > 0 ? color.new(#1B5E20, 30) : (p < 0 ? color.new(#8B1A1A, 30) : color.new(color.black, 30)))
+        table.cell(ovhTbl, 0, b + 1, array.get(olbls, b),               text_color=color.silver, bgcolor=rowBg, text_size=size.small)
+        table.cell(ovhTbl, 1, b + 1, str.tostring(c, "#"),               text_color=color.white,  bgcolor=rowBg, text_size=size.small)
+        table.cell(ovhTbl, 2, b + 1, na(wr) ? "-" : str.tostring(wr, "#.#"), text_color=color.white, bgcolor=rowBg, text_size=size.small)
+        table.cell(ovhTbl, 3, b + 1, str.tostring(p, "#"),               text_color=color.white,  bgcolor=rowBg, text_size=size.small)
+        table.cell(ovhTbl, 4, b + 1, na(ap) ? "-" : str.tostring(ap, "#.#"), text_color=color.white, bgcolor=rowBg, text_size=size.small)

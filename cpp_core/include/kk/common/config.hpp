@@ -65,6 +65,22 @@ struct Params {
     bool   trail_runner       = true;
     double runner_rr          = 10.0;
     double trail_atr_mult     = 3.6;
+    // ---- Monster impulse-thrust path (kind 4) — default OFF = base byte-identical ----
+    // The ONLY entry-model delta of KK-MasterVP-Monster over the faithful base: a single decisive
+    // thrust candle that fires ONLY in the high-volatility band the normal ceiling (max_atr_pct)
+    // vetoes. Confirmed by near-total one-sided M1 near-price net tick volume; trend-gated on the
+    // master-POC slope + the predicted (aged-out) master profile. Reversion + all opt-in gates stay
+    // OFF, so enabling impulse is the whole Monster delta. See [[monster-inherit-mastervp-base]].
+    bool   enable_impulse        = false;  // master switch for the impulse path
+    double impulse_candle_atr    = 1.7;    // min thrust-bar range (h-l) in ATR
+    double impulse_entry_buf_atr = 0.4;    // min close beyond master VAH/VAL in ATR
+    double impulse_net_min       = 0.95;   // min one-sided M1 near-price net (>= long / <= -this short)
+    double impulse_max_dist_atr  = 2.5;    // anti-chase vs the PREDICTED edge in ATR; 0 = off
+    double impulse_rr            = 3.0;    // impulse TP = close +/- this * stop distance
+    int    impulse_trend_slope_bars = 10;  // master-POC slope lookback for the trend gate
+    int    impulse_predict_bars  = 10;     // bars aged out of the master window for the predicted POC/VAH/VAL; 0 = use current
+    int    tf_net_look           = 50;     // M1 net: bars summed for the near-price net
+    double tf_net_win_atr        = 1.5;    // M1 net: near-price window half-width in ATR
     // ---- multi-bar net volume (feature #1) — default OFF (inert) ----
     // Per-bar net flow = volume-weighted body ratio (c-o)/range * min(vol/avgVol, 3).
     // Persist: require last N closed bars all flow WITH the trade side beyond min before entry.
@@ -249,6 +265,16 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpTrailRunner") p.trail_runner = to_bool(val);
     else if (key == "InpRunnerRr") p.runner_rr = D();
     else if (key == "InpTrailAtrMult") p.trail_atr_mult = D();
+    else if (key == "InpEnableImpulse") p.enable_impulse = to_bool(val);
+    else if (key == "InpImpulseCandleAtr") p.impulse_candle_atr = D();
+    else if (key == "InpImpulseEntryBufAtr") p.impulse_entry_buf_atr = D();
+    else if (key == "InpImpulseNetMin") p.impulse_net_min = D();
+    else if (key == "InpImpulseMaxDistAtr") p.impulse_max_dist_atr = D();
+    else if (key == "InpImpulseRr") p.impulse_rr = D();
+    else if (key == "InpImpulseTrendSlopeBars") p.impulse_trend_slope_bars = I();
+    else if (key == "InpImpulsePredictBars") p.impulse_predict_bars = I();
+    else if (key == "InpTfNetLook") p.tf_net_look = I();
+    else if (key == "InpTfNetWinAtr") p.tf_net_win_atr = D();
     else if (key == "InpEnableNetPersist") p.enable_net_persist = to_bool(val);
     else if (key == "InpNetPersistBars") p.net_persist_bars = I();
     else if (key == "InpNetPersistMin") p.net_persist_min = D();

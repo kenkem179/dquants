@@ -60,6 +60,7 @@ struct Signal {
     bool   valid   = false;
     bool   is_long = false;
     bool   is_rev  = false;       // reversion vs breakout economics
+    bool   is_impulse = false;    // Monster kind-4 impulse-thrust (fired above the vol ceiling)
     double entry   = 0.0;         // anchor = shift-1 close
     double sl      = 0.0;
     double tp1     = 0.0;

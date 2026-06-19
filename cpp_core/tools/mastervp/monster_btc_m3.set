@@ -1,0 +1,107 @@
+; KK-MasterVP-Monster — BTCUSD M3 baseline. INHERITS the faithful KK-MasterVP base breakout
+; (regime + node model) and adds ONLY the impulse-thrust path (kind 4). Reversion + all opt-in
+; gates stay OFF. Load with backtester --set-all (applies every key incl. MQL non-inputs).
+; The vol CEILING (InpMaxAtrPct) is what splits the regimes: base breakout fires below it,
+; impulse fires above it. Impulse params start at the Monster spec defaults; the sweep tunes them.
+
+; ---- VP core (Monster spec: local 50, master 50*3 = 150 bars; Wilder ATR) ----
+InpVpLookback=50
+InpVpBins=40
+InpVaPct=70.0
+InpMasterMult=3
+InpNodeTouchAtr=0.05
+InpNodeDecay=0.94
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpAtrLen=14
+InpAtrMt5Mode=false
+
+; ---- regime (base breakout gate: adx>22 && |+DI-DI|>6 && |emaF-emaS|>0.25*atr; ema 24/194) ----
+InpEmaFast=24
+InpEmaSlow=194
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpDiSpreadMin=6.0
+InpEmaSepAtr=0.25
+
+; ---- entry shared ----
+InpNodeGateEnabled=true
+InpUsePriorBarVP=false
+InpBrkRequireFlow=false
+InpSfpFlowMin=0.15
+
+; ---- breakout (base path, fires BELOW the vol ceiling) ----
+InpEnableBreakout=true
+InpBreakBufAtr=0.65
+InpBreakMaxAtr=9.0
+InpRrBrk=3.0
+InpSlAtrBrk=2.2
+InpBrkVetoSfp=false
+
+; ---- reversion (OFF — Monster default) ----
+InpEnableReversion=false
+InpRetestAtr=0.5
+InpBodyPctMin=0.4
+InpRrRev=1.35
+InpSlAtrRev=1.45
+
+; ---- IMPULSE-THRUST (the Monster delta; fires ABOVE the vol ceiling) ----
+InpEnableImpulse=true
+InpImpulseCandleAtr=1.7
+InpImpulseEntryBufAtr=0.4
+InpImpulseNetMin=0.95
+InpImpulseMaxDistAtr=2.5
+InpImpulseRr=3.0
+InpImpulseTrendSlopeBars=10
+InpImpulsePredictBars=10
+InpTfNetLook=50
+InpTfNetWinAtr=1.5
+
+; ---- exit (Monster brk/impulse TP1 = 1.05R close 10%; BE-after-TP1 +0.05ATR; runner fixed TP2) ----
+InpTp1R=1.05
+InpTp1ClosePct=10.0
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpTrailRunner=false
+InpRunnerRr=10.0
+InpTrailAtrMult=3.6
+
+; ---- risk sizing (Monster: 1.6% of (initial + closed netprofit)) ----
+InpRiskUnit=0
+InpRiskAccPct=1.6
+InpRiskUsd=180.0
+InpMaxLot=0.0
+InpDeviationPoints=200
+InpSkipIfMinLotOverRisk=false
+
+; ---- risk-management limiters: predictive daily-DD only (Monster maxDailyDDPct=5) ----
+InpMaxDailyDDPct=5.0
+InpDailyDDCooldownHrs=12.0
+InpMaxPeakDDPct=0.0
+InpSoftBlockDDPct=0.0
+InpLossStreakCount=0
+
+; ---- safety / volatility (the % band defines the impulse split: base <= 0.2, impulse > 0.2) ----
+InpMinAtrPct=0.04
+InpMaxAtrPct=0.2
+InpMinAtrTicks=0.0
+InpMaxTradesPerSession=50
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+
+; ---- volatility-RR OFF ----
+InpEnableVolRR=false
+
+; ---- quality gates OFF (Monster has neither MTF-agree nor RSI veto) ----
+InpUseMtfAgree=false
+InpUseAtrPctlGate=false
+InpUseMomVeto=false
+
+; ---- sessions: BTC trades 24/7 -> three contiguous windows cover the whole UTC day ----
+InpBrokerGMTOffset=0
+InpAsiaSess=00:00-08:00
+InpLdnSess=08:00-16:00
+InpNySess=16:00-23:59
+InpBlockedHoursStr=
+InpForceCloseSessNews=false
+InpAvoidNews=false

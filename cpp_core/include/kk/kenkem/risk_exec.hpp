@@ -90,6 +90,18 @@ inline bool entry_blocked_by_atr(const Snapshot& s, const KenKemConfig& c) {
     return false;
 }
 
+// High-risk variant: empirically MT5's HandleHighRiskEntry fires E5 trades at low ATR-percentile that the
+// normal MIN_ENTRY_ATR_PERCENTILE volatility-regime gate would block (engine w/65-block=75, no-block=218,
+// MT5=108 over 2026 => intermediate = HR bypasses MIN_ENTRY). Keeps ONLY the black-swan low/high guard.
+inline bool high_risk_blocked_by_atr(const Snapshot& s, const KenKemConfig& c) {
+    if (c.enable_black_swan) {
+        if (c.atr_percentile_low > 0.0 && s.atr_pctile < c.atr_percentile_low) return true;
+        if (c.enable_atr_high_block && c.atr_percentile_high > 0.0 && s.atr_pctile > c.atr_percentile_high)
+            return true;
+    }
+    return false;
+}
+
 inline bool accept_high_risk(int kind, const KenKemConfig& c) {
     if (kind == 1) return c.accept_high_risk_e1;
     if (kind == 2) return c.accept_high_risk_e2;

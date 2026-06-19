@@ -45,8 +45,17 @@ preserved below (📌 PAUSED) — not abandoned.
   `SessionNews.mqh` = self-contained Sessions (filters.hpp port) + NewsFilter (CSV+embedded calendar) for the
   user's KenKem-style session config + news avoidance (default OFF; live-only overlay, not in backtest PF).
   Preset `KK-MasterVP-XAUUSD.set` shipped to EA folder + `../kenkem/MQL5/Presets/`. **READY FOR MANUAL MT5 TEST.**
-- **▶️ NEXT (when user returns):** manual MT5 forward-test on XAUUSD M3 with the shipped .set; then optionally
-  build the local/HTF-VP breakout-agreement gate (above) and re-sweep. Note: EA news/session overlays diverge
+- **✅ M5 DEDICATED SWEEP DONE (this session) — M5 BEATS M3 on every axis:** master-len → entry → exit →
+  risk, each train→OOS, plateau-picked (`research/mastervp_parity/M5_SWEEP_FINDINGS.md`). Inertness
+  re-confirmed (master bars = sole driver). **Locked M5: master 432 bars (36h) = 108×4 · break_buf 0.85 ·
+  sl_atr_brk 1.2 · trail 2.5** (rest = M3 lock). Caught the trail overfit-trap (train loves 4.0, OOS peaks
+  2.0–2.5). Daily-DD inert on M5 (kept 10% as live net). Result: **OOS PF 1.327 / dd 10.3% / win 58.6% /
+  net 7,886 / n 442** vs M3 lock OOS PF 1.114 / dd 17.5%, AND more tail-robust (M5 top-10 = 121% of net vs
+  M3 208%). Engine lock `cpp_core/tools/mastervp/kkmastervp_xau_m5_LOCKED.set`; EA preset
+  `mql5/experts/KK-MasterVP/KK-MasterVP-XAUUSD-M5.set` (+ kenkem Presets) — attach EA to an **M5** chart.
+- **▶️ NEXT (when user returns):** manual MT5 forward-test — **M5 preset is the new front-runner** (M3 still
+  shipped/valid as A/B). Then optionally walk-forward + Monte-Carlo on the M5 lock, BTCUSD-M5 cross-instrument
+  robustness, and the local/HTF-VP breakout-agreement gate. Note: EA news/session overlays diverge
   intentionally from the backtest (live-safety), so forward results may show fewer trades than the OOS PF.
 - **Data:** combined bars `cpp_core/tools/bars_xauusd_2025_2026_m3.csv`; full ticks `ticks_xauusd_2024_2026.csv`
   (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.

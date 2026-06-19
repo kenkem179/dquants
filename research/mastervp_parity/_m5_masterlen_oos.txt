@@ -1,0 +1,17 @@
+# sweep m5_masterlen_oos: 7 combos over ['InpVpLookback', 'InpMasterMult']  (ticks=ticks_xau_oos.csv)
+  [  0] {'InpVpLookback': 24, 'InpMasterMult': 8}  n=631 win=54.5 PF=1.100 net=3,521 dd=19.5% tp2=2% calmar=1.28
+  [  1] {'InpVpLookback': 24, 'InpMasterMult': 12}  n=559 win=53.1 PF=1.154 net=5,400 dd=19.3% tp2=2% calmar=1.57
+  [  2] {'InpVpLookback': 24, 'InpMasterMult': 16}  n=508 win=51.6 PF=1.131 net=3,923 dd=15.7% tp2=1% calmar=1.64
+  [  3] {'InpVpLookback': 24, 'InpMasterMult': 18}  n=507 win=53.8 PF=1.154 net=4,282 dd=11.5% tp2=1% calmar=2.45
+  [  4] {'InpVpLookback': 24, 'InpMasterMult': 20}  n=497 win=52.9 PF=1.102 net=2,715 dd=14.3% tp2=1% calmar=1.43
+  [  5] {'InpVpLookback': 24, 'InpMasterMult': 21}  n=481 win=52.8 PF=1.115 net=2,961 dd=17.2% tp2=1% calmar=1.28
+  [  6] {'InpVpLookback': 24, 'InpMasterMult': 24}  n=487 win=54.6 PF=1.230 net=6,644 dd=15.0% tp2=1% calmar=2.55
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=150 & PF>1) — m5_masterlen_oos ===
+  PF=1.230 net=6,644 dd=15.0% win=54.6 tp2=1% n=487 calmar=2.55  {'InpVpLookback': 24, 'InpMasterMult': 24}
+  PF=1.154 net=4,282 dd=11.5% win=53.8 tp2=1% n=507 calmar=2.45  {'InpVpLookback': 24, 'InpMasterMult': 18}
+  PF=1.131 net=3,923 dd=15.7% win=51.6 tp2=1% n=508 calmar=1.64  {'InpVpLookback': 24, 'InpMasterMult': 16}
+  PF=1.154 net=5,400 dd=19.3% win=53.1 tp2=2% n=559 calmar=1.57  {'InpVpLookback': 24, 'InpMasterMult': 12}
+  PF=1.102 net=2,715 dd=14.3% win=52.9 tp2=1% n=497 calmar=1.43  {'InpVpLookback': 24, 'InpMasterMult': 20}
+  PF=1.115 net=2,961 dd=17.2% win=52.8 tp2=1% n=481 calmar=1.28  {'InpVpLookback': 24, 'InpMasterMult': 21}
+  PF=1.100 net=3,521 dd=19.5% win=54.5 tp2=2% n=631 calmar=1.28  {'InpVpLookback': 24, 'InpMasterMult': 8}

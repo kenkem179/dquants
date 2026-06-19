@@ -35,6 +35,8 @@
 #include "kk/mastervp/node_engine.hpp"
 #include "kk/mastervp/regime.hpp"
 #include "kk/mastervp/strategy.hpp"
+#include "kk/mastervp/impulse.hpp"
+#include "kk/common/tf_net.hpp"
 #include "kk/common/filters.hpp"
 #include "kk/common/risk_manager.hpp"
 #include "kk/common/position_manager.hpp"
@@ -54,6 +56,14 @@ public:
     // only (precomputed for indicator convergence, never bar-closed/traded) — exactly the
     // MT5 tester's preloaded history. The stream must then begin at the first tick >=
     // trade_from_ts_ms. 0 (default) trades from the first bar (used by the unit test).
+    // Monster overload: also supply the M1 bar series (for the impulse path's M1 near-price net).
+    // M1 bars are oldest..newest, ts_ms = bar OPEN time. Empty (base call) => impulse never fires.
+    void load_bars(const std::vector<Bar>& bars, const std::vector<Bar>& m1_bars,
+                   int64_t trade_from_ts_ms = 0) {
+        m1_bars_ = m1_bars;
+        load_bars(bars, trade_from_ts_ms);
+    }
+
     void load_bars(const std::vector<Bar>& bars, int64_t trade_from_ts_ms = 0) {
         bars_ = bars;
         precompute_();
@@ -145,6 +155,11 @@ private:
 
         build_htf_m15_();   // M15 EMA fast/slow for the MTF-agree gate
 
+        // Monster: per-bar master POC (impulse trend slope) + M1 near-price net series.
+        mpoc_.assign(N_, 0.0);
+        if (p_.enable_impulse && !m1_bars_.empty())
+            m1_series_ = build_tf_series(m1_bars_, p_.atr_len, 60);
+
         const int master_len = p_.master_len();
         const int local_len  = p_.vp_lookback;
         NodeEngine node;
@@ -154,6 +169,7 @@ private:
             if (i < master_len - 1) continue;
             const VPResult masterCur =
                 kk::vp::compute_vp_bars(&bars_[i - master_len + 1], master_len, p_.vp_bins, p_.va_pct);
+            if (masterCur.valid) mpoc_[i] = masterCur.poc;   // Monster: slope source
             node.update(masterCur, bars_[i], atr_[i], p_);   // update BEFORE the signal read
 
             VPResult localCur;
@@ -174,8 +190,37 @@ private:
                 const NodeState nsVah = node.state_at_price(masterCur.vah, p_);
                 const NodeState nsVal = node.state_at_price(masterCur.val, p_);
                 const NodeState nsPx  = node.state_at_price(s.c, p_);
-                ev.sig = kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
-                                           s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
+
+                // Monster: the impulse-thrust path REPLACES the base entry on bars ABOVE the
+                // volatility ceiling (the band the base refuses), so the two never compete. Below
+                // the ceiling (or impulse off) the base breakout/reversion path is unchanged.
+                const double atrpct = (bars_[i].close > 0.0) ? atr_[i] / bars_[i].close * 100.0 : 0.0;
+                const bool above_ceil = (p_.max_atr_pct > 0.0) && (atrpct > p_.max_atr_pct);
+                if (p_.enable_impulse && above_ceil) {
+                    // predicted (aged-out) master VP: same window, oldest impulse_predict_bars dropped
+                    VPResult masterPred = masterCur;
+                    if (p_.impulse_predict_bars > 0) {
+                        const int predLen = std::max(p_.vp_bins, master_len - p_.impulse_predict_bars);
+                        if (i >= predLen - 1)
+                            masterPred = kk::vp::compute_vp_bars(&bars_[i - predLen + 1], predLen,
+                                                                 p_.vp_bins, p_.va_pct);
+                    }
+                    bool slope_up = false, slope_dn = false;
+                    const int pa = i - p_.impulse_trend_slope_bars;
+                    if (pa >= 0 && mpoc_[pa] > 0.0 && masterCur.poc > 0.0) {
+                        slope_up = masterCur.poc > mpoc_[pa];
+                        slope_dn = masterCur.poc < mpoc_[pa];
+                    }
+                    bool has_m1 = false;
+                    const double net_m1 = net_prev_at_time(m1_series_, bars_[i].ts_ms,
+                                                           p_.tf_net_look, p_.tf_net_win_atr,
+                                                           p_.mintick, has_m1);
+                    ev.sig = kk::detect_impulse(p_, masterCur, masterPred, s,
+                                                slope_up, slope_dn, net_m1, has_m1);
+                } else {
+                    ev.sig = kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
+                                               s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
+                }
                 // Feature #2: replace the final/runner target with a node-structure level.
                 if (ev.sig.valid && p_.enable_struct_tp && ev.sig.risk > 0.0) {
                     ev.sig.tp2 = node.structural_tp(ev.sig.is_long, ev.sig.entry, ev.sig.risk,
@@ -335,7 +380,9 @@ private:
         if (pos_.open()) { blk("position already open"); return; }
         const double risk_budget = rm_.risk_budget_usd();
         if (sessionId == 0) { blk("out of session"); return; }
-        if (!atr_pct_ok(ev.atr1, ev.price, p_)) { blk("ATR% band"); return; }
+        // Impulse intentionally fires ABOVE the ceiling (it owns that band) — skip the % band gate
+        // for it; the base paths keep the [min,max] band check.
+        if (!sig.is_impulse && !atr_pct_ok(ev.atr1, ev.price, p_)) { blk("ATR% band"); return; }
         if (!atr_ticks_ok(ev.atr1, p_)) { blk("ATR ticks floor"); return; }
         if (!spread_ok(t.bid, t.ask, p_)) { blk("spread"); return; }
         if (!sess_.max_trades_ok()) { blk("max trades/session"); return; }
@@ -430,6 +477,9 @@ private:
     std::vector<BarEval> evals_;
     std::vector<double>  atr_, rsi_;
     std::vector<double>  net_flow_;   // feature #1: per-bar volume-weighted net flow
+    std::vector<double>  mpoc_;       // Monster: master-POC per bar (impulse trend-slope source)
+    std::vector<Bar>     m1_bars_;    // Monster: M1 bars (impulse M1 near-price net)
+    TfSeries             m1_series_;  // Monster: built from m1_bars_ once in precompute_
     std::vector<int64_t> m15_start_;
     std::vector<double>  m15_close_, m15_emaF_, m15_emaS_;
 
