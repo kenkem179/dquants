@@ -125,6 +125,12 @@ inline bool atr_pct_ok(double atr1, double price, const Params& p) {
     return true;
 }
 
+// ATR-ticks floor (Pine safetyOk: atrTicks = atr/mintick >= minAtrTicks). 0 = off.
+inline bool atr_ticks_ok(double atr1, const Params& p) {
+    if (p.min_atr_ticks <= 0.0 || p.mintick <= 0.0) return true;
+    return atr1 / p.mintick >= p.min_atr_ticks;
+}
+
 // Spread gate: (ask-bid)/pip <= max_spread_pips (0 = off).
 inline bool spread_ok(double bid, double ask, const Params& p) {
     if (p.max_spread_pips <= 0.0 || p.pip_size <= 0.0) return true;

@@ -109,6 +109,7 @@ struct Params {
     // ---- safety ----
     double min_atr_pct        = 0.0156;
     double max_atr_pct        = 0.158;
+    double min_atr_ticks      = 0.0;     // Pine minAtrTicks floor (atr/mintick >= this); 0 = off
     int    max_trades_per_session = 4;
     double max_spread_pips    = 40.0;
     double max_spread_tp1_frac = 0.25;
@@ -299,6 +300,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpSkipIfMinLotOverRisk") p.skip_if_minlot_over_risk = to_bool(val);
     else if (key == "InpMinAtrPct") p.min_atr_pct = D();
     else if (key == "InpMaxAtrPct") p.max_atr_pct = D();
+    else if (key == "InpMinAtrTicks") p.min_atr_ticks = D();
     else if (key == "InpMaxTradesPerSession") p.max_trades_per_session = I();
     else if (key == "InpMaxSpreadPips") p.max_spread_pips = D();
     else if (key == "InpMaxSpreadTp1Frac") p.max_spread_tp1_frac = D();

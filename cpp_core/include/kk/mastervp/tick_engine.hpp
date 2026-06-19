@@ -291,7 +291,10 @@ private:
     void on_bar_closed_(int sig_bar, const Tick& t) {
         if (sig_bar < 0) return;
         const BarEval& ev = evals_[sig_bar];
-        const UtcParts u = utc_parts(bars_[sig_bar].ts_ms);   // SignalBarUtc = shift-1 bar time
+        // Session/day/hour context is evaluated in BROKER/CHART time (UTC + broker_gmt_offset),
+        // exactly as the Pine `time(tf, session)` uses the chart timezone. Tick prices stay UTC.
+        const int64_t off_ms = static_cast<int64_t>(p_.broker_gmt_offset) * 3600000LL;
+        const UtcParts u = utc_parts(bars_[sig_bar].ts_ms + off_ms);   // SignalBarUtc = shift-1 bar time
 
         // Session/day context (counter resets on session change inside update()).
         const int sessionId = sess_.update(u.min_of_day);
@@ -333,6 +336,7 @@ private:
         const double risk_budget = rm_.risk_budget_usd();
         if (sessionId == 0) { blk("out of session"); return; }
         if (!atr_pct_ok(ev.atr1, ev.price, p_)) { blk("ATR% band"); return; }
+        if (!atr_ticks_ok(ev.atr1, p_)) { blk("ATR ticks floor"); return; }
         if (!spread_ok(t.bid, t.ask, p_)) { blk("spread"); return; }
         if (!sess_.max_trades_ok()) { blk("max trades/session"); return; }
         if (rm_.is_daily_dd_hit(equity_, risk_budget)) { blk("daily DD"); return; }

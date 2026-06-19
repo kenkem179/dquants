@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     std::string bars_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
     int64_t trade_from_ms = 0;
     bool symbol_xau = false;
+    bool set_all = false;   // apply ALL .set keys incl. MQL non-inputs (Pine-faithful mode)
 
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
         else if (a == "--ticks") ticks_path = next();
         else if (a == "--out")   out_path   = next();
         else if (a == "--set")   set_path   = next();
+        else if (a == "--set-all") { set_path = next(); set_all = true; }
         else if (a == "--trade-from-ms") trade_from_ms = std::stoll(next());
         else if (a == "--symbol-xau") symbol_xau = true;
         else if (a == "--symbol-btc") { /* default */ }
@@ -46,9 +48,10 @@ int main(int argc, char** argv) {
     kk::Params p;
     if (symbol_xau) p.apply_xauusd_specs(); else p.apply_btcusd_specs();
     if (!set_path.empty()) {
-        const int n = kk::load_set(p, set_path, /*mimic_mt5_noninput=*/true);
+        const int n = kk::load_set(p, set_path, /*mimic_mt5_noninput=*/!set_all);
         if (n < 0) { std::fprintf(stderr, "could not read .set: %s\n", set_path.c_str()); return 1; }
-        std::fprintf(stderr, "[bt] applied %d keys from %s (mimic MT5 non-input)\n", n, set_path.c_str());
+        std::fprintf(stderr, "[bt] applied %d keys from %s (%s)\n", n, set_path.c_str(),
+                     set_all ? "ALL keys, Pine-faithful" : "mimic MT5 non-input");
     }
 
     const auto bars = kk::load_bars_csv(bars_path);
