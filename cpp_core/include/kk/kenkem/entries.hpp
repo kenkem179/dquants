@@ -65,8 +65,8 @@ inline double compute_sl(int kind, bool is_long, double entry, const Snapshot& s
         const double rawSL = is_long ? ema200 - 2.0 * spread_price : ema200 + 2.0 * spread_price;
         const double minSL = c.e5_min_sl_pips * c.pip_size;
         double slDist = std::max(std::fabs(entry - rawSL), minSL);
-        if (c.e5_use_atr_sl_arb && s.atrM1 > 0.0) {
-            double atrCap = c.e5_atr_sl_cap * s.atrM1;
+        if (c.e5_use_atr_sl_arb && s.atrM1_sl > 0.0) {
+            double atrCap = c.e5_atr_sl_cap * s.atrM1_sl;
             if (atrCap >= minSL && slDist > atrCap) slDist = atrCap;
         }
         return is_long ? entry - slDist : entry + slDist;
@@ -77,9 +77,9 @@ inline double compute_sl(int kind, bool is_long, double entry, const Snapshot& s
                             : baseSL + c.sl_ema_distance * c.pip_size;
     // ATR arbitration (cap wide, floor tight).
     double floorMult, capMult = atr_sl_caps(kind, c, floorMult);
-    if (s.atrM1 > 0.0) {
+    if (s.atrM1_sl > 0.0) {
         double distP = std::fabs(entry - stop) / c.pip_size;
-        double atrP  = s.atrM1 / c.pip_size;
+        double atrP  = s.atrM1_sl / c.pip_size;
         double finalP = distP;
         if (finalP > atrP * capMult)   finalP = atrP * capMult;
         if (finalP < atrP * floorMult) finalP = atrP * floorMult;

@@ -31,7 +31,15 @@ struct Snapshot {
     double adxS = 0, diPS = 0, diMS = 0;
     // M1 EMA0..4 at shift 1 (for SL structure + sideways).
     double emaM1[5] = {0,0,0,0,0};
-    double atrM1 = 0;        // M1 ATR(14) shift 0 (forming bar)
+    double atrM1 = 0;        // M1 ATR(14) shift 0 (forming bar) — used by sideways/atr_pctile (per-bar, validated)
+    double atrM1_sl = 0;     // M1 ATR(14) LAST CLOSED bar — used ONLY for compute_sl arbitration. The EA's
+                             // cache.atrM1=iATR(0) is read on the first tick of the new bar, by which time the
+                             // forming bar already carries a few ticks of REAL range; the engine's first-tick
+                             // forming step instead uses TR=|open-prevClose|≈0, mechanically shrinking ATR by
+                             // ~1/14 (≈7%). Empirically (78 E1 entries vs 1.8.154 trace) the last-closed-bar
+                             // Wilder ATR matches MT5's atr at entry bars (median ratio 1.003 vs forming 0.933),
+                             // and since the 4.0× ATR-SL CAP binds on most E1 trades, the forming shrink fed a
+                             // ~7% TIGHT SL. See HANDOFF "SL/TP LEVELS" diagnosis.
     double rsiM1 = 50;       // M1 RSI(14) RAW at shift 1 — GetRSIValue (conviction/sideways logic)
     double rsiM1_avg5 = 50;  // M1 mean of RSI shifts 0..4 — GetRSIAverage (the trace `rsi` column only)
     double closeM1 = 0, highM1 = 0, lowM1 = 0;   // M1 bar shift 1 OHLC
@@ -163,6 +171,7 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
         const double tr_form = std::fabs(open_f - prevC);
         const int n = KENKEM_CACHE_ATR_PERIOD;
         s.atrM1 = (atr_closed > 0.0) ? (atr_closed * (n - 1) + tr_form) / n : atr_closed;
+        s.atrM1_sl = atr_closed;   // last-closed-bar Wilder ATR for SL arbitration (see field comment)
     }
 
     // RSI: TWO distinct reads in the EA, kept separate here.

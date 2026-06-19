@@ -34,7 +34,7 @@ static Snapshot snap_bull() {
     Snapshot s; s.valid = true;
     for (int t=0;t<4;++t){ s.adx[t]=30; s.diP[t]=28; s.diM[t]=8; }
     // Full M1 EMA stack below price (faithful E4 STEP2/STEP3 + price-vs-EMA25 need emaM1[1..2] set).
-    s.emaM1[1]=107; s.emaM1[2]=106.5; s.emaM1[3]=106; s.emaM1[4]=104; s.atrM1=1.0; s.rsiM1=60;
+    s.emaM1[1]=107; s.emaM1[2]=106.5; s.emaM1[3]=106; s.emaM1[4]=104; s.atrM1=1.0; s.atrM1_sl=1.0; s.rsiM1=60;
     s.sideways=0; s.atr_pctile=70; s.closeM1=109;
     s.senkouA_M3=120; s.senkouB_M3=118;   // cloud green (for E4)
     return s;

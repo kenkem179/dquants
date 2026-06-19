@@ -4,59 +4,52 @@ _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
-## ✅ THIS SESSION — EA-faithful EXIT pipeline ported (P1–P3) + ROOT CAUSE re-diagnosed
-Replaced the distilled `manage_tick` (partial→BE→single chandelier) with the canonical
-`KenKemExpert.mq5` STANDARD-mode pipeline. Two commits (pushed):
-- **4b7e2fc** P1: R-mult BE (D), smart-partial-on-retrace (F), 3-stage ladder (G), origTPDist trail (T),
-  the **load-bearing price split** (`live_px` for SL/TP+ladder; bar-frozen `bar_px` = EA
-  `cache.currentPrice/high/low` = bar first-tick bid for D/F/T/best), and the **entry-bar gate**
-  (`barsSinceEntry>0` skips management, broker SL/TP still fills).
-- **d4a51ee** P2/P3: TP-extension (E, static 6/25 pips) + **live volatility multiplier** in the trail
-  (`clamp(formingBarRange/atr14, 0.7, 1.5)`; tick_engine tracks forming-bar bid range + 14-bar TR).
+## ✅ THIS SESSION — SL/TP LEVEL GAP **CLOSED** (the entry-side ATR root cause, FIXED)
+The handoff's #1 NEXT ACTION is DONE. Root cause was the **forming-bar ATR shrink** feeding the binding
+4.0× ATR-SL cap. Fix (1 commit, see below): `compute_sl` now arbitrates against the **last-closed-bar**
+Wilder ATR (`snap.atrM1_sl`) instead of the forming `snap.atrM1`.
 
-Files: `cpp_core/include/kk/kenkem/{trade_manager.hpp,tick_engine.hpp}`,
-`cpp_core/tests/kenkem/test_kenkem_trade_manager.cpp` (rewritten for the new model).
+### The mechanism (empirically proven, not theorized)
+- Engine `s.atrM1` = forming Wilder step `(ATR*13 + |open−prevClose|)/14`. On continuous XAU ticks the
+  bar-open gap ≈ 0, so this mechanically **shrinks ATR by ~1/14 ≈ 7%** (13/14 = 0.9286).
+- Measured at the 78 MT5 E1 entry bars (engine `trace_dumper` `atr` vs `trace.csv` `atr`, joined on
+  `engine.ts_ms − 60000 = mt5.ts_ms`, 99.98% close-match): forming ATR ratio **0.933** (92% below MT5);
+  **last-closed-bar Wilder ATR ratio 1.003** (balanced, |log| 0.048 — best fit). MT5's `cache.atrM1=iATR(0)`
+  is read on the first tick *after* the bar boundary, when the forming bar already carries real range — so
+  it tracks the closed value, NOT the engine's degenerate first-tick gap.
+- The **4.0× ATR-SL CAP binds** on most E1 trades (risk/atr clusters at ~4.0; the 1.2× floor never binds),
+  so the 7% ATR shrink fed a ~7% TIGHT SL directly.
+- Note: across ALL 848k bars the forming model fits better (1.014) than closed (1.089) — the relationship
+  FLIPS at entry bars (a volatile, biased subset). So the fix is scoped to `compute_sl` ONLY; `atrM1`
+  (forming) is unchanged for sideways-spread + atr_pctile (both still validated against the trace).
 
-## 🔬 DECISIVE EVIDENCE — from MT5 `tester.log.gz` (RUN 1.8.154, 78 trades). THIS REPRIORITIZES THE SPEC.
-Mechanism fire counts in MT5: **TRAILING SL 290** · PARTIAL 93 · PANIC 24 · R-MULT BE 20 · BE 18 ·
-SIDEWAY 15 · EARLY 9 · PRE-BE 6 · **TP EXTENSION 1** · **LADDER 0** (all 106 trailing lines `Ext #0`).
-- ⇒ **The ladder (SPEC P1 G) and TP-extension (SPEC P3 E) are essentially INERT in MT5.** My ports are
-  correctly near-inert and are **NOT** the divergence source. (SPEC §0's "SL-WIN 7% vs 35% ⇒ ladder"
-  hypothesis is WRONG — the ladder never fires; the SL-WIN comes from the **TRAILING SL**.)
-- ⇒ Decoded a trailing line: dist = best−newSL = 0.469 = `0.40*origTPDist*0.70` ⇒ **volMult=0.70 confirmed**
-  (my live volMult port is faithful). `bestPrice==marketPrice` at bar-boundary ts ⇒ **bar-frozen model confirmed**.
+### Result (full 2yr E1, `anchor_E1_only_trace.set`)
+- **Matched risk ratio (eng/mt5): 0.949 → 1.0000** (median); |Δrisk| **0.248 → 0.080**; frac eng<mt5 0.78→0.39.
+- **Matched SL-LOSS exits now agree 11/11 exactly**; matched tag-agreement **67%**.
+- Net 1456.63 → **1786.48**, PF 1.374, 149 trades.
 
-## 🧨 TRUE ROOT CAUSE of the residual exit gap = **SL/TP LEVELS differ (entry-side), not exit mechanics**
-Same matched trade: engine TP **2032.609** vs MT5 TP **2032.073**. Across 46 matched trades the engine's
-**risk (|entry−SL|) is systematically TIGHTER**: median Δ −0.248, **ratio 0.949 (~5% tight)**, 36/46
-engine<MT5, **7 EXACT**, 3 wider. Wider engine TP ⇒ later 0.90 partial-eligibility + looser
-`0.40*origTPDist` trail ⇒ the trail never catches the retrace ⇒ engine rides to TP where MT5 books SL-WIN.
-**Exit mechanics cannot tie out until SL/TP levels match** — every exit change this session was net-neutral
-(net 1456.63, SL-WIN 11% vs MT5 35%) BECAUSE the level gap dominates.
+## 🧱 RESIDUAL (smaller now) — trail doesn't catch on ~5 matched trades; entry-count still off
+Levels match but SL-WIN exit-tag is still low. On the 46 matched pairs, of MT5's **14 SL-WIN** trades the
+engine reproduces **6 SL-WIN**, but **5 ride to TP** (trail not catching the retrace), 2→EA, 1→SL-LOSS.
+Matched net eng **280.6** vs mt5 **885.0** — so the handoff's "levels were the dominant lever for SL-WIN"
+is now **partly disproven**: levels are fixed yet the TRAILING SL still overshoots on a handful. This is the
+next exit-mechanics target (not levels). Entry-count gap UNCHANGED (matched 46 / missed 32 / overfire 96).
 
-### Where the 5% comes from (traced into the EA):
-EA `CalculateStopLossWithCustomEMA` (EntryBase.mqh:637) = structure stop (`min(recentLow,emaLevel)−27pip`)
-→ **ATR arbitration** (floor `1.2*ATR`, cap `4.0*ATR`) → `ApplySpreadBuffer`. The engine's `compute_sl`
-(entries.hpp:57) mirrors structure+arbitration but the gap is the **ATR value feeding the floor/cap**:
-- `ApplySpreadBuffer`/`CalculateBufferedStopWithSpread` only widens if rawSL < 0.5*spread (≈0.025) ⇒ INERT,
-  not the cause (engine omitting it is fine).
-- The **7 EXACT matches = pure-structure SLs** (ATR arb doesn't bind). The **36 tighter = ATR floor/cap
-  binds with a slightly-low engine ATR** — the documented **Wilder-seeding / `InpAtrMt5Mode` caveat**
-  ([[parity-findings-front-half]], [[atr-percentile-parity-wall]], `snapshot.hpp:159-165` forming Wilder step).
+## 🔬 Standing evidence (still valid) — MT5 `tester.log.gz` (RUN 1.8.154, 78 trades)
+Mechanism fire counts: **TRAILING SL 290** · PARTIAL 93 · PANIC 24 · R-MULT BE 20 · BE 18 · SIDEWAY 15 ·
+EARLY 9 · PRE-BE 6 · TP-EXT 1 · LADDER 0. Ladder + TP-ext are INERT in MT5 (ports correctly near-inert).
+volMult=0.70 confirmed; bar-frozen `bestPrice==marketPrice` model confirmed.
 
-## ▶️ NEXT ACTION — make `cache.atrM1` MT5-faithful, THEN re-measure exits
-1. **Tie out `s.atrM1` to MT5's `iATR(14)` shift-0** (the forming Wilder step). Diagnostic: dump engine
-   atrM1 per entry-bar vs MT5 `trace.csv` `atr` column (joined by ts−60000); the floor/cap bind cases are
-   where they diverge. Adopt the MT5 ATR mode/seeding (the `InpAtrMt5Mode` lesson). Target: `|Δrisk|`
-   median 0.25→~0 on the 36 currently-tight trades; the 7 exact must STAY exact.
-2. Also verify `recentHigh/recentLow` (entries.hpp recentHi/Lo) use `iHighest/iLowest(MODE,18,ENTRY_SHIFT)`
-   with the SAME window+shift as Entry1.mqh:125 (a wrong/short window also tightens the stop).
-3. **Re-run the 2yr E1 diff** — expect SL-WIN to jump toward 35% and Δpnl to collapse ONCE levels match,
-   because the trail (volMult 0.7, origTPDist) is already correct and will then bind at MT5's geometry.
-4. Only AFTER levels+exits tie out: re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters) to collapse
-   the 96 overfire / 32 missed (those are entry-count, unchanged this session: engine 149/142-windowed vs 78).
+## ▶️ NEXT ACTION — chase the residual TRAILING-SL overshoot, then entry-count
+1. Take the **5 matched "engine-TP vs MT5-SL-WIN"** trades (ad-hoc python below reproduces the match set).
+   For each, trace the engine trail vs the MT5 `tester.log.gz` `TRAILING SL` lines for that ticket: is the
+   engine arming the trail LATE (0.90 partial-eligibility timing) or trailing too LOOSE (`0.40*origTPDist`
+   distance / volMult)? Now that levels match, origTPDist is correct, so suspect partial/best-price timing
+   or the live volMult per-tick (forming-bar range / atr14 clamp 0.7–1.5).
+2. THEN re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters) to collapse the 96 overfire / 32 missed
+   (entry-count, unchanged). See [[atr-percentile-parity-wall]]: over-fire = unmodeled account limiters.
 
-## 🔁 Repro (full 2yr, ~25s each)
+## 🔁 Repro (full 2yr, ~23s)
 ```
 cd cpp_core && make test                       # 29 checks, green
 KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
@@ -64,11 +57,15 @@ KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
   --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/e.csv
 python research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
   --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv
-# exit-tag dist + matched Δrisk characterization: ad-hoc python in this session's transcript.
-# MT5 mechanism fires: gzcat <RUN>/tester.log.gz | grep -c "TRAILING SL"   (etc.)
+# ATR-at-entry-bar diagnostic (proves the closed-ATR fit): engine bar-level trace via
+#   ./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --symbol-xau \
+#     --set ../research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/engine_trace.csv
+#   then join engine.ts_ms-60000 == mt5 trace.csv ts_ms, compare `atr` at the 78 entry bars.
+# matched exit-tag crosstab + risk-ratio: ad-hoc python in this session's transcript.
 ```
-Current diff: matched 46 / missed 32 / overfire 96; Δpnl median **51.15** (was 60.3); exit-tag
-engine SL-WIN **11%** TP 32% SL-LOSS 36% EA 21%  vs  MT5 SL-WIN **35%** TP 21% SL-LOSS 28% EA 17%.
+Current diff: matched 46 / missed 32 / overfire 96; |Δrisk| **0.080**; matched tag-agree **67%**; exit-tag
+(all trades) engine SL-WIN 9% TP 32% SL-LOSS 35% EA 24%  vs  MT5 SL-WIN 35% TP 21% SL-LOSS 28% EA 17%
+(engine dist confounded by the 96 overfire — use the MATCHED crosstab, where SL-LOSS=11/11).
 
 ## 📦 Data / instruments
 - Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv (5.17GB)}`.
