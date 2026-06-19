@@ -58,10 +58,18 @@ MT5-profitable but the engine exits them worse → an EXIT-parity issue on those
 1. **Remaining 12 `mtf` need MT5-side data** — have the user re-run the EA with `KKE1GATE` detail dumping
    `m1_ready,m3_ready,m5_dir,extreme` (or the M3/M5 EMA values) at each `BLOCK:mtf`, to pin which HTF sub-check
    flips and whether it's M3/M5 bar-construction or an EMA-value diff. Without it, 12 mtf is a boundary floor.
-2. **8 `PASS:all` execution overfire** — pin the GetEntryBlockReason / HandleHighRiskEntry sub-reason
-   (IsInSidewayRange(10)? CheckMomentumForLevel?) by matching each to its tester.log SKIPPED line.
-3. **Exit parity on the 7 newly-matched** (engine +516 vs mt5 +1196) — over-trail / TP-vs-SL-WIN family.
-4. Accept 26/4 as the E1 floor and extend to **E2/E4/E5** (the bigger remaining scope).
+2. **8 `PASS:all` execution overfire — PINNED: 5 = `IsInSidewayRange(10)` sideway, 2 = risk-limits, 1 nomatch.**
+   The EA's `IsInSidewayRange` (TrendIdentifier.mqh) IGNORES its arg and is EXACTLY the engine's band check
+   `sideways ∈ [WARNING=43, BLOCK=53)` — so the LOGIC matches. The gap is the **SIDEWAYS SCORE value**: engine
+   reads ~40 at the 5 bars where MT5 reads 49–57, and **overall sideways is only 20.3% exact, median |Δ|=5,
+   engine biased LOW** (→ under-blocks → over-fires). `sideways_score` (snapshot.hpp) = 5 components: EMA-band/ATR
+   (25/15/8), ADX M1+M3 (≤25), DI spread (12/8/4), RSI-neutral (15/10/5), ATR-pctile compression (15/10/5).
+   ATR-pctile is now faithful; the residual is in EMA-band / ADX / DI / RSI weights or thresholds. NEXT: diff each
+   component vs the EA's `CalculateSidewaysScore` (find it in Core/TrendIdentifier.mqh) at the 5 bars. Affects the
+   gate (sw≥53) too, so a real lever beyond these 5.
+3. **Remaining 12 `mtf` need MT5-side data** (see action 1).
+4. **Exit parity on the 7 newly-matched** (engine +516 vs mt5 +1196) — over-trail / TP-vs-SL-WIN family.
+5. Accept 26/4 as the E1 floor and extend to **E2/E4/E5** (the bigger remaining scope).
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
