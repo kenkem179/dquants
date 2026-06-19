@@ -38,16 +38,21 @@ signal** until the user re-provides the complete Exness export. The fixes above 
 against the EA + `tester.log`, independent of the holes.
 
 ## ▶️ NEXT ACTIONS (in order)
-1. **Reconcile the rest of the anchor set** against the reference `tester.log` input echo (dump:
-   `grep -P "\\tTester\\t  \\S+=" tester.log`). I fixed MY_STANDARD_LOT_SIZE; OTHER keys may also be
-   stale — that's the cheapest remaining parity win and needs no new data.
-2. **Tune the slight over-trail** (engine +527 > MT5 +454). On the 5 matched "engine-TP vs MT5-SL-WIN"
-   pairs (printed by `matched_exit_crosstab.py`) the engine rides past MT5's trailing-SL exit. Suspect
-   the live volMult clamp or partial-eligibility timing now arming a touch early. MINOR — levels + HR
-   path are correct; this is fine-tuning.
+1. ✅ **DONE — set is fully reconciled.** Diffed all 450 `tester.log` input-echo params vs the anchor
+   set: **0 mismatches across 413 shared keys** after the MY_STANDARD_LOT_SIZE fix. The set is now a
+   faithful copy of the run's inputs (verify: extract echo via `grep -P "\\tTester\\t  \\S+=" tester.log`,
+   strip leading spaces + `|...` from the set, compare key=val).
+2. **Tune the slight over-trail** (engine +527 > MT5 +454) — the precise next target. On the matched
+   SL-WIN pairs the engine's **trailing SL is looser than MT5's**: price misses the engine trail and
+   rides to the (HR-multiplied) TP, where MT5 trailed out earlier for a smaller SL-WIN (e.g. 2024-02-22 L:
+   MT5 trails out 2031.258, engine rides to TP 2031.884). So the engine captures MORE but is LESS faithful.
+   Lever = trail DISTANCE/timing now that origTPDist is the correct 0.65× value: `trail_dist =
+   origTPDist*trailF/(tp_ext+1)*volMult` (trade_manager.hpp:223). Suspect (a) engine `tp_ext` stays 0
+   while MT5 extends TP and trails tighter, or (b) live volMult differs. Build a per-trade SL-trace
+   dumper and compare arm/trail vs `tester.log` `TRAILING SL` lines. Data-robust (matched pairs only).
 3. **Entry-count gap (40 overfire):** re-enable `ENABLE_LOSS_COOLDOWNS=true` (occupancy/limiters),
    per [[atr-percentile-parity-wall]] — over-fire = unmodeled account limiters.
-4. Get the user to re-provide the complete 2024-2026 Exness tick export to restore exact-baseline counts.
+4. **(USER)** Re-provide the complete 2024-2026 Exness tick export to restore exact-baseline counts.
 
 ## 🔁 Repro (full 2yr, ~30s; data must be regenerated first if missing — see DATA BLOCKER)
 ```
