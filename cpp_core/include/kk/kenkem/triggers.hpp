@@ -166,18 +166,27 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
         if (down && st.ichi_down == -1) { st.ichi_down = B; st.ichi_up = -1; }
     }
 
-    // ---- E5: SuperBros — fresh STRICT M1 4-EMA alignment onset (no tolerance). Onset = aligned@s1 &
-    // not aligned@s2. Reset when alignment breaks (consumed-lock: won't re-arm while continuously
-    // aligned, since entry consumes e5_*; re-arms only on a fresh onset after a break). ----
+    // ---- E5: SuperBros — fresh STRICT M1 4-EMA alignment onset (no tolerance). ----
+    // PARITY-CRITICAL shift: Entry5.mqh reads alignment via the SAME trapped GetEMA(TF0,EMAx,ENTRY_SHIFT)
+    // as E1/E2 (buffer-inversion: GetEMA shift1 -> series B-2). isBullishAligned uses ONLY shift1, so the
+    // "current" aligned bar is B-2 (= m1s2). m_prevBullishAligned is the PRIOR M1 bar's isBullishAligned,
+    // i.e. aligned at that bar's shift1 = B-3 (= m1s2-1). Onset = aligned@cur && !aligned@prv; reset when
+    // alignment breaks at cur. The old engine read cur=B-1/prv=B-2 (one bar too FRESH) -> detected the
+    // onset a bar early -> the e5up/dn_age and signal-fire timing diverged from MT5 (median -1 bar). The
+    // legacy (non-faithful) path keeps the chronological B-1/B-2 read for the engine-mechanics tests.
     if (cfg.enable_e5) {
-        bool up1 = emas_ready(bundle.m1, m1s1, true,  true, 0.0);
-        bool up2 = emas_ready(bundle.m1, m1s2, true,  true, 0.0);
-        bool dn1 = emas_ready(bundle.m1, m1s1, false, true, 0.0);
-        bool dn2 = emas_ready(bundle.m1, m1s2, false, true, 0.0);
-        if (!up1) st.e5_up = -1;
-        else if (!up2 && st.e5_up == -1) { st.e5_up = B; st.e5_down = -1; }
-        if (!dn1) st.e5_down = -1;
-        else if (!dn2 && st.e5_down == -1) { st.e5_down = B; st.e5_up = -1; }
+        const int e5_cur = kFaithful ? m1s2 : m1s1;
+        const int e5_prv = kFaithful ? m1s2 - 1 : m1s2;
+        if (e5_cur >= 0 && e5_prv >= 0) {
+            bool up1 = emas_ready(bundle.m1, e5_cur, true,  true, 0.0);
+            bool up2 = emas_ready(bundle.m1, e5_prv, true,  true, 0.0);
+            bool dn1 = emas_ready(bundle.m1, e5_cur, false, true, 0.0);
+            bool dn2 = emas_ready(bundle.m1, e5_prv, false, true, 0.0);
+            if (!up1) st.e5_up = -1;
+            else if (!up2 && st.e5_up == -1) { st.e5_up = B; st.e5_down = -1; }
+            if (!dn1) st.e5_down = -1;
+            else if (!dn2 && st.e5_down == -1) { st.e5_down = B; st.e5_up = -1; }
+        }
     }
 }
 
