@@ -24,12 +24,30 @@ preserved below (📌 PAUSED) — not abandoned.
   rate. BE on/off experiment proved it: on OANDA a break that reaches 0.8R continues to 1.8R **94%** of the
   time; on our **MT5/Exness feed only ~45%** (it round-trips). So the TV edge leans on OANDA's smooth
   post-breakout continuation — the edge must be REBUILT for the real feed via exit/risk sweeps. This is the point.
-- **▶️ IN PROGRESS — sweeps (task #2):** harness `research/mastervp_parity/sweep.py` (Calmar=net/maxDD, gated
-  n & PF>1). Train window `cpp_core/tools/ticks_xau_train.csv` (2025-06-19→2026-01-31, ~8s/run, page-cached);
-  OOS `ticks_xau_oos.csv` (2026-02→05). **S4 trail sweep result:** chandelier **trail beats fixed-TP2** →
-  PF 0.997→**1.046**, net −644→**+13.4k**, with **trail_atr_mult≈2.0 + sl_atr_brk=1.0** (tighter SL dominates
-  1.48/2.0 everywhere). BUT maxDD still **~53%** → needs S6 risk layers. Refining sl∈[0.6..1.2]×trail next,
-  then S1 entry filters (break_buf/adx/di), then S6 DD/streak limiters, S7 walk-forward, S9 lock, S10 EA.
+- **✅ SWEEPS DONE + EA SHIPPED (this session) — autopilot endpoint reached:**
+  - **S1 entry:** break_buf 0.7 / adx 22 / di 8 best. **S4 exit:** chandelier trail beats fixed-TP2,
+    `trail_atr_mult=2.0 + sl_atr_brk=1.0`. **S6b risk:** daily-DD **10%** (plateau 8/10/12),
+    loss-streak limiter HURTS (off), risk **1.0%** (lowest-DD plateau). **Q1 (ATR-pctile gate):** inert on
+    MasterVP — keep off. **Q2 (anti-chase break_max_atr):** capping HURTS on this feed (2 ATR → negative) — off.
+  - **⭐ S8/S8b VP-length (user-requested):** train peak **85×4 (PF 1.271) COLLAPSES to break-even OOS** (curve-fit);
+    long-window generalizes. **LOCKED master VP = 480 bars (24h M3) = `InpVpLookback=120 × InpMasterMult=4`.**
+    **TRAIN PF 1.264 / OOS PF 1.114, OOS net +4,575, OOS maxDD 17.5%.** Sits interior to a broad OOS plateau
+    (480→720 bars all OOS PF 1.11–1.15; <360 collapses, >720 falls off).
+  - **⭐ DISCOVERY: local VP is INERT in breakout-only mode** — breakout keys off the MASTER VP's VAH/VAL only;
+    local VP is consumed only by reversion (off). Master length is the sole driver. See
+    `research/mastervp_parity/VP_LENGTH_STUDY.md`. → user's multi-TF VP idea is a real *future* enrichment
+    (turn the dead local/HTF-M5/M15 VP into a breakout AGREEMENT gate; build in C++ + sweep + OOS first).
+  - **Locked config:** `cpp_core/tools/mastervp/kkmastervp_xau_m3_LOCKED.set`. OOS validator: `/tmp/vp_oos.py` pattern.
+- **✅ MQL5 EA SHIPPED (compiles 0/0):** `mql5/experts/KK-MasterVP/` — `Engine.mqh` now ports the FULL C++ safety
+  gate stack (quality→session→ATR-ticks floor→spread→max-trades→daily-DD predictive→blocked-hour→peak-DD→
+  cooldown→news) + RiskManager (daily-DD 10% + 12h cooldown) + broker-UTC auto-detect (sessions trade the same
+  wall-clock hours on ANY broker). Fixed the old EA's hardcoded MTF/RSI veto → now flag-gated (Pine has neither).
+  `SessionNews.mqh` = self-contained Sessions (filters.hpp port) + NewsFilter (CSV+embedded calendar) for the
+  user's KenKem-style session config + news avoidance (default OFF; live-only overlay, not in backtest PF).
+  Preset `KK-MasterVP-XAUUSD.set` shipped to EA folder + `../kenkem/MQL5/Presets/`. **READY FOR MANUAL MT5 TEST.**
+- **▶️ NEXT (when user returns):** manual MT5 forward-test on XAUUSD M3 with the shipped .set; then optionally
+  build the local/HTF-VP breakout-agreement gate (above) and re-sweep. Note: EA news/session overlays diverge
+  intentionally from the backtest (live-safety), so forward results may show fewer trades than the OOS PF.
 - **Data:** combined bars `cpp_core/tools/bars_xauusd_2025_2026_m3.csv`; full ticks `ticks_xauusd_2024_2026.csv`
   (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
 
