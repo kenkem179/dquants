@@ -1,32 +1,27 @@
 # HANDOFF — read me first, update me last
 
 _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-Commit `e3b3e70` (E2 fix) + data rebuild. **2025 H2 data NOW INTEGRATED; 2 smaller holes remain. E2 baseline
-re-measured on complete data = STILL ~42% (handoff's 95.8% is confirmed WRONG). See ⛔/🔴 below.**_
+Commit `e3b3e70` (E2 fix) + data rebuilds. **DATA NOW 98.45% COMPLETE (all 3 export holes filled by user).
+E2 baseline on near-complete data = ~45% (handoff's 95.8% confirmed WRONG, not a data issue). Pinpointed
+culprit = sideways over-block. See ✅/🔬 below.**_
 
 ## 🎯 Goal: KenKem entry parity engine⇄MT5. NOW ON: E2, then E4, E5.
 Ground truth = the canonical EA (`kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5`).
 
-## ⛔ BLOCKER 1 (DATA) —2025 H2 FIXED; two smaller export holes remain
-- User supplied 2025 H2 as Exness monthly CSVs `~/Downloads/Exness_XAUUSD_2025_{07..12}.csv`. **Verified
-  bit-identical to the MT5-tab raws on the 2025-07-01..16 overlap** (same UTC clock, same feed) → merged.
-- **Rebuilt** via NEW `cpp_core/tools/common/build_xau_full_2yr.py` (2024 + 2025 H1 + 2026 from tab raws,
-  2025 H2 from monthlies, partitioned at 2025-07-17). Now **740,572 bars / 142.98M ticks**, range
-  2024-01-01 → 2026-04-06. **2025 H2 gap GONE.**
-- **Completeness vs the MT5 `trace.csv.gz` (848,532 bars = ground-truth bar set): still missing 109,390
-  (12.9%)**, in TWO holes the source exports still lack:
-  - **Dec 2024** (`2024-11-19 → 2024-12-31`, ~40k bars) — `data/xauusd/XAUUSD_ticks_mt5_2024.csv` ends
-    2024-12-22 with only Sunday-open bars in late Nov/Dec (weekday data missing).
-  - **2026-04-07 → 2026-05-29** (~56k bars) — `XAUUSD_ticks_mt5_2025_2026.csv` ends 2026-04-06; the MT5
-    run goes to 2026-05-29.
-  - (+ small day-holes: 2024-08/09, 2025-04/05/06.)
-- **Trade impact now: 293/325 MT5 trades (90%) scoreable** (was 71%). Only 32 in the 2 holes
-  (16 Dec-2024, 16 in 2026-04/05). Largest contiguous clean window = **2025-01-01 → 2026-04-06** (gap-free).
-- ✅ **Research parquet refreshed:** `data/processed/ticks_xauusd_2025.parquet` regenerated to the FULL year
-  (74.59M rows, naive UTC TIMESTAMP, schema matched) — unblocks the XAU sweep window 2025-08→12.
-- **USER ACTION (optional, for 100%):** export XAU ticks for **2024-11-19 → 2024-12-31** and
-  **2026-04-07 → 2026-05-29**, drop in `~/Downloads/` (Exness CSV or MT5 tab), re-run `build_xau_full_2yr.py`
-  (add the files to its source list).
+## ✅ BLOCKER 1 (DATA) — essentially RESOLVED (98.45% of MT5 bars present)
+- User supplied all 3 export holes as Exness monthly CSVs `~/Downloads/Exness_XAUUSD_{2024_11,2024_12,
+  2025_07..12,2026_04,2026_05}.csv`. **Verified bit-identical to the MT5-tab raws on overlap days** (July +
+  Nov-08; same UTC clock, same feed) → merged.
+- **Rebuilt** via `cpp_core/tools/common/build_xau_full_2yr.py` (monthly owns the 3 hole windows
+  `[2024-11-19,2025-01-01) ∪ [2025-07-17,2026-01-01) ∪ [2026-04-01,2026-06-01)`; tab raws own the rest).
+  Now **836,890 bars / 160.55M ticks**, range 2024-01-01 → 2026-05-31.
+- **Completeness vs MT5 `trace.csv.gz` (848,532 bars): missing only 13,192 (1.55%)** — scattered single
+  trading days in tab-raw months WITHOUT a monthly replacement (2024-05/08/09, 2025-03/04/05/06; some are
+  Good-Friday/holiday). 99%+ of MT5 trades now scoreable.
+- ✅ **All research parquets refreshed** (naive UTC TIMESTAMP, schema matched):
+  `data/processed/ticks_xauusd_{2024,2025,2026}.parquet` → 39.2M / 74.6M / 46.7M rows. XAU sweep unblocked.
+- **USER ACTION (optional, for 100%):** export the scattered missing days (months 2024-05/08/09,
+  2025-03/04/05/06) if exact full-period counts are ever needed; impact now negligible.
 
 ## 🔬 E2 GATE DIAGNOSIS (this session, complete data + trace_dumper vs MT5 trace.csv.gz)
 Aligned engine trace to MT5 at **engine ts − 60000 = MT5 ts** (close 100% exact, adx_m1 99.7%).
@@ -50,12 +45,11 @@ one MT5 re-run dumping the **5 sideways sub-components** + M3/M5 EMA1..4 at ENTR
 ## 🔴 HONEST BASELINE — re-measured on COMPLETE data; "E2 95.8%" still does NOT reproduce
 Engine COUNTS now match the handoff (engine E1 **124**, E2 **145** — handoff said 124/162), confirming the
 data is right. But the MATCHING is ~42%, NOT 95.8%:
-- Full period (32 gap trades unscoreable): **E2 matched 59 / missed 83 / overfire 84** (of 142);
-  **E1 matched 49 / missed 134 / overfire 73** (of 183).
-- Clean window 2025-01-01→2026-04-06 (gap-free): **E2 29/40/45** (of 69, ~42%); **E1 23/59/34** (of 57).
-- **NOT a timing artifact:** raising the match lag 5→240 min lifts E2 matched only 59→65. The engine genuinely
+- Full period, near-complete data (836,890 bars): **E2 matched 64 / missed 78 / overfire 93** (of 142, ~45%);
+  **E1 matched 54 / missed 129 / overfire 87** (of 183, ~30%). Engine fires E1 143, E2 160.
+- **NOT a timing artifact:** raising the match lag 5→240 min barely moves matched. The engine genuinely
   fires E2 on DIFFERENT bars than MT5 (matched ones are exact-minute). The prior 95.8%/136-matched is WRONG.
-- E2 arms **55,231×** → fires 145 ⇒ the bottleneck is the GATE selection, not the trigger.
+- E2 arms **62,422×** → fires 160 ⇒ the bottleneck is the GATE selection, not the trigger.
 
 ## ✅ THIS SESSION — verified-correct E2 fix (commit `e3b3e70`), + two INERT negative results
 - **E2 EMA75-touch shift FIXED** (`triggers.hpp:142-150`): EA reads ema75 via `GetEMA` (trapped,

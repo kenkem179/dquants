@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Build the COMPLETE 2-year XAU anchor (M1 bid bars + tick stream), filling the 2025-H2 gap.
+"""Build the COMPLETE 2-year XAU anchor (M1 bid bars + tick stream).
 
-The MT5-tab raws (data/xauusd/) are missing 2025-07-17 -> 2025-12-31. The user supplied that
-period as Exness monthly CSVs (~/Downloads/Exness_XAUUSD_2025_{07..12}.csv). Verified bit-identical
-to the tab raws on the 2025-07-01..16 overlap (same UTC clock, same Exness feed), so we partition at
-2025-07-17 and union — no dedup needed.
+The MT5-tab raws (data/xauusd/) have THREE export holes vs the MT5 run (verified against trace.csv.gz):
+late-Nov→Dec 2024, all of 2025 H2, and 2026-04-07→05-29. The user supplied each as Exness monthly CSVs
+(~/Downloads/Exness_XAUUSD_YYYY_MM.csv). Verified bit-identical to the tab raws on overlap days (same UTC
+clock, same Exness feed). We partition: monthly owns a set of half-open intervals (the hole windows), tab
+owns everything else — so each ts_ms comes from exactly one source, no dedup needed.
 
 Sources (all UTC):
-  - data/xauusd/XAUUSD_ticks_mt5_2024.csv           tab  -> [2024-01-01, 2025-01-01)
-  - data/xauusd/XAUUSD_ticks_mt5_2025_2026.csv      tab  -> [2025-01-01, 2025-07-17) + [2026-01-01, 2026-06-01)
-  - ~/Downloads/Exness_XAUUSD_2025_{07..12}.csv     iso  -> [2025-07-17, 2026-01-01)
+  - data/xauusd/XAUUSD_ticks_mt5_2024.csv        tab  (2024; good through ~2024-11-18, holed after)
+  - data/xauusd/XAUUSD_ticks_mt5_2025_2026.csv   tab  (2025 H1 + 2026 Q1 through 2026-04-06)
+  - ~/Downloads/Exness_XAUUSD_{2024_11,2024_12,2025_07..12,2026_04,2026_05}.csv  iso
 
-Outputs (engine-ready, overwrite the existing incomplete files):
+MONTHLY-OWNED intervals (the holes): [2024-11-19,2025-01-01) ∪ [2025-07-17,2026-01-01) ∪ [2026-04-01,2026-06-01)
+
+Outputs (engine-ready, overwrite the existing files):
   cpp_core/tools/bars_xauusd_2024_2026_m1.csv   ts_ms,open,high,low,close,tick_count  (BID M1 bars)
   cpp_core/tools/ticks_xauusd_2024_2026.csv     ts_ms,bid,ask
 """
@@ -21,12 +24,18 @@ OUT = "cpp_core/tools"
 HOME = os.path.expanduser("~")
 TAB24 = "data/xauusd/XAUUSD_ticks_mt5_2024.csv"
 TAB2526 = "data/xauusd/XAUUSD_ticks_mt5_2025_2026.csv"
-MONTHLY = sorted(glob.glob(f"{HOME}/Downloads/Exness_XAUUSD_2025_*.csv"))
+MONTHLY = sorted(glob.glob(f"{HOME}/Downloads/Exness_XAUUSD_2024_1*.csv") +
+                 glob.glob(f"{HOME}/Downloads/Exness_XAUUSD_2025_*.csv") +
+                 glob.glob(f"{HOME}/Downloads/Exness_XAUUSD_2026_*.csv"))
 
 LO = "2024-01-01"; HI = "2026-06-01"           # MT5 test window (HI exclusive)
-GAP_LO = "2025-07-17"; GAP_HI = "2026-01-01"   # monthly owns [GAP_LO, GAP_HI); tab owns the rest
 def ms(s): return int((dt.datetime.strptime(s, "%Y-%m-%d") - dt.datetime(1970,1,1)).total_seconds()*1000)
-lo_ms, hi_ms, glo_ms, ghi_ms = ms(LO), ms(HI), ms(GAP_LO), ms(GAP_HI)
+lo_ms, hi_ms = ms(LO), ms(HI)
+# Each hole the tab raws lack; monthly files own these, tab owns the complement.
+HOLES = [("2024-11-19","2025-01-01"), ("2025-07-17","2026-01-01"), ("2026-04-01","2026-06-01")]
+hole_ms = [(ms(a), ms(b)) for a, b in HOLES]
+in_holes  = " or ".join(f"(ts_ms>={a} and ts_ms<{b})" for a, b in hole_ms)   # monthly-owned
+not_holes = " and ".join(f"not (ts_ms>={a} and ts_ms<{b})" for a, b in hole_ms)  # tab-owned
 
 con = duckdb.connect(); con.sql("PRAGMA threads=8")
 TAB_COLS = {'<DATE>':'VARCHAR','<TIME>':'VARCHAR','<BID>':'DOUBLE','<ASK>':'DOUBLE',
@@ -41,13 +50,12 @@ exn = (f"select epoch_ms(strptime(replace(Timestamp,'Z',''),'%Y-%m-%d %H:%M:%S.%
        f"Bid::double bid, Ask::double ask from read_csv([{mon}], header=true, ignore_errors=true, columns={EXN_COLS})")
 
 print(f"[full] monthly files: {len(MONTHLY)}")
-# tab raws own everything in [LO,HI) EXCEPT the gap window [GAP_LO,GAP_HI); monthly owns the gap.
 con.sql(f"""create or replace view ticks as
-  select * from ({tab(TAB24)})     where ts_ms>={lo_ms} and ts_ms<{hi_ms} and not (ts_ms>={glo_ms} and ts_ms<{ghi_ms}) and bid>0 and ask>0
+  select * from ({tab(TAB24)})     where ts_ms>={lo_ms} and ts_ms<{hi_ms} and ({not_holes}) and bid>0 and ask>0
   union all
-  select * from ({tab(TAB2526)})   where ts_ms>={lo_ms} and ts_ms<{hi_ms} and not (ts_ms>={glo_ms} and ts_ms<{ghi_ms}) and bid>0 and ask>0
+  select * from ({tab(TAB2526)})   where ts_ms>={lo_ms} and ts_ms<{hi_ms} and ({not_holes}) and bid>0 and ask>0
   union all
-  select * from ({exn})            where ts_ms>={glo_ms} and ts_ms<{ghi_ms} and bid>0 and ask>0
+  select * from ({exn})            where ts_ms>={lo_ms} and ts_ms<{hi_ms} and ({in_holes}) and bid>0 and ask>0
 """)
 
 tpath = f"{OUT}/ticks_xauusd_2024_2026.csv"
