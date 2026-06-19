@@ -54,7 +54,10 @@ verdicts, aligned at engine = MT5 + 60s), each of the 68 overfire trades was mat
 3. **[USER]** One MT5 re-run dumping **M3/M5 EMA1..4 at ENTRY_SHIFT** (the BarTrace lacks them — only M1
    ema0..4 + per-TF ADX/DI present). Needed to value-diff the 41 MTF-gate overfire. This is the long-standing
    M3/M5-alignment ceiling, now pinpointed to exactly the MTF gate.
-4. E4/E5 parity still blocked — **no E4-only or E5-only MT5 reference run committed**; need user MT5 runs.
+4. **E4 NOW UNBLOCKED** — E4-only MT5 ref run committed `RUN_2026-06-19_..._E4only/` (244 E4 trades,
+   E4_MAX_CROSS_AGE=20, lot 0.15, else ≡ E1E2 ref). Run the engine E4-only and `diff_kk.py --kind E4`.
+   ⚠️ No E4 gate trace exists (EA has no E4_GATE_TRACE flag) — if E4 has an over/under-fire residual, either
+   reuse `trace.csv.gz` BarTrace or ask the user to add an E4 gate-trace print. **E5 still blocked** (no run).
 5. After E1→E5 LOCKED: pip→ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
 
 ## 📁 NEW: MT5 gate-trace run (committed this session)
