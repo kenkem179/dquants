@@ -28,12 +28,24 @@ Ground truth = the canonical EA (`kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5`).
   **2026-04-07 → 2026-05-29**, drop in `~/Downloads/` (Exness CSV or MT5 tab), re-run `build_xau_full_2yr.py`
   (add the files to its source list).
 
-## ⛔ BLOCKER 2 (INSTRUMENTATION) — E2/E1 gate residual needs an EA per-bar E2 gate trace
-The remaining E2 (and E1) divergence is in the HTF-M15 / MTF-EMA / trend-quality gates — a boundary-VALUE
-class (which HTF EMA/ADX/DI boundary flips), invisible from the current trace (its `L_*/S_*` columns are a
-single generic gate, no E2 breakdown). Same blocker the prior E1 residual hit. **USER ACTION:** one MT5
-re-run of canonical KenKemExpert emitting, per evaluated bar, the E2 gate sub-verdicts
-(`htf_trend / mtf / price_pos / trend_quality / rsi_div`) + M3 & M5 EMA1..4 values at ENTRY_SHIFT.
+## 🔬 E2 GATE DIAGNOSIS (this session, complete data + trace_dumper vs MT5 trace.csv.gz)
+Aligned engine trace to MT5 at **engine ts − 60000 = MT5 ts** (close 100% exact, adx_m1 99.7%).
+**ALL observable M1 E2 gate inputs are FAITHFUL (≥98% bit-exact):** close (100%), adx_m1/m3/m5/m15
+(97.8–99.7%), diP/diM all-TF (98.2–99.8%), rsi (99.1%), and EMAs 10/25/71/97/192 (98.3–99.7% — note the
+trace_dumper dumps EMAs one bar offset from close/adx, so EMAs align at shift 0, everything else at −60000;
+a DUMP quirk, not a trading bug). ⇒ the E2 mis-selection is NOT in the M1 inputs.
+**The ONE confirmed real divergence = `sideways`:** engine blocks **20.4%** of bars vs MT5 **15.2%**
+(disagree on the >53 threshold 12.6% of bars), i.e. engine sideways is biased HIGH → **over-blocks → causes
+the missed E1/E2 entries** (E1 134 missed, E2 83 missed). This is a shared global pre-gate, so fixing it
+lifts BOTH. Matches the prior "+2.48 HIGH bias" note. Other (un-observable) suspects: M3/M5 EMA *alignment*
+(MTF gate; M3/M5 EMAs not dumped) + trend-quality 0-11 composition.
+
+### ▶️ NEXT ACTION = fix the sideways over-block (highest-leverage, affects E1+E2)
+Audit the engine `GetSidewaysScore` port (`snapshot.hpp` sideways_score) vs EA `TrendIdentifier.mqh:390`.
+Prior suspects: EMA-band ATR denominator / which EMAs / averaging shift. Engine over-blocks by ~5pp →
+its score is too high. Hard part remains the MT5 sub-component dump (27% reconstruction ceiling), but the
+DIRECTION (over-block) is now confirmed, so a port-bug hunt can proceed. **USER (to break the ceiling):**
+one MT5 re-run dumping the **5 sideways sub-components** + M3/M5 EMA1..4 at ENTRY_SHIFT.
 
 ## 🔴 HONEST BASELINE — re-measured on COMPLETE data; "E2 95.8%" still does NOT reproduce
 Engine COUNTS now match the handoff (engine E1 **124**, E2 **145** — handoff said 124/162), confirming the
