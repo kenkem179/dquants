@@ -181,6 +181,7 @@ struct KenKemConfig {
     bool   panic_exit_e1          = true;
     bool   panic_exit_e2          = true;
     bool   panic_exit_e4          = true;
+    bool   panic_exit_e5          = true;
     double panic_min_sl_used      = 0.6;
     double panic_min_profit_giveback = 0.5;
     bool   score_drop_e1          = false;
@@ -189,7 +190,14 @@ struct KenKemConfig {
     int    score_drop_thr_e2      = 2;
     bool   score_drop_e4          = true;
     int    score_drop_thr_e4      = 3;
+    bool   score_drop_e5          = false;
+    int    score_drop_thr_e5      = 3;
     int    score_drop_consec      = 3;
+    // High-risk time exit (ProcessAllTrades: barsSinceEntry >= HIGH_RISK_MAX_BARS -> EARLY_EXIT "EA").
+    int    high_risk_max_bars     = 70;
+    // E5 Multi-TF sideway early exit (TradeManager ExitEarlyAsNeeded :1178).
+    bool   e5_allow_sideway_early_exit = true;
+    int    e5_sideways_block_thr  = 50;
 
     // ---- E1 ----
     HtfMode e1_htf_filter         = HTF_M5_ONLY;
@@ -556,6 +564,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E1") p.panic_exit_e1 = kbool(val);
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E2") p.panic_exit_e2 = kbool(val);
     else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E4") p.panic_exit_e4 = kbool(val);
+    else if (key == "ENABLE_FAST_ADX_PANIC_EXIT_E5") p.panic_exit_e5 = kbool(val);
     else if (key == "PANIC_MIN_SL_USED_RATIO") p.panic_min_sl_used = D();
     else if (key == "PANIC_MIN_PROFIT_GIVEBACK") p.panic_min_profit_giveback = D();
     else if (key == "ENABLE_SCORE_DROP_EXIT_E1") p.score_drop_e1 = kbool(val);
@@ -564,7 +573,12 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "SCORE_DROP_THRESHOLD_E2") p.score_drop_thr_e2 = I();
     else if (key == "ENABLE_SCORE_DROP_EXIT_E4") p.score_drop_e4 = kbool(val);
     else if (key == "SCORE_DROP_THRESHOLD_E4") p.score_drop_thr_e4 = I();
+    else if (key == "ENABLE_SCORE_DROP_EXIT_E5") p.score_drop_e5 = kbool(val);
+    else if (key == "SCORE_DROP_THRESHOLD_E5") p.score_drop_thr_e5 = I();
     else if (key == "SCORE_DROP_CONSECUTIVE_CHECKS") p.score_drop_consec = I();
+    else if (key == "HIGH_RISK_MAX_BARS") p.high_risk_max_bars = I();
+    else if (key == "E5_ALLOW_SIDEWAY_EARLY_EXIT") p.e5_allow_sideway_early_exit = kbool(val);
+    else if (key == "E5_SIDEWAYS_BLOCK_THRESHOLD") p.e5_sideways_block_thr = I();
     // E1
     else if (key == "E1_HTF_TREND_FILTER") p.e1_htf_filter = H();
     else if (key == "E1_HTF_MIN_ADX") p.e1_htf_min_adx = D();

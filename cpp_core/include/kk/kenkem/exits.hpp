@@ -55,16 +55,19 @@ struct ExitState {
 inline bool panic_exit_enabled(int kind, const KenKemConfig& c) {
     if (kind == 2) return c.panic_exit_e2;
     if (kind == 4) return c.panic_exit_e4;
-    return c.panic_exit_e1;   // E1 (E3/E5 not used on this target)
+    if (kind == 5) return c.panic_exit_e5;
+    return c.panic_exit_e1;
 }
 inline bool score_drop_enabled(int kind, const KenKemConfig& c) {
     if (kind == 2) return c.score_drop_e2;
     if (kind == 4) return c.score_drop_e4;
+    if (kind == 5) return c.score_drop_e5;
     return c.score_drop_e1;
 }
 inline int score_drop_threshold(int kind, const KenKemConfig& c) {
     if (kind == 2) return c.score_drop_thr_e2;
     if (kind == 4) return c.score_drop_thr_e4;
+    if (kind == 5) return c.score_drop_thr_e5;
     return c.score_drop_thr_e1;
 }
 

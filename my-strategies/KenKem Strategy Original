@@ -1,0 +1,156 @@
+Write a professional trading indicator, with reusable and easy to maintain functions, no duplicated code, no syntax errors, high performance with following rules:
+
+0. Language: Pine Script, version: 6.0
+
+1. Configurable Inputs
+
+1.1. Input Section 1: Position Settings
+- Initial Account Balance (USD): 300 by default
+- Leverage: 500
+- Position Size (lots): 0.1 by default
+- Max Loss (% of Account Balance): 4% by default
+- Fee per trade (%): 0.01 by default
+- Entry lookback window (bars): 14 by default
+- R:R for Entry 1: 2 by default
+- R:R for Entry 1 in CHE system: 1.2 by default
+- R:R for Entry 2: 1.5 by default
+- R:R for Entry 2 in CHE system: 1.0 by default
+- E1 Stop loss distance from EMA200: 7 pips by default
+- E1 Stop loss distance from EMA100: 5 pips by default
+
+- Max Intraday Price Range for trending M15 (pips): 400 by default
+- Max Intraday Price Range for sideway M15 (pips): 280 by default
+
+1.2. Input Section 2: Trading Session Times (Japan Time- JST)
+- Weekdays: Monday to Friday (do not trade on Saturday and Sunday)
+- Tokyo: 09:00–12:00
+- London: 14:00–18:30
+- New York: 21:00–23:30 (26:30 means 2:30 next day, including 2:30 on Saturday)
+
+1.3. Input Section 3: Performance
+- Max backtest window (days): 10 by default
+- Show Win Rate: A checkbox, default is unchecked
+  - If checked: Calculate/display winrate for all detected entries in the the backtest window (default is last 10 days)
+  - If unchecked: Skip winrate calculation for performance
+
+1.4. Input Section 4: Display
+
+1.4.1. Show Entry Labels: a checkbox, default is checked. When unchecked, all the labels of detected positions won’t show up on the chart
+
+1.4.2. Indicator Color Setup
+- EMA 25: Yellow, 1px by default
+- EMA 75: Green, 1px by default
+- EMA 100: Gray, 1px, 75% opacity by default
+- EMA 200: Purple, 2px by default
+
+2. Strictly Follow Active Trading Sessions (Japan Time Based)
+- The bot should only detect the entries from Monday to Saturday morning Japan Time.
+- Detected positions that are not closed always run until the last minutes of preconfigured session times
+- Display “DO NOT TRADE" in the first row (Zone) of the ParamTable as a session warning, if the current time is outside trading hours, but still allow detection and visualization of historical session entries.
+
+3. Initial information display
+3.1. Display the main EMAs on the chart
+- Display all the EMAs 25, 75, 100, 200
+- All EMA calculations on: 15m, 5m, and 1m
+3.2. ParamTable - Display at the Top-Right corner of the chart
+3.2.1. Row 1:
+- 1st column title: Zone
+- 2nd column value: <Zone Value>, <Mid-term Market Status> => <Short-term Market Status>
+(Will explain the logic of calculating the Zone value, and Mid-term Status and Short-term Status as below:
+
+Zone Detection Rules:
+- Zone = 1 (Bullish): EMA 25 > EMA 75 > EMA 100 > EMA 200 on ALL (15m, 5m, 1m)
+- Zone = 3 (Bearish): EMA 25 < EMA 75 < EMA 100 < EMA 200 on ALL (15m, 5m, 1m)
+- Zone = Sideway: All other cases
+
+EMA-based Market Status Detection Rules:
+- Market Status on a timeframe is Bullish if EMA 25 > EMA 75 > EMA 100 > EMA 200 on that timeframe
+- Market Status on a timeframe is Bearish if EMA 25 < EMA 75 < EMA 100 < EMA 200 on that timeframe
+- Market Status on a timeframe is Sideway but not bullish nor bearish was detected
+- Short-term Market Status is Bullish if ALL key Market Status of all timeframes (15m, 5m, 1m) are Bullish,
+  else it’s Bearish if ALL key Market Status of all timeframes (15m, 5m, 1m) are Bearish, else it is Sideway.
+
+3.2.2. Row 2: 
+- System: KEM or CHE
+- If Short-term Market Status = Sideway, and Market Status of 15m is Bullish then System = CHE-Bull
+- Else If Short-term Market Status = Sideway, and Market Status of 15m is Bearish then System = CHE-Bear
+- Else If Short-term Market Status = Sideway, and Market Status of 15m is not Bullish or Bearish then System = CHE-Sideway
+- Else If Short-term Market Status = Bullish then System = KEM-Bull
+- Else If Short-term Market Status = Bearish then System = KEM-Bear
+
+3.2.3. Row 3: 
+- Detected Entry Type: L-E1, L-E2, S-E1, S-E2, or “No Entry, Switch to 1m!”. Entry detection rules is explained later in the next section
+
+3.2.4. Row 4: 
+- E1 Winrate (opt): Win rate of Entry Type 1 (Entry 1),  Only show if “Show Win Rate” checkbox is checked.
+- E2 Winrate (opt): Win rate of Entry Type 2 (Entry 2), Only show if “Show Win Rate” checkbox is checked. 
+- Total Winrate (opt): Win rate of all detected Entries, Only show if “Show Win Rate” checkbox is checked. 
+
+The logic to calculate the Winrates is like this: 
+Winrate = Number of WON positions divided by Total detected positions of the same Entry Type, in the Winrate lookback time window (default 10 days)
+
+
+4. ENTRY 1 (E1) DETECTION RULES
+4.1. L-E1 (Long Entry 1) on 1m timeframe
+- If System name is KEM-Bull or detected System name contains CHE, then we will check if we should enter the position:
+  - If at the current bar Market Status on 1m is Bullish, and current price closes above EMA25 of 1m and the last price touch or cross at EMA 100 of 1m within "Entry lookback time window", and the there is no currenly open L-E1 position within the "Entry lookback time window", and at the previous bar the same conditions weren't met, then assuming a Position like below:
+    - Entry is at the current price close above EMA25 of 1m
+    - Stop-loss: Use configurable "E1 Stop loss distance from EMA200" of 1m to calculate the Stop Loss value in USD
+    - Take profit: 
+      - If detected System name is KEM-Bull: use configurable "R:R for Entry 1"
+      - else use configurable "R:R for Entry 1 in CHE system"
+  - If the calculated Stop Loss value (in USD) is not greater than the Max Loss value (in USD) based on the current account balance, then decide to Enter the position as calculated.
+    
+4.2. S-E1 (Short Entry 1) on 1m timeframe
+- If System name is KEM-Bear or detected System name contains CHE, then we will see if we should enter the position:
+  - If at the current bar Market Status on 1m is Bearish, and current price closes below EMA25 of 1m and the last price touch or cross at EMA 100 of 1m within "Entry lookback time window", and the there is no currenly open S-E1 position within the "Entry lookback time window", and at the previous bar the same conditions weren't met, then assuming a Position like below:
+    - Entry is at the current price close below EMA25 of 1m
+    - Stop-loss: Use configurable "E1 Stop loss distance from EMA200" of 1m to calculate the Stop Loss value in USD
+    - Take profit: 
+      - If detected System name is KEM-Bear: use configurable "R:R for Entry 1"
+      - else use configurable "R:R for Entry 1 in CHE system"
+  - If the calculated Stop Loss value (in USD) is not greater than the Max Loss value (in USD) based on the current account balance, then decide to Enter the position as calculated.
+
+4.3. L-E2 (Long Entry 2) on 1m timeframe
+- If System name is KEM-Bull or detected System name contains CHE, then we will check if we should enter the position:
+  - If at the current bar Market Status on 1m is Bullish, and the price previously touched or crossed the EMA75 of 1m within Entry lookback window then now current price closes above EMA25 of 1m, and the there is no currenly open L-E2 position within the "Entry lookback time window", and at the previous bar the same conditions weren't met, then assuming a Position like below:
+    - Entry is at the current price close above EMA25 of 1m
+    - Stop-loss: Use configurable "E2 Stop loss distance from EMA100" of 1m to calculate the Stop Loss value in USD
+    - Take profit: 
+      - If detected System name is KEM-Bull: use configurable "R:R for Entry 2"
+      - else use configurable "R:R for Entry 2 in CHE system"
+  - If the calculated Stop Loss value (in USD) is not greater than the Max Loss value (in USD) based on the current account balance, then decide to Enter the position as calculated.
+
+4.4. S-E2 (Short Entry 2) on 1m timeframe
+- If System name is KEM-Bear or detected System name contains CHE, then we will check if we should enter the position:
+  - If at the current bar Market Status on 1m is Bearish, and the price previously touched or crossed the EMA76 of 1m within Entry lookback window then now current price closes below EMA25 of 1m, and the there is no currenly open S-E2 position within the "Entry lookback time window", and at the previous bar the same conditions weren't met, then assuming a Position like below:
+    - Entry is at the current price close below EMA25 of 1m
+    - Stop-loss: Use configurable "E2 Stop loss distance from EMA100" of 1m to calculate the Stop Loss value in USD
+    - Take profit: 
+      - If detected System name is KEM-Bear: use configurable "R:R for Entry 2"
+      - else use configurable "R:R for Entry 2 in CHE system"
+  - If the calculated Stop Loss value (in USD) is not greater than the Max Loss value (in USD) based on the current account balance, then decide to Enter the position as calculated.
+
+
+5. Entry Visualization and Label Display Rules
+- Only visualize entries that are currently visible on the chart. As the user scrolls left or right, show more or fewer detected entries as they become visible in the chart window.
+- Only when “Show Entry Labels” is checked, display Entry Labels. Entry Labels must always display below all EMAs and below the candlesticks using yloc=yloc.belowbar and correct plot order or z-index if available.
+- Label opacity: 55 percent opacity for entry and outcome labels.
+- Label location: Place label slightly to the left of the entry candle (use bar_index - 1 for label anchor).
+- Arrow: Draw an arrow pointing to the exact entry price (close to the entry bar); position the arrow close to the entry line.
+- Risk/Reward: Show both Risk and Reward values in USD on each position label.
+- Outcome display: “WON” if TP hit first, “LOST” if SL hit first, “EARLY-EXIT” if you use such logic (otherwise omit).
+- Historical: All detected positions remain on the chart, but visualized only as the chart scroll brings them into view, no clutter from offscreen entries.
+
+6. Winrate Calculation & Display
+Write a function just to calculate and display win rate in case of "Show Win Rate" checkbox checked
+- Only calculate/display winrate in ParamTable if “Show Winrate” checkbox is checked.
+- Winrate = Number of WON positions divided by Total detected positions, over last 10 days (even if not visible on chart).
+
+7. Next steps
+- Whenever updating the Indicator in kemIndicator.pine, make sure to update kemStrategy.pine accordingly. Make sure to use exactly the same logic, copy functions as much as possible, do not try to invent the new functions with the same meanings.
+
+
+
+TODOs (2025/11/03):
+Revise the strategy using Ichimoku Cloud indicator

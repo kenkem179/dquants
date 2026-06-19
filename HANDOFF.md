@@ -1,11 +1,42 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-**THIS SESSION: E5 (SuperBros) parity. Fixed the E5 entry onset off-by-one (committed `d1704ab`)** →
-E5 matched 295→399, exact-minute 66→342, |Δentry| 0.286→0. NEXT BLOCKER = E5 EXIT parity (engine
-matched net −489 vs MT5 +733). E1+E2 entry parity from prior sessions still ~93–96% (unchanged)._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
 
-## 🎯 Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
+## 🔀 ACTIVE THRUST (2026-06-20): KK-MasterVP Pine-faithful rebuild → param sweep → EA
+**User pivoted** from KenKem E1–E5 parity to optimizing **KK-MasterVP on XAUUSD M3**. KenKem state
+preserved below (📌 PAUSED) — not abandoned.
+
+- **Goal:** reproduce the profitable TradingView Pine (`research/mastervp_parity/KK-MasterVP.pine`,
+  PF 1.24 / 5,204 trades / +2583%/yr OANDA XAU) in the C++ engine, then *add missing risk management*
+  (daily-DD, consec-loss, anti-chase, ATR-pctile gate, trail/stall exit) via disciplined param sweeps,
+  then port to an MQL5 EA for the user's manual MT5 forward test.
+- **User chose:** Fresh **Pine-faithful** build · **XAUUSD M3** first · objective **Robust PF + plateau**.
+- **DONE this session:** (1) copied strategy notes → `my-strategies/`; (2) read the WHOLE reference Pine —
+  *breakout-only* build (`pyramiding=0`, reversion OFF, all fancy filters OFF; lines 672-962 pure visuals);
+  (3) wrote the methodology note **`research/mastervp_parity/PARAM_SWEEP_PLAN.md`** (user's explicit "first"
+  deliverable — param inventory, 4 buckets, S0-S10 stages, A/B protocol); (4) confirmed `make backtester`
+  builds green + XAU M3 bars/ticks present.
+- **Key finding:** existing `cpp_core/include/kk/mastervp/` engine is a *sibling-Pine* port (node-gate ON by
+  default, has `break_max_atr`, different defaults) — NOT faithful to THIS ref Pine. `kk::Params` already
+  carries ~all sweepable knobs incl. dormant risk layers. Phase 0 = re-align `detect_signal`/exec/defaults,
+  NOT greenfield.
+- **▶️ NEXT ACTION (Phase 0 / S0):** align engine to ref Pine (`break_buf_atr=0.50`, `sl_atr_brk=1.48`,
+  `rr_brk=1.8`, `node_gate_enabled=false`, no brkMax bound, `tp1_r=0.8`, sessions Asia 0000-0700/
+  Ldn 0700-1300/NY 1300-2100, `min_atr_ticks=40`, `max_trades_per_session=4`, risk 2% acct, reversion OFF).
+  Build `mastervp_parity` differ vs TV log (distributional, not byte-exact — diff feed; PLAN §1). Quantify gap → S0 PASS.
+- **THEN:** S1 coarse grid (entry-shape) → heatmaps → S4/S5 exits+Optuna → S6 risk layers 1-at-a-time A/B →
+  S7 walk-forward → S8 Monte Carlo → S9 lock `.set` → S10 EA.
+- **Data:** `cpp_core/tools/bars_xauusd_2025_m3.csv`, `bars_xauusd_2026_m3.csv`, `ticks_xauusd_2024_2026.csv`.
+  TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
+
+---
+
+## 📌 PAUSED — KenKem E1–E5 parity (resume after MasterVP, or if user redirects)
+_E5 (SuperBros): fixed E5 entry onset off-by-one (committed `d1704ab`) → matched 295→399, exact-minute
+66→342, |Δentry| 0.286→0. NEXT KenKem BLOCKER = E5 EXIT parity (engine net −489 vs MT5 +733). E1+E2 entry
+parity ~93–96%. C++ tests PASS (28)._
+
+## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`
 (trades.csv 656 trades net +1267 PF 1.10; trace.csv.gz per-bar E5 TraceBar; inputs_echo.txt).
 

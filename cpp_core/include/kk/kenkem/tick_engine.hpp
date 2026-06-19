@@ -174,6 +174,10 @@ private:
             const double px = o.p.is_long ? t.bid : t.ask;  // exit-side market price
             bool close = false; char tag = 'E';
             if (cfg_.close_at_session_end && !session_ok) { close = true; tag = 'E'; }
+            // High-risk time exit: ProcessAllTrades closes a risky trade once barsSinceEntry >= the cap
+            // (EA :149). Tag 'X' (DEAL_REASON_EXPERT = "EA"). barsSinceEntry = f - entry_bar (M1 bars).
+            if (!close && o.p.is_high_risk && cfg_.high_risk_max_bars > 0
+                && (f - o.p.entry_bar) >= cfg_.high_risk_max_bars) { close = true; tag = 'X'; }
             if (!close && snap.valid) {
                 bool pe = panic_exit_triggers(o.p.kind, o.p.is_long, o.p.entry, o.p.sl, px,
                                               o.p.best, o.p.partial_done, b_, align, cfg_);
