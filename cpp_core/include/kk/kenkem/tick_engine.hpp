@@ -280,6 +280,10 @@ private:
         const double riskDist = sig.risk;
         if (riskDist <= 0.0) return;
         double lot = process_lot(sig.kind, balance_, riskDist, anchorEntry, cfg_);
+        // High-risk TEST uses detectedTrade.lotSize = min(maxLotsRisk,maxLotsMargin,getScaledLotSize)
+        // (KenKemExpert.mq5:1805-1813,2340) == process_lot. With the EA's MY_STANDARD_LOT_SIZE=100 the
+        // scaled term never binds, so the lot is risk/margin-capped and potentialLoss≈maxLoss×riskDistPips
+        // ≥ maxLoss → essentially every trade is high-risk (matches the run's 78/78).
         const double potentialLossUSD = riskDist * lot * cfg_.contract_size;
         const double entryMaxLoss = entry_max_loss_usd(sig.kind, balance_, cfg_);
         const bool min_sec_blocked = (last_entry_ms_ > 0) &&
@@ -317,6 +321,7 @@ private:
         const double fill = sig.is_long ? t.ask : t.bid;
         Position p = open_position(sig.is_long, sig.kind, fill, sig.sl, tp, lot, cfg_);
         p.entry_bar = f;   // entryBar = forming-bar index at fill (gates management: barsSinceEntry>0)
+        p.is_high_risk = (potentialLossUSD >= entryMaxLoss);   // routes the partial-TP override (0.55/0.42)
         open_.push_back({ p, bar.ts_ms, fill, -lot * cfg_.commission_per_lot });
         ++entries_today_;
         last_entry_ms_ = t.ts_ms;

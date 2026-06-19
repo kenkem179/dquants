@@ -83,6 +83,7 @@ struct Position {
     bool   rmult_be_applied = false;               // rMultipleBEApplied
     int    ladder_stage = 0;                        // ladderStageReached (0..3, advance-only)
     int    tp_ext = 0;                              // tpExtensions (trail distance divisor; 0 until E ported)
+    bool   is_high_risk = false;                    // isHighRiskTrade — routes the partial-TP override
     bool   open = false;
 };
 
@@ -115,6 +116,11 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
     if (!manage_allowed) return;   // EA: barsSinceEntry==0 -> no BE/partial/ladder/trail this bar
 
     const MgmtParams m = mgmt_for(p.kind, c);
+    // High-risk partial-TP override (TradeManager.mqh:680-684): a high-risk trade arms the smart-partial/
+    // trail EARLIER (0.55 vs E1's 0.90) and slices a different ratio. BE buffer + trail factor stay per-entry.
+    const bool hr_override = p.is_high_risk && c.allow_hr_partial_override;
+    const double partial_trigger = hr_override ? c.hr_partial_trigger : m.partial_trigger;
+    const double partial_ratio   = hr_override ? c.hr_partial_ratio   : m.partial_ratio;
     auto norm = [&](double px) { return c.tick_size > 0.0 ? std::round(px / c.tick_size) * c.tick_size : px; };
     // Broker min-stop-distance clamp on a SL move (BE/trail). Default 0 -> always allowed (Exness).
     auto sl_move_ok = [&](double cand) -> bool {
@@ -176,7 +182,7 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
     // (F) Smart partial TP. Eligible at the trigger; (non-E5) executes on a significant retrace from the
     // peak-since-eligible (IsTrendWeakening unmodeled -> false). Fills at the LIVE price; then SL -> BE.
     if (c.allow_partial_tp && origTPDist > 0.0) {
-        if (!p.partial_eligible && pnl_bar >= m.partial_trigger * origTPDist) {
+        if (!p.partial_eligible && pnl_bar >= partial_trigger * origTPDist) {
             p.partial_eligible = true; p.best_since_eligible = bar_px;
         }
         if (p.partial_eligible && !p.partial_done) {
@@ -188,7 +194,7 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
             if (sig_retrace) {
                 // Partial slice: round(init*ratio) to the volume step, bumped up to min_lot, capped < lot
                 // (EA ExecutePartialTakeProfit: NormalizeLotSize then clamp to SYMBOL_VOLUME_MIN).
-                double q = p.init_lot * m.partial_ratio;
+                double q = p.init_lot * partial_ratio;
                 if (c.lot_step > 0.0) q = std::round(q / c.lot_step) * c.lot_step;
                 if (q < c.min_lot) q = c.min_lot;
                 if (q < p.lot) { fills.push_back({ live_px, q, 'P' }); p.lot -= q; }

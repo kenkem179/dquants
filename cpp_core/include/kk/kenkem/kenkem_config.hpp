@@ -86,6 +86,12 @@ struct KenKemConfig {
     double hr_tp_mult_asia        = 0.65;     // HIGH_RISK_TP_MULTIPLIER_ASIA
     double hr_tp_mult_eu          = 0.65;     // HIGH_RISK_TP_MULTIPLIER_EU
     double hr_tp_mult_us          = 0.70;     // HIGH_RISK_TP_MULTIPLIER_US
+    // High-risk partial-TP override (TradeManager.mqh:680-684): when a trade is high-risk and this is
+    // ON, the smart-partial eligibility/trail-arm threshold and partial slice ratio use these instead of
+    // the per-entry E{1,2,4} values. BE buffer + trailing factor are NOT overridden (stay per-entry).
+    bool   allow_hr_partial_override = true;  // ALLOW_HIGH_RISK_PARTIAL_TP_OVERRIDE
+    double hr_partial_trigger     = 0.55;     // HIGH_RISK_PARTIAL_TP_TRIGGER (vs E1=0.90)
+    double hr_partial_ratio       = 0.42;     // HIGH_RISK_PARTIAL_TP_RATIO   (vs E1=0.20)
 
     // ---- trend-quality scoring ----
     bool   enable_tq_gates        = true;     // ENABLE_TREND_QUALITY_GATES
@@ -403,7 +409,17 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     auto H = [&] { return (HtfMode)std::stoi(val); };
     // account / sizing
     if (key == "MY_STANDARD_LOT_SIZE") p.std_lot = D();
-    else if (key == "COMMON_MAX_RISK_PER_TRADE") p.common_max_risk = D();
+    else if (key == "COMMON_MAX_RISK_PER_TRADE") {
+        // EA (InputParams.mqh:62-69): MAX_LOSS_RATIO_E* are GLOBALS computed from this input at load
+        // (E1×1.05, E2×1.00, E4×1.02, E5×1.00). Propagate here too, else the per-entry budgets keep
+        // their 0.02-based defaults — 2× too high for a 0.01 set, which inflates lots/PnL AND doubles
+        // the high-risk threshold so almost no trade trips HandleHighRiskEntry (TP×mult + 0.55 partial).
+        p.common_max_risk = D();
+        p.max_loss_ratio_e1 = p.common_max_risk * 1.05;
+        p.max_loss_ratio_e2 = p.common_max_risk * 1.00;
+        p.max_loss_ratio_e4 = p.common_max_risk * 1.02;
+        p.max_loss_ratio_e5 = p.common_max_risk * 1.00;
+    }
     else if (key == "INCREASE_LOT_SIZE_BASED_ON_PROFIT") p.increase_lot_on_profit = kbool(val);
     else if (key == "PROFIT_SCALING_WEIGHT_CURRENT") p.profit_scale_w_cur = D();
     else if (key == "PROFIT_SCALING_WEIGHT_INITIAL") p.profit_scale_w_init = D();
@@ -502,6 +518,9 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "HIGH_RISK_TP_MULTIPLIER_ASIA") p.hr_tp_mult_asia = D();
     else if (key == "HIGH_RISK_TP_MULTIPLIER_EU") p.hr_tp_mult_eu = D();
     else if (key == "HIGH_RISK_TP_MULTIPLIER_US") p.hr_tp_mult_us = D();
+    else if (key == "ALLOW_HIGH_RISK_PARTIAL_TP_OVERRIDE") p.allow_hr_partial_override = kbool(val);
+    else if (key == "HIGH_RISK_PARTIAL_TP_TRIGGER") p.hr_partial_trigger = D();
+    else if (key == "HIGH_RISK_PARTIAL_TP_RATIO") p.hr_partial_ratio = D();
     // rsi div
     else if (key == "ENABLE_RSI_DIVERGENCE_VETO") p.enable_rsi_div_veto = kbool(val);
     else if (key == "RSI_DIV_LOOKBACK") p.rsi_div_lookback = I();
