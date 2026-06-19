@@ -1,28 +1,32 @@
 # HANDOFF — read me first, update me last
 
 _Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS (28).
-Commit `e3b3e70`. **TWO blockers found this session — both need the user. See ⛔ below.**_
+Commit `e3b3e70` (E2 fix) + data rebuild. **2025 H2 data NOW INTEGRATED; 2 smaller holes remain. E2 baseline
+re-measured on complete data = STILL ~42% (handoff's 95.8% is confirmed WRONG). See ⛔/🔴 below.**_
 
 ## 🎯 Goal: KenKem entry parity engine⇄MT5. NOW ON: E2, then E4, E5.
 Ground truth = the canonical EA (`kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5`).
 
-## ⛔ BLOCKER 1 (DATA) — the working XAU data is INCOMPLETE; user must re-export 2025 H2
-- `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` on disk = **577,738 bars**
-  (regenerated 2026-06-19 10:14), NOT the complete set. There is a **169-day hole: 2025-07-17 → 2025-12-31**
-  (all of 2025 H2).
-- **The hole is in the raw export itself**, not the import. VERIFIED across EVERY on-disk source:
-  `data/xauusd/XAUUSD_ticks_mt5_2025_2026.csv`, `~/Downloads/Exness_XAUUSD_2025.csv`,
-  `data/processed/ticks_xauusd_2025.parquet` — ALL jump from `2025.07.16 23:59` straight to `2026.01.01`.
-  So the complete 849,963-bar set the *previous* handoff claimed was on disk **does not exist anywhere
-  locally and cannot be regenerated**. (The prior "data resolved" note was wrong.)
-- The MT5 *terminal* HAD 2025 H2 (the reference backtest traded through it) — only the **exports** lack it.
-- **Impact on the E1E2 reference (325 MT5 trades):** 59 (18%) fall in the gap (unscoreable), 16 more are
-  beyond the engine data's end (2026-04-06, MT5 run goes to 2026-05-29). Only the **contiguous front
-  2024.01 → 2025.07.16 (231 trades, 71%)** is cleanly scoreable. The engine is causal, so front-window
-  parity is 100% valid regardless of the gap — do all interim work there (`diff_kk.py --from --to`).
-- **USER ACTION:** re-export XAU ticks for **2025-07-17 → 2025-12-31** from the MT5 terminal (MT5
-  tab-sep `<DATE> <TIME> <BID> <ASK>…` OR Exness CSV — both parse). Then rebuild via
-  `cpp_core/tools/common/build_xau_anchor_2yr.py` (point its `FILES`/`RAW_DIR` at the restored sources).
+## ⛔ BLOCKER 1 (DATA) —2025 H2 FIXED; two smaller export holes remain
+- User supplied 2025 H2 as Exness monthly CSVs `~/Downloads/Exness_XAUUSD_2025_{07..12}.csv`. **Verified
+  bit-identical to the MT5-tab raws on the 2025-07-01..16 overlap** (same UTC clock, same feed) → merged.
+- **Rebuilt** via NEW `cpp_core/tools/common/build_xau_full_2yr.py` (2024 + 2025 H1 + 2026 from tab raws,
+  2025 H2 from monthlies, partitioned at 2025-07-17). Now **740,572 bars / 142.98M ticks**, range
+  2024-01-01 → 2026-04-06. **2025 H2 gap GONE.**
+- **Completeness vs the MT5 `trace.csv.gz` (848,532 bars = ground-truth bar set): still missing 109,390
+  (12.9%)**, in TWO holes the source exports still lack:
+  - **Dec 2024** (`2024-11-19 → 2024-12-31`, ~40k bars) — `data/xauusd/XAUUSD_ticks_mt5_2024.csv` ends
+    2024-12-22 with only Sunday-open bars in late Nov/Dec (weekday data missing).
+  - **2026-04-07 → 2026-05-29** (~56k bars) — `XAUUSD_ticks_mt5_2025_2026.csv` ends 2026-04-06; the MT5
+    run goes to 2026-05-29.
+  - (+ small day-holes: 2024-08/09, 2025-04/05/06.)
+- **Trade impact now: 293/325 MT5 trades (90%) scoreable** (was 71%). Only 32 in the 2 holes
+  (16 Dec-2024, 16 in 2026-04/05). Largest contiguous clean window = **2025-01-01 → 2026-04-06** (gap-free).
+- ✅ **Research parquet refreshed:** `data/processed/ticks_xauusd_2025.parquet` regenerated to the FULL year
+  (74.59M rows, naive UTC TIMESTAMP, schema matched) — unblocks the XAU sweep window 2025-08→12.
+- **USER ACTION (optional, for 100%):** export XAU ticks for **2024-11-19 → 2024-12-31** and
+  **2026-04-07 → 2026-05-29**, drop in `~/Downloads/` (Exness CSV or MT5 tab), re-run `build_xau_full_2yr.py`
+  (add the files to its source list).
 
 ## ⛔ BLOCKER 2 (INSTRUMENTATION) — E2/E1 gate residual needs an EA per-bar E2 gate trace
 The remaining E2 (and E1) divergence is in the HTF-M15 / MTF-EMA / trend-quality gates — a boundary-VALUE
@@ -31,15 +35,15 @@ single generic gate, no E2 breakdown). Same blocker the prior E1 residual hit. *
 re-run of canonical KenKemExpert emitting, per evaluated bar, the E2 gate sub-verdicts
 (`htf_trend / mtf / price_pos / trend_quality / rsi_div`) + M3 & M5 EMA1..4 values at ENTRY_SHIFT.
 
-## 🔴 HONEST BASELINE (the prior handoff's "E2 95.8% / 136 matched" does NOT reproduce)
-Measured 3 ways, none near 95.8%:
-- Fresh `KK_E1_FAITHFUL=1` E1E2 run, **clean front window** (2024.01–2025.07.16):
-  **E2 matched 42 / missed 61 / overfire 57** (of 103 MT5 E2, ~41% recall);
-  **E1 matched 35 / missed 93 / overfire 48** (of 128 MT5 E1, ~27% recall).
-- Full-period combined (gap-polluted): E2 47/142, E1 38/183.
-- Committed `cpp_trades.csv` (a NON-faithful run, 615 E1 trades): E2 69/142, E1 86/183.
-Treat the prior 95.8% as overstated/unreproducible. The 61 missed are real DETECTION divergences
-(the 42 matched are all exact-minute; misses/overfires are at different times) — NOT a matching artifact.
+## 🔴 HONEST BASELINE — re-measured on COMPLETE data; "E2 95.8%" still does NOT reproduce
+Engine COUNTS now match the handoff (engine E1 **124**, E2 **145** — handoff said 124/162), confirming the
+data is right. But the MATCHING is ~42%, NOT 95.8%:
+- Full period (32 gap trades unscoreable): **E2 matched 59 / missed 83 / overfire 84** (of 142);
+  **E1 matched 49 / missed 134 / overfire 73** (of 183).
+- Clean window 2025-01-01→2026-04-06 (gap-free): **E2 29/40/45** (of 69, ~42%); **E1 23/59/34** (of 57).
+- **NOT a timing artifact:** raising the match lag 5→240 min lifts E2 matched only 59→65. The engine genuinely
+  fires E2 on DIFFERENT bars than MT5 (matched ones are exact-minute). The prior 95.8%/136-matched is WRONG.
+- E2 arms **55,231×** → fires 145 ⇒ the bottleneck is the GATE selection, not the trigger.
 
 ## ✅ THIS SESSION — verified-correct E2 fix (commit `e3b3e70`), + two INERT negative results
 - **E2 EMA75-touch shift FIXED** (`triggers.hpp:142-150`): EA reads ema75 via `GetEMA` (trapped,
@@ -68,15 +72,17 @@ Treat the prior 95.8% as overstated/unreproducible. The 61 missed are real DETEC
 4. E4 parity is blocked too — there is **no E4-only MT5 reference run committed** (only E1only + E1E2);
    need a user MT5 E4 run before E4 can be measured at all.
 
-## 🔁 Repro (front-window, valid despite the gap)
+## 🔁 Repro (full complete data, ~34s backtest)
 ```
+# (re)build complete data if tools/*.csv missing or stale:
+python cpp_core/tools/common/build_xau_full_2yr.py     # 740,572 bars / 142.98M ticks
 cd cpp_core && make test                                   # 28 checks, green
 KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester \
   --bars-m1 tools/bars_xauusd_2024_2026_m1.csv --ticks tools/ticks_xauusd_2024_2026.csv \
   --symbol-xau --spread 0.05 --set ../research/kenkem_parity/anchor_E1E2.set --out /tmp/e1e2.csv
 M=research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1E2/trades.csv
-python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2 --from 2024.01.01 --to 2025.07.16
-python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E1 --from 2024.01.01 --to 2025.07.16
+python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2   # full period
+python research/kenkem_parity/diff_kk.py --engine /tmp/e1e2.csv --mt5 $M --kind E2 --from 2025.01.01 --to 2026.04.06  # gap-free
 ```
 
 ## 📦 Data / instruments
