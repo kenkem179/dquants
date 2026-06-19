@@ -1,27 +1,29 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 29 C++ checks PASS.
-Latest: entry-count gap ROOT-CAUSED to forming-bar ATR (diagnosis only, no code change)._
+_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, C++ tests PASS.
+Latest: ATR ROOT-CAUSED & FIXED (commit `f210631`) — MT5 iATR is SMA-of-TR, not Wilder. Big parity jump._
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
-## ✅ THIS SESSION — TP PARITY FIXED (commit `1ba5157`); tag-agree 66%→**81%**, |Δpnl| med 114→**4.6**
-The matched-pair TP was systematically ~0.3–0.4 too CLOSE, firing TP where MT5 trails out for a smaller
-SL-WIN. Traced to the canonical EA's `setMaxTPForTrade` → `finalRR = entry.GetRewardRatio() *
-GetDynamicRRMultiplier()`. Two faithful fixes:
-1. **Short-RR factor was a misattribution.** `GetRewardRatio()` returns ONE per-entry
-   `m_config.rewardRatio` applied identically long/short — there is NO long/short split. The engine's
-   `KK_E1/E2/E4_SHORT_FACTOR` (0.875/0.867) made every short's TP ~12–14% too close. Set to **1.0**.
-2. **`GetDynamicRRMultiplier` un-ported** (SessionManager.mqh:93): `rrRatio *=` session×ATR-pctile scaler
-   (ASIA 0.95 / US 1.15 / EU 1.0; ATR pctile ≥75→1.12, ≤25→0.88; clamp [0.70,1.30]).
-   `USE_DYNAMIC_RR_SCALING=true`; `ENABLE_ADAPTIVE_E*` all **false** → `GetRewardRatio()` stays static, so
-   this multiplier is the ONLY unmodeled RR term. Added `kk_dynamic_rr_mult` + `kk_session_id` in
-   entries.hpp, threaded into `compute_tp`.
+## ✅ THIS SESSION — ATR FIXED (commit `f210631`): overfire **62→31**, missed **31→11**, matched **47→67**
+The forming-bar ATR divergence is SOLVED. The prior diagnosis ("track forming H/L tick-by-tick") was a
+**red herring**: MT5 uses first-tick **H=L=open** on 100% of bars exactly like the engine (forming TR already
+matched 99.94%). **Real bug = the CLOSED-bar smoothing. MT5's built-in `iATR` is a rolling SIMPLE MA of
+True Range** (`ATR[i]=ATR[i-1]+(TR[i]-TR[i-n])/n`), **NOT Wilder/SMMA.** The engine's `kk::ind::atr` used
+Wilder → ~6% mixed-sign off → 29% of bars got the wrong ATR-percentile block category.
+- Fix (KenKem-only): `indicators.hpp` add `atr_sma_from_tr`/`atr_sma_mt5`; `tf_cache.hpp` cache ATR(14)→SMA
+  + store TR series; `snapshot.hpp` M1+M3 forming shift-0 = SMA window-slide `atr_c + (tr_form - tr[i1-(n-1)])/n`.
+- Verify (vs MT5 trace, 848,532 bars): forming-ATR exact(<1e-4) **0.12%→99.93%**; pctile exact **31.6%→81.4%**
+  (±3 on 99.96%); entry-gate block-category agree **~71%→100%**.
+- ⚠️ **1-bar trace label offset** (key for any future ATR/trace diff): MT5 trace row ts=T = decision at OPEN
+  of bar T+1; align engine→MT5 with **shift −1** (engine ts−60000 = MT5 ts) → prevClose matches 100%.
 
-### Result (FULL 2yr E1 anchor, `KK_E1_FAITHFUL=1`) — see Repro below
-- matched exit-tag agreement **66%→81%**; per-trade |ΔpnlUSD| median **114.23→4.56**.
-- over-trail (MT5 SL-WIN→eng TP) **5→2**; **SL-LOSS 11/11 exact**; SL-WIN 10→13/15; TP 9→10/12.
-- matched net engine **+639** vs MT5 **+990** (gap now in a few outliers + the 31 missed entries).
+### Prior session (commit `1ba5157`) — TP parity: short-RR factor→1.0 + ported `GetDynamicRRMultiplier`.
+Tag-agree 66%→81%, |ΔpnlUSD| med 114→4.6, SL-LOSS 11/11. (Detail in [[kenkem-tp-parity-rr-fixes]].)
+
+### Result now (FULL 2yr E1 anchor, `KK_E1_FAITHFUL=1`)
+- matched **67** / missed **11** / overfire **31** (engine 98 vs MT5 78). Recall 60%→**86%**.
+- matched exit-tag agreement **87%** (58/67); |ΔpnlUSD| median 5.12; matched net engine **+673** vs MT5 **+959**.
 
 ## 🟢 DATA BLOCKER — APPARENTLY RESOLVED (verify with user)
 `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` on disk now give
@@ -30,40 +32,19 @@ GetDynamicRRMultiplier()`. Two faithful fixes:
 feared. All this session's numbers use the complete data. **Confirm with the user** whether they
 restored the full Exness export (or it was never actually deleted) before trusting absolute counts.
 
-## 🔬 THIS SESSION (2026-06-19, no code change — DIAGNOSIS) — entry-count gap ROOT-CAUSED
-Decomposed the **62 E1 over-fires** with direct evidence (gate-trace + tester.log block reasons + pctile
-oracle). **This OVERTURNS the "84% spurious cross-arming" memory** ([[kenkem-e1-overfire-trendcore]]) — that
-came only from `kke1gate.csv`, which is blind to the ATR-limiter layer. True breakdown:
-- **~15 = ATR-percentile divergence.** `--pctile-oracle` (feed MT5's exact per-bar pctile from
-  `trace.csv.gz` col 33) drops overfire **62→47** (matched 47→44, missed 31→34 — a pctile *timing* residual).
-  These are MT5 `[ATR HIGH/LOW/VOL REGIME BLOCK]` → `SKIPPED: High-risk blocked by risk limits` (440 total).
-- **14 = `mtf` gate** (engine PASSes where MT5 blocks at `isAllTimeframeEMAsReadyForEntry`). Oracle-invariant.
-  Engine mtf composition (entries.hpp:184-197) is structurally faithful → EMA-value boundary rounding flips.
-- **~6 = truly spurious arm.** So spurious arming is ~10%, not 84%.
-
-**ROOT CAUSE of the ATR-pctile divergence = forming-bar ATR `s.atrM1` (snapshot.hpp:173) is WRONG.** Engine
-`trace_dumper` `atr_pctile` vs MT5 col 33 over 848,532 bars: **exact only 31.6%, median |Δ| 6.25 (=2/32),
-block-category differs on 29%.** The pctile method is faithful; the *input* forming ATR is **median 6.5%
-relative off, 0% exact**. Closed-bar ATR is fine (SL risk-ratio locked 1.000) — only the forming step is off.
-Tested ALL bar-OHLC ATR variants vs MT5 → engine's `|open−prevC|` is closest but 0% exact, mixed-sign error.
-**MT5's iATR(0) reflects the forming bar's intra-bar H/L at the cache-read tick → irreducible from bar OHLC.**
-Also confirmed `ENABLE_LOSS_COOLDOWNS=true` changes **0 trades** (inert). Full detail: [[kenkem-e1-overfire-is-forming-atr]].
-
 ## ▶️ NEXT ACTIONS (in order)
-1. **Decide on the forming-ATR fix (biggest single lever, but weigh payoff).** The only faithful fix is
-   tick-level: track the forming bar's running H/L in the tick engine and compute `atrM1` at the cache-read
-   tick, instead of the bar-frozen `(atr_closed*13+|open−prevC|)/14` in snapshot.hpp:173. ⚠️ Payoff is
-   mixed — the oracle (perfect pctile) only nets overfire −15 / matched −3, and `atrM1` feeds sideways +
-   trend-scoring too, so regression risk is real. Validate every step with diff_kk + matched_exit_crosstab.
-   **Clue:** MT5's implied forming-TR tracks the FULL-bar TR (median Δ≈−0.01), not first-tick `|open−prevC|`
-   (Δ≈+0.80) → MT5 iATR(0) uses accumulated range (buffer lag), not bar-frozen first-tick. First verify the
-   engine's CLOSED-bar ATR vs MT5 iATR shift-1 (a direct full-TR test was slightly worse, so the base may
-   also drift). Detail: [[kenkem-e1-overfire-is-forming-atr]].
-2. **`mtf` gate EMA-boundary leak (14 overfire).** Add per-bar m1_ready/m3_ready/m5_dir/extreme + M1 DI±
-   to both engine `EGATE` and EA `KKE1GATE,mtf` detail, diff at the 14 leak bars to see which sub-check
-   flips. Likely EMA-alignment rounding at `emas_ready_entry` (align−3 shift) or the DI≥16 bypass edge.
-3. **2 remaining over-trail SHORTS** (2024-11-11, 2025-02-12); `tpExt` still 0. Lowest priority.
+1. **Decompose the residual E1 gap: 31 overfire + 11 missed** (down from 62/31). Re-run the gate-trace +
+   tester.log block-reason cross-ref now that ATR-pctile is faithful (block-category 100%). The ATR-pctile
+   bucket should be largely gone; expect the residual to be **`mtf` gate** (EMA-boundary) + a few spurious.
+   ⚠️ User said they may DROP MTF gating from the algos entirely — confirm before sinking effort into the
+   mtf leak. Per-bar m1_ready/m3_ready/m5_dir/extreme + M1 DI± to both engine `EGATE` and EA `KKE1GATE,mtf`.
+2. **Over-trail TP-vs-SL-WIN (3 matched):** 2024-12-02, 2024-05-10, 2025-11-20 — engine runs to TP where MT5
+   trails out for a smaller SL-WIN. `tpExt` still 0. Same family as the prior over-trail residual.
+3. **Sanity-check `|Δrisk(SL)|`** (median ticked 0.081→0.181, but on the larger 67-trade matched set). The SL
+   now uses the faithful SMA `atrM1_sl`; confirm the 4.0× ATR cap binds correctly on the few cap-bound trades.
 4. After E1 net+counts converge, repeat for E2/E4/E5.
+
+NOTE: `ENABLE_LOSS_COOLDOWNS=true` is INERT here (A/B = 0 trade change) — stop chasing it.
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
@@ -89,8 +70,9 @@ KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester --bars-m1 tools/bars_xauusd_2024
   --set research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/eng_trace.csv
 # (then compare /tmp/eng_trace.csv[atr_pctile] vs $D/trace.csv.gz col33 -> 31.6% exact, 29% wrong category)
 ```
-Current (complete data): matched 47 / missed 31 / overfire 62; |Δrisk| 0.081; |ΔpnlUSD| median **4.56**;
-matched tag-agree **81%**; matched net engine **+639** vs mt5 **+990**.
+Current (post-ATR-fix `f210631`): matched **67** / missed **11** / overfire **31**; |Δrisk| 0.181;
+|ΔpnlUSD| median **5.12**; matched tag-agree **87%**; matched net engine **+673** vs mt5 **+959**.
+(ATR-pctile diagnostics below are now mostly historical — block-category agrees 100%.)
 
 ## 📦 Data / instruments
 - Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv}` —
