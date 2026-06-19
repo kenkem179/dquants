@@ -23,6 +23,7 @@
 int main(int argc, char** argv) {
     std::string bars_path, bars_m1_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
     int64_t trade_from_ms = 0;
+    int64_t trade_to_ms = 0;   // walk-forward fold cap: open no new positions at/after this ms (0=off)
     bool symbol_xau = false;
     bool set_all = false;   // apply ALL .set keys incl. MQL non-inputs (Pine-faithful mode)
 
@@ -36,6 +37,7 @@ int main(int argc, char** argv) {
         else if (a == "--set")   set_path   = next();
         else if (a == "--set-all") { set_path = next(); set_all = true; }
         else if (a == "--trade-from-ms") trade_from_ms = std::stoll(next());
+        else if (a == "--trade-to-ms") trade_to_ms = std::stoll(next());
         else if (a == "--symbol-xau") symbol_xau = true;
         else if (a == "--symbol-btc") { /* default */ }
         else { std::fprintf(stderr, "unknown arg: %s\n", a.c_str()); return 2; }
@@ -60,6 +62,7 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "[bt] loaded %zu bars from %s\n", bars.size(), bars_path.c_str());
 
     kk::TickEngine eng(p);
+    if (trade_to_ms > 0) eng.set_trade_to_ms(trade_to_ms);
     if (const char* df = std::getenv("KKVP_DBG_FROM")) {
         const char* dt = std::getenv("KKVP_DBG_TO");
         eng.set_debug_window(std::stoll(df), dt ? std::stoll(dt) : std::stoll(df) + 86400000LL);

@@ -81,10 +81,21 @@ preserved below (📌 PAUSED) — not abandoned.
   trend-breakout fat-tail shape). Lock `cpp_core/tools/mastervp/kkmastervp_btc_m5_LOCKED.set`; EA preset
   `KK-MasterVP-BTCUSD-M5.set` (+ kenkem Presets, attach to BTCUSD M5 chart). `sweep.py` now has `--symbol btc`;
   combined BTC bars `bars_btcusd_2025_2026_{m3,m5}.csv` built (gitignored). Train win only 3.5mo = main limiter.
-- **▶️ NEXT (when user returns):** manual MT5 forward-test — XAU **M5 preset is the front-runner** (XAU M3
-  A/B; BTCUSD-M5 candidate but lower-conviction/tail-skewed). Then optionally walk-forward + Monte-Carlo on the
-  locks, and the local/HTF-VP breakout-agreement gate. Note: EA news/session overlays diverge intentionally from
-  the backtest (live-safety), so forward results may show fewer trades than the OOS PF.
+- **✅ WF + MONTE-CARLO HARDENING DONE (this session) — XAU M5 lock CLEARED for forward-test:**
+  `research/mastervp_parity/WF_MC_FINDINGS.md`. Added C++ `--trade-to-ms` fold cap (`tick_engine
+  ::set_trade_to_ms`; golden tests green) + `wf_mc.py` (stability+MC) + `wf_reopt.py` (anchored re-opt) +
+  continuous tick file `ticks_xau_full.csv` (gitignored). Canonical continuous stream (1,413 trades over
+  2025-06→2026-05, x4.11/+311%, PF 1.260): **walk-forward 11/12 months & 7/8 equal folds PF>1** (only
+  Aug-2025 negative, trendless chop); **anchored re-opt 4/5 OOS folds PF>1, WF-eff ~1.0**, and the FIXED
+  432b lock BEATS per-fold re-optimization (5/5 vs 4/5) → **not a curve-fit, no periodic re-tuning needed.**
+  **Monte-Carlo (20k):** P(profit) 99.6%, PF 5th-pctile 1.108, risk-of-ruin ≤50%=0.06% at 1%/trade.
+  ⚠️ **DRAWDOWN HONESTY:** the headline OOS dd 10.3% was a benign 4-month window — true full-year maxDD
+  **27.7%** (MC 95th ~38%, worst ~55%); size for **~30-40% peak**, not 10%. **No param change**; EA preset
+  annotated + re-synced to kenkem Presets; EA recompiles **0/0**.
+- **▶️ NEXT (when user returns):** manual MT5 forward-test — XAU **M5 preset is the validated front-runner**
+  (XAU M3 A/B; BTCUSD-M5 candidate but lower-conviction/tail-skewed). Remaining optional research: same
+  WF+MC pass on the M3/BTC locks, and the local/HTF-VP breakout-agreement gate. Note: EA news/session
+  overlays diverge intentionally from the backtest (live-safety), so forward results may be fewer than OOS PF.
 - **Data:** combined bars `cpp_core/tools/bars_xauusd_2025_2026_m3.csv`; full ticks `ticks_xauusd_2024_2026.csv`
   (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
 
@@ -114,13 +125,24 @@ So `diff_e5_trace.py` gate-blame is UNRELIABLE for arming/ATR — trust EMA-deri
 _No engine code changed (2 speculative fixes tried + reverted; build GREEN, 28 tests pass). **DO NOT lock an
 entry-tightened .set.** Prior: E5 onset off-by-one (`d1704ab`) + exit parity (`d4d2f28`,`5e34b0c`). E1+E2 ~93–96%._
 
-### ▶️ NEXT for E5 (one MT5 run + one engine experiment)
-1. **[USER — MT5]** Add a **real-path** E5 entry trace (NOT the existing `TraceBar`): in
-   `DetectNewEntry`/`HandleHighRiskEntry`, per E5 signal bar log `m_lastBullishSignal` age, `isHighRiskTrade`,
-   `cachedATRPercentile`, the `GetEntryBlockReason()` string, and `cache.adx[0]`/`currentPrice` used. Re-run
-   E5-only 2026 (same window/inputs as the archived run). This is the E5 analog of `kke1gate.csv`.
-2. **[ENGINE — no new data]** Test the ADX/close 1-bar-fresher hypothesis: feed forming (shift-0) adx/close
-   to the E5 gate, re-run 2026 (recall↑ toward 108) AND full-2yr (2025 MUST stay ~+690 matched — regression guard).
+### ▶️ NEXT for E5 (real-path trace SHIPPED — awaiting one MT5 run)
+1. **[DONE — code]** Real-path E5 entry trace BUILT + compiled (0 err). New `Parity/RealTrace.mqh`
+   (`InpExportRealTrace`, struct `E5RealRow`, writer → `MQL5/Files/KenKem/realtrace_<sym>.csv`).
+   `Entry5::Detect()` instrumented to snapshot the **LIVE** trigger (real `m_lastBullishSignal` onset age,
+   real `cache.adx[0]`, the gate that short-circuited) — NOT the `TraceBar` mirror. EA fills execution-side
+   gate inputs read-only after Detect: `cachedATRPercentile` vs `MIN_ENTRY_ATR_PERCENTILE` (the binding =65
+   gate `TraceBar` never models — it only checks `ATR_PERCENTILE_LOW`=20), high-risk route, opposing/streak.
+   Deliberately does **NOT** call `GetEntryBlockReason()` (mutates `blackSwanBlockedUntil`) — replicates the
+   min_entry gate read-only so the trace can't perturb trading. `InpExportRealTrace=true` already appended to
+   `RUN_2026-06-20_..._E5only_gatetrace/reproduce.set`. Files: `kenkem/.../KenKem/Parity/RealTrace.mqh`,
+   `Entries/Entry5.mqh`, `KenKemExpert.mq5` (`KenKemExpert.ex5` recompiled 0/1-pre-existing-warn).
+   **One row per ARMED/fired E5 bar** (col `interesting`); join key `ts_ms`/`dt` (UTC). E5 analog of `kke1gate.csv`.
+2. **[USER — MT5]** Re-run E5-only 2026 (same window/inputs as the archived run) with the updated `.ex5`+`.set`
+   → produces `realtrace_XAUUSD.csv`. Hand back; I diff vs engine to pin the gate-selection divergence (lead
+   suspect: engine gate ADX/atr_pctile 1 bar staler than MT5 → `min_entry_block`/`adx_pass` mismatch).
+3. **[ENGINE — no new data, can run in parallel]** Test the ADX/close 1-bar-fresher hypothesis: feed forming
+   (shift-0) adx/close to the E5 gate, re-run 2026 (recall↑ toward 108) AND full-2yr (2025 MUST stay ~+690
+   matched — regression guard).
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`

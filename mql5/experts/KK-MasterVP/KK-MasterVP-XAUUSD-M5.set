@@ -1,6 +1,11 @@
 ; KK-MasterVP — XAUUSD M5 preset (dedicated M5 sweep 2026-06-20). Attach EA to an M5 XAUUSD chart.
 ; Master VP=432 bars (36h on M5) = InpVpLookback=108 x InpMasterMult=4. Swept break_buf 0.85 / sl 1.2 / trail 2.5.
 ; OOS PF 1.327 / dd 10.3% / win 58.6% (vs M3 lock OOS PF 1.114 / dd 17.5%). Same-bars indicators (ema24/194 atr14).
+; HARDENED 2026-06-20 (walk-forward + Monte-Carlo, WF_MC_FINDINGS.md): 11/12 months & 7/8 folds & 4/5 anchored
+; re-opt folds PF>1; WF-eff ~1.0; fixed 432b BEATS per-fold re-opt (not a curve-fit). MC: P(profit) 99.6%,
+; PF 5th-pctile 1.108, risk-of-ruin negligible at 1%/trade.
+; ⚠️ DRAWDOWN REALITY: the 10.3% above was a benign 4-month window. Over a FULL YEAR expect maxDD ~28% (MC
+; 95th-pctile ~38%, worst-case ~55%). Size for ~30-40% peak-to-trough, not 10%. Edge robust; equity dips deep.
 
 InpAdxLen=14
 InpAdxTrendMin=22.0

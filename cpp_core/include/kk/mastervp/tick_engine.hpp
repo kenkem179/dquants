@@ -122,6 +122,8 @@ public:
     // Debug: print the gate decision for every valid signal whose shift-1 bar time is in
     // [from_ms, to_ms]. 0,0 disables. Used to trace Level-2 trade divergences.
     void set_debug_window(int64_t from_ms, int64_t to_ms) { dbg_from_ = from_ms; dbg_to_ = to_ms; }
+    // Walk-forward fold cap: open no new positions on signal bars at/after this UTC ms (0 = off).
+    void set_trade_to_ms(int64_t ms) { trade_to_ms_ = ms; }
 
     const std::vector<TradeRecord>& trades() const { return trades_; }
     double balance() const { return rm_.balance(); }
@@ -360,6 +362,10 @@ private:
             finalize_trade_(t.ts_ms);
         }
 
+        // Walk-forward fold cap: at/after trade_to_ms, keep managing & closing open positions
+        // (exits above still run) but open NO new positions. 0 (default) = no cap.
+        if (trade_to_ms_ > 0 && bars_[sig_bar].ts_ms >= trade_to_ms_) return;
+
         if (!ev.valid || !ev.sig.valid) return;
         const Signal& sig = ev.sig;
         const bool dbg = dbg_from_ && bars_[sig_bar].ts_ms >= dbg_from_ && bars_[sig_bar].ts_ms <= dbg_to_;
@@ -491,6 +497,7 @@ private:
     double  equity_ = 0.0;
     int     raw_signals_ = 0;
     int64_t dbg_from_ = 0, dbg_to_ = 0;
+    int64_t trade_to_ms_ = 0;
     std::vector<TradeRecord> trades_;
 };
 
