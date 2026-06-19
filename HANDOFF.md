@@ -68,9 +68,16 @@ Current diff: matched 46 / missed 32 / overfire 96; |Δrisk| **0.080**; matched 
 (engine dist confounded by the 96 overfire — use the MATCHED crosstab, where SL-LOSS=11/11).
 
 ## 📦 Data / instruments
-- Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv (5.17GB)}`.
-- MT5 ref `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`:
-  `trades.csv` (78), `kke1gate.csv` (554 PASS), `trace.csv` (291MB; has per-bar `atr` col), `tester.log.gz`.
+- Full 2yr XAU: `cpp_core/tools/{bars_xauusd_2024_2026_m1.csv, ticks_xauusd_2024_2026.csv (5.17GB)}`
+  (gitignored — too large; regenerate via the import pipeline if missing).
+- **MT5 ref run NOW COMMITTED TO GIT** (verified internally consistent: 78 trades, 848,532 bars, one run,
+  EA=canonical KenKemExpert, XAU 2024.01.01→2026.06.01) at
+  `research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/`:
+  - `trades.csv` (78 trades — the diff target) · `kke1gate.csv` (55,748 gate rows) · `tester.log.gz`
+    (mechanism fire counts + `TRAILING SL` lines for the residual work).
+  - `trace.csv.gz` (67MB; the 278MB per-bar trace, has the `atr` col) — **gunzip before use**:
+    `gunzip -k research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trace.csv.gz`.
+    These four `.csv` are force-added (the repo `.gitignore` excludes `*.csv`).
 - Ground-truth EA = `kenkem/MQL5/Experts/KenKem/KenKemExpert.mq5` (+ `TradeManagement/TradeManager.mqh`,
   `Entries/EntryBase.mqh`). NOTE: dquants `mql5/experts/KenKem/` is the THIN KK-rewrite (Engine.mqh), NOT
   this EA — do not confuse them. Exit port spec: `research/hypotheses/KENKEM-EXIT-PARITY-SPEC.md`
