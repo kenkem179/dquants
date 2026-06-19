@@ -1,6 +1,7 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 29 C++ checks PASS._
+_Last updated: 2026-06-19 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN, 29 C++ checks PASS.
+Latest: entry-count gap ROOT-CAUSED to forming-bar ATR (diagnosis only, no code change)._
 
 ## 🎯 Goal: KenKem **E1 perfect parity** (then E2, E4, E5), engine ⇄ MT5. Ground truth = the canonical EA.
 
@@ -29,19 +30,36 @@ GetDynamicRRMultiplier()`. Two faithful fixes:
 feared. All this session's numbers use the complete data. **Confirm with the user** whether they
 restored the full Exness export (or it was never actually deleted) before trusting absolute counts.
 
+## 🔬 THIS SESSION (2026-06-19, no code change — DIAGNOSIS) — entry-count gap ROOT-CAUSED
+Decomposed the **62 E1 over-fires** with direct evidence (gate-trace + tester.log block reasons + pctile
+oracle). **This OVERTURNS the "84% spurious cross-arming" memory** ([[kenkem-e1-overfire-trendcore]]) — that
+came only from `kke1gate.csv`, which is blind to the ATR-limiter layer. True breakdown:
+- **~15 = ATR-percentile divergence.** `--pctile-oracle` (feed MT5's exact per-bar pctile from
+  `trace.csv.gz` col 33) drops overfire **62→47** (matched 47→44, missed 31→34 — a pctile *timing* residual).
+  These are MT5 `[ATR HIGH/LOW/VOL REGIME BLOCK]` → `SKIPPED: High-risk blocked by risk limits` (440 total).
+- **14 = `mtf` gate** (engine PASSes where MT5 blocks at `isAllTimeframeEMAsReadyForEntry`). Oracle-invariant.
+  Engine mtf composition (entries.hpp:184-197) is structurally faithful → EMA-value boundary rounding flips.
+- **~6 = truly spurious arm.** So spurious arming is ~10%, not 84%.
+
+**ROOT CAUSE of the ATR-pctile divergence = forming-bar ATR `s.atrM1` (snapshot.hpp:173) is WRONG.** Engine
+`trace_dumper` `atr_pctile` vs MT5 col 33 over 848,532 bars: **exact only 31.6%, median |Δ| 6.25 (=2/32),
+block-category differs on 29%.** The pctile method is faithful; the *input* forming ATR is **median 6.5%
+relative off, 0% exact**. Closed-bar ATR is fine (SL risk-ratio locked 1.000) — only the forming step is off.
+Tested ALL bar-OHLC ATR variants vs MT5 → engine's `|open−prevC|` is closest but 0% exact, mixed-sign error.
+**MT5's iATR(0) reflects the forming bar's intra-bar H/L at the cache-read tick → irreducible from bar OHLC.**
+Also confirmed `ENABLE_LOSS_COOLDOWNS=true` changes **0 trades** (inert). Full detail: [[kenkem-e1-overfire-is-forming-atr]].
+
 ## ▶️ NEXT ACTIONS (in order)
-1. **Entry-count gap is now the dominant residual: 31 missed / 62 overfire.** The matched-net gap
-   (engine +639 < MT5 +990) is mostly the **31 MISSED** MT5 trades (engine never fired) — they likely
-   hold MT5's big winners. This is the over/under-FIRE problem, not exits. Per
-   [[kenkem-e1-overfire-trendcore]] the over-fire is ~84% spurious cross-ARMING (audit
-   `triggers.hpp:64–84` cross-arm geometry) + account limiters. Re-enable `ENABLE_LOSS_COOLDOWNS` and
-   port the occupancy/daily/consec-loss limiters ([[atr-percentile-parity-wall]]).
-2. **2 remaining over-trail + 1 TP→SL-WIN** (both SHORTS: 2024-11-11, 2025-02-12). With short-factor &
-   dynamic-RR fixed, `tpExt` is STILL 0 on these (TP extension never fires — bar-frozen `bar_px` never
-   gets within 25 pips of TP because the trade hits TP on a live spike first). If MT5 extends TP here,
-   that's the last exit lever. Use `KK_TRADE_DIAG=1` (per-trade hr/tpExt/origTP/finalTP/finalSL/best
-   cols) + `KK_ENTRY_DIAG=1` (per-entry RR/anchor/session). Lower priority than #1.
-3. After E1 net+counts converge, repeat for E2/E4/E5.
+1. **Decide on the forming-ATR fix (biggest single lever, but weigh payoff).** The only faithful fix is
+   tick-level: track the forming bar's running H/L in the tick engine and compute `atrM1` at the cache-read
+   tick, instead of the bar-frozen `(atr_closed*13+|open−prevC|)/14` in snapshot.hpp:173. ⚠️ Payoff is
+   mixed — the oracle (perfect pctile) only nets overfire −15 / matched −3, and `atrM1` feeds sideways +
+   trend-scoring too, so regression risk is real. Validate every step with diff_kk + matched_exit_crosstab.
+2. **`mtf` gate EMA-boundary leak (14 overfire).** Add per-bar m1_ready/m3_ready/m5_dir/extreme + M1 DI±
+   to both engine `EGATE` and EA `KKE1GATE,mtf` detail, diff at the 14 leak bars to see which sub-check
+   flips. Likely EMA-alignment rounding at `emas_ready_entry` (align−3 shift) or the DI≥16 bypass edge.
+3. **2 remaining over-trail SHORTS** (2024-11-11, 2025-02-12); `tpExt` still 0. Lowest priority.
+4. After E1 net+counts converge, repeat for E2/E4/E5.
 
 ## 🔁 Repro (full 2yr, ~30s)
 ```
@@ -54,6 +72,18 @@ python research/kenkem_parity/diff_kk.py --engine /tmp/e.csv \
 python research/kenkem_parity/matched_exit_crosstab.py --engine /tmp/e.csv \
   --mt5 research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace/trades.csv
 # diagnostics: prefix KK_TRADE_DIAG=1 and/or KK_ENTRY_DIAG=1 (2>/tmp/diag.txt)
+
+# --- ATR-pctile root-cause diagnostics (this session) ---
+# 1) oracle A/B: feed MT5's exact per-bar pctile, expect overfire 62->47
+D=research/kenkem_parity/mt5_runs/RUN_2026-06-18_1.8.154_xau_2yr_E1only_trace
+gzcat $D/trace.csv.gz | awk -F, 'NR>1{print $1","$33}' > /tmp/pctile_oracle.csv
+KK_E1_FAITHFUL=1 ./build/kenkem/tick_backtester --bars-m1 tools/bars_xauusd_2024_2026_m1.csv \
+  --ticks tools/ticks_xauusd_2024_2026.csv --symbol-xau --spread 0.05 \
+  --set research/kenkem_parity/anchor_E1_only_trace.set --pctile-oracle /tmp/pctile_oracle.csv --out /tmp/e_oracle.csv
+# 2) per-bar pctile divergence: engine trace_dumper col atr_pctile vs MT5 col 33
+./build/kenkem/trace_dumper --bars-m1 tools/bars_xauusd_2024_2026_m1.csv \
+  --set research/kenkem_parity/anchor_E1_only_trace.set --out /tmp/eng_trace.csv
+# (then compare /tmp/eng_trace.csv[atr_pctile] vs $D/trace.csv.gz col33 -> 31.6% exact, 29% wrong category)
 ```
 Current (complete data): matched 47 / missed 31 / overfire 62; |Δrisk| 0.081; |ΔpnlUSD| median **4.56**;
 matched tag-agree **81%**; matched net engine **+639** vs mt5 **+990**.
