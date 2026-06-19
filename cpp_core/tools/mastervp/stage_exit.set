@@ -1,0 +1,92 @@
+; KK-MasterVP — Pine-faithful baseline (XAUUSD M3), reproducing research/mastervp_parity/KK-MasterVP.pine
+; as actually run for the profitable TV log (breakout-only; ALL risk-mgmt layers OFF — those get added
+; later via disciplined sweeps). Load with backtester --set-all (applies every key incl. MQL non-inputs).
+; Each value is traced to a Pine line; deviations from struct defaults are the S0 alignment.
+
+; ---- VP core (Pine f_vp / node engine defaults) ----
+InpVpLookback=50
+InpVpBins=30
+InpVaPct=70.0
+InpMasterMult=3
+InpNodeTouchAtr=0.05
+InpNodeDecay=0.94
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpAtrLen=14
+InpAtrMt5Mode=false        ; Pine ta.atr = RMA (Wilder) -> textbook Wilder atr(), NOT MT5 SMA mode
+
+; ---- regime (Pine: adx>22 && |+DI-DI|>6 && |emaF-emaS|>0.25*atr; ema 24/194) ----
+InpEmaFast=24
+InpEmaSlow=194
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpDiSpreadMin=6.0
+InpEmaSepAtr=0.25
+
+; ---- entry shared ----
+InpNodeGateEnabled=false   ; tooltip: OFF = byte-identical baseline; A/B vs true in S0
+InpUsePriorBarVP=false
+InpBrkRequireFlow=false
+InpSfpFlowMin=0.15
+
+; ---- breakout (the ONLY active entry path) ----
+InpEnableBreakout=true
+InpBreakBufAtr=0.50        ; Pine breakBufAtr
+InpBreakMaxAtr=1000000     ; Pine has NO anti-chase ceiling -> effectively disabled (swept later, Q2)
+InpRrBrk=1.8               ; Pine rrBrk
+InpSlAtrBrk=1.0
+InpBrkVetoSfp=false
+
+; ---- reversion (OFF in the profitable run) ----
+InpEnableReversion=false
+InpRetestAtr=0.1           ; Pine retestAtr
+InpBodyPctMin=0.6          ; Pine bodyPctMin
+InpRrRev=1.2               ; Pine rrRev
+InpSlAtrRev=1.5            ; Pine slAtrRev
+
+; ---- exit (Pine: TP1 0.8R close 20%, runner fixed TP2 at rrBrk, BE-after-TP1 +0.05ATR, NO trail) ----
+InpTp1R=0.8
+InpTp1ClosePct=20.0
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpTrailRunner=true       ; Pine has NO chandelier trail; runner exits at fixed TP2 or BE stop
+
+; ---- risk sizing (Pine: 2% of (initial_capital + closed netprofit)) ----
+InpRiskUnit=0
+InpRiskAccPct=2.0          ; Pine riskPerTrade (% Account Balance)
+
+; ---- risk-management LIMITERS: ALL OFF for the faithful baseline (Pine has none) ----
+InpMaxDailyDDPct=0.0
+InpMaxPeakDDPct=0.0
+InpSoftBlockDDPct=0.0
+InpLossStreakCount=0
+InpSkipIfMinLotOverRisk=false
+
+; ---- safety (Pine: atrTicks>=40 floor only, no % band; max 4 trades/session) ----
+InpMinAtrPct=0.0           ; disable the % band; Pine uses a tick floor instead
+InpMaxAtrPct=0.0
+InpMinAtrTicks=40          ; Pine minAtrTicks
+InpMaxTradesPerSession=4
+InpMaxSpreadPips=0.0       ; Pine has no spread gate (cost still modeled on the bid/ask fill)
+InpMaxSpreadTp1Frac=0.0
+
+; ---- volatility-RR (OFF; Pine enableVolatilityRR=false) ----
+InpEnableVolRR=false
+
+; ---- quality gates: Pine has NEITHER an MTF-agree gate NOR an RSI veto ----
+InpUseMtfAgree=false
+InpUseAtrPctlGate=false
+InpUseMomVeto=false
+
+; ---- sessions (Pine chart-tz = UTC+10: Asia 0000-0700 / London 0700-1300 / NY 1300-2100) ----
+; The TV log's hour fingerprint proves sessions were evaluated in UTC+10 (Asia-open 00:00 -> 14:00 UTC,
+; the biggest activity spike; no-session gap 21:00-24:00 -> 11:00-13:00 UTC, the empty hours).
+InpBrokerGMTOffset=10
+InpAsiaSess=00:00-07:00
+InpLdnSess=07:00-13:00
+InpNySess=13:00-21:00
+InpBlockedHoursStr=
+InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
+InpAvoidNews=false
+InpTrailAtrMult=2.0
+InpRunnerRr=10.0

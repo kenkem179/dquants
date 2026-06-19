@@ -11,23 +11,27 @@ preserved below (📌 PAUSED) — not abandoned.
   (daily-DD, consec-loss, anti-chase, ATR-pctile gate, trail/stall exit) via disciplined param sweeps,
   then port to an MQL5 EA for the user's manual MT5 forward test.
 - **User chose:** Fresh **Pine-faithful** build · **XAUUSD M3** first · objective **Robust PF + plateau**.
-- **DONE this session:** (1) copied strategy notes → `my-strategies/`; (2) read the WHOLE reference Pine —
-  *breakout-only* build (`pyramiding=0`, reversion OFF, all fancy filters OFF; lines 672-962 pure visuals);
-  (3) wrote the methodology note **`research/mastervp_parity/PARAM_SWEEP_PLAN.md`** (user's explicit "first"
-  deliverable — param inventory, 4 buckets, S0-S10 stages, A/B protocol); (4) confirmed `make backtester`
-  builds green + XAU M3 bars/ticks present.
-- **Key finding:** existing `cpp_core/include/kk/mastervp/` engine is a *sibling-Pine* port (node-gate ON by
-  default, has `break_max_atr`, different defaults) — NOT faithful to THIS ref Pine. `kk::Params` already
-  carries ~all sweepable knobs incl. dormant risk layers. Phase 0 = re-align `detect_signal`/exec/defaults,
-  NOT greenfield.
-- **▶️ NEXT ACTION (Phase 0 / S0):** align engine to ref Pine (`break_buf_atr=0.50`, `sl_atr_brk=1.48`,
-  `rr_brk=1.8`, `node_gate_enabled=false`, no brkMax bound, `tp1_r=0.8`, sessions Asia 0000-0700/
-  Ldn 0700-1300/NY 1300-2100, `min_atr_ticks=40`, `max_trades_per_session=4`, risk 2% acct, reversion OFF).
-  Build `mastervp_parity` differ vs TV log (distributional, not byte-exact — diff feed; PLAN §1). Quantify gap → S0 PASS.
-- **THEN:** S1 coarse grid (entry-shape) → heatmaps → S4/S5 exits+Optuna → S6 risk layers 1-at-a-time A/B →
-  S7 walk-forward → S8 Monte Carlo → S9 lock `.set` → S10 EA.
-- **Data:** `cpp_core/tools/bars_xauusd_2025_m3.csv`, `bars_xauusd_2026_m3.csv`, `ticks_xauusd_2024_2026.csv`.
-  TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
+- **User directive (autopilot):** "go autopilot until the C++ engine is super faithful, nothing left to
+  sweep while I sleep, then produce the MQL EA for manual testing."
+- **✅ S0 DONE (commit a087b52, pushed):** engine aligned to ref Pine via `tools/mastervp/pine_faithful_xau.set`
+  + `backtester --set-all` (applies ALL keys incl. MQL non-inputs). Built `research/mastervp_parity/diff_tv.py`
+  (regroups TV TP1+TP2 portions → positions; distributional compare). **Entry model is FAITHFUL:** over
+  2025-06-19..2026-05-29, engine 2610 positions vs TV 2445 (1.07×), win 56.4 vs 57.8%, hours aligned, TP1-rate
+  aligned, %long ±4. **Two fixes found:** (a) `broker_gmt_offset` was DEAD — wired it; the TV hour fingerprint
+  proves Pine sessions ran in **UTC+10** (Asia-open 00:00→14:00 UTC spike; gap 21-24→11-13 UTC empty); set
+  offset=10. (b) added `min_atr_ticks` floor (Pine=40), default 0/off so golden test intact.
+- **🔑 KEY FINDING — residual PF gap is FEED-DRIVEN, not a bug:** baseline PF 1.01 vs TV 1.25 at MATCHING win
+  rate. BE on/off experiment proved it: on OANDA a break that reaches 0.8R continues to 1.8R **94%** of the
+  time; on our **MT5/Exness feed only ~45%** (it round-trips). So the TV edge leans on OANDA's smooth
+  post-breakout continuation — the edge must be REBUILT for the real feed via exit/risk sweeps. This is the point.
+- **▶️ IN PROGRESS — sweeps (task #2):** harness `research/mastervp_parity/sweep.py` (Calmar=net/maxDD, gated
+  n & PF>1). Train window `cpp_core/tools/ticks_xau_train.csv` (2025-06-19→2026-01-31, ~8s/run, page-cached);
+  OOS `ticks_xau_oos.csv` (2026-02→05). **S4 trail sweep result:** chandelier **trail beats fixed-TP2** →
+  PF 0.997→**1.046**, net −644→**+13.4k**, with **trail_atr_mult≈2.0 + sl_atr_brk=1.0** (tighter SL dominates
+  1.48/2.0 everywhere). BUT maxDD still **~53%** → needs S6 risk layers. Refining sl∈[0.6..1.2]×trail next,
+  then S1 entry filters (break_buf/adx/di), then S6 DD/streak limiters, S7 walk-forward, S9 lock, S10 EA.
+- **Data:** combined bars `cpp_core/tools/bars_xauusd_2025_2026_m3.csv`; full ticks `ticks_xauusd_2024_2026.csv`
+  (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
 
 ---
 

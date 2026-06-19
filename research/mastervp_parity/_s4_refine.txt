@@ -1,0 +1,20 @@
+  [  8] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 0.6}  n=1818 win=54.1 PF=1.001 net=197 dd=84.9% tp2=3% calmar=0.01
+  [  9] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 0.8}  n=1778 win=55.0 PF=1.022 net=4,715 dd=62.9% tp2=2% calmar=0.36
+  [ 10] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 1.0}  n=1721 win=55.8 PF=1.006 net=1,401 dd=74.2% tp2=1% calmar=0.08
+  [ 11] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 1.2}  n=1669 win=55.7 PF=1.043 net=9,112 dd=57.6% tp2=1% calmar=0.76
+  [ 12] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 0.6}  n=1810 win=53.9 PF=1.009 net=2,517 dd=80.4% tp2=4% calmar=0.09
+  [ 13] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 0.8}  n=1760 win=54.9 PF=1.052 net=13,088 dd=63.9% tp2=3% calmar=0.83
+  [ 14] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 1.0}  n=1689 win=55.5 PF=1.014 net=2,582 dd=69.1% tp2=2% calmar=0.19
+  [ 15] {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 1.2}  n=1624 win=55.5 PF=1.063 net=12,707 dd=55.8% tp2=1% calmar=0.89
+
+=== TOP 10 by Calmar (net/maxDD, gated n>=800 & PF>1) — s4_refine ===
+  PF=1.046 net=13,435 dd=52.9% win=56.7 tp2=1% n=1751 calmar=0.91  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.0, 'InpSlAtrBrk': 1.0}
+  PF=1.063 net=12,707 dd=55.8% win=55.5 tp2=1% n=1624 calmar=0.89  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 1.2}
+  PF=1.052 net=13,088 dd=63.9% win=54.9 tp2=3% n=1760 calmar=0.83  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 0.8}
+  PF=1.043 net=9,714 dd=56.9% win=56.2 tp2=0% n=1713 calmar=0.78  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.0, 'InpSlAtrBrk': 1.2}
+  PF=1.043 net=9,112 dd=57.6% win=55.7 tp2=1% n=1669 calmar=0.76  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 1.2}
+  PF=1.039 net=10,964 dd=64.2% win=55.7 tp2=1% n=1802 calmar=0.61  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.0, 'InpSlAtrBrk': 0.8}
+  PF=1.037 net=14,441 dd=62.4% win=56.9 tp2=0% n=1780 calmar=0.51  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 1.5, 'InpSlAtrBrk': 1.0}
+  PF=1.022 net=4,715 dd=62.9% win=55.0 tp2=2% n=1778 calmar=0.36  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 2.5, 'InpSlAtrBrk': 0.8}
+  PF=1.017 net=3,985 dd=61.6% win=56.1 tp2=0% n=1757 calmar=0.28  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 1.5, 'InpSlAtrBrk': 1.2}
+  PF=1.014 net=2,582 dd=69.1% win=55.5 tp2=2% n=1689 calmar=0.19  {'InpTrailRunner': 'true', 'InpRunnerRr': 10.0, 'InpTrailAtrMult': 3.0, 'InpSlAtrBrk': 1.0}

@@ -138,6 +138,11 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
     const double origRisk   = p.risk;
     const double origTPDist = std::fabs(p.orig_tp - p.entry);
     const double pnl_bar    = sgn * (bar_px - p.entry);   // currentPnL from cache.currentPrice (bar-frozen)
+    // EA calls CalculateTrailingSLForTrade only at discrete events: right after a partial and after each TP
+    // extension (KenKemExpert.mq5 has NO continuous trail loop). The original engine ran (T) every tick once
+    // eligible, which OVER-trails and stops winners out before TP. `trail_now` reproduces the event-driven
+    // call. Scoped to E5 (kind==5) to keep the validated E1/E2/E4 continuous-trail behaviour unchanged.
+    bool trail_now = false;
 
     // bestPrice tracks the bar-frozen high-water (EA: MathMax(bestPrice, cache.high)).
     if (p.is_long ? (bar_px > p.best) : (bar_px < p.best)) p.best = bar_px;
@@ -172,6 +177,7 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
                     && progress >= c.min_tp_progress_for_ext) {
                     p.tp = norm(p.tp + sgn * TP_EXT_PIPS * c.pip_size);
                     ++p.tp_ext;
+                    trail_now = true;          // EA trails right after each TP extension
                     // EA calls CalculateTrailingSLForTrade right after; the (T) block below (run every tick
                     // while eligible|partial) reproduces it with the updated tp_ext — no separate call needed.
                 }
@@ -205,6 +211,7 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
                     if (improves) { raise_sl(be); p.sl_moved_to_be = true; }
                 }
                 p.partial_done = true;
+                trail_now = true;              // EA trails once right after the partial executes
             }
         }
     }
@@ -223,9 +230,11 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
         }
     }
 
-    // (T) CalculateTrailingSLForTrade — bar-frozen best; runs while eligible OR after partial.
+    // (T) CalculateTrailingSLForTrade — bar-frozen best. E5 trails only at the EA's discrete events
+    // (trail_now: post-partial / post-TP-extension); E1/E2/E4 keep the continuous eligible|partial trail.
     // adaptiveTrailingDistance = origTPDist*trailF/(tpExt+1) * GetVolatilityMultiplier() (live, [0.7,1.5]).
-    if (p.partial_eligible || p.partial_done) {
+    const bool trail_gate = (p.kind == 5) ? trail_now : (p.partial_eligible || p.partial_done);
+    if (trail_gate) {
         double trail_dist = origTPDist * m.trailing_factor / (double)(p.tp_ext + 1) * vol_mult;
         raise_sl(p.best - sgn * trail_dist);
     }
