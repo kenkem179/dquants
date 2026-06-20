@@ -45,7 +45,14 @@ asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-
   worst-fold regression). ⚠️ **PORTABILITY:** for the **KK-MasterVP EA** `InpNodeGateEnabled` &
   `InpBrkRequireFlow` are compile-constants (`non_input_keys()` in config.hpp) — MT5 ignores `.set`
   values, so adopting them needs an EA recompile, not just a preset. For **Monster** all 4 are real `input`s.
-- [ ] **T2 — Session/hour + ATR-band filter sweep** on the post-T1 base (MasterVP has NO hour filter at all).
+- [x] **T2 — Session/hour + ATR-band filter sweep (DONE 2026-06-20)** — **MasterVP XAU M5: WIN, LOCKED
+  `InpBlockedHoursStr=2,3,14`** (block UTC04 Asian-lunch lull + UTC16,17 late-London chop). Pooled PF
+  1.243→**1.296**, net +16.6%, maxDD 12.5→**10.0%**, worst-fold 1.102→**1.196**; 5/6 folds improve, BOTH
+  recent folds rise → passes recent-regime check. MC: P(profit)99.9%, PF5th 1.158. REJECTED: news hr0
+  (net-harmful), Asia hr10/hr18 (over-block), ATR upper-band (non-monotonic curve-fit). Ships via `.set`
+  (real EA input, same UTC+10 frame), no recompile. ⏳ needs 1 MT5 confirmation run. **Monster BTC M3:
+  NO CHANGE** — hours already cluster-optimized in lock; the one better-pooled candidate (`8,9,10,11,16`)
+  is another T1 trap (helps 2025, hurts recent F5/F6). New diag `hour_atr_decomp.py`.
 - [ ] **T3 — Mean-reversion activation** (kinds 2/3, OFF in both) — the one new-edge lever; own WF+MC. (user's
   flagged next-frontier, AFTER breakout solid)
 - [ ] **T4 — Impulse sub-optimization** (Monster only; impulse ≈ 21% of net) + **cross-symbol coverage**

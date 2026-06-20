@@ -1,26 +1,27 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust T1 (parallel session)._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust T2 DONE — hour-block 2,3,14 locked, PF 1.296, needs 1 MT5 confirm (parallel session)._
 
-## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
-User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting
-gates that ship OFF). 6-fold WF. New harness `research/mastervp_parity/wf_mastervp.py` (XAU M5, mirrors
-`wf_monster.py`). **PORTABILITY:** Monster's 4 gates are real EA `input`s (shippable); MasterVP's
-`InpNodeGateEnabled`+`InpBrkRequireFlow` are compile-constants (`non_input_keys`) → MT5 ignores `.set`,
-adopting needs an EA recompile.
-- **Monster (BTC M3) — DONE, NEGATIVE:** no gate beats baseline (PF 1.199/6-of-6/dd10.6%). BrkRequireFlow
-  HARMFUL (→1.055/4-folds), MtfAgree loses a fold, BrkVetoSfp only trades PF for dd. **NO CHANGE.**
-- **MasterVP (XAU M5) — TESTED + REVERTED to baseline (commit ded3e81; was briefly locked 1c5afbc):**
-  gates `BrkVetoSfp`+`MomVeto`+`MtfAgree` improved POOLED 6-fold PF 1.243→1.274 + MC DD 27.7→23.1%, BUT
-  the MT5 run (`mt5_runs/RUN_2026-06-20_xau_m5_gates_lock`) + per-fold A/B exposed regime non-stationarity:
-  the gain is carried by 2025; the gates BLOCK continuation breakouts in strong trends → HURT the recent
-  4mo (F5 −28%, F6 −43%). On 2026 H1 baseline wins EVERY axis (PF 1.339 vs 1.275, net +12.2k vs +8.6k,
-  dd 10.6 vs 16.5%). **User chose baseline** (recent regime = forward proxy). Lock + preset reverted
-  (engine = 1414 trades = original baseline). **MT5 parity itself CONFIRMED faithful** (424/489 matched,
-  PF 1.275 vs 1.246, lag 2%; residual = feed/spread, not logic). Harness `wf_mastervp.py` + run kept.
-  🔑 LESSON: decompose per-fold (esp. most-recent OOS) BEFORE locking a filter — pooled WF avg hides regimes.
-- NEXT after T1: T2 session/hour + ATR-band sweep; T3 mean-reversion activation (user's flagged frontier).
-  **For both: run the per-fold + recent-regime decomposition before locking anything.**
+## 🔥 PROFITABILITY UPLIFT — T2 session/hour + ATR-band sweep (2026-06-20) ✅ DONE
+6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
+`research/mastervp_parity/hour_atr_decomp.py` (per-broker-hour net/PF + per-fold split).
+- **MasterVP (XAU M5) — WIN, LOCKED `InpBlockedHoursStr=2,3,14`** (ref-tz UTC+10 = block UTC04 Asian-lunch
+  lull + UTC16,17 late-London chop). Pooled PF 1.243→**1.296**, net +16.6%, maxDD 12.5→**10.0%**, worst-fold
+  1.102→**1.196**; 5/6 folds improve, BOTH recent folds rise (F5 +533, F6 +640) → passes recent-regime check.
+  MC(20k): P(profit)99.9%, PF 5th-pctile 1.158, maxDD median 22.2%/95th 34.7% (all better than baseline lock).
+  REJECTED: news hr0 (net-harmful — post-data hr has continuation winners), Asia hr10 + hr18 (over-block),
+  ATR upper-band `InpMaxAtrPct` (non-monotonic curve-fit noise, costs net). `InpBlockedHoursStr` is a REAL EA
+  input (same UTC+10 frame via `SN_RefTime`) → ships via `.set`, NO recompile. Engine lock + EA preset
+  `KK-MasterVP-XAUUSD-M5.set` updated + redeployed (kenkem Presets + MT5 Tester Presets). **⏳ NEEDS 1 MT5
+  confirmation run** (recipe handed to user).
+- **Monster (BTC M3) — NO CHANGE (re-validated).** T2 was already done in its lock (`8,10,11,16` + best_btc
+  cluster sessions + active ATR band 0.158). Top pooled candidate `8,9,10,11,16` (PF→1.231) is ANOTHER T1
+  trap: gain carried by 2025 (F1 +787/F2 +247) while recent F5 −372/F6 −321 + dd worse → REJECTED. Keep current.
+- **T1 (gate sweep) — DONE earlier:** MasterVP gates tested→reverted to baseline (commit ded3e81); Monster
+  gates negative. MT5 parity confirmed faithful. See [[mastervp-m5-gate-sweep-lock]]. 🔑 LESSON (reconfirmed
+  twice in T2): decompose per-fold (esp. recent OOS) BEFORE locking — pooled WF avg hides regime shifts.
+- **NEXT: T3 mean-reversion activation** (kinds 2/3, `InpEnableReversion=false` in both) — user's flagged
+  frontier, the one NEW-edge lever. Own WF+MC; decompose per-fold before locking.
 
 ## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
 Added two notebooks teaching the half that made MasterVP *reliable* (00→10 only taught finding an edge).
