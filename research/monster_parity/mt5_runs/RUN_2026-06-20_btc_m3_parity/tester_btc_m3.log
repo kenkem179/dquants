@@ -1,0 +1,188 @@
+CR	0	11:18:10.822	Tester	"dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5" X64
+QF	0	11:18:10.871	Tester	BTCUSD-Exnes-0406,M3 (Exness-MT5Trial17): testing of Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5 from 2026.01.01 00:00 to 2026.06.09 00:00
+ED	0	11:18:14.687	Core 01	50884 bytes of input parameters loaded
+RK	0	11:18:14.687	Core 01	expert file added: Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5. 101145 bytes loaded
+ME	0	11:18:14.687	Core 01	XAUUSD-Exness-KK,M3: testing of Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5 from 2026.01.01 00:00 to 2026.06.09 00:00 started with inputs:
+JH	0	11:18:14.687	Core 01	  InpVpLookback=50
+CS	0	11:18:14.687	Core 01	  InpVpBins=40
+DI	0	11:18:14.687	Core 01	  InpVaPct=70.0
+MK	0	11:18:14.687	Core 01	  InpMasterMult=4
+PR	0	11:18:14.687	Core 01	  InpAtrLen=14
+LF	0	11:18:14.687	Core 01	  InpAtrMt5Mode=false
+JS	0	11:18:14.687	Core 01	  InpNodeTouchAtr=0.05
+NE	0	11:18:14.687	Core 01	  InpNodeDecay=0.94
+MP	0	11:18:14.687	Core 01	  InpNodeNeutralBand=0.15
+OD	0	11:18:14.687	Core 01	  InpNodeSaturation=4.0
+KE	0	11:18:14.687	Core 01	  InpNodeGateEnabled=true
+HS	0	11:18:14.687	Core 01	  InpUsePriorBarVP=false
+NF	0	11:18:14.687	Core 01	  InpBrkRequireFlow=false
+RO	0	11:18:14.687	Core 01	  InpSfpFlowMin=0.15
+NM	0	11:18:14.687	Core 01	  InpEmaFast=24
+OI	0	11:18:14.687	Core 01	  InpEmaSlow=194
+LO	0	11:18:14.687	Core 01	  InpAdxLen=14
+CO	0	11:18:14.687	Core 01	  InpAdxTrendMin=28.0
+GJ	0	11:18:14.687	Core 01	  InpDiSpreadMin=4.0
+LR	0	11:18:14.687	Core 01	  InpEmaSepAtr=0.25
+GM	0	11:18:14.687	Core 01	  InpEnableBreakout=true
+MJ	0	11:18:14.687	Core 01	  InpBreakBufAtr=0.25
+RG	0	11:18:14.687	Core 01	  InpBreakMaxAtr=5.0
+QN	0	11:18:14.687	Core 01	  InpRrBrk=3.0
+HD	0	11:18:14.687	Core 01	  InpSlAtrBrk=3.7
+DR	0	11:18:14.687	Core 01	  InpBrkVetoSfp=false
+RO	0	11:18:14.687	Core 01	  ===== Reversion (OFF — Monster default) ======
+DO	0	11:18:14.687	Core 01	  InpEnableReversion=false
+DL	0	11:18:14.687	Core 01	  InpRetestAtr=0.5
+RK	0	11:18:14.687	Core 01	  InpBodyPctMin=0.4
+ES	0	11:18:14.687	Core 01	  InpRrRev=1.35
+NS	0	11:18:14.687	Core 01	  InpSlAtrRev=1.45
+KF	0	11:18:14.687	Core 01	  ===== Impulse-thrust (the Monster delta; fires ABOVE the vol ce=
+KI	0	11:18:14.687	Core 01	  InpEnableImpulse=true
+NH	0	11:18:14.687	Core 01	  InpImpulseCandleAtr=1.7
+JS	0	11:18:14.687	Core 01	  InpImpulseEntryBufAtr=0.4
+MF	0	11:18:14.687	Core 01	  InpImpulseNetMin=0.95
+FQ	0	11:18:14.687	Core 01	  InpImpulseMaxDistAtr=2.5
+EI	0	11:18:14.687	Core 01	  InpImpulseRr=3.0
+FR	0	11:18:14.687	Core 01	  InpImpulseTrendSlopeBars=6
+HS	0	11:18:14.687	Core 01	  InpImpulsePredictBars=10
+FG	0	11:18:14.687	Core 01	  InpTfNetLook=50
+MP	0	11:18:14.687	Core 01	  InpTfNetWinAtr=1.5
+OG	0	11:18:14.687	Core 01	  InpTp1R=1.0
+CP	0	11:18:14.687	Core 01	  InpTp1ClosePct=0.0
+MJ	0	11:18:14.687	Core 01	  InpBeAfterTp1=true
+CL	0	11:18:14.687	Core 01	  InpBeBufAtr=0.05
+EN	0	11:18:14.687	Core 01	  InpTrailRunner=true
+OI	0	11:18:14.687	Core 01	  InpRunnerRr=5.3
+PL	0	11:18:14.687	Core 01	  InpTrailAtrMult=2.6
+LK	0	11:18:14.687	Core 01	  InpRiskUnit=0
+GR	0	11:18:14.687	Core 01	  InpRiskAccPct=0.9
+IH	0	11:18:14.687	Core 01	  InpRiskUsd=180.0
+DK	0	11:18:14.687	Core 01	  InpMaxLot=0.0
+KO	0	11:18:14.687	Core 01	  InpDeviationPoints=200
+PK	0	11:18:14.687	Core 01	  InpSkipIfMinLotOverRisk=false
+KK	0	11:18:14.687	Core 01	  InpMaxDailyDDPct=6.0
+QL	0	11:18:14.687	Core 01	  InpDailyDDCooldownHrs=12.0
+RE	0	11:18:14.687	Core 01	  InpMaxPeakDDPct=30.0
+KJ	0	11:18:14.687	Core 01	  InpSoftBlockDDPct=15.0
+GS	0	11:18:14.687	Core 01	  InpSoftBlockLotMult=0.55
+RD	0	11:18:14.687	Core 01	  InpLossStreakCount=3
+PP	0	11:18:14.687	Core 01	  InpLossStreakCooldownHrs=4.0
+ON	0	11:18:14.687	Core 01	  InpMinAtrPct=0.0156
+QJ	0	11:18:14.687	Core 01	  InpMaxAtrPct=0.158
+PQ	0	11:18:14.687	Core 01	  InpMinAtrTicks=0.0
+GM	0	11:18:14.687	Core 01	  InpMaxTradesPerSession=4
+HG	0	11:18:14.687	Core 01	  InpMaxSpreadPips=0.0
+CL	0	11:18:14.687	Core 01	  InpMaxSpreadTp1Frac=0.0
+ID	0	11:18:14.687	Core 01	  ===== Quality gates (Monster has NEITHER) ======
+JP	0	11:18:14.687	Core 01	  InpUseMtfAgree=false
+KH	0	11:18:14.687	Core 01	  InpMtfHardVeto=true
+PR	0	11:18:14.687	Core 01	  InpUseMomVeto=false
+JP	0	11:18:14.687	Core 01	  InpRsiMidline=50.0
+CK	0	11:18:14.687	Core 01	  InpRsiLen=14
+MF	0	11:18:14.687	Core 01	  InpBrokerGMTOffset=0
+LP	0	11:18:14.687	Core 01	  InpAsiaSess=00:00-06:00
+QH	0	11:18:14.687	Core 01	  InpLdnSess=07:00-11:00
+GM	0	11:18:14.687	Core 01	  InpNySess=12:30-16:30
+MK	0	11:18:14.687	Core 01	  InpBlockedHoursStr=8,10,11,16
+OI	0	11:18:14.687	Core 01	  InpForceCloseSessNews=true
+FL	0	11:18:14.687	Core 01	  InpAvoidNews=false
+RD	0	11:18:14.687	Core 01	  InpNewsMinsBefore=15
+QE	0	11:18:14.687	Core 01	  InpNewsMinsAfter=15
+MO	0	11:18:14.687	Core 01	  InpUseEmbeddedNews=true
+OO	0	11:18:14.687	Core 01	  InpMVPMagic=88260620
+PS	0	11:18:14.687	Core 01	  ===== Parity (trade-level CSV vs C++ engine; OFF in live) ======
+FL	0	11:18:14.687	Core 01	  InpExportParity=true
+IS	0	11:18:14.687	Core 01	2026.01.01 00:00:00   [PARITY] trade-level export -> KK-MasterVP-Monster\trades_XAUUSD-Exness-KK_PERIOD_M3.csv
+KQ	0	11:18:14.687	Core 01	test Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5 on XAUUSD-Exness-KK,M3 thread finished
+KE	0	11:18:14.687	Core 01	50884 bytes of input parameters loaded
+NS	0	11:18:14.687	Core 01	expert file added: Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5. 101145 bytes loaded
+OQ	0	11:18:14.687	Core 01	BTCUSD-Exnes-0406,M3: testing of Experts\dquants\KK-MasterVP-Monster\KK-MasterVP-Monster.ex5 from 2026.01.01 00:00 to 2026.06.09 00:00 started with inputs:
+RF	0	11:18:14.687	Core 01	  InpVpLookback=50
+KJ	0	11:18:14.687	Core 01	  InpVpBins=40
+LS	0	11:18:14.687	Core 01	  InpVaPct=70.0
+ED	0	11:18:14.687	Core 01	  InpMasterMult=4
+HH	0	11:18:14.687	Core 01	  InpAtrLen=14
+DL	0	11:18:14.687	Core 01	  InpAtrMt5Mode=false
+RM	0	11:18:14.687	Core 01	  InpNodeTouchAtr=0.05
+FN	0	11:18:14.687	Core 01	  InpNodeDecay=0.94
+EF	0	11:18:14.687	Core 01	  InpNodeNeutralBand=0.15
+GN	0	11:18:14.687	Core 01	  InpNodeSaturation=4.0
+CK	0	11:18:14.687	Core 01	  InpNodeGateEnabled=true
+PM	0	11:18:14.687	Core 01	  InpUsePriorBarVP=false
+FM	0	11:18:14.687	Core 01	  InpBrkRequireFlow=false
+JI	0	11:18:14.687	Core 01	  InpSfpFlowMin=0.15
+FF	0	11:18:14.687	Core 01	  InpEmaFast=24
+GO	0	11:18:14.687	Core 01	  InpEmaSlow=194
+DF	0	11:18:14.687	Core 01	  InpAdxLen=14
+KE	0	11:18:14.687	Core 01	  InpAdxTrendMin=28.0
+OL	0	11:18:14.687	Core 01	  InpDiSpreadMin=4.0
+DH	0	11:18:14.687	Core 01	  InpEmaSepAtr=0.25
+OJ	0	11:18:14.687	Core 01	  InpEnableBreakout=true
+EP	0	11:18:14.687	Core 01	  InpBreakBufAtr=0.25
+JI	0	11:18:14.687	Core 01	  InpBreakMaxAtr=5.0
+ID	0	11:18:14.687	Core 01	  InpRrBrk=3.0
+PR	0	11:18:14.687	Core 01	  InpSlAtrBrk=3.7
+LH	0	11:18:14.687	Core 01	  InpBrkVetoSfp=false
+JQ	0	11:18:14.687	Core 01	  ===== Reversion (OFF — Monster default) ======
+LF	0	11:18:14.687	Core 01	  InpEnableReversion=false
+LR	0	11:18:14.687	Core 01	  InpRetestAtr=0.5
+JQ	0	11:18:14.687	Core 01	  InpBodyPctMin=0.4
+ME	0	11:18:14.687	Core 01	  InpRrRev=1.35
+FM	0	11:18:14.687	Core 01	  InpSlAtrRev=1.45
+CL	0	11:18:14.687	Core 01	  ===== Impulse-thrust (the Monster delta; fires ABOVE the vol ce=
+CR	0	11:18:14.687	Core 01	  InpEnableImpulse=true
+FF	0	11:18:14.687	Core 01	  InpImpulseCandleAtr=1.7
+RJ	0	11:18:14.687	Core 01	  InpImpulseEntryBufAtr=0.4
+EM	0	11:18:14.687	Core 01	  InpImpulseNetMin=0.95
+NG	0	11:18:14.687	Core 01	  InpImpulseMaxDistAtr=2.5
+MP	0	11:18:14.687	Core 01	  InpImpulseRr=3.0
+NK	0	11:18:14.687	Core 01	  InpImpulseTrendSlopeBars=6
+PL	0	11:18:14.687	Core 01	  InpImpulsePredictBars=10
+NM	0	11:18:14.687	Core 01	  InpTfNetLook=50
+EF	0	11:18:14.687	Core 01	  InpTfNetWinAtr=1.5
+GH	0	11:18:14.687	Core 01	  InpTp1R=1.0
+KJ	0	11:18:14.687	Core 01	  InpTp1ClosePct=0.0
+EL	0	11:18:14.687	Core 01	  InpBeAfterTp1=true
+KF	0	11:18:14.687	Core 01	  InpBeBufAtr=0.05
+MG	0	11:18:14.687	Core 01	  InpTrailRunner=true
+GP	0	11:18:14.687	Core 01	  InpRunnerRr=5.3
+HE	0	11:18:14.687	Core 01	  InpTrailAtrMult=2.6
+DE	0	11:18:14.687	Core 01	  InpRiskUnit=0
+OK	0	11:18:14.687	Core 01	  InpRiskAccPct=0.9
+QQ	0	11:18:14.687	Core 01	  InpRiskUsd=180.0
+LE	0	11:18:14.687	Core 01	  InpMaxLot=0.0
+CD	0	11:18:14.687	Core 01	  InpDeviationPoints=200
+HM	0	11:18:14.687	Core 01	  InpSkipIfMinLotOverRisk=false
+CM	0	11:18:14.687	Core 01	  InpMaxDailyDDPct=6.0
+IF	0	11:18:14.687	Core 01	  InpDailyDDCooldownHrs=12.0
+JO	0	11:18:14.687	Core 01	  InpMaxPeakDDPct=30.0
+CE	0	11:18:14.687	Core 01	  InpSoftBlockDDPct=15.0
+OI	0	11:18:14.687	Core 01	  InpSoftBlockLotMult=0.55
+JM	0	11:18:14.687	Core 01	  InpLossStreakCount=3
+HF	0	11:18:14.687	Core 01	  InpLossStreakCooldownHrs=4.0
+GD	0	11:18:14.687	Core 01	  InpMinAtrPct=0.0156
+IL	0	11:18:14.687	Core 01	  InpMaxAtrPct=0.158
+HK	0	11:18:14.687	Core 01	  InpMinAtrTicks=0.0
+OS	0	11:18:14.687	Core 01	  InpMaxTradesPerSession=4
+PN	0	11:18:14.687	Core 01	  InpMaxSpreadPips=0.0
+KF	0	11:18:14.687	Core 01	  InpMaxSpreadTp1Frac=0.0
+QS	0	11:18:14.687	Core 01	  ===== Quality gates (Monster has NEITHER) ======
+RK	0	11:18:14.687	Core 01	  InpUseMtfAgree=false
+CO	0	11:18:14.687	Core 01	  InpMtfHardVeto=true
+HI	0	11:18:14.687	Core 01	  InpUseMomVeto=false
+RN	0	11:18:14.687	Core 01	  InpRsiMidline=50.0
+KQ	0	11:18:14.687	Core 01	  InpRsiLen=14
+EH	0	11:18:14.687	Core 01	  InpBrokerGMTOffset=0
+DJ	0	11:18:14.687	Core 01	  InpAsiaSess=00:00-06:00
+IO	0	11:18:14.687	Core 01	  InpLdnSess=07:00-11:00
+OG	0	11:18:14.687	Core 01	  InpNySess=12:30-16:30
+ER	0	11:18:14.687	Core 01	  InpBlockedHoursStr=8,10,11,16
+GG	0	11:18:14.687	Core 01	  InpForceCloseSessNews=true
+NE	0	11:18:14.687	Core 01	  InpAvoidNews=false
+JM	0	11:18:14.687	Core 01	  InpNewsMinsBefore=15
+IK	0	11:18:14.687	Core 01	  InpNewsMinsAfter=15
+EE	0	11:18:14.687	Core 01	  InpUseEmbeddedNews=true
+GD	0	11:18:14.687	Core 01	  InpMVPMagic=88260620
+HM	0	11:18:14.687	Core 01	  ===== Parity (trade-level CSV vs C++ engine; OFF in live) ======
+NK	0	11:18:14.687	Core 01	  InpExportParity=true
+QS	0	11:18:14.687	Core 01	2026.01.01 00:00:00   [PARITY] trade-level export -> KK-MasterVP-Monster\trades_BTCUSD-Exnes-0406_PERIOD_M3.csv
+PF	0	11:18:14.687	Core 01	final balance 10468.59 USD
