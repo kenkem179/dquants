@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust — T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (PF 1.335, commit 4f45ec3); full exit-block sweep in flight._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP profitability thrust — T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (PF 1.335, commit 4f45ec3); full exit-block sweep in flight._
 
 ## 🔥 PROFITABILITY UPLIFT — T2 hour-block + T3-EXIT + T3-REVERSION (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
@@ -216,25 +216,54 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
-## 🟢 KenKem XAU M1 — OPTIMIZATION → D3 lock (2026-06-20)
-Pivoted parity→profit per user (sweep SL caps, TP/RR, gates, entry combos/independence). Harness
-`research/optimization/sweep_kenkem_opt.py` (TICK engine; line-mutates `anchor_E1E2E4.set`; reports
-ALL + 2025/2026-OOS + per-quarter). Data = XAU 2025-03→2026-05 (15mo, NOT 2024-26). Full writeup:
-**`research/optimization/KENKEM-D3-OPT-FINDINGS.md`**.
-- **LOCK D3 = baseline + 4 portable keys:** `USE_DYNAMIC_RR_SCALING=false`, `E1_ATR_SL_CAP_MULTIPLIER=3.5`,
-  `SIDEWAYS_BLOCK_THRESHOLD=45`, `MIN_ENTRY_ATR_PERCENTILE=70`. Preset
-  `research/kenkem_parity/KK-KenKem-XAUUSD-M1-D3.set` (copied to MT5 Presets).
-- **Result:** net +2101→**+2194**, PF 1.269→**1.401**, maxDD 907→**522 (−42%)**, Sharpe 2.09→**2.97**,
-  2026 OOS **−145→+470**. Per-quarter: baseline = ONE-QUARTER-WONDER (100% net from 25Q4); D3 = **4/5
-  quarters profitable** (only 25Q3 summer-chop loses in both).
-- **Key structural finding:** entry priority E1→E2→E4 LOOKS inverted vs PF but is CORRECT. Reorder
-  E1→E4→E2 (flag `ENTRY_E4_BEFORE_E2`, default off) **TESTED → REJECTED**: E4 got +14 bars but PF
-  collapsed 1.51→1.24, book PF 1.401→1.268, worse 4/5 quarters. Contested bars self-select for E4
-  weakness; E2 absorbing them KEEPS E4 selective → **keep EA order + keep E2.** Drop-E2 also HURTS net
-  here. E5/E1+E5 unattractive. SL floors INERT; E2/E4 cap tightening is a regime trap; most entry gates
-  inert at default (edge is NOT in stricter entries).
-- ▶️ **NEXT: MT5 re-run KenKemExpert (XAU M1, full 2025.03.02–2026.05.29) with the D3 preset** to confirm
-  the engine D3 reproduces (baseline parity already validated; D3 only flips standard inputs), then I diff.
+## 🟢 KenKem XAU M1 — OPTIMIZATION: D3-noE4 LOCKED (MT5-confirmed) → D4 candidate awaiting MT5 (2026-06-20)
+Pivoted parity→profit. Harness `research/optimization/sweep_kenkem_opt.py` (TICK engine; line-mutates a
+base `.set`; reports ALL + 2025/2026-OOS + per-quarter; families: `combos sl tp gates cand wf reorder
+e1e2 e1e2b`). Data = XAU 2025-03→2026-05 (15mo). Full writeup w/ all evidence:
+**`research/optimization/KENKEM-D3-OPT-FINDINGS.md`** (read the top ⚠️ block first).
+
+**⚠️ MAJOR THIS SESSION — engine D3 was INFLATED by an E4 EXIT BUG (MT5 confirm overturned it):**
+- Two `.set` runs were silently ignored by MT5 because the preset had **leading whitespace** on every
+  line — **MT5's Tester→Load only accepts flush-left `key=value`** (engine parser tolerates indent). FIXED
+  (strip WS, re-sync Presets). *Lesson: every KenKem `.set` we ship MUST be flush-left; verify with
+  `grep -cE '^[[:space:]]+'` = 0.*
+- Real MT5 D3 = **+905 / PF 1.22 / 155 tr** vs engine +2194/PF1.40. Time-aligned diff
+  (`research/kenkem_parity/mt5_runs/2026-06-20_D3/`): ENTRY parity FINE (141/155 matched, over/under-fire
+  net ~0); **E1 exit-CLEAN** (eng +883 vs MT5 +868); **E4 EXITS BROKEN** — 48/48 matched E4 have IDENTICAL
+  entry time+price but engine books +747 vs MT5 **−42** (engine TP where MT5 hits SL; SL levels differ only
+  ~0.29 → engine MISSES the intrabar adverse path; engine `maeR` is a 0.00 stub). E2 mildly optimistic.
+- ⇒ engine "E4 is best (PF1.51)" + the reorder-rejection rationale are ARTIFACTS. **In MT5, E4 is a net
+  LOSER.** Engine sweep numbers carry exit-optimism bias: worst E4, mild E2, ~none E1 (entry-side trustworthy).
+
+**✅ LOCK = D3-noE4 (E4 OFF), `research/kenkem_parity/KK-KenKem-XAUUSD-M1-D4...` → `KK-KenKem-XAUUSD-M1-D3-noE4.set`.**
+MT5 A/B confirmed: **+1049 / PF 1.39 / 102 tr** (`mt5_runs/2026-06-20_D3-noE4/`) vs full-D3 +905/PF1.22;
+OOS 2026 +243/1.23→**+327/1.47**; profitable quarters 3/6→**4/6** (25Q2 +231, 26Q2 flips −279→+57; only
+26Q1 liked E4, outweighed). D3 keys: `USE_DYNAMIC_RR_SCALING=false`, `E1_ATR_SL_CAP_MULTIPLIER=3.5`,
+`SIDEWAYS_BLOCK_THRESHOLD=45`, `MIN_ENTRY_ATR_PERCENTILE=70`, **+ `ENABLE_E4_ENTRIES=false`**.
+
+**🆕 D4 CANDIDATE (engine, NOT yet MT5-confirmed) `KK-KenKem-XAUUSD-M1-D4.set` (in Presets, flush-left):**
+D3-noE4 **+ `E1_MIN_MOMENTUM_ADX` 19.5→23 + `E2_MAX_TOUCH_AGE` 36→60**. Both are ENTRY filters (the side
+the engine models faithfully) → should translate to MT5. Engine ALL +1247→**+1695 / PF 1.42**, Sharpe
+2.47→**3.12**, OOS +251→**+293**, per-quarter keeps BOTH 2026 quarters positive (26Q1 +202, 26Q2 +91).
+Levers ADDITIVE (e1e2b: S1+ADX23 +1397, S2+TA60 +1470, S3 both +1695). REJECTED: `min_TQ_E1=8` (redundant
+w/ ADX23), `E1_RR=1.5` (pooled-OOS +353 illusion — per-quarter 26Q2 FLIPS to −98). ATRpct70 + sideways45
+already optimal; E1 HTF-DI & low min_TQ inert; cross-age 100-120 = overfit trap.
+
+▶️ **NEXT ACTIONS (in priority order):**
+1. **MT5-confirm D4** — run KenKemExpert (XAU M1, 2025.03.02–2026.05.29, every-tick) w/ `KK-KenKem-XAUUSD-M1-D4.set`.
+   Auto-collect→diff vs engine /tmp-style (use `cpp_core/build/kenkem/tick_backtester --set <D4.set> --symbol-xau
+   --out X.trades.csv`, then time-align by (minute,dir,kind)). Expect ~+1100–1300 if entry-faithfulness holds.
+   If confirmed, D4 becomes the new lock (update preset name + memory + this section).
+2. **E5 evaluation (user explicitly asked why E5 was ignored — it was wrongly dismissed on engine numbers).**
+   Engine CAN'T judge E5 (known ~53% entry-recall ceiling, see [[kenkem-e5-2026-selection-break]] + exit
+   optimism). But the session's accidental first run = **E5-only baseline +1019/331tr in MT5** → NOT weak.
+   Clean test is MT5-side: build `D4 + ENABLE_E5_ENTRIES=true` preset, run in MT5, check if E1+E2+E5 beats
+   E1+E2. (Prep the preset from `KK-KenKem-XAUUSD-M1-D4.set`, flip E5 on, copy to Presets.)
+3. **Engine E4 intrabar-exit fix** — so future E4/E2 exit sweeps are trustworthy (per-tick barrier check at
+   `cpp_core/include/kk/kenkem/trade_manager.hpp:110-114` looks correct; suspect entry-bar arming / exit
+   granularity or trail level. The MAE stub should also be implemented for diagnosis). Unlocks revisiting E4.
+- Stubborn losers in EVERY config: 25Q1 (sparse early data) + 25Q3 (summer chop) — a session/vol filter is
+  the likely lever there (untested).
 
 ## 🟢 KenKem E4 — FIRST PARITY DIFF → SL-cap bug fixed → recall 78.7%→94.3% (2026-06-20, commit af8b798)
 First-ever E4 benchmark (engine vs `RUN_2026-06-19_..._E4only`, 244 MT5 trades; feed the run's
