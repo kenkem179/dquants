@@ -62,9 +62,15 @@ InpBodyPctMin=0.6          ; Pine bodyPctMin
 InpRrRev=1.2               ; Pine rrRev
 InpSlAtrRev=1.5            ; Pine slAtrRev
 
-; ---- exit (Pine: TP1 0.8R close 20%, runner fixed TP2 at rrBrk, BE-after-TP1 +0.05ATR, NO trail) ----
+; ---- exit (Pine base: TP1 0.8R close 20%, runner fixed TP2 at rrBrk, BE-after-TP1 +0.05ATR, NO trail) ----
+; 2026-06-20 T3 EXIT SWEEP -> LOCKED InpTp1ClosePct 20->0 (research/mastervp_parity/wf_mastervp.py
+;   --grid InpTp1ClosePct). The Pine 20% partial was INHERITED verbatim, never WF-swept. Per-fold sweep is
+;   MONOTONIC (0<10<20<35<50 on PF/net/dd/worst-fold) -> banking ANY partial caps the trailed runner that
+;   carries the edge. 0%: pooled PF 1.296->1.335, net +15.3% (19.3k->22.3k), maxDD 10.0->9.2%, worst-fold
+;   1.196->1.219; ALL 6 folds improve incl. both recent (F5,F6). Matches Monster/BTC 0%-is-best result.
+;   BE+trail still arm at the 0.8R TP1 LEVEL regardless of close-%. (Exits already deviate from Pine: we trail.)
 InpTp1R=0.8
-InpTp1ClosePct=20.0
+InpTp1ClosePct=0.0
 InpBeAfterTp1=true
 InpBeBufAtr=0.05
 InpTrailRunner=true       ; Pine has NO chandelier trail; runner exits at fixed TP2 or BE stop

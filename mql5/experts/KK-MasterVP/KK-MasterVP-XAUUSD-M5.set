@@ -6,6 +6,9 @@
 ; PF 5th-pctile 1.108, risk-of-ruin negligible at 1%/trade.
 ; ⚠️ DRAWDOWN REALITY: the 10.3% above was a benign 4-month window. Over a FULL YEAR expect maxDD ~28% (MC
 ; 95th-pctile ~38%, worst-case ~55%). Size for ~30-40% peak-to-trough, not 10%. Edge robust; equity dips deep.
+; T3 EXIT LOCK 2026-06-20: InpTp1ClosePct 20->0 (6-fold WF, MONOTONIC: less partial = better on every axis).
+;   Pooled PF 1.296->1.335, net +15.3%, maxDD 10.0->9.2%, worst-fold 1.196->1.219; all 6 folds improve.
+;   The Pine 20% partial was inherited, never swept; banking it caps the trailed runner. BE+trail unaffected.
 
 InpAdxLen=14
 InpAdxTrendMin=22.0
@@ -69,7 +72,7 @@ InpSlAtrBrk=1.2
 InpSlAtrRev=1.5
 InpSoftBlockDDPct=0.0
 InpSoftBlockLotMult=0.55
-InpTp1ClosePct=20.0
+InpTp1ClosePct=0.0
 InpTp1R=0.8
 InpTrailAtrMult=2.5
 InpTrailRunner=true
