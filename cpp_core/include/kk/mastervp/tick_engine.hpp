@@ -41,6 +41,7 @@
 #include "kk/common/risk_manager.hpp"
 #include "kk/common/position_manager.hpp"
 #include "kk/common/execution.hpp"
+#include "kk/common/volume_momentum.hpp"
 
 namespace kk {
 
@@ -82,6 +83,11 @@ public:
         equity_ = rm_.balance();
         trades_.clear();
         defer_ = Defer{};
+        // VMC support-factor (opt-in). init regardless so the member is always in a defined state;
+        // it only affects entries when p_.use_vmc_confirm is true (else confirms() is never consulted).
+        vmc_params_ = build_vmc_params_(p_);
+        vmc_.init(vmc_params_);
+        vmc_point_ = p_.mintick > 0.0 ? p_.mintick : 0.01;
     }
 
     // Feed one tick (UTC epoch-ms order). Drives management + new-bar entry.
@@ -113,10 +119,18 @@ public:
         // New-bar gate: every bar that just completed fires its signal/entry block, with the
         // current tick as the fill candidate. Normally advances by exactly one bar.
         if (forming != cur_forming_) {
-            for (int f = cur_forming_ + 1; f <= forming; ++f)
+            for (int f = cur_forming_ + 1; f <= forming; ++f) {
+                // VMC lockstep: commit the just-closed bar (f-1) BEFORE its entry gate reads confirms().
+                // All of bar (f-1)'s ticks were fed on prior on_tick calls; this tick belongs to the
+                // new bar and is fed below, after the commits. (No-op cost when use_vmc_confirm is off,
+                // but we always commit so the score is warm if a later .set flips it on mid-run.)
+                if (f - 1 >= 0) vmc_.on_bar_close(bars_[f - 1], /*ext_block=*/false, vmc_params_);
                 on_bar_closed_(/*sig_bar=*/f - 1, t);
+            }
             cur_forming_ = forming;
         }
+        // Feed this tick into the VMC accumulator (belongs to the now-current forming bar).
+        vmc_.on_tick(t.bid, t.ask, vmc_point_, vmc_params_);
     }
 
     // End of data: force-close any open position at the last seen price, tagged EA.
@@ -389,6 +403,14 @@ private:
             blk("net persistence"); return;
         }
 
+        // VMC support/confidence factor (opt-in; default off = exact baseline). Require the honest
+        // tick-flow on the committed signal bar (shift-1, just committed in on_tick before this call)
+        // to confirm the trade direction with |vmc| >= vmc_confirm. Validated on MasterVP/BTC M3.
+        if (p_.use_vmc_confirm
+            && !vmc_.confirms(sig.is_long ? 1 : -1, p_.vmc_confirm)) {
+            blk("vmc confirm"); return;
+        }
+
         // Flat check + main safety gate (order mirrors OnTick / SafetyBlockReason).
         if (pos_.open()) { blk("position already open"); return; }
         const double risk_budget = rm_.risk_budget_usd();
@@ -507,6 +529,24 @@ private:
     int64_t trade_to_ms_ = 0;
     double  extra_spread_ = 0.0;
     std::vector<TradeRecord> trades_;
+
+    // VMC support-factor state (opt-in; inert unless p_.use_vmc_confirm).
+    VolumeMomentum vmc_;
+    VmcParams      vmc_params_{};
+    double         vmc_point_ = 0.01;
+    static VmcParams build_vmc_params_(const Params& p) {
+        VmcParams v;
+        v.epsilon_pts     = p.vmc_epsilon_pts;
+        v.ewma_span       = p.vmc_ewma_span;
+        v.d_ref           = p.vmc_d_ref;
+        v.persist_len     = p.vmc_persist_len;
+        v.retention_len   = p.vmc_retention_len;
+        v.z_window        = p.vmc_z_window;
+        v.spread_z_max    = p.vmc_spread_z_max;
+        v.tickcount_z_max = p.vmc_tickcount_z_max;
+        v.warmup_bars     = p.vmc_warmup_bars;
+        return v;
+    }
 };
 
 }  // namespace kk

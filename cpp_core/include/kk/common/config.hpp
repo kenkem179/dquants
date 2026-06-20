@@ -92,6 +92,21 @@ struct Params {
     int    net_flip_bars        = 3;
     double net_flip_min         = 0.5;
     int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
+    // ---- VMC support/confidence factor (feature; default OFF = exact baseline parity) ----
+    // Honest tick-rule order-flow confirm on the committed (shift-1) bar: require |vmc| >= vmc_confirm
+    // in the trade direction before entry. Validated on MasterVP/BTC M3 (PF ~0.94->1.1-1.25, IS+OOS) —
+    // see research/hypotheses/VMC_MASTERVP_BTC_FINDINGS.md. M5 is the wrong knob (sign inverts).
+    bool   use_vmc_confirm    = false;
+    double vmc_confirm        = 0.01;   // |vmc| threshold (plateau 0.005-0.05 on M3)
+    int    vmc_epsilon_pts    = 1;
+    int    vmc_ewma_span      = 5;
+    double vmc_d_ref          = 0.10;   // on-scale (|d| p99~0.17); spec's 0.5 was off-scale
+    int    vmc_persist_len    = 5;
+    int    vmc_retention_len  = 5;
+    int    vmc_z_window       = 120;
+    double vmc_spread_z_max   = 2.5;
+    double vmc_tickcount_z_max= 3.0;
+    int    vmc_warmup_bars    = 30;
     // ---- node-structure TP (feature #2) — default OFF (inert) ----
     // Override the final/runner target with the next HVN shelf beyond TP1, clamped in R.
     bool   enable_struct_tp     = false;
@@ -282,6 +297,17 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNetFlipBars") p.net_flip_bars = I();
     else if (key == "InpNetFlipMin") p.net_flip_min = D();
     else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
+    else if (key == "InpUseVmcConfirm") p.use_vmc_confirm = to_bool(val);
+    else if (key == "InpVmcConfirm") p.vmc_confirm = D();
+    else if (key == "InpVmcEpsilonPts") p.vmc_epsilon_pts = I();
+    else if (key == "InpVmcEwmaSpan") p.vmc_ewma_span = I();
+    else if (key == "InpVmcDRef") p.vmc_d_ref = D();
+    else if (key == "InpVmcPersistLen") p.vmc_persist_len = I();
+    else if (key == "InpVmcRetentionLen") p.vmc_retention_len = I();
+    else if (key == "InpVmcZWindow") p.vmc_z_window = I();
+    else if (key == "InpVmcSpreadZMax") p.vmc_spread_z_max = D();
+    else if (key == "InpVmcTickcountZMax") p.vmc_tickcount_z_max = D();
+    else if (key == "InpVmcWarmupBars") p.vmc_warmup_bars = I();
     else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
     else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();
     else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();

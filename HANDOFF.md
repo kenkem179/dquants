@@ -26,12 +26,16 @@ A/B gate. Spec: `research/hypotheses/VMC-SPEC.md` (research verdict, formulas, p
 - **✅ PIVOT WON — MasterVP/BTC M3 (user directive 2026-06-20):** separated lab `cpp_core/tools/mastervp/vmc_mvp_lab.cpp`
   (`make mvp_vmc`, non-invasive, reuses real MasterVP TickEngine). Findings: `research/hypotheses/VMC_MASTERVP_BTC_FINDINGS.md`.
   - **Independence real on BTC:** corr(r_b,body) 0.35–0.47 (vs 0.48–0.69 KenKem); VMC vs MasterVP `node_net` agree only 52–68%.
-  - **M3 DEPLOYABLE:** VMC directional confirm gate (`|vmc|≥0.01–0.02`, `d_ref=0.10`) lifts MasterVP PF ~0.94(losing)→
-    1.09–1.25(profitable), a **plateau** (confirm 0.005–0.05) across IS 2025 **and** OOS 2026. Keeps ~40–55% of entries.
-  - **M5 wrong TF:** confirm gate fails (PF 0.51→0.24); only signal there is inverted (flow-OPPOSES wins) — fragile, .set is M3-tuned.
-- **NEXT ACTION:** wire VMC as an OPT-IN M3 confirm gate inside the MasterVP engine (default off) → concurrency-correct
-  re-sim + walk-forward (costs already in) → MQL5 port + parity_vmc_*.csv. Optional A/B: VMC honest flow vs MasterVP's
-  laundered `node_net` gate. (codex CLI auth still expired; debate skipped.)
+  - post-hoc lab LOOKED deployable on M3 (PF 0.94→1.1-1.25 IS+OOS) — but that was optimistic (ignored slot-replacement).
+- **⛔ RE-SIM VERDICT: REJECTED OOS.** Wired VMC as an OPT-IN gate in the real MasterVP `TickEngine` (default off; `make
+  test` green = exact baseline parity) + CLI `build/backtester --vmc-confirm <thr> --vmc-d-ref <r>`. Concurrency-correct:
+  M3 2025 IS improves at every threshold (PF 1.13–1.46) but M3 2026 OOS **fails** at every threshold (PF 0.79–0.97,
+  net negative). The freed-slot replacement trades flip 2026 negative. IS-only curve-fit → **not deployable, no MQL5 port.**
+  Lesson: validate selection gates with the engine, never post-hoc subset filtering.
+- **CODE STATE:** opt-in VMC gate lives in `kk::Params` (`use_vmc_confirm` etc., default off) + `mastervp/tick_engine.hpp`
+  (lockstep commit, gate after net_persist). Parity-safe, kept for research. Labs: `make kenkem_vmc` / `make mvp_vmc`.
+- **NEXT ACTION:** VMC thrust is DONE/parked (KenKem dead, MasterVP IS-only). If revisiting: VMC regime legs (spread_z/
+  tick_z) as toxicity suppressor only, with IS+OOS engine confirmation. Otherwise return to the T1/parity thrusts below.
 
 ## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
 User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting

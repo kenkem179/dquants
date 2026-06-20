@@ -39,10 +39,31 @@ Structural read: M5 MasterVP (on M3-tuned params) leans on failed breakouts; its
 reversion where flow has pushed *against* the bounce (exhaustion). That's a different, more fragile mechanism;
 the .set is not M5-tuned. **Do not** apply the M3 confirm logic to M5 — the sign flips. M3 is the native TF.
 
-## Recommendation / next steps
-1. **Adopt VMC as an M3 directional confirm support factor for MasterVP/BTC** (`|vmc|≥0.01–0.02`). Next:
-   wire as an OPT-IN gate in the MasterVP engine (default off) and re-sim properly (concurrency-correct) +
-   walk-forward across more folds; then port to MQL5 with `parity_vmc_*.csv`.
-2. Re-test on a proper M5-tuned MasterVP .set before trusting any M5 conclusion.
-3. The independence + node_net-disagreement says VMC could also *replace/augment* MasterVP's `node_net`
-   (laundered) flow gate with the honest tick version — worth a direct A/B.
+## ⛔ RE-SIM CORRECTION (2026-06-20): the post-hoc plateau does NOT survive OOS
+The table above is **post-hoc trade-selection** (drop vetoed trades from the realized list). We then wired
+VMC as a real OPT-IN gate inside the MasterVP `TickEngine` (default off; `make test` green = exact baseline
+parity) and re-ran **concurrency-correct** via `build/backtester --vmc-confirm <thr>`:
+
+| threshold | M3 2025 IS (PF / net) | M3 2026 OOS (PF / net) |
+|---|---|---|
+| baseline | 0.965 / −555 | 0.938 / −977 |
+| 0.005 | 1.127 / +1738 | 0.800 / −1661 |
+| 0.010 | 1.136 / +1639 | 0.801 / −1602 |
+| 0.020 | 1.143 / +1416 | 0.787 / −1641 |
+| 0.030 | 1.223 / +1807 | 0.816 / −1452 |
+| 0.050 | 1.457 / +2234 | 0.968 / −260 |
+
+**VMC helps in-sample at every threshold and fails out-of-sample at every threshold.** Why the post-hoc lab
+lied: when the engine vetoes an entry it FREES the position slot, so later previously-blocked signals now
+fire (kept-count rises vs the lab's subset). Those replacement trades — even VMC-confirmed ones — lose in
+2026. So the "edge" was 2025-specific curve-fit, not a real OOS support factor. (2026 is also a known adverse
+BTC regime where baseline MasterVP loses; VMC cannot rescue a losing base strategy OOS.)
+
+## Verdict & recommendation
+- **REJECT** the VMC entry-confirm gate for deployment on MasterVP/BTC M3. IS-only edge, fails honest OOS
+  re-sim. **No MQL5 port.** The opt-in gate code stays (default off, parity-safe) for future research only.
+- Lesson locked: always validate flow/selection gates with the **concurrency-correct engine**, never post-hoc
+  trade-subset filtering — the slot-replacement effect can invert the sign OOS.
+- Still-open (lower priority): VMC's regime legs (spread_z/tick_z) as a pure toxicity suppressor; a proper
+  M5-tuned MasterVP .set; replacing MasterVP's laundered `node_net` with honest VMC flow (direct A/B). None
+  promoted without IS+OOS engine confirmation.

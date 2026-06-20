@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
     double extra_spread = 0.0; // cost-parity stress: extra spread (price units) added to bid/ask gap
     bool symbol_xau = false;
     bool set_all = false;   // apply ALL .set keys incl. MQL non-inputs (Pine-faithful mode)
+    int    cli_use_vmc = -1;       // -1 = leave .set/default; 0/1 = force off/on
+    double cli_vmc_confirm = -1;   // <0 = leave; else override |vmc| threshold
+    double cli_vmc_dref = -1;      // <0 = leave; else override d_ref
 
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -42,6 +45,10 @@ int main(int argc, char** argv) {
         else if (a == "--extra-spread") extra_spread = std::stod(next());
         else if (a == "--symbol-xau") symbol_xau = true;
         else if (a == "--symbol-btc") { /* default */ }
+        else if (a == "--use-vmc")     cli_use_vmc = 1;
+        else if (a == "--no-vmc")      cli_use_vmc = 0;
+        else if (a == "--vmc-confirm") { cli_vmc_confirm = std::stod(next()); cli_use_vmc = 1; }
+        else if (a == "--vmc-d-ref")   cli_vmc_dref = std::stod(next());
         else { std::fprintf(stderr, "unknown arg: %s\n", a.c_str()); return 2; }
     }
     if (bars_path.empty() || ticks_path.empty()) {
@@ -58,6 +65,12 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[bt] applied %d keys from %s (%s)\n", n, set_path.c_str(),
                      set_all ? "ALL keys, Pine-faithful" : "mimic MT5 non-input");
     }
+    // VMC support-factor overrides (CLI beats .set). Default off => exact baseline parity.
+    if (cli_use_vmc >= 0)      p.use_vmc_confirm = (cli_use_vmc == 1);
+    if (cli_vmc_confirm >= 0)  p.vmc_confirm = cli_vmc_confirm;
+    if (cli_vmc_dref >= 0)     p.vmc_d_ref = cli_vmc_dref;
+    if (p.use_vmc_confirm)
+        std::fprintf(stderr, "[bt] VMC confirm ON: |vmc|>=%.4f d_ref=%.3f\n", p.vmc_confirm, p.vmc_d_ref);
 
     const auto bars = kk::load_bars_csv(bars_path);
     if (bars.empty()) { std::fprintf(stderr, "no bars from %s\n", bars_path.c_str()); return 1; }
@@ -112,5 +125,21 @@ int main(int argc, char** argv) {
 
     std::fprintf(stderr, "[bt] %zu trades -> %s | final balance %.2f, peak %.2f, raw signals %d\n",
                  trades.size(), out_path.c_str(), eng.balance(), eng.peak_equity(), eng.raw_signals());
+
+    // Summary (net / win% / PF / maxDD) so baseline-vs-VMC A/B is one-glance comparable.
+    {
+        int wins = 0; double net = 0, gw = 0, gl = 0, bal = p.start_balance, peak = p.start_balance, maxdd = 0;
+        for (const auto& t : trades) {
+            net += t.realized_usd; bal += t.realized_usd;
+            if (t.realized_usd > 0) { wins++; gw += t.realized_usd; } else gl += -t.realized_usd;
+            if (bal > peak) peak = bal;
+            double dd = peak - bal; if (dd > maxdd) maxdd = dd;
+        }
+        double pf = gl > 0 ? gw / gl : (gw > 0 ? 1e9 : 0.0);
+        double wr = trades.empty() ? 0.0 : 100.0 * wins / (double)trades.size();
+        std::fprintf(stderr, "[bt] SUMMARY %s%s: trades %zu  win%% %.1f  net %.2f  PF %.3f  maxDD %.2f\n",
+                     symbol_xau ? "XAU" : "BTC", p.use_vmc_confirm ? " +VMC" : " baseline",
+                     trades.size(), wr, net, pf, maxdd);
+    }
     return 0;
 }
