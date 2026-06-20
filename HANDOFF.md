@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: profitability-uplift thrust T1 (dormant quality-gate WF sweeps). Plan in docs/BUILD-PLAN.md "🔥 ACTIVE THRUST"._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust T1 (parallel session)._
 
 ## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
 User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting
@@ -181,6 +181,20 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
+## 🟢 KenKem E4 — FIRST PARITY DIFF → SL-cap bug fixed → recall 78.7%→94.3% (2026-06-20, commit af8b798)
+First-ever E4 benchmark (engine vs `RUN_2026-06-19_..._E4only`, 244 MT5 trades; feed the run's
+`inputs_echo.txt` DIRECTLY as `--set` — section headers parse to empty keys, harmless; zero transcription risk).
+- **ROOT (systematic): engine SL +39.5% too wide in 190/192 matched** (pinned to the 4.0×ATR cap; MT5 ~2.9×ATR).
+  The EA's `CalculateStopLossWithCustomEMA` (EntryBase.mqh) picks cap/floor via `(entryType==1)?E1:E2` →
+  **entryType=4 falls through to E2 (cap 3.0/floor 1.1); the `E4_ATR_SL_*` inputs are PARSED but DEAD.**
+  Engine had faithfully coded the *documented* 4.0/1.25. Fixed `atr_sl_caps(kind==4)`→e2 bounds.
+- **CASCADE (wider SL was binding occupancy/risk limiters, suppressing entries):** matched **192→230 (94.3%)**,
+  missed 52→14, overfire 23→24, |Δrisk(SL)| median 0.93→**0.166**, |ΔpnlUSD| median 12.96→**7.96**, exact-min 230/230.
+- **E4 recall now MAXED** (with E1 93% / E2 96%): the 14 missed net **−409 (4/14 win, EA-cut losers)** — don't chase.
+  Residual SL bias +5.9% = the shared forming-vs-closed ATR floor (E1/E2 have it too; untouched). E1/E2 byte-identical.
+- Added `test_e4_sl_uses_e2_cap`. ▶️ **E4 exits not yet diffed** (matched |Δpnl| 7.96 is small; lower priority).
+  Next per user's pick: **E1 22-not-armed overfire** (mine committed `kke1arm.csv.gz` vs engine `triggers.hpp`).
+
 ## 🟢 KenKem E5 — real-path trace COLLECTED → 1 fix shipped (+8 recall) → residual decomposed (2026-06-20)
 _Real-path E5 entry trace ran clean: `mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_realtrace/`
 (`realtrace_*.csv` = 4,914 armed/fired E5 bar snapshots w/ the LIVE per-bar `final_decision`; 108 E5 +949).
@@ -316,10 +330,8 @@ verdicts, aligned at engine = MT5 + 60s), each of the 68 overfire trades was mat
 3. **[USER]** One MT5 re-run dumping **M3/M5 EMA1..4 at ENTRY_SHIFT** (the BarTrace lacks them — only M1
    ema0..4 + per-TF ADX/DI present). Needed to value-diff the 41 MTF-gate overfire. This is the long-standing
    M3/M5-alignment ceiling, now pinpointed to exactly the MTF gate.
-4. **E4 NOW UNBLOCKED** — E4-only MT5 ref run committed `RUN_2026-06-19_..._E4only/` (244 E4 trades,
-   E4_MAX_CROSS_AGE=20, lot 0.15, else ≡ E1E2 ref). Run the engine E4-only and `diff_kk.py --kind E4`.
-   ⚠️ No E4 gate trace exists (EA has no E4_GATE_TRACE flag) — if E4 has an over/under-fire residual, either
-   reuse `trace.csv.gz` BarTrace or ask the user to add an E4 gate-trace print. **E5 still blocked** (no run).
+4. **✅ E4 DONE** (commit af8b798, recall 94.3%) — see the E4 section at the top. Entry recall maxed;
+   E4 exits not yet diffed (low priority, matched |Δpnl| 7.96 already small).
 5. After E1→E5 LOCKED: pip→ATR-relative per `docs/PIP_TO_ATR_INVENTORY.md`. NOT before.
 
 ## 📁 NEW: MT5 gate-trace run (committed this session)
