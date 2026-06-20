@@ -78,7 +78,9 @@ input double InpXRevWickFrac       = 1.0;   // sweep-tail wick >= x*body (the st
 input double InpXRevNetDeltaMin    = 0.6;   // near-price node net magnitude (sell/buy-dominated flow)
 input bool   InpXRevUseNodeGate    = true;  // require selling/absorption at mVAH
 input double InpXRevSlAtr           = 0.7;  // SL distance above the swept high
-input double InpXRevRrMin           = 2.0;  // min RR (entry->mVAL vs SL) to take the trade
+input double InpXRevRrMin           = 2.0;  // min RR (entry->target vs SL) to take the trade
+input bool   InpXRevTpMpoc          = false;// XRev TP = master POC (full bank, humble RR) vs far edge
+input bool   InpRevTpMpoc           = false;// base reversion TP = master POC instead of rr_rev multiple
 
 input group "===== Exit ====="
 input double InpTp1R            = 1.0;

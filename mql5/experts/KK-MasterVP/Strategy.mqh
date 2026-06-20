@@ -73,6 +73,7 @@ Signal MVP_DetectSignal(const VPResult &master_cur,const VPResult &master_sig,co
       double risk=s.entry_close-sl; double rr=(isRev?InpRrRev:InpRrBrk)*rrScale;
       out.is_rev=isRev; out.sl=sl; out.risk=risk;
       out.tp1=s.entry_close+risk*InpTp1R; out.tp2=s.entry_close+risk*rr;
+      if(isRev && InpRevTpMpoc && master_cur.poc>s.entry_close) out.tp2=master_cur.poc;  // full bank at mPOC
       out.reason=isRev?"L-REV":"L-BRK";
    } else {
       bool isRev=shortRev; double slAtrUse=isRev?InpSlAtrRev:InpSlAtrBrk;
@@ -81,6 +82,7 @@ Signal MVP_DetectSignal(const VPResult &master_cur,const VPResult &master_sig,co
       double risk=sl-s.entry_close; double rr=(isRev?InpRrRev:InpRrBrk)*rrScale;
       out.is_rev=isRev; out.sl=sl; out.risk=risk;
       out.tp1=s.entry_close-risk*InpTp1R; out.tp2=s.entry_close-risk*rr;
+      if(isRev && InpRevTpMpoc && master_cur.poc>0 && master_cur.poc<s.entry_close) out.tp2=master_cur.poc;
       out.reason=isRev?"S-REV":"S-BRK";
    }
    if(out.risk<=0.0){ out.valid=false; return out; }

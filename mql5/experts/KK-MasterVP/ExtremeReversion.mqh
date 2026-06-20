@@ -69,21 +69,27 @@ Signal MVP_DetectExtremeReversion(const VPResult &master_cur,const SignalBar &s,
 
    if(longXR==shortXR) return out;   // exactly one direction
 
+   double mPoc=master_cur.poc;
    out.is_long=longXR; out.entry=s.entry_close;
    if(shortXR){
       double sl=sweep_hi+InpXRevSlAtr*atr1;
       double risk=sl-s.entry_close; if(risk<=0.0) return out;
-      double runway=s.entry_close-mVal; if(runway<=0.0) return out;
+      // Target = far edge (mVAL) by default; InpXRevTpMpoc banks the full move at mPOC (humble RR).
+      double target=mVal;
+      if(InpXRevTpMpoc && mPoc>mVal && mPoc<s.entry_close) target=mPoc;
+      double runway=s.entry_close-target; if(runway<=0.0) return out;
       if(runway/risk<InpXRevRrMin) return out;
       out.sl=sl; out.risk=risk;
-      out.tp1=s.entry_close-risk*InpTp1R; out.tp2=mVal; out.reason="S-XREV";
+      out.tp1=s.entry_close-risk*InpTp1R; out.tp2=target; out.reason="S-XREV";
    } else {
       double sl=sweep_lo-InpXRevSlAtr*atr1;
       double risk=s.entry_close-sl; if(risk<=0.0) return out;
-      double runway=mVah-s.entry_close; if(runway<=0.0) return out;
+      double target=mVah;
+      if(InpXRevTpMpoc && mPoc<mVah && mPoc>s.entry_close) target=mPoc;
+      double runway=target-s.entry_close; if(runway<=0.0) return out;
       if(runway/risk<InpXRevRrMin) return out;
       out.sl=sl; out.risk=risk;
-      out.tp1=s.entry_close+risk*InpTp1R; out.tp2=mVah; out.reason="L-XREV";
+      out.tp1=s.entry_close+risk*InpTp1R; out.tp2=target; out.reason="L-XREV";
    }
    out.valid=true; out.is_rev=true;
 

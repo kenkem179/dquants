@@ -87,29 +87,36 @@ inline Signal detect_extreme_reversion(const Params& p,
 
     if (longXR == shortXR) return out;   // need exactly one direction (mutually exclusive by construction)
 
+    const double mPoc = master_cur.poc;
     out.is_long = longXR;
     out.entry = s.entry_close;
     if (shortXR) {
         const double sl = sweep_hi + p.xrev_sl_atr * atr1;
         const double risk = sl - s.entry_close;
         if (risk <= 0.0) return out;
-        const double runway = s.entry_close - mVal;          // target = mVAL
+        // Target = far value edge (mVAL) by default; xrev_tp_mpoc banks the full move at the value
+        // magnet (mPOC, between entry and mVAL) instead — a closer, humbler-RR target.
+        double target = mVal;
+        if (p.xrev_tp_mpoc && mPoc > mVal && mPoc < s.entry_close) target = mPoc;
+        const double runway = s.entry_close - target;
         if (runway <= 0.0) return out;
-        if (runway / risk < p.xrev_rr_min) return out;       // RR filter
+        if (runway / risk < p.xrev_rr_min) return out;       // RR filter (vs the chosen target)
         out.sl = sl; out.risk = risk;
         out.tp1 = s.entry_close - risk * p.tp1_r;
-        out.tp2 = mVal;
+        out.tp2 = target;
         out.reason = "S-XREV";
     } else {
         const double sl = sweep_lo - p.xrev_sl_atr * atr1;
         const double risk = s.entry_close - sl;
         if (risk <= 0.0) return out;
-        const double runway = mVah - s.entry_close;          // target = mVAH
+        double target = mVah;
+        if (p.xrev_tp_mpoc && mPoc < mVah && mPoc > s.entry_close) target = mPoc;
+        const double runway = target - s.entry_close;
         if (runway <= 0.0) return out;
         if (runway / risk < p.xrev_rr_min) return out;
         out.sl = sl; out.risk = risk;
         out.tp1 = s.entry_close + risk * p.tp1_r;
-        out.tp2 = mVah;
+        out.tp2 = target;
         out.reason = "L-XREV";
     }
     out.valid = true;

@@ -52,6 +52,31 @@ over-optimistic about for reversion families** — the T3 mean-reversion lock lo
 **XRev is also a reversion family on BTC.** The trustworthy XAU feed only marginally confirms (M3) or
 disconfirms (M5). So: **default OFF everywhere; MT5 A/B is mandatory before any trust.**
 
+## "Bank full profit at mPOC" (humble RR) test — mean-reversion-only & XRev-only (2026-06-21)
+User ask: do reversion + XRev take MORE profit banking the whole position at the **master POC** (the value
+magnet, a closer/humbler-RR target) than trailing to the far value edge? Added two gated flags (default OFF
+→ base untouched): `rev_tp_mpoc` (base reversion TP=mPOC) and `xrev_tp_mpoc` (XRev TP=mPOC). Test = isolated
+(breakout OFF), **fixed bracket** (`InpTrailRunner=false`, `InpTp1ClosePct=0`, `InpBeAfterTp1=false`), XRev
+`rr_min=0.5` (humble). OOS PF, mPOC-bank vs trail:
+
+| family | XAU M5 | XAU M3 | BTC M3 |
+|---|---|---|---|
+| **Mean-rev** mPOC / trail | **1.57 / 1.29** (net +511/+218) | 1.03 / 0.90 | 0.78 / 0.91 |
+| **XRev** mPOC / trail | **2.84 / 0.96** (net +413/−9) | 3.32 / 2.19 (n11; TR neg) | 1.93 / 3.17 |
+
+**Verdict: banking at mPOC WINS on XAU, LOSES on BTC.** Economic reading: XAU (mean-reverting metal) rotates
+to value and the humble mPOC bank beats trailing a move that often fails to reach the far edge — for XRev the
+*trailing* far-edge version is even **net-negative** on XAU M5 (TR −313), mPOC flips it positive. BTC (trendier,
+noisy feed) the runner captures the bigger swing, so the far edge/trail wins; BTC mean-reversion is a net loser
+either way. **Best standalone reversion result = XAU M5 mean-rev @ mPOC (OOS PF 1.57)** and XAU M5 XRev @ mPOC
+(OOS PF 2.84, n4 — tiny). Samples small for XRev (4-18 tr); mean-rev healthy (n18-93).
+
+⚠️ **Additive-deployment caveat:** banking reversion at mPOC needs `trail_runner=false`, but that flag is GLOBAL
+— turning it off would also stop the breakout base trailing. Running reversion-at-mPOC *additively on top of the
+trailing breakout base* requires per-entry-type exit routing (fixed-TP for reversion, trail for breakout) in the
+shared `position_manager` — deferred (would risk the base). The table above is the STANDALONE (breakout-off) test.
+Flags `InpRevTpMpoc`/`InpXRevTpMpoc` ported to both EAs (default OFF, compile 0/0).
+
 ## ▶️ MT5 tests for the user (A/B each preset against its base; toggle `InpEnableExtremeReversion`)
 1. **BTC M3** — Expert `KK-MasterVP-Monster`, BTCUSD **M3**, 2025.08–2026.06, every-tick.
    Preset `KK-MasterVP-Monster-BTCUSD-M3-XRev.set` (XRev ON) vs the same with toggle false (base).

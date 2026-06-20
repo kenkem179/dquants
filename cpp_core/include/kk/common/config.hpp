@@ -57,6 +57,7 @@ struct Params {
     double body_pct_min       = 0.4;
     double rr_rev             = 1.35;
     double sl_atr_rev         = 1.45;
+    bool   rev_tp_mpoc        = false;   // reversion TP = master POC (full bank at the value magnet); OFF=rr_rev
     // ---- exit ----
     double tp1_r              = 0.8;
     double tp1_close_pct      = 20.0;
@@ -98,7 +99,8 @@ struct Params {
     double xrev_net_delta_min   = 0.6;   // near-price net magnitude (sell-dominated flow)
     bool   xrev_use_node_gate   = true;  // require selling/absorption at mVAH
     double xrev_sl_atr          = 0.7;   // SL distance above the swept high
-    double xrev_rr_min          = 2.0;   // min RR (entry->mVAL vs SL) to take the trade
+    double xrev_rr_min          = 2.0;   // min RR (entry->target vs SL) to take the trade
+    bool   xrev_tp_mpoc         = false; // XRev TP = master POC (full bank, humble RR) instead of far edge; OFF=mVAL/mVAH
     // ---- multi-bar net volume (feature #1) — default OFF (inert) ----
     // Per-bar net flow = volume-weighted body ratio (c-o)/range * min(vol/avgVol, 3).
     // Persist: require last N closed bars all flow WITH the trade side beyond min before entry.
@@ -276,6 +278,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpBodyPctMin") p.body_pct_min = D();
     else if (key == "InpRrRev") p.rr_rev = D();
     else if (key == "InpSlAtrRev") p.sl_atr_rev = D();
+    else if (key == "InpRevTpMpoc") p.rev_tp_mpoc = to_bool(val);
     else if (key == "InpTp1R") p.tp1_r = D();
     else if (key == "InpTp1ClosePct") p.tp1_close_pct = D();
     else if (key == "InpBeAfterTp1") p.be_after_tp1 = to_bool(val);
@@ -306,6 +309,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpXRevUseNodeGate") p.xrev_use_node_gate = to_bool(val);
     else if (key == "InpXRevSlAtr") p.xrev_sl_atr = D();
     else if (key == "InpXRevRrMin") p.xrev_rr_min = D();
+    else if (key == "InpXRevTpMpoc") p.xrev_tp_mpoc = to_bool(val);
     else if (key == "InpEnableNetPersist") p.enable_net_persist = to_bool(val);
     else if (key == "InpNetPersistBars") p.net_persist_bars = I();
     else if (key == "InpNetPersistMin") p.net_persist_min = D();
