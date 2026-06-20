@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: E5 real-path trace → hr_momentum_e5 fix (commit 2f5143c)._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: E5 RealTrace +10 value-diff cols (M1 EMA stack + M1/M5/M15 DI/ADX) added & compiled 0err → awaiting 1 MT5 re-run._
 
 ## 🟢 KK-MasterVP — TRADE-LEVEL PARITY VERIFIER SHIPPED (production gate, commit 5fc34c9)
 **User ask:** make perfect MQL EA editions from the C++ pipeline for production; chose the
@@ -185,18 +185,25 @@ _⚠️ **Trace traps** (unchanged): `trace_dumper` close/adx 1 bar staler than 
 use separate `m_tr_` state + wrong `L_atrlo`. The **real-path `realtrace_*.csv` is the trustworthy instrument**
 (LIVE trigger), but it logs gate RESULTS only — not the HTF/EMA INPUTS needed to value-diff (see blocker)._
 
-### ▶️ NEXT for E5 — BLOCKER: realtrace lacks the inputs to value-diff the 48 detection-misses
-The 26 unarmed + 15 htf + 7 trend_core are genuine engine-vs-MT5 VALUE diffs, but `realtrace_*.csv` carries
-only `htf_block_long/short`, `aligned_bull/bear`, `ema25`, `ema200` — NOT the M5-HTF EMA/ADX/DI inputs nor
-the full M1 4-EMA stack. `reproduce.set` E5 HTF/trend-core/alignment config MATCHES the engine (no config bug).
-1. **[⚠️ USER — needs my EA edit FIRST, then 1 MT5 re-run]** I will add columns to `Parity/RealTrace.mqh`:
-   **M1 ema0..4** (full strict-alignment stack, for the 26 unarmed), **M5 ema0..4 + M5 adx + M5 di+/di−**
-   (for the 15 htf), and **M1 di+/di−** (for the 7 trend_core). Then user re-runs the SAME E5-only 2026
-   config → I value-diff each bucket against the engine. (Same expert/window/`reproduce.set`, just recompiled.)
-2. **[ENGINE — I can start now without data]** The **26 unarmed (alignment-onset)** is the biggest bucket and
-   may be diagnosable from the 2 EMA cols already present (ema25/ema200 envelope) + onset-timing logic in
-   `triggers.hpp:177-189`. Check whether the engine's onset bar differs from MT5's `up_age/dn_age` (→ early
-   expiry past the 28 cap). Start here while the richer-column run is pending.
+### ▶️ NEXT for E5 — ✅ EA value-diff columns ADDED → AWAITING 1 MT5 re-run
+The 26 unarmed + 15 htf + 7 trend_core are genuine engine-vs-MT5 VALUE diffs; the prior `realtrace_*.csv`
+carried only gate RESULTS (htf_block, aligned, ema25/ema200), not the gate INPUTS. **DONE this session:**
+added **10 value-diff columns** to `kenkem/.../Parity/RealTrace.mqh` + populated them in `Entries/Entry5.mqh`
+(struct copy flows through the EA's `GetRealTrace`→`WriteRealTraceRow`, no EA-body change). **Compiles 0 errors**
+(`KenKemExpert.mq5` v1.8.154, 1 pre-existing version-string warning). New cols appended after `final_decision`:
+- `ema75,ema100` — completes the M1 4-EMA strict-alignment stack (ema25/ema200 already present) → **26 unarmed**
+- `m1_diplus,m1_diminus` — M1 DI± the trend-core reads (adx_m1 already present) → **7 trend_core**
+- `m5_adx,m5_diplus,m5_diminus,m15_adx,m15_diplus,m15_diminus` — exact HTF ADX/DI the E5 HTF filter reads
+  (`Entry5.mqh:272-285`, cache idx 2=M5 / 3=M15; the gate reads ONLY ADX+DI, never M5 EMAs) → **15 htf**
+
+1. **[⚠️ USER — recompile + 1 MT5 re-run, EXACT]** Expert `Experts\…\KenKem\KenKemExpert.mq5` (v1.8.154,
+   recompile F7 to pull the edited includes) · Symbol **XAUUSD** (Exness, `XAUUSD-Exness-KK`) · Period
+   **2026.01.01 → 2026.06.01** · chart TF **M1** · input set
+   `research/kenkem_parity/mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_realtrace/reproduce.set`
+   (already has `InpExportRealTrace=true`, `INPUT_TF0=1`, E5-only). Output =
+   `MQL5/Files/KenKem/realtrace_XAUUSD-Exness-KK.csv`. Then I auto-collect + value-diff each bucket vs engine.
+2. **[ENGINE — startable now]** The **26 unarmed (alignment-onset)** is the biggest bucket; onset-timing in
+   `triggers.hpp:177-189` — check engine onset bar vs MT5 `up_age/dn_age` (early expiry past the 28 cap).
 3. **[DONE — DISCONFIRMED] Forming-ADX** (`E5_GATE_FORMING_ADX`, default OFF): recall UNCHANGED 45.4%; makes
    the gate STRICTER, wrong direction. Not the lever. (`E5_2026_GATETRACE_FINDINGS.md` UPDATE section.)
 
