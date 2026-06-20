@@ -77,7 +77,35 @@ trailing breakout base* requires per-entry-type exit routing (fixed-TP for rever
 shared `position_manager` — deferred (would risk the base). The table above is the STANDALONE (breakout-off) test.
 Flags `InpRevTpMpoc`/`InpXRevTpMpoc` ported to both EAs (default OFF, compile 0/0).
 
+## Per-entry-type trail override (2026-06-21) — banks fixed-TP additively without touching the base
+The mPOC-banking caveat above ("needs global `trail_runner=false`") is now SOLVED. Added a tri-state
+per-family trail override so each entry type can override the GLOBAL `trail_runner` independently:
+`trail_brk` / `trail_rev` / `trail_imp` / `trail_xrev` (`InpTrailBrk/Rev/Imp/XRev`). Semantics:
+**-1 = inherit `trail_runner` (default everywhere → base byte-identical); 0 = fixed-TP no-trail; 1 = force trail.**
+Resolved ONCE per position at open from the Signal family flags (cpp `PositionManager`) / `reason` string
+(EA `KKResolveTrail`, XREV>IMP>REV>BRK priority). So reversion/XRev can bank a fixed mPOC TP while the
+breakout base keeps trailing — the additive deployment that was previously impossible.
+- **Safety**: `test_parity_golden` + `make test` (28→+2 per-type-trail checks) green; empirical XAU M3 base
+  OOS UNCHANGED (PF 1.114 / net +4575.4 / dd 17.5%) with all overrides at -1. C++ + BOTH EAs compile 0/0.
+- **Additive sweep (breakout trails, reversion/XRev banks at mPOC), OOS:**
+  - **XAU M3 + reversion @ mPOC** (`InpEnableReversion=true,InpRevTpMpoc=true,InpTrailRev=0`): PF 1.114→**1.123**,
+    net +4575→**+4888**, maxDD **17.5%→13.5%** — the humble mPOC bank TRIMS DROUGHT/DD at flat-to-up net. The
+    one genuinely interesting additive candidate. Preset `KK-MasterVP-XAUUSD-M3-RevMpoc.set`.
+  - **XAU M5 / BTC M3 + reversion @ mPOC**: HURTS (XAU M5 base 1.461 is best left alone; BTC reversion is a
+    net loser any direction — consistent with every prior BTC reversion finding).
+  - **XRev @ mPOC additive**: ≤ trailing on BTC (trail +3610 vs mPOC +2811 OOS — BTC trends, far edge wins),
+    ≈ wash on XAU (and MT5 already disconfirmed XRev-on-XAU). XRev's only positive stays **BTC-trail** (shipped).
+
+### MT5 screenshots (user-run, 2026-06-21) — XRev A/B, full period
+- **BTC M3**: base net 3,070 / PF 1.09 / relDD 14.4% → +XRev net **3,561** / PF 1.10 / relDD 15.7%. XRev helps
+  net (+490) but worsens DD. "OK".
+- **XAU M3**: base net 10,422 / PF 1.09 / relDD 41.9% → +XRev net **9,353** / PF 1.08 / relDD 45.2%. XRev HURTS
+  on XAU (MT5 disconfirms the engine's mild +XRev help). "not great" — matches the engine's BTC>XAU ordering.
+
 ## ▶️ MT5 tests for the user (A/B each preset against its base; toggle `InpEnableExtremeReversion`)
+0. **XAU M3 reversion @ mPOC** (NEW, per-type trail) — Expert `KK-MasterVP`, XAUUSD **M3**, 2025.06–2026.05.
+   Preset `KK-MasterVP-XAUUSD-M3-RevMpoc.set` (reversion ON, banks at mPOC, breakout still trails) vs base
+   `KK-MasterVP-XAUUSD.set`. Engine: PF 1.114→1.123, net +4575→+4888, **maxDD 17.5→13.5%**. Watch the DD.
 1. **BTC M3** — Expert `KK-MasterVP-Monster`, BTCUSD **M3**, 2025.08–2026.06, every-tick.
    Preset `KK-MasterVP-Monster-BTCUSD-M3-XRev.set` (XRev ON) vs the same with toggle false (base).
    Engine expects OOS PF 1.284→1.330, net +4288→+5138, dd 7.1→6.6%. **This is the decisive test.**

@@ -2,6 +2,23 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
 
+## 🆕 PER-ENTRY-TYPE TRAIL OVERRIDE — BUILT + verified + presets ready for MT5 (2026-06-21)
+User asked: let each entry family override the global `trail_runner` SAFELY, then sweep + ship MT5 sets.
+**DONE.** Tri-state per family `trail_brk/rev/imp/xrev` (`InpTrailBrk/Rev/Imp/XRev`): **-1 inherit (default
+everywhere → base byte-identical) / 0 fixed-TP no-trail / 1 force trail.** Resolved once per position at open
+(cpp `PositionManager` from Signal flags; EA `KKResolveTrail` from `reason`, XREV>IMP>REV>BRK). Lets reversion/XRev
+bank a fixed mPOC TP while breakout keeps trailing — the additive deploy that was impossible before.
+- **Safety**: `make test` 30 OK (+2 per-type-trail cases) incl. golden parity; XAU M3 base OOS UNCHANGED (PF 1.114/
+  net +4575.4/dd 17.5%) with overrides -1. C++ + BOTH EAs compile **0/0**.
+- **Additive sweep (OOS):** the one real candidate = **XAU M3 + reversion @ mPOC** (`InpEnableReversion=true,
+  InpRevTpMpoc=true, InpTrailRev=0`): PF 1.114→**1.123**, net +4575→**+4888**, **maxDD 17.5→13.5%** (humble bank
+  trims DD). XAU M5 / BTC reversion @ mPOC HURT; XRev @ mPOC ≤ trailing (BTC trends → far edge wins).
+- **User's MT5 XRev screenshots (2026-06-21):** BTC M3 +XRev net 3070→**3561** (PF 1.09→1.10, DD 14.4→15.7% — "ok");
+  XAU M3 +XRev net 10422→**9353** (PF 1.09→1.08, DD↑ — "not great", MT5 disconfirms engine's mild XAU help).
+- **▶️ NEW MT5 A/B:** Expert `KK-MasterVP`, XAUUSD **M3**, 2025.06–2026.05, every-tick — preset
+  `KK-MasterVP-XAUUSD-M3-RevMpoc.set` vs base `KK-MasterVP-XAUUSD.set`. Both copied to MT5 Tester + kenkem Presets.
+  Engine: net +4575→+4888, maxDD **17.5→13.5%** — watch whether MT5 confirms the DD trim. Commit: see below.
+
 ## 🆕 KK-MasterVP EXTREME REVERSION (XRev) — BUILT, OFF by default, awaiting MT5 A/B (2026-06-20)
 Built the `research/hypotheses/strategy-descriptions/KK-MasterVP-ExtremeReversion.md` plan: failed-breakout
 liquidity-sweep reversal entry family. **Toggle OFF by default → locked base BYTE-IDENTICAL** (golden test

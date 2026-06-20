@@ -1,0 +1,4 @@
+[bt] applied 62 keys from research/mastervp_parity/_t3/btc_m5_rev.set (ALL keys, Pine-faithful)
+[bt] loaded 46080 bars from cpp_core/tools/bars_btcusd_2026_m5.csv
+[bt] streamed 14951271 ticks
+[bt] 424 trades -> research/mastervp_parity/_t3/btc_m5_rev_oos.csv | final balance 14621.74, peak 15565.19, raw signals 4165

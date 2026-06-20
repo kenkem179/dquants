@@ -94,11 +94,47 @@ static void test_trail_only_tightens() {
     KK_CHECK_NEAR(pm.record().mfe_r, 4.0, 1e-6); // peaked at 140 = +40 = 4R
 }
 
+// Per-entry-type trail override: a reversion long with trail_rev=0 holds the FIXED sig.tp2 backstop
+// (banks at the value target) and exits TP there even though the GLOBAL trail_runner is ON.
+static void test_per_type_trail_off_holds_fixed_tp() {
+    Params p = make_params();
+    p.trail_runner = true;          // global trail ON...
+    p.trail_rev = 0;                // ...but reversion overrides to fixed-TP (no trail).
+    Signal sig; sig.valid = true; sig.is_long = true; sig.is_rev = true; sig.entry = 100.0;
+    sig.sl = 90.0; sig.risk = 10.0; sig.tp1 = 108.0; sig.tp2 = 112.0; sig.reason = "L-REV";
+
+    PositionManager pm;
+    KK_CHECK(pm.open_position(p, sig, 100.0, 1.0, 0, 2, 0.5, 4.0));
+    bool closed = false;
+    // Rally past TP1 (partial+BE) and on to the fixed 112 backstop -> TP (NOT trailed past it).
+    for (double px = 101.0; px <= 112.0 && !closed; px += 1.0) closed = pm.on_tick(px, px, 4.0);
+    KK_CHECK(closed);
+    KK_CHECK(pm.record().exit_tag == ExitTag::TP);
+    KK_CHECK_NEAR(pm.record().mfe_r, 1.2, 1e-6);   // exited exactly at +12 = 1.2R (no overshoot/trail)
+}
+
+// Same reversion signal but trail_rev=-1 (inherit): backstop = entry+risk*runner_rr = 200, so a
+// rally to 112 does NOT close — it inherits the global trailing runner. Proves -1 == base behaviour.
+static void test_per_type_trail_inherits_when_unset() {
+    Params p = make_params();
+    p.trail_runner = true; p.trail_rev = -1;   // inherit the global trail
+    Signal sig; sig.valid = true; sig.is_long = true; sig.is_rev = true; sig.entry = 100.0;
+    sig.sl = 90.0; sig.risk = 10.0; sig.tp1 = 108.0; sig.tp2 = 112.0; sig.reason = "L-REV";
+
+    PositionManager pm;
+    KK_CHECK(pm.open_position(p, sig, 100.0, 1.0, 0, 2, 0.5, 4.0));
+    bool closed = false;
+    for (double px = 101.0; px <= 112.0 && !closed; px += 1.0) closed = pm.on_tick(px, px, 4.0);
+    KK_CHECK(!closed);   // backstop is 200 (runner), not the 112 fixed tp2 -> still open, trailing
+}
+
 void run_all() {
     KK_RUN(test_long_sl_loss);
     KK_RUN(test_long_tp1_then_trail_win);
     KK_RUN(test_short_backstop_tp);
     KK_RUN(test_trail_only_tightens);
+    KK_RUN(test_per_type_trail_off_holds_fixed_tp);
+    KK_RUN(test_per_type_trail_inherits_when_unset);
 }
 
 KK_TEST_MAIN()

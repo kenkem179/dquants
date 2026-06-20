@@ -76,6 +76,16 @@ public:
         if (lot <= 0.0 || sig.risk <= 0.0) return false;
         p_ = &p;
         open_ = true; is_long_ = sig.is_long;
+        // Resolve the per-entry-type trail override ONCE at open (mirrors the EA capturing it at the
+        // fill). -1 => inherit the global trail_runner => base byte-identical. Priority of the family
+        // flags matches detect order: XRev (is_extreme_rev also sets is_rev) > impulse > reversion.
+        {
+            int ov = p.trail_brk;
+            if (sig.is_extreme_rev)  ov = p.trail_xrev;
+            else if (sig.is_impulse) ov = p.trail_imp;
+            else if (sig.is_rev)     ov = p.trail_rev;
+            eff_trail_ = (ov >= 0) ? (ov != 0) : p.trail_runner;
+        }
         entry_ = fill_price; initial_vol_ = lot; cur_vol_ = lot;
         // Effective risk = |actual fill - SL| (TradeManager.mqh:99 effRisk), NOT the anchor
         // sig.risk. The journal's riskPrice/mfeR/maeR all measure against this true R so a
@@ -92,7 +102,7 @@ public:
         // may exit earlier. Otherwise the usual runner backstop (or fixed rrBrk cap).
         tp_backstop_ = (p.enable_struct_tp && sig.tp2 > 0.0)
             ? sig.tp2
-            : ((p.trail_runner && sig.risk > 0.0)
+            : ((eff_trail_ && sig.risk > 0.0)
                 ? (is_long_ ? sig.entry + sig.risk * p.runner_rr : sig.entry - sig.risk * p.runner_rr)
                 : sig.tp2);
         tp1_ = sig.tp1;
@@ -155,7 +165,7 @@ public:
             be_applied_ = true;
         }
 
-        if (tp1_done_ && p.trail_runner && last_atr_ > 0.0) {
+        if (tp1_done_ && eff_trail_ && last_atr_ > 0.0) {
             const double trail_dist = p.trail_atr_mult * last_atr_;
             const double step = std::max(2.0 * p.pip_size, 0.10 * trail_dist);
             if (is_long_) {
@@ -227,6 +237,7 @@ private:
 
     const Params* p_ = nullptr;
     bool   open_ = false, is_long_ = false, tp1_done_ = false, be_applied_ = false;
+    bool   eff_trail_ = true;   // effective trail flag for THIS position (resolved at open)
     bool   pm_partial_done_ = false;
     int    pm_tp_ext_count_ = 0;
     double entry_ = 0.0, sl_ = 0.0, tp1_ = 0.0, tp_backstop_ = 0.0, risk_ = 0.0;

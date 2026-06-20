@@ -29,6 +29,8 @@ Construction:
 
 This produces `poc/vah/val` (local) and `mPoc/mVah/mVal` (master). All recompute every bar — the profile is rolling, so levels drift.
 
+**Operational note — local profile is inert in breakout-only mode (measured, C++ engine).** Although both profiles are computed every bar, the breakout entry (kind 1 — the only family enabled in the deployed lock) triggers **entirely off the MASTER value-area edges** (`mVah`/`mVal`), never the local profile and never the POC line itself. The local `poc/vah/val` are consumed only by the breakout's local-VA alignment check (a loose `<= mVah + 0.1·ATR` tolerance, section 3) and by the reversion families' entry/SL geometry. With reversion OFF, the local profile contributes **zero signal** — proven empirically: sweeping local lookback from 60→240 bars with the master length fixed yields byte-identical backtests (`research/mastervp_parity/VP_LENGTH_STUDY.md`). So in breakout mode the single tuned degree of freedom is the **master length** (in bars), and "master POC" is really shorthand for the master **value-area boundary**, not the peak-volume node. Reviving the dead local VP (plus an HTF M5/M15 VP) as a breakout *agreement gate* is an open, unrealized enrichment idea — not something the current algorithm does.
+
 ### 2.2 Node state engine (synthetic order flow)
 
 Per-bin `nodeBuy/nodeSell/nodeTouch` arrays over the **master** window grid (40 bins spanning the 150-bar high/low). Updated on confirmed bars only:
@@ -182,3 +184,38 @@ All times **UTC** (sessions are `input.session` strings evaluated on exchange ti
 - **Pyramiding ceiling (20) is decorative**; the binding cap is `maxConcurrentPerDir = 3`.
 - **No loss-streak cooldown / peak-DD trail in Pine** — those exist only in the MQL5 EA's RiskManager; parity claims must exclude them.
 - **Project status (measured):** PF 1.21 TRAIN / 1.10 OOS on XAUUSD M3 (~1331 trades) — below the deploy gate (1.25/1.15). The edge is tail-carried: ~20 trades ≈ 112% of net profit. Exit-tuning sweeps came back null; structural improvements (the Monster variant), not param sweeps, are the path forward. Any change must prove the tail trades survive.
+
+## 9. Optimization & Locked Parameters (C++/MT5 research, 2026-06)
+
+> Sections 1–8 describe the **Pine source as written** (M3, local 50 / master 150, RR-based TP, 20% TP1 partial). Section 9 records what the C++ tick-engine sweeps + MT5 confirmation actually **locked** for deployment. These supersede the Pine defaults for the shipped `.set` presets.
+
+**Why these changes raised XAU profit.** The breakout *logic* was not touched. The gains came from (a) **fixing the master VP length** to a swept-robust value instead of the floating `local × 3`, (b) moving the entry TF **M3 → M5**, and (c) tuning the risk bracket (break buffer, SL, Chandelier trail, TP1 partial = 0%) and adding hour blocks — each validated by walk-forward + Monte-Carlo, not a lone peak. Master length is the *sole* signal-side driver (see the 2.1 operational note); everything else is trade management.
+
+### The master-length question, answered
+
+Master VP length in bars = `InpVpLookback × InpMasterMult` (this is what the `108×4` / `24×30` shorthand means — lookback × multiplier; bins is a separate `InpVpBins = 30`). Because the local profile is inert, the *split* of that product is cosmetic — only the **total bars** matter.
+
+| | **XAUUSD M5** ✅ deployable | **BTCUSD M5** ❌ not deployable |
+|---|---|---|
+| Master VP length | **432 bars = 36 h** (108 × 4) | **720 bars = 60 h** (24 × 30) |
+| Bins / Value area | 30 / 70% | 30 / 70% |
+| Break buffer | 0.85 × ATR | 1.0 × ATR |
+| SL | 1.2 × ATR | 2.2 × ATR |
+| Chandelier trail | 2.5 × ATR | 6.0 × ATR |
+| TP1 partial close | **0%** (banking caps the runner) | 20% |
+| ADX trend min | 22 | 30 |
+| Reversion | ON (small additive edge) | **OFF** (MT5-disconfirmed as fictional) |
+| Hour blocks (UTC+10 frame) | 2, 3, 14 | none (24/7) |
+| Local VP | OFF / inert | OFF / inert |
+| Preset | `kenkem/MQL5/Presets/KK-MasterVP-XAUUSD-M5.set` | `kenkem/MQL5/Presets/KK-MasterVP-BTCUSD-M5.set` |
+
+- **XAU 432 bars is a plateau center**, not a peak: the 384–480 bar band all behaves well (lowest OOS drawdown, OOS PF > train). Walk-forward: 11/12 months profitable, 7/8 equal-N folds PF>1, and the fixed 432 lock *beats* per-fold re-optimization (no curve-fit, no periodic re-tuning). Monte-Carlo (20k): P(profit) 99.6%, PF 5th-pctile 1.108. **DD honesty:** the headline 10.3% OOS DD is a benign window — full-year maxDD is 27.7% and MC 95th-pctile ~38%; size for a **~30–40% peak-to-trough**.
+- **BTC 720 bars passed the engine sweep but failed MT5** (live PF 1.058 ≈ breakeven; only 57% of trades matched the engine vs XAU's ~86%; the reversion edge the engine reported was fictional on the BTC/Exness feed, which round-trips intrabar). **There is no trustworthy BTC master length yet** — treat 720 as provisional until the entry-match gap is closed. Source: `research/mastervp_parity/mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`.
+
+### Practical takeaways
+
+1. **Right master length right now:** XAU M5 = **432 bars (36 h)**, validated. BTC = unresolved (720 bars is engine-only, not MT5-confirmed).
+2. **Local POC contribution to breakouts:** none — the master value-area edge defines the breakout; the local profile is currently dead weight (only a confirmation-gate experiment would change that).
+3. The shipped XAU profitability is **risk-management + master-length + M5**, not a new entry rule.
+
+Research trail: `research/mastervp_parity/VP_LENGTH_STUDY.md`, `M5_SWEEP_FINDINGS.md`, `BTC_SWEEP_FINDINGS.md`, `WF_MC_FINDINGS.md`; engine locks under `cpp_core/tools/mastervp/`.

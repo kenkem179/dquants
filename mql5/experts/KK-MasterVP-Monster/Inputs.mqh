@@ -87,9 +87,16 @@ input double InpTp1R            = 1.0;
 input double InpTp1ClosePct     = 0.0;     // WF re-lock 2026-06-20 (was 15.0): no TP1 bank; BE-after-TP1 de-risks
 input bool   InpBeAfterTp1      = true;
 input double InpBeBufAtr        = 0.05;
-input bool   InpTrailRunner     = true;     // ATR chandelier trail on the runner
+input bool   InpTrailRunner     = true;     // ATR chandelier trail on the runner (GLOBAL default)
 input double InpRunnerRr        = 5.3;
 input double InpTrailAtrMult    = 2.6;
+// Per-entry-type trail override (tri-state: -1 inherit InpTrailRunner / 0 fixed-TP no-trail / 1 force trail).
+// Lets reversion/XRev bank a fixed TP (e.g. mPOC) while breakout/impulse keep trailing.
+// Default -1 everywhere => identical to the global flag => base byte-identical.
+input int    InpTrailBrk        = -1;       // breakout path
+input int    InpTrailRev        = -1;       // base reversion
+input int    InpTrailImp        = -1;       // impulse-thrust path
+input int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
 input group "===== Risk sizing ====="
 input int    InpRiskUnit        = 0;        // 0=%acct,1=USD,2=min,3=max

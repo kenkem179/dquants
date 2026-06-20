@@ -66,6 +66,15 @@ struct Params {
     bool   trail_runner       = true;
     double runner_rr          = 10.0;
     double trail_atr_mult     = 3.6;
+    // ---- per-entry-type trail override (tri-state: -1 inherit / 0 fixed-TP / 1 trail) ----
+    // Lets each entry family override the GLOBAL trail_runner without touching it. -1 => inherit
+    // trail_runner (default everywhere => base byte-identical). 0 => no trail (hold the fixed
+    // sig.tp2 backstop, e.g. bank reversion/XRev at mPOC with rev_tp_mpoc/xrev_tp_mpoc). 1 => force
+    // the chandelier trail. Resolved per-position at open in PositionManager (uses the Signal flags).
+    int    trail_brk          = -1;   // breakout (impulse-less base path)
+    int    trail_rev          = -1;   // base reversion
+    int    trail_imp          = -1;   // Monster impulse-thrust
+    int    trail_xrev         = -1;   // extreme reversion (XRev)
     // ---- Monster impulse-thrust path (kind 4) — default OFF = base byte-identical ----
     // The ONLY entry-model delta of KK-MasterVP-Monster over the faithful base: a single decisive
     // thrust candle that fires ONLY in the high-volatility band the normal ceiling (max_atr_pct)
@@ -286,6 +295,10 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpTrailRunner") p.trail_runner = to_bool(val);
     else if (key == "InpRunnerRr") p.runner_rr = D();
     else if (key == "InpTrailAtrMult") p.trail_atr_mult = D();
+    else if (key == "InpTrailBrk") p.trail_brk = I();
+    else if (key == "InpTrailRev") p.trail_rev = I();
+    else if (key == "InpTrailImp") p.trail_imp = I();
+    else if (key == "InpTrailXRev") p.trail_xrev = I();
     else if (key == "InpEnableImpulse") p.enable_impulse = to_bool(val);
     else if (key == "InpImpulseCandleAtr") p.impulse_candle_atr = D();
     else if (key == "InpImpulseEntryBufAtr") p.impulse_entry_buf_atr = D();

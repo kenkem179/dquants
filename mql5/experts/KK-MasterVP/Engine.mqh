@@ -40,6 +40,18 @@ datetime g_mvpLastBar=0;
 int  g_masterLen=480;
 // per-position management state
 bool   g_tp1Done=false; double g_best=0.0;
+bool   g_effTrail=true;   // effective trail flag for the OPEN position (resolved at fill; mirrors cpp eff_trail_)
+
+// Per-entry-type trail override (mirrors cpp PositionManager open). reason encodes the family:
+// XREV > IMP > REV(is_rev) > BRK. -1 => inherit InpTrailRunner (default => base byte-identical).
+bool KKResolveTrail(const Signal &sig)
+{
+   int ov=InpTrailBrk;
+   if(StringFind(sig.reason,"XREV")>=0)      ov=InpTrailXRev;
+   else if(StringFind(sig.reason,"IMP")>=0)  ov=InpTrailImp;
+   else if(sig.is_rev)                       ov=InpTrailRev;
+   return (ov>=0)?(ov!=0):InpTrailRunner;
+}
 // risk-manager state (port of RiskManager.mqh)
 double   g_peakEquity=0.0, g_dayStartEquity=0.0;
 int      g_lastDayKey=-1;
@@ -243,7 +255,8 @@ void OnNewBar()
    // The old `tp=sig.tp2` capped the runner at rrBrk (1.8R) -> EA hit TP where the engine trailed
    // (parity: EA 170 TP vs engine 10 TP). Uses signal entry/risk like the engine, not the fill.
    double sl=sig.sl;
-   double tp=(InpTrailRunner && sig.risk>0.0)
+   bool effTrail=KKResolveTrail(sig);   // per-entry-type override of InpTrailRunner
+   double tp=(effTrail && sig.risk>0.0)
              ? (sig.is_long ? sig.entry+sig.risk*InpRunnerRr : sig.entry-sig.risk*InpRunnerRr)
              : sig.tp2;
    KKClampStops(sig.is_long,entry,minDist,sl,tp);
@@ -258,7 +271,7 @@ void OnNewBar()
    sl=NormalizeDouble(sl,_Digits); tp=NormalizeDouble(tp,_Digits);
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
    if(ok){
-      g_tp1Done=false; g_best=entry; SN_OnFill();
+      g_tp1Done=false; g_best=entry; g_effTrail=effTrail; SN_OnFill();
       if(InpExportParity && PositionSelect(_Symbol)){
          double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
          ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
@@ -298,7 +311,7 @@ void MvpManage()
          }
       }
       // ATR chandelier trail (after TP1), tighten-only
-      if(g_tp1Done && InpTrailRunner){
+      if(g_tp1Done && g_effTrail){
          double atr1=AtrAt(1);
          double trail=isLong?g_best-InpTrailAtrMult*atr1:g_best+InpTrailAtrMult*atr1; trail=NormalizeDouble(trail,_Digits);
          double cur=mvpPos.StopLoss();

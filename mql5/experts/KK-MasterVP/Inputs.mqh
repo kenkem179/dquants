@@ -77,9 +77,16 @@ input double InpTp1R            = 0.8;
 input double InpTp1ClosePct     = 20.0;
 input bool   InpBeAfterTp1      = true;
 input double InpBeBufAtr        = 0.05;
-input bool   InpTrailRunner     = true;     // ATR chandelier trail on runner
+input bool   InpTrailRunner     = true;     // ATR chandelier trail on runner (GLOBAL default)
 input double InpRunnerRr        = 10.0;     // runner TP cap (effectively trail-to-exit)
 input double InpTrailAtrMult    = 2.0;      // swept (S4)
+// Per-entry-type trail override (tri-state: -1 inherit InpTrailRunner / 0 fixed-TP no-trail / 1 force trail).
+// Lets reversion/XRev bank a fixed TP (e.g. mPOC via InpRevTpMpoc/InpXRevTpMpoc) while breakout keeps
+// trailing. Default -1 everywhere => identical to the global flag => base byte-identical.
+input int    InpTrailBrk        = -1;       // breakout path
+input int    InpTrailRev        = -1;       // base reversion
+input int    InpTrailImp        = -1;       // impulse (inert here; KK-MasterVP has no impulse path)
+input int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
 input group "===== Risk sizing ====="
 input int    InpRiskUnit        = 0;        // 0=%acct,1=USD,2=min,3=max

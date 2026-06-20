@@ -1,0 +1,116 @@
+; KK-MasterVP — XAUUSD M5 LOCKED (dedicated M5 sweep 2026-06-20)
+; Master VP=432 bars (36h on M5) = InpVpLookback=108        ; local VP (inert in breakout-only mode)
+; Swept train->OOS: break_buf 0.85, sl_atr_brk 1.2, trail_atr_mult 2.5. Indicators same-bars (ema24/194 atr14).
+; OOS PF ~1.33 / dd ~10% (vs M3 lock OOS PF 1.114 / dd 17.5%). See _M5_SWEEP_FINDINGS.md.
+; 2026-06-20 DORMANT-GATE WF SWEEP (research/mastervp_parity/wf_mastervp.py) -> TESTED + REVERTED. DO NOT
+;   RE-ENABLE without re-checking the recent regime. Activating MomVeto+MtfAgree+BrkVetoSfp improved the
+;   POOLED 6-fold PF (1.243->1.274, worst-fold 1.102->1.191) and full-year MC DD (27.7->23.1%) — but a
+;   per-fold + MT5 decomposition (mt5_runs/RUN_2026-06-20_xau_m5_gates_lock) showed the gain is carried by
+;   2025; the gates are momentum/trend-alignment filters that BLOCK continuation breakouts in strong trends
+;   and HURT the most recent 4 months (F5 -28%, F6 -43%). On 2026 H1 baseline beats the lock on EVERY axis
+;   (PF 1.339 vs 1.275, net +12.2k vs +8.6k, maxDD 10.6% vs 16.5%). User chose baseline (recent regime =
+;   forward proxy; "MT5 is reality"). Gates stay OFF. EA↔engine parity itself was CONFIRMED faithful.
+; 2026-06-20 T2 HOUR-BLOCK SWEEP -> LOCKED InpBlockedHoursStr=2,3,14 (research/mastervp_parity/wf_mastervp.py
+;   + hour_atr_decomp.py). Concept = block lunch lull + late-session chop (NOT news — data vetoed it).
+;   6-fold WF: pooled PF 1.243->1.296, net +16.6%, dd 12.5->10.0%, worst-fold 1.102->1.196; 5/6 folds
+;   improve, BOTH recent folds rise (F5 +533, F6 +640) -> passes the T1 recent-regime check. MC(20k):
+;   P(profit) 99.9%, PF 5th-pctile 1.158, maxDD median 22.2%/95th 34.7% (all BETTER than baseline lock).
+;   News hr 0 + Asia-open hr 10 + hr 18 were TESTED and REJECTED (net-harmful / over-block, worst-fold drops).
+; KK-MasterVP — Pine-faithful baseline (XAUUSD M5), reproducing research/mastervp_parity/KK-MasterVP.pine
+; as actually run for the profitable TV log (breakout-only; ALL risk-mgmt layers OFF — those get added
+; later via disciplined sweeps). Load with backtester --set-all (applies every key incl. MQL non-inputs).
+; Each value is traced to a Pine line; deviations from struct defaults are the S0 alignment.
+
+; ---- VP core (Pine f_vp / node engine defaults) ----
+InpVpLookback=108        ; local VP (inert in breakout-only mode)
+InpVpBins=30
+InpVaPct=70.0
+InpMasterMult=4        ; master VP = 432 bars (36h M5); robust OOS plateau center, lowest OOS dd
+InpNodeTouchAtr=0.05
+InpNodeDecay=0.94
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpAtrLen=14
+InpAtrMt5Mode=false        ; Pine ta.atr = RMA (Wilder) -> textbook Wilder atr(), NOT MT5 SMA mode
+
+; ---- regime (Pine: adx>22 && |+DI-DI|>6 && |emaF-emaS|>0.25*atr; ema 24/194) ----
+InpEmaFast=24
+InpEmaSlow=194
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpDiSpreadMin=8.0
+InpEmaSepAtr=0.25
+
+; ---- entry shared ----
+InpNodeGateEnabled=false   ; tooltip: OFF = byte-identical baseline; A/B vs true in S0
+InpUsePriorBarVP=false
+InpBrkRequireFlow=false
+InpSfpFlowMin=0.15
+
+; ---- breakout (the ONLY active entry path) ----
+InpEnableBreakout=true
+InpBreakBufAtr=0.85        
+InpBreakMaxAtr=1000000     ; Pine has NO anti-chase ceiling -> effectively disabled (swept later, Q2)
+InpRrBrk=1.8               ; Pine rrBrk
+InpSlAtrBrk=1.2        
+InpBrkVetoSfp=false
+
+; ---- reversion (OFF in the profitable run) ----
+InpEnableReversion=true
+InpRetestAtr=0.1           ; Pine retestAtr
+InpBodyPctMin=0.6          ; Pine bodyPctMin
+InpRrRev=1.2               ; Pine rrRev
+InpSlAtrRev=1.5            ; Pine slAtrRev
+
+; ---- exit (Pine base: TP1 0.8R close 20%, runner fixed TP2 at rrBrk, BE-after-TP1 +0.05ATR, NO trail) ----
+; 2026-06-20 T3 EXIT SWEEP -> LOCKED InpTp1ClosePct 20->0 (research/mastervp_parity/wf_mastervp.py
+;   --grid InpTp1ClosePct). The Pine 20% partial was INHERITED verbatim, never WF-swept. Per-fold sweep is
+;   MONOTONIC (0<10<20<35<50 on PF/net/dd/worst-fold) -> banking ANY partial caps the trailed runner that
+;   carries the edge. 0%: pooled PF 1.296->1.335, net +15.3% (19.3k->22.3k), maxDD 10.0->9.2%, worst-fold
+;   1.196->1.219; ALL 6 folds improve incl. both recent (F5,F6). Matches Monster/BTC 0%-is-best result.
+;   BE+trail still arm at the 0.8R TP1 LEVEL regardless of close-%. (Exits already deviate from Pine: we trail.)
+InpTp1R=0.8
+InpTp1ClosePct=0.0
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpTrailRunner=true       ; Pine has NO chandelier trail; runner exits at fixed TP2 or BE stop
+
+; ---- risk sizing (Pine: 2% of (initial_capital + closed netprofit)) ----
+InpRiskUnit=0
+InpRiskAccPct=1.0          ; locked: lowest-DD plateau (S6b)
+
+; ---- risk-management LIMITERS: ALL OFF for the faithful baseline (Pine has none) ----
+InpMaxDailyDDPct=10.0      ; locked: robust DD cap, plateau across 8/10/12 (S6b)
+InpMaxPeakDDPct=0.0
+InpSoftBlockDDPct=0.0
+InpLossStreakCount=0
+InpSkipIfMinLotOverRisk=false
+
+; ---- safety (Pine: atrTicks>=40 floor only, no % band; max 4 trades/session) ----
+InpMinAtrPct=0.0           ; disable the % band; Pine uses a tick floor instead
+InpMaxAtrPct=0.0
+InpMinAtrTicks=40          ; Pine minAtrTicks
+InpMaxTradesPerSession=4
+InpMaxSpreadPips=0.0       ; Pine has no spread gate (cost still modeled on the bid/ask fill)
+InpMaxSpreadTp1Frac=0.0
+
+; ---- volatility-RR (OFF; Pine enableVolatilityRR=false) ----
+InpEnableVolRR=false
+
+; ---- quality gates: Pine has NEITHER an MTF-agree gate NOR an RSI veto ----
+InpUseMtfAgree=false
+InpUseAtrPctlGate=false
+InpUseMomVeto=false
+
+; ---- sessions (Pine chart-tz = UTC+10: Asia 0000-0700 / London 0700-1300 / NY 1300-2100) ----
+; The TV log's hour fingerprint proves sessions were evaluated in UTC+10 (Asia-open 00:00 -> 14:00 UTC,
+; the biggest activity spike; no-session gap 21:00-24:00 -> 11:00-13:00 UTC, the empty hours).
+InpBrokerGMTOffset=10
+InpAsiaSess=00:00-07:00
+InpLdnSess=07:00-13:00
+InpNySess=13:00-21:00
+InpBlockedHoursStr=2,3,14    ; T2 LOCK (2026-06-20): block ref-tz(UTC+10) hrs 14=UTC04 Asian-lunch lull, 2,3=UTC16,17 late-London chop
+InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
+InpAvoidNews=false
+InpTrailAtrMult=2.5        
+InpRunnerRr=10.0
