@@ -55,7 +55,11 @@ inline double custom_ema_level(int kind, bool is_long, const Snapshot& s) {
 
 inline double atr_sl_caps(int kind, const KenKemConfig& c, double& floor_mult) {
     if (kind == 2) { floor_mult = c.e2_atr_sl_floor; return c.e2_atr_sl_cap; }
-    if (kind == 4) { floor_mult = c.e4_atr_sl_floor; return c.e4_atr_sl_cap; }
+    // E4: the EA's CalculateStopLossWithCustomEMA selects cap/floor via `(entryType==1) ? E1 : E2`
+    // (EntryBase.mqh) — entryType=4 falls through to the E2 multipliers (cap 3.0 / floor 1.1).
+    // The E4_ATR_SL_CAP/FLOOR_MULTIPLIER inputs are PARSED but DEAD in the EA, so faithful parity
+    // requires E4 to borrow E2's arbitration bounds, NOT its own e4_atr_sl_* fields.
+    if (kind == 4) { floor_mult = c.e2_atr_sl_floor; return c.e2_atr_sl_cap; }
     if (kind == 5) { floor_mult = c.e5_atr_sl_floor; return c.e5_atr_sl_cap; }
     floor_mult = c.e1_atr_sl_floor; return c.e1_atr_sl_cap;
 }

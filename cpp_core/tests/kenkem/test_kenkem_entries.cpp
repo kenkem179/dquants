@@ -106,6 +106,23 @@ void test_e4_requires_green_cloud() {
     KK_CHECK(detect_entry(b, c, B, a, s, tg).detected);
 }
 
+// E4 SL borrows the E2 ATR cap/floor, NOT its own E4_ATR_SL_* keys: the EA's
+// CalculateStopLossWithCustomEMA picks bounds via `(entryType==1) ? E1 : E2`, so entryType=4 falls
+// through to E2 (cap 3.0 / floor 1.1). The E4_ATR_SL_CAP/FLOOR_MULTIPLIER inputs are parsed but dead.
+void test_e4_sl_uses_e2_cap() {
+    KenKemConfig c = geom_cfg(); c.enable_e1=false; c.enable_e2=false;
+    c.e2_atr_sl_cap = 3.0; c.e4_atr_sl_cap = 99.0;   // dead e4 cap: if used, SL would NOT clamp to 3.0
+    int B = 50; TfBundle::Align a{50,16,10,3};
+    TfBundle b = bundle_bull(B, a);
+    Snapshot s = snap_bull();                          // atrM1_sl=1.0, green cloud
+    TriggerState tg; tg.ichi_up = B;                   // E4 long trigger
+    EntrySignal r = detect_entry(b, c, B, a, s, tg);
+    // struct stop 99.73 -> dist 9.27 ATR » cap; E2 cap 3.0*ATR(1.0) binds -> sl=106.0, risk=3.0.
+    KK_CHECK(r.detected && r.kind == 4);
+    KK_CHECK_NEAR(r.sl, 106.0, 1e-6);
+    KK_CHECK_NEAR(r.risk, 3.0, 1e-6);
+}
+
 // GetDynamicRRMultiplier (SessionManager.mqh:93): session × ATR-percentile scaler, clamped [0.70,1.30].
 void test_dynamic_rr_multiplier() {
     KenKemConfig c;   // defaults: use_dynamic_rr=true, UTC windows japan 0-330, london 500-930, ny 1200-1500
@@ -124,6 +141,7 @@ void test_dynamic_rr_multiplier() {
 }
 
 void run_all() {
+    KK_RUN(test_e4_sl_uses_e2_cap);
     KK_RUN(test_e1_long_fires_with_geometry);
     KK_RUN(test_stale_trigger_no_fire);
     KK_RUN(test_sideways_blocks);
