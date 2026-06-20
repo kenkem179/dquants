@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP profitability thrust — T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (PF 1.335, commit 4f45ec3); full exit-block sweep in flight._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
 
 ## 🔥 PROFITABILITY UPLIFT — T2 hour-block + T3-EXIT + T3-REVERSION (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
@@ -35,11 +35,16 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 - **T3-REVERSION (mean-reversion activation) — DONE, 2 WINS / 2 REJECTS** (`research/mastervp_parity/wf_t3.py`,
   generalized 4-config harness). Reversion fires ONLY in balance (non-trend) regime = complement of breakout
   → additive. Swept enable→retest→body→sl×4 configs, 6-fold WF + MC, per-fold recent-regime discipline:
-  - **BTC M5 (KK-MasterVP) — WIN, LOCKED** `InpEnableReversion=true, RetestAtr=0.1, BodyPctMin=0.6→0.4,
-    SlAtrRev=1.5→1.2`. Pooled PF 1.217→**1.308**, net **+62%** (6.4k→10.4k), maxDD 16.8→**7.7%**, worst-fold
-    0.904→**1.056**, folds PF>1 5/6→**6/6**. revNet +5,158 = strong standalone edge. body 0.4 = only 6/6 at
-    retest 0.1; sl_rev FLAT plateau 1.0-1.4 (center 1.2); rr_rev INERT (runner-trail dominates). MC(20k):
-    P(profit) 98.8%, PF 5th 1.101, 8/8 equal-N folds, maxDD med 16.8%/95th 28.2%.
+  - **BTC M5 (KK-MasterVP) — 🧨 MT5-DISCONFIRMED → REVERTED to breakout-only (2026-06-20).** Engine WF
+    sweep had claimed a WIN (`InpEnableReversion=true`…, pooled PF 1.217→1.308, net +62%, revNet +5,158).
+    **User ran the locked set in MT5 → BAD.** `mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`:
+    fair overlap window engine **PF 1.293 / +10,129 / win 59.6%** vs MT5 **PF 1.058 / +1,761 / win 51.2%**;
+    engine **revNet +5,414 vs MT5 −76** → the reversion edge is FICTIONAL on the BTC/Exness feed. Only 57%
+    of trades match (XAU ~86%); on matched, exits agree 89% but engine over-wins +8 pts (feed round-trips
+    intrabar: 45% continuation vs 94% OANDA — already measured). Same shape as Monster BTC M3 (1.178→1.031).
+    **ACTION TAKEN:** flipped `InpEnableReversion` true→false in engine set + all 3 EA presets + MT5 Presets.
+    **BTC M5 MasterVP = NOT live-deployable** (breakeven live); the 57% entry-match gap must be closed first.
+    **XAU M5 is the sole validated front-runner** (same-session MT5: +60,264 / PF 1.400 / 1294 trades).
   - **XAU M5 (KK-MasterVP) — WIN, LOCKED** `InpEnableReversion=true` at DEFAULT rev params (no tuning beat
     them). Measured ON TOP of the T3-EXIT TP1=0 base: pooled PF 1.335→**1.344**, net +3.6%, maxDD 9.2→**7.8%**,
     6/6 folds, worst-fold 1.219→**1.223** (rises), F6 1.49→1.52. revNet small (+48) = mostly dd-smoothing, not

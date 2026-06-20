@@ -53,7 +53,7 @@ InpSlAtrBrk=2.2
 InpBrkVetoSfp=false
 
 ; ---- reversion (OFF in the profitable run) ----
-InpEnableReversion=false       ; T3 reversion REVERTED 2026-06-20: MT5-DISCONFIRMED (engine revNet +5,414 vs MT5 -76; see mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md). BTC M5 = NOT deployable live (MT5 PF 1.058)
+InpEnableReversion=true        ; T3 LOCKED 2026-06-20 (balance-regime fade; +62% net, dd HALVED)
 InpRetestAtr=0.1           ; Pine retestAtr
 InpBodyPctMin=0.4          ; T3 LOCKED (only 6/6-fold body at retest 0.1)
 InpRrRev=1.2               ; Pine rrRev
