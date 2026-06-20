@@ -1,6 +1,21 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: profitability-uplift thrust T1 (dormant quality-gate WF sweeps). Plan in docs/BUILD-PLAN.md "🔥 ACTIVE THRUST"._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `KKMomentumAlgo`. Build GREEN. Latest: NEW **VMC** (Volume Momentum Confirmation) module landed in common layers — see below. (T1 gate-sweep thrust below is on branch `reliableBaseline`.)_
+
+## 🆕 VMC — Volume Momentum Confirmation (2026-06-20, branch `KKMomentumAlgo`)
+New reusable order-flow confirmation built from the **tick-rule on mid** (feed has NO real volume; only
+tick_count + bid/ask). Goal: catch trend onset that lagging ADX/DI/RSI miss; first consumer = **E5** as an
+A/B gate. Spec: `research/hypotheses/VMC-SPEC.md` (research verdict, formulas, params, parity plan).
+- **Implemented + GREEN:** C++ `kk::VolumeMomentum` (`cpp_core/include/kk/common/volume_momentum.hpp`) +
+  test `tests/common/test_volume_momentum.cpp` (17 checks pass, incl. the independence test: green bar +
+  majority down-ticks ⇒ r<0). MQL5 `CVolumeMomentum` (`KK-Common/Core/VolumeMomentum.mqh`) compiles 0/0.
+- **Design locked:** direction = EWMA(r) NOT z-score (z zeroes a sustained push); circularity guard = sign by
+  tick-direction COUNTS only (never price-distance weight); integer-point signing for bit-identical parity;
+  v1 gates on committed shift-1 bar (no repaint). Timeframe-agnostic (windows in bars).
+- **NOT yet:** (1) data-analytics validation on real ticks (corr(r,bar-return); does r lead vs ADX); (2) E5
+  `use_vmc_gate` wiring + C++ A/B sweep XAU/BTC M1 (costed, plateau, WF); (3) parity_vmc_*.csv diff harness.
+- **NEXT ACTION:** run step (1) quick analytics on imported M1 ticks to confirm partial-independence + set `d_ref`,
+  then wire E5 and sweep. (codex debate was requested but its CLI auth token is expired — `codex login` needed.)
 
 ## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
 User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting
