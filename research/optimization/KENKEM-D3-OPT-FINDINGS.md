@@ -14,9 +14,13 @@
 > - **CONSEQUENCE: "E4 is the best entry (PF 1.51)" and the reorder-rejection rationale below are
 >   ARTIFACTS of fictional E4 exits.** In MT5 ground truth E4 is a net loser (−167). Engine-based
 >   sweep conclusions carry an exit-optimism bias (worst on E4, mild on E2, ~none on E1).
-> - **Next:** (A) fix engine E4 intrabar exit evaluation, re-validate, re-lock; and/or (B) MT5 A/B of
->   `KK-KenKem-XAUUSD-M1-D3-noE4.set` (E1+E2 only) — engine predicts +1247/PF1.33, MT5 expected
->   ~+1100–1230 > full-D3 +905. MT5 is the arbiter.
+> - **RESOLVED via MT5 A/B → NEW LOCK = D3-noE4 (E1+E2, E4 OFF).** `KK-KenKem-XAUUSD-M1-D3-noE4.set`,
+>   MT5-confirmed: **+1049 / PF 1.39 / 102 tr** vs full-D3 +905 / PF 1.22. OOS 2026 +243/1.23 → **+327/1.47**;
+>   profitable quarters 3/6 → **4/6** (25Q2 +231, 26Q2 flips −279→+57). Only 26Q1 preferred E4 (+522→+270),
+>   outweighed. Both runs in `mt5_runs/2026-06-20_D3{,-noE4}/`. Stubborn losers: 25Q1 (sparse early data),
+>   25Q3 (summer chop).
+> - **Still TODO (engine):** fix E4 intrabar exit evaluation so engine sweeps involving E4 are trustworthy
+>   again. Not blocking the lock (E4 is OFF), but required before any future E4 work.
 
 
 _2026-06-20. Engine: `cpp_core/build/kenkem/tick_backtester` (TICK engine, the validated one).
