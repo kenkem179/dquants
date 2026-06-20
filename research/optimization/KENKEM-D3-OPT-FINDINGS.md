@@ -1,5 +1,24 @@
 # KenKem XAU M1 — Optimization Findings (D3 lock)
 
+> ## ⚠️ 2026-06-20 MT5 REALITY CHECK — engine numbers are INFLATED by an E4 exit bug
+> The D3 MT5 confirm run (after fixing a `.set` whitespace bug that made MT5 silently ignore the
+> preset twice) returned **+905 / PF 1.22 / 155 trades**, vs engine **+2194 / PF 1.40 / 198**.
+> Time-aligned diff (`mt5_runs/2026-06-20_D3/`):
+> - **Entry parity is fine** — 141/155 matched; engine over-fires net only −28, MT5-only trades net −284.
+> - **E1 is exit-clean** (engine +883 vs MT5 +868 on matched).
+> - **E4 exits are BROKEN.** All 48 matched E4 trades have *identical entry time+price*, but engine
+>   books +747 where MT5 books **−42** (sign-flips: engine TP where MT5 hits SL). SL levels differ by
+>   only ~0.29 median → not an SL-level issue; the engine **misses the intrabar adverse path** that
+>   stops MT5 out (engine eMFE≫MT5 mMFE; engine `maeR` is a 0.00 stub). E2 is mildly optimistic
+>   (+591 vs +362).
+> - **CONSEQUENCE: "E4 is the best entry (PF 1.51)" and the reorder-rejection rationale below are
+>   ARTIFACTS of fictional E4 exits.** In MT5 ground truth E4 is a net loser (−167). Engine-based
+>   sweep conclusions carry an exit-optimism bias (worst on E4, mild on E2, ~none on E1).
+> - **Next:** (A) fix engine E4 intrabar exit evaluation, re-validate, re-lock; and/or (B) MT5 A/B of
+>   `KK-KenKem-XAUUSD-M1-D3-noE4.set` (E1+E2 only) — engine predicts +1247/PF1.33, MT5 expected
+>   ~+1100–1230 > full-D3 +905. MT5 is the arbiter.
+
+
 _2026-06-20. Engine: `cpp_core/build/kenkem/tick_backtester` (TICK engine, the validated one).
 Data: `research/kenkem_parity/ticks_xau_full.csv` + `bars_xauusd_M1_kk.csv` = **XAUUSD 2025-03-02 → 2026-05-29** (~15 months, 113M ticks). Harness: `research/optimization/sweep_kenkem_opt.py`.
 Baseline config: `anchor_E1E2E4.set` (E1+E2+E4 on, E3/E5 off)._

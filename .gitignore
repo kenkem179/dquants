@@ -55,3 +55,4 @@ cpp_core/tools/parity_cpp_*.csv
 .DS_Store
 .idea/
 .vscode/
+research/**/mt5_runs/**/run.log
