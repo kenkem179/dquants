@@ -189,6 +189,25 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
+## 🟢 KenKem XAU M1 — OPTIMIZATION → D3 lock (2026-06-20)
+Pivoted parity→profit per user (sweep SL caps, TP/RR, gates, entry combos/independence). Harness
+`research/optimization/sweep_kenkem_opt.py` (TICK engine; line-mutates `anchor_E1E2E4.set`; reports
+ALL + 2025/2026-OOS + per-quarter). Data = XAU 2025-03→2026-05 (15mo, NOT 2024-26). Full writeup:
+**`research/optimization/KENKEM-D3-OPT-FINDINGS.md`**.
+- **LOCK D3 = baseline + 4 portable keys:** `USE_DYNAMIC_RR_SCALING=false`, `E1_ATR_SL_CAP_MULTIPLIER=3.5`,
+  `SIDEWAYS_BLOCK_THRESHOLD=45`, `MIN_ENTRY_ATR_PERCENTILE=70`. Preset
+  `research/kenkem_parity/KK-KenKem-XAUUSD-M1-D3.set` (copied to MT5 Presets).
+- **Result:** net +2101→**+2194**, PF 1.269→**1.401**, maxDD 907→**522 (−42%)**, Sharpe 2.09→**2.97**,
+  2026 OOS **−145→+470**. Per-quarter: baseline = ONE-QUARTER-WONDER (100% net from 25Q4); D3 = **4/5
+  quarters profitable** (only 25Q3 summer-chop loses in both).
+- **Key structural finding:** entry priority E1→E2→E4 is INVERTED vs PF (E4 1.40 best but lowest prio;
+  E2 1.08 worst but steals ~10 E4 setups). Drop-E2 HURTS net here (only cuts DD); reorder E1→E4→E2 is
+  an untested EA change. E5/E1+E5 unattractive (E5 net-neg alongside E1). SL floors INERT; E2/E4 cap
+  tightening is a regime trap; most entry gates inert at default (edge is NOT in stricter entries).
+- ▶️ **NEXT: MT5 re-run KenKemExpert (XAU M1, full 2025.03.02–2026.05.29) with the D3 preset** to confirm
+  the engine D3 reproduces (baseline parity already validated; D3 only flips standard inputs), then I diff.
+  Optional future: test the E1→E4→E2 priority reorder in-engine.
+
 ## 🟢 KenKem E4 — FIRST PARITY DIFF → SL-cap bug fixed → recall 78.7%→94.3% (2026-06-20, commit af8b798)
 First-ever E4 benchmark (engine vs `RUN_2026-06-19_..._E4only`, 244 MT5 trades; feed the run's
 `inputs_echo.txt` DIRECTLY as `--set` — section headers parse to empty keys, harmless; zero transcription risk).
