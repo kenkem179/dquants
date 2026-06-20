@@ -33,10 +33,12 @@ Prefer plateaus over peaks. OOS stays OOS. Keep the ATR-regime filter (profitabi
 Both EAs are locked & shipped (Monster BTC M3 anti-chase opt PF 1.20; MasterVP XAU M5 PF 1.33). User
 asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-effort robust wins):
 
-- [x] **T1 — Dormant quality-gate sweep (DONE 2026-06-20, commit 1c5afbc)** — **MasterVP XAU M5: WIN** —
-  activated `BrkVetoSfp`+`MomVeto`+`MtfAgree` (6-fold WF PF 1.243→1.274/worst→1.191; MC PF 1.686→1.802, maxDD
-  27.7→23.1%); LOCKED+preset shipped, awaiting 1 MT5 re-run. **Monster BTC M3: NEGATIVE** — no gate beats
-  baseline (BrkRequireFlow harmful), no change. Below = original framing — both editions throw away gates
+- [x] **T1 — Dormant quality-gate sweep (DONE 2026-06-20, commit ded3e81)** — **MasterVP XAU M5: tested →
+  REVERTED.** Gates `BrkVetoSfp`+`MomVeto`+`MtfAgree` improved POOLED 6-fold PF 1.243→1.274 + MC DD
+  27.7→23.1% but per-fold + MT5 decomposition showed the gain is from 2025; they HURT the recent 4mo
+  (F5 −28%, F6 −43%; 2026 H1 baseline wins every axis). User chose baseline. **MT5 parity CONFIRMED
+  faithful** (424/489 matched). **Monster BTC M3: NEGATIVE** — no gate beats baseline, no change. 🔑 LESSON:
+  decompose per-fold (recent OOS) before locking a filter. Below = original framing — both editions ship gates off
   that already exist in code but ship OFF: `InpBrkRequireFlow`, `InpBrkVetoSfp`, `InpUseMomVeto`,
   `InpUseMtfAgree` (+ `InpNodeGateEnabled` for MasterVP). 6-fold WF (`wf_monster.py` for Monster BTC M3;
   new `wf_mastervp.py` for MasterVP XAU M5). Adopt only robust improvers (folds-PF>1 ≥ baseline, no

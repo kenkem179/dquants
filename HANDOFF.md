@@ -10,14 +10,17 @@ gates that ship OFF). 6-fold WF. New harness `research/mastervp_parity/wf_master
 adopting needs an EA recompile.
 - **Monster (BTC M3) — DONE, NEGATIVE:** no gate beats baseline (PF 1.199/6-of-6/dd10.6%). BrkRequireFlow
   HARMFUL (→1.055/4-folds), MtfAgree loses a fold, BrkVetoSfp only trades PF for dd. **NO CHANGE.**
-- **MasterVP (XAU M5) — DONE, LOCKED (commit 1c5afbc):** 3 dormant gates beat baseline robustly →
-  `InpBrkVetoSfp`+`InpUseMomVeto`+`InpUseMtfAgree` all OFF→**ON**. 6-fold WF PF 1.243→**1.274**/worst
-  1.102→**1.191**/6-of-6; 20k MC full-stream PF 1.686→**1.802**, maxDD 27.7→**23.1%**, P(>30%) 20.5→13.1%.
-  MomVeto alone already dominates → not overfit. All 3 real EA inputs (no recompile). Shipped to engine
-  LOCK + `KK-MasterVP-XAUUSD-M5.set` (EA folder + kenkem Presets + MT5 Tester Presets dir).
-  ▶️ **AWAITING 1 MT5 PARITY RE-RUN** (XAU **M5** chart, EA `dquants\KK-MasterVP\KK-MasterVP`, preset
-  `KK-MasterVP-XAUUSD-M5.set`, `InpExportParity=true`, 2025.06.19–2026.05.30, every-tick) → `parity_diff.py`.
+- **MasterVP (XAU M5) — TESTED + REVERTED to baseline (commit ded3e81; was briefly locked 1c5afbc):**
+  gates `BrkVetoSfp`+`MomVeto`+`MtfAgree` improved POOLED 6-fold PF 1.243→1.274 + MC DD 27.7→23.1%, BUT
+  the MT5 run (`mt5_runs/RUN_2026-06-20_xau_m5_gates_lock`) + per-fold A/B exposed regime non-stationarity:
+  the gain is carried by 2025; the gates BLOCK continuation breakouts in strong trends → HURT the recent
+  4mo (F5 −28%, F6 −43%). On 2026 H1 baseline wins EVERY axis (PF 1.339 vs 1.275, net +12.2k vs +8.6k,
+  dd 10.6 vs 16.5%). **User chose baseline** (recent regime = forward proxy). Lock + preset reverted
+  (engine = 1414 trades = original baseline). **MT5 parity itself CONFIRMED faithful** (424/489 matched,
+  PF 1.275 vs 1.246, lag 2%; residual = feed/spread, not logic). Harness `wf_mastervp.py` + run kept.
+  🔑 LESSON: decompose per-fold (esp. most-recent OOS) BEFORE locking a filter — pooled WF avg hides regimes.
 - NEXT after T1: T2 session/hour + ATR-band sweep; T3 mean-reversion activation (user's flagged frontier).
+  **For both: run the per-fold + recent-regime decomposition before locking anything.**
 
 ## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
 Added two notebooks teaching the half that made MasterVP *reliable* (00→10 only taught finding an edge).
