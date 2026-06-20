@@ -159,6 +159,29 @@ if __name__ == "__main__":
         report("C6 DYNoff dropE2", {**DYN, **noE2})
         report("C7 DYNoff+E1RR1.7+E4RR1.8", {**DYN, "E1_RR": "1.7", "E4_RR": "1.8"})
 
+    elif fam == "reorder":
+        print("== ENTRY PRIORITY REORDER (E1>E4>E2 via ENTRY_E4_BEFORE_E2) ==")
+        D3 = {"USE_DYNAMIC_RR_SCALING": "false", "E1_ATR_SL_CAP_MULTIPLIER": "3.5",
+              "SIDEWAYS_BLOCK_THRESHOLD": "45", "MIN_ENTRY_ATR_PERCENTILE": "70"}
+        RE = {"ENTRY_E4_BEFORE_E2": "true"}
+        report("baseline E1>E2>E4", {})
+        report("baseline +reorder", RE)
+        report("D3", D3)
+        report("D3 +reorder", {**D3, **RE})
+        # per-quarter for D3 vs D3+reorder
+        QTRS = [("25Q2", "2025.03.01", "2025.06.30"), ("25Q3", "2025.07.01", "2025.09.30"),
+                ("25Q4", "2025.10.01", "2025.12.31"), ("26Q1", "2026.01.01", "2026.03.31"),
+                ("26Q2", "2026.04.01", "2026.05.31")]
+        for name, ov in [("D3", D3), ("D3+reorder", {**D3, **RE})]:
+            rows = run(ov)
+            print(f"-- {name} --")
+            for q, lo, hi in QTRS:
+                m = full_metrics([(t, p) for t, p, d, _ in rows if lo <= d <= hi])
+                print(f"   {q} n={m['n']:3d} net={m['net']:+7.0f} PF={m['pf']:.3f} dd={m['dd']:6.0f}")
+        # per-kind to confirm E4 captures more
+        bykind("D3 per-kind", D3)
+        bykind("D3+reorder per-kind", {**D3, **RE})
+
     elif fam == "wf":
         # Quarter-by-quarter: does C2 robustly beat baseline in EVERY window (not just pooled)?
         QTRS = [("25Q2", "2025.03.01", "2025.06.30"), ("25Q3", "2025.07.01", "2025.09.30"),

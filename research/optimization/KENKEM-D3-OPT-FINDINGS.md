@@ -38,10 +38,13 @@ break-even-to-losing. A pooled PF of 1.27 hid this. D3 broadens it:
 | **profitable** | **2 / 5** | **4 / 5** |
 
 ## Sweep evidence (what's a lever vs what's inert)
-- **Entry priority is inverted vs profitability.** Detection is first-match-wins E1→E2→E4 (one slot/bar,
-  faithful to EA `DetectNewEntry`, `:2225` `detectedTrade.type==""`). Per-kind PF: **E4 1.40 (best) but
-  lowest priority**, E1 1.24, **E2 1.08 (worst) but outranks E4** → E2 steals ~10 high-PF E4 setups.
-  Fix candidates: drop E2 (risk-appetite, cuts net here) or reorder E1→E4→E2 (EA change, untested).
+- **Entry priority looks inverted but is actually correct (TESTED).** Detection is first-match-wins
+  E1→E2→E4 (one slot/bar, faithful to EA `DetectNewEntry`, `:2225` `detectedTrade.type==""`). Static
+  per-kind PF (E4 1.40 best/lowest-prio, E2 1.08 worst/outranks-E4) *suggested* reordering E1→E4→E2.
+  **Tested via `ENTRY_E4_BEFORE_E2` flag → REJECTED:** reorder gave E4 +14 bars but its PF COLLAPSED
+  1.51→1.24 (net +808→+551), book PF 1.401→1.268, worse in 4/5 quarters. Contested bars (both arm)
+  self-select for E4 WEAKNESS; E2 absorbing them first KEEPS E4 selective (E4's in-book PF 1.51 > E4
+  solo 1.40 *because* of this). Keep EA order; **keep E2** (its hidden job is protecting E4 selectivity).
 - **E5 / E1+E5 unattractive.** E5 solo PF 1.04 (310 trades, near-zero edge); E1+E5 = 1.06 (worse than
   E1 alone). E5 is net-negative alongside E1 (−96..−114). Needs much tighter gating before it helps.
 - **`MIN_ENTRY_ATR_PERCENTILE` is the master gate.** OFF → 512 trades, 2026 −1916, DD 2038. 65→70 (D3)

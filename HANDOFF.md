@@ -201,13 +201,14 @@ ALL + 2025/2026-OOS + per-quarter). Data = XAU 2025-03→2026-05 (15mo, NOT 2024
 - **Result:** net +2101→**+2194**, PF 1.269→**1.401**, maxDD 907→**522 (−42%)**, Sharpe 2.09→**2.97**,
   2026 OOS **−145→+470**. Per-quarter: baseline = ONE-QUARTER-WONDER (100% net from 25Q4); D3 = **4/5
   quarters profitable** (only 25Q3 summer-chop loses in both).
-- **Key structural finding:** entry priority E1→E2→E4 is INVERTED vs PF (E4 1.40 best but lowest prio;
-  E2 1.08 worst but steals ~10 E4 setups). Drop-E2 HURTS net here (only cuts DD); reorder E1→E4→E2 is
-  an untested EA change. E5/E1+E5 unattractive (E5 net-neg alongside E1). SL floors INERT; E2/E4 cap
-  tightening is a regime trap; most entry gates inert at default (edge is NOT in stricter entries).
+- **Key structural finding:** entry priority E1→E2→E4 LOOKS inverted vs PF but is CORRECT. Reorder
+  E1→E4→E2 (flag `ENTRY_E4_BEFORE_E2`, default off) **TESTED → REJECTED**: E4 got +14 bars but PF
+  collapsed 1.51→1.24, book PF 1.401→1.268, worse 4/5 quarters. Contested bars self-select for E4
+  weakness; E2 absorbing them KEEPS E4 selective → **keep EA order + keep E2.** Drop-E2 also HURTS net
+  here. E5/E1+E5 unattractive. SL floors INERT; E2/E4 cap tightening is a regime trap; most entry gates
+  inert at default (edge is NOT in stricter entries).
 - ▶️ **NEXT: MT5 re-run KenKemExpert (XAU M1, full 2025.03.02–2026.05.29) with the D3 preset** to confirm
   the engine D3 reproduces (baseline parity already validated; D3 only flips standard inputs), then I diff.
-  Optional future: test the E1→E4→E2 priority reorder in-engine.
 
 ## 🟢 KenKem E4 — FIRST PARITY DIFF → SL-cap bug fixed → recall 78.7%→94.3% (2026-06-20, commit af8b798)
 First-ever E4 benchmark (engine vs `RUN_2026-06-19_..._E4only`, 244 MT5 trades; feed the run's

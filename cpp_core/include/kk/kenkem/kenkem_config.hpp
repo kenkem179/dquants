@@ -40,6 +40,9 @@ struct KenKemConfig {
     bool   enable_e2              = true;
     bool   enable_e4              = true;
     bool   enable_e5              = false;   // SuperBros M1 EMA-alignment (default off, like the EA)
+    // EXPERIMENT (not EA-faithful): when true, detect_entry evaluates E4 BEFORE E2 so the higher-PF E4
+    // entry wins a bar where both have armed triggers (the EA hardcodes E1->E2->E4). Default false = faithful.
+    bool   entry_e4_before_e2    = false;
     // E3 intentionally absent (counter-trend, out of scope).
     double max_loss_ratio_e5      = 0.02;    // COMMON_MAX_RISK_PER_TRADE * 1.0
 
@@ -443,6 +446,7 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "ENABLE_E1_ENTRIES") p.enable_e1 = kbool(val);
     else if (key == "ENABLE_E2_ENTRIES") p.enable_e2 = kbool(val);
     else if (key == "ENABLE_E4_ENTRIES") p.enable_e4 = kbool(val);
+    else if (key == "ENTRY_E4_BEFORE_E2") p.entry_e4_before_e2 = kbool(val);
     else if (key == "ENABLE_E5_ENTRIES") p.enable_e5 = kbool(val);
     else if (key == "E5_MAX_EMA_CROSS_AGE") p.e5_max_ema_cross_age = I();
     else if (key == "E5_MIN_MOMENTUM_ADX") p.e5_min_momentum_adx = D();

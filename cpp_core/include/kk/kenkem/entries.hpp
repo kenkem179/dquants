@@ -356,12 +356,17 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
     };
 
     struct Cand { int kind; bool en; int up; int down; int maxage; };
-    const Cand cands[4] = {
+    // EA-faithful order = E1->E2->E4->E5. Experiment ENTRY_E4_BEFORE_E2 swaps E2/E4. TESTED 2026-06-20 &
+    // REJECTED: reorder gave E4 +14 bars but its PF COLLAPSED 1.51->1.24 (net +808->+551), book PF
+    // 1.401->1.268. Contested bars self-select for E4 WEAKNESS; E2 taking them first KEEPS E4 selective.
+    // The EA's E1->E2->E4 order is correct. Flag kept (default false = faithful) for reproducibility only.
+    Cand cands[4] = {
         { 1, c.enable_e1, tg.ema_up,  tg.ema_down,  c.e1_max_cross_age },
         { 2, c.enable_e2, tg.e75_up,  tg.e75_down,  c.e2_max_touch_age },
         { 4, c.enable_e4, tg.ichi_up, tg.ichi_down, c.e4_max_cross_age },
         { 5, c.enable_e5, tg.e5_up,   tg.e5_down,   c.e5_max_ema_cross_age },
     };
+    if (c.entry_e4_before_e2) { Cand tmp = cands[1]; cands[1] = cands[2]; cands[2] = tmp; }
     for (const Cand& cd : cands) {
         if (!cd.en) continue;
         for (int dir = 0; dir < 2; ++dir) {           // long (0) before short (1)
