@@ -85,7 +85,12 @@ public:
     }
 
     // Feed one tick (UTC epoch-ms order). Drives management + new-bar entry.
-    void on_tick(const Tick& t) {
+    void on_tick(const Tick& t_raw) {
+        // Optional synthetic spread widening (cost-parity stress): grow the bid/ask gap
+        // symmetrically around mid so SIGNALS (computed off the bid bars) are unchanged and
+        // only fill/exit COST rises. Models a wider-spread live broker than the tick feed.
+        Tick t = t_raw;
+        if (extra_spread_ > 0.0) { const double h = extra_spread_ * 0.5; t.bid -= h; t.ask += h; }
         // Determine the forming-bar index for this tick: the largest bar whose start <= ts.
         int forming = cur_forming_;
         while (forming + 1 < N_ && t.ts_ms >= bars_[forming + 1].ts_ms) ++forming;
@@ -124,6 +129,8 @@ public:
     void set_debug_window(int64_t from_ms, int64_t to_ms) { dbg_from_ = from_ms; dbg_to_ = to_ms; }
     // Walk-forward fold cap: open no new positions on signal bars at/after this UTC ms (0 = off).
     void set_trade_to_ms(int64_t ms) { trade_to_ms_ = ms; }
+    // Cost-parity stress: extra spread (price units) added to every tick's bid/ask gap (0 = off).
+    void set_extra_spread(double s) { extra_spread_ = (s > 0.0) ? s : 0.0; }
 
     const std::vector<TradeRecord>& trades() const { return trades_; }
     double balance() const { return rm_.balance(); }
@@ -498,6 +505,7 @@ private:
     int     raw_signals_ = 0;
     int64_t dbg_from_ = 0, dbg_to_ = 0;
     int64_t trade_to_ms_ = 0;
+    double  extra_spread_ = 0.0;
     std::vector<TradeRecord> trades_;
 };
 

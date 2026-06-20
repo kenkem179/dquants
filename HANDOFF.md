@@ -14,17 +14,25 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 - **Chain proven:** engine-vs-engine smoke (108 trades, May-2026 XAU M5) → `parity_diff.py` **PASS**.
 - **Procedure documented:** `research/mastervp_parity/PARITY_WORKFLOW.md` (3 steps: MT5 tester with
   `InpExportParity=true` → C++ backtester same window/set → `parity_diff.py` PASS/FAIL).
-- **✅ FIRST PARITY RUN DONE → VERDICT FAIL, root-caused** (`research/mastervp_parity/mt5_runs/
-  RUN_2026-06-20_xau_m5_parity/`). XAU M5, 2026.01-06: EA 631 trades vs engine 563, 416 matched.
-  Entries FAITHFUL (entryΔ≈0); SL formula identical. **ROOT CAUSE = 10× broker-feed SPREAD mismatch:**
-  engine ticks avg **18.9 pts** vs live Exness-KK **189 pts** → engine PF **1.31** vs MT5 PF **1.07**.
-  ATR-mode hypothesis tested+DISCONFIRMED. See memory [[mastervp-feed-spread-10x-mismatch]].
-- **🧨 PRODUCTION IMPLICATION:** the locked OOS PF (XAU M3/M5, BTC, Monster — all tuned on the tight-spread
-  imported ticks) is **NOT realizable on the live account**. Locks must be RE-VALIDATED at real spread.
-- **▶️ NEXT ACTION (decision):** (a) re-import Exness-KK ticks for the window + re-run/re-sweep, OR
-  (b) add `--extra-spread` to the mastervp backtester and stress all locks at ~+170 pts, re-check PF +
-  plateau + WF. Backtester currently has NO spread flag (fills on native tick bid/ask). Only after
-  cost-parity holds is the per-trade SL/exit residual worth chasing. KenKem still NOT production-eligible.
+- **✅ FIRST PARITY RUN → FAIL → ROOT-CAUSED → EA FIXED** (`research/mastervp_parity/mt5_runs/
+  RUN_2026-06-20_xau_m5_parity/`). XAU M5, 2026.01-06: EA 631 vs engine 563, 416 matched, entries
+  FAITHFUL (entryΔ≈0), SL formula identical.
+  - **ROOT CAUSE = EA runner-TP PORT BUG (not spread).** Exit-tag decomp: MT5 **170 TP** / 175 SL-WIN /
+    286 SL-LOSS vs engine **10 TP** / 313 SL-WIN / 239 SL-LOSS. EA capped broker TP at `sig.tp2`=1.8R;
+    engine uses 10R runner backstop + chandelier trail (`position_manager.hpp:93-97`, trail_runner=true,
+    enable_struct_tp=false, runner_rr=10). **FIXED `Engine.mqh:226`:** TP=`sig.entry±sig.risk·InpRunnerRr`
+    when InpTrailRunner. EA recompiles **0/0**. Memory [[mastervp-feed-spread-10x-mismatch]].
+  - **SPREAD = real but MINOR:** engine feed 18.9pts vs live Exness 189pts (10×), but `--extra-spread 0.170`
+    moved PF only 1.31→1.28 (~$2/trade). Added `--extra-spread` to backtester (`tick_engine::set_extra_spread`,
+    golden tests green) for live-cost stress. (My first "spread=root cause" call was WRONG — corrected.)
+  - ATR-mode hypothesis tested + DISCONFIRMED.
+- **▶️ NEXT ACTION (user, MT5 re-run to confirm the fix):**
+  - **Pair:** XAUUSD · **Period:** 2026.01.01→2026.06.01 · **TF:** M5
+  - **Expert:** Navigator ▸ `dquants ▸ KK-MasterVP ▸ KK-MasterVP` (recompiled with the TP fix)
+  - **Set:** `dquants/mql5/experts/KK-MasterVP/KK-MasterVP-XAUUSD-M5.set` + `InpExportParity=true`
+  - Hand back `trades_XAUUSD-Exness-KK_PERIOD_M5.csv`; I re-diff (expect TP 170→~10, PF/exits converge).
+  - Then: stress the lock with `--extra-spread 0.17` for live PF; replicate TP fix logic into Monster.
+  KenKem still NOT production-eligible (E5 parity open).
 
 ## 🟣 KK-MasterVP-Monster (BTC) — WALK-FORWARD RE-LOCK this session (robustness ↑, EA re-shipped)
 **User ask (this session):** autopilot the walk-forward / multi-fold robustness path I proposed last

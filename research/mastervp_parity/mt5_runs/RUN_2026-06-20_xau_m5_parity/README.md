@@ -27,7 +27,29 @@ First production-gate parity run for the KK-MasterVP XAU M5 lock. **VERDICT: FAI
 | profit factor | 1.316 | 1.071 |
 | exit-tag mismatch | 141/416 | |
 
-## Diagnosis — entries faithful; ROOT CAUSE = 10× broker-feed SPREAD mismatch
+## ⚠️ CORRECTION — root cause is an EA runner-TP PORT BUG, not spread
+Deeper decomposition (after the spread test below) overturned the first call. Exit-tag breakdown:
+
+| exit | MT5 | engine |
+|---|---|---|
+| TP | **170** | **10** |
+| SL-WIN | 175 | 313 |
+| SL-LOSS | 286 | 239 |
+
+The EA set the broker TP to `sig.tp2` = **rrBrk 1.8R**, capping the runner; the engine (with
+`trail_runner=true`, `enable_struct_tp=false`, `runner_rr=10` — `position_manager.hpp:93-97`) uses a
+**10R** backstop and trails out. So MT5 hit TP 170× where the engine trails (10×). That structural skew —
+not spread — drives the PF gap (engine wins bigger: avgW 128 vs 89; loses bigger: avgL 135 vs 100).
+**FIXED** in `Engine.mqh:226`: TP now = `sig.entry ± sig.risk·InpRunnerRr` when `InpTrailRunner` (mirrors
+the engine). EA recompiles 0/0. **Re-run MT5 to confirm** (TP count should drop ~170→~10).
+
+**Spread is real but MINOR:** engine feed 18.9 pts vs live 189 pts (10×), but `--extra-spread 0.170`
+moved engine PF only 1.31→1.28 (~$2/trade). Keep `--extra-spread` for honest live-cost stress; it is NOT
+the parity gap. (Original spread-focused diagnosis below is superseded by this section.)
+
+---
+
+## (SUPERSEDED) Original diagnosis — entries faithful; thought ROOT CAUSE = 10× broker-feed SPREAD
 - **Entry parity is GOOD:** on the matched trades `entryΔ` is mostly **0.000**. Signal detection +
   entry timing port cleanly. The signal logic is NOT the problem.
 - **SL formula is IDENTICAL** on both sides — `sl = entry_close ± max(sl_atr_brk·atr1, 8·pip)`

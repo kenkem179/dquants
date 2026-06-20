@@ -223,7 +223,14 @@ void OnNewBar()
    double entry=sig.is_long?ask:bid;
    double risk=MathAbs(entry-sig.sl); if(risk<=0) return;
    double minDist=KKMinStopDist(_Symbol);
-   double sl=sig.sl, tp=sig.tp2;
+   // Runner TP backstop — MIRROR cpp position_manager.hpp:93-97. With InpTrailRunner the runner
+   // target is entry±risk·RunnerRr (≈trail-to-exit); the chandelier trail does the real exit.
+   // The old `tp=sig.tp2` capped the runner at rrBrk (1.8R) -> EA hit TP where the engine trailed
+   // (parity: EA 170 TP vs engine 10 TP). Uses signal entry/risk like the engine, not the fill.
+   double sl=sig.sl;
+   double tp=(InpTrailRunner && sig.risk>0.0)
+             ? (sig.is_long ? sig.entry+sig.risk*InpRunnerRr : sig.entry-sig.risk*InpRunnerRr)
+             : sig.tp2;
    KKClampStops(sig.is_long,entry,minDist,sl,tp);
    risk=MathAbs(entry-sl); if(risk<=0) return;
    // lot from risk budget (port of RiskManager::compute_lot; risk_unit honored via RiskBudgetUsd).
