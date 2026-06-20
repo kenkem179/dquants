@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: E5 real-path trace → hr_momentum_e5 fix (commit 2f5143c)._
 
 ## 🟢 KK-MasterVP — TRADE-LEVEL PARITY VERIFIER SHIPPED (production gate, commit 5fc34c9)
 **User ask:** make perfect MQL EA editions from the C++ pipeline for production; chose the
@@ -160,55 +160,45 @@ preserved below (📌 PAUSED) — not abandoned.
 
 ---
 
-## 🟢 KenKem E5 — 2026 selection break LOCALIZED to gate-selection (NOT arming/ATR/pip/limit) (2026-06-20)
-_User ran a **2026-only E5 gate trace** (2026-01-01→06-01); archived
-`mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_gatetrace/` (108 E5 +949). Engine fresh-window repro
-(set `MT5_E5_2026.set`, `--from-ms 1767225600000 --to-ms 1780272000000`) = **75 E5 −683**, matched 49 /
-missed 59 / overfire 26. Full writeup: **`research/kenkem_parity/E5_2026_GATETRACE_FINDINGS.md`**._
+## 🟢 KenKem E5 — real-path trace COLLECTED → 1 fix shipped (+8 recall) → residual decomposed (2026-06-20)
+_Real-path E5 entry trace ran clean: `mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_realtrace/`
+(`realtrace_*.csv` = 4,914 armed/fired E5 bar snapshots w/ the LIVE per-bar `final_decision`; 108 E5 +949).
+Engine repro (commit **2f5143c**, `MT5_E5_2026.set`, `--from-ms 1767225600000 --to-ms 1780272000000`).
+Full writeup: **`research/kenkem_parity/E5_REALTRACE_FINDINGS.md`**._
 
-_**Decisively KILLED 5 hypotheses:** NOT config (every selection key matches incl E5_MAX_EMA_CROSS_AGE=28),
-NOT limit orders (`ENABLE_LIMIT_ORDERS=false`), NOT pip-tolerance (price/htf <5%), NOT ATR computation
-(engine ATR + atr_pctile EXACT vs MT5 offset-corrected), **NOT cross-arming** (E5 onsets reconstructed from
-the exact EMA cols are identical: LONG 680 vs 681, SHORT 655 vs 655; consume-on-fire matches Entry5.mqh:359).
-**IT IS a pervasive multi-bar GATE-SELECTION divergence** among identical onsets — engine gates pass 75 vs
-MT5 108. Single-gate A/B failed: disable MIN_ENTRY_ATR_PERCENTILE → 218; high-risk-bypass → 167 but recall
-only 49→51 / overfire 26→114 (REVERTED — MT5's low-pctile entries are selective). Even ATR fully bypassed
-still misses 57/108 → no single gate is the lever; leading suspect = **systemic gate ADX/close 1-bar shift**
-(engine gate ADX is one bar staler than MT5: trace eng[k]==mt5[k-1] @99.9%, EMA matches shift 0)._
+_**✅ FIX SHIPPED — `hr_momentum_level(E5)` = NONE (risk_exec.hpp).** EA `Entry5::GetHighRiskMomentumCheck()`
+is hardcoded `NONE` (InputParams.mqh NONE=-1) → the E5 high-risk route applies NO momentum gate; the engine
+had no kind==5 case so it fell through to `c.hr_momentum_e1`=3 (M1_AND_M3), wrongly filtering E5 HR entries.
+**matched 49→57, missed 59→51, recall 45.4→52.8%** (recovered 8 of the 40 HIGH_RISK_ROUTE misses). Golden 28/28._
 
-_⚠️ **Two trace traps** (cost time — record): (1) `trace_dumper` logs close/adx/atr/rsi 1 bar staler than
-EMA; (2) `Entry5.TraceBar` gate cols use a SEPARATE `m_tr_` state AND `L_atrlo` uses ATR_PERCENTILE_LOW=20,
-not the real `MIN_ENTRY_ATR_PERCENTILE`=65 (which lives in `GetEntryBlockReason`, ABSENT from the trace).
-So `diff_e5_trace.py` gate-blame is UNRELIABLE for arming/ATR — trust EMA-derived onsets + the engine's own gate logic._
+_**Residual 51 missed DECOMPOSED** (2 new env-gated engine diagnostics, byte-identical off: `KK_EXEC_DIAG`
+= execute-stage block reason; `KK_E5_GATE` = per-bar E5 armed-state + detection-gate first-fail):_
+- _**26 unarmed** — engine never arms the E5 alignment-onset (M1 4-EMA strict-alignment onset divergence)._
+- _**15 armed→htf** — engine E5 HTF(M5) filter blocks where MT5 `htf_block=0` (HTF value diff near thr)._
+- _**7 armed→trend_core** — engine `trend_core_score==0` where MT5 passes (DI/EMA-structure value diff)._
+- _**3 armed→PASS** — timing/occupancy (engine fired the cross on another bar)._
+- _Only **9/51** are execute-stage (ATR). The gap is **DETECTION-stage value divergence**, NOT exec, NOT
+  the high-risk route (now fixed), NOT the disconfirmed ADX-1-bar-shift. **37/42 detection-misses are genuine
+  non-detections** (not firing-timing). All have MT5 adx/tq/price/session PASS, sideway/htf=0, age 0–27<28._
 
-_No engine code changed (2 speculative fixes tried + reverted; build GREEN, 28 tests pass). **DO NOT lock an
-entry-tightened .set.** Prior: E5 onset off-by-one (`d1704ab`) + exit parity (`d4d2f28`,`5e34b0c`). E1+E2 ~93–96%._
+_⚠️ **Trace traps** (unchanged): `trace_dumper` close/adx 1 bar staler than EMA; `Entry5.TraceBar` gate cols
+use separate `m_tr_` state + wrong `L_atrlo`. The **real-path `realtrace_*.csv` is the trustworthy instrument**
+(LIVE trigger), but it logs gate RESULTS only — not the HTF/EMA INPUTS needed to value-diff (see blocker)._
 
-### ▶️ NEXT for E5 (real-path trace SHIPPED — awaiting one MT5 run)
-1. **[DONE — code]** Real-path E5 entry trace BUILT + compiled (0 err). New `Parity/RealTrace.mqh`
-   (`InpExportRealTrace`, struct `E5RealRow`, writer → `MQL5/Files/KenKem/realtrace_<sym>.csv`).
-   `Entry5::Detect()` instrumented to snapshot the **LIVE** trigger (real `m_lastBullishSignal` onset age,
-   real `cache.adx[0]`, the gate that short-circuited) — NOT the `TraceBar` mirror. EA fills execution-side
-   gate inputs read-only after Detect: `cachedATRPercentile` vs `MIN_ENTRY_ATR_PERCENTILE` (the binding =65
-   gate `TraceBar` never models — it only checks `ATR_PERCENTILE_LOW`=20), high-risk route, opposing/streak.
-   Deliberately does **NOT** call `GetEntryBlockReason()` (mutates `blackSwanBlockedUntil`) — replicates the
-   min_entry gate read-only so the trace can't perturb trading. `InpExportRealTrace=true` already appended to
-   `RUN_2026-06-20_..._E5only_gatetrace/reproduce.set`. Files: `kenkem/.../KenKem/Parity/RealTrace.mqh`,
-   `Entries/Entry5.mqh`, `KenKemExpert.mq5` (`KenKemExpert.ex5` recompiled 0/1-pre-existing-warn).
-   **One row per ARMED/fired E5 bar** (col `interesting`); join key `ts_ms`/`dt` (UTC). E5 analog of `kke1gate.csv`.
-2. **[⚠️ USER — MT5, BLOCKER] First attempt was MISCONFIGURED — re-run needed.** The 05:25 run used a
-   FULL default `.set` (`ENABLE_E1/E2/E4=true`, **`ENABLE_E5_ENTRIES=false`**) not `reproduce.set`, so the
-   E5 path never ran → `realtrace_XAUUSD-Exness-KK.csv` came back **header-only** (trades were E1/E2/E4).
-   FIX: in the Strategy Tester Inputs tab, **Load** `reproduce.set` (E5-only: E1-E4=false, E5=true,
-   `InpExportRealTrace=true`) and confirm `ENABLE_E5_ENTRIES=true` shows before running. Same 2026 window.
-   Output → `MQL5/Files/KenKem/realtrace_*.csv`. Hand back; I diff vs engine to pin the missed-59.
-3. **[DONE — ENGINE, no new data] Forming-ADX hypothesis TESTED → DISCONFIRMED for recall.** Toggleable
-   `E5_GATE_FORMING_ADX` (default OFF, golden byte-identical) feeds forming shift-0 ADX/DI to the E5 floor +
-   HTF. A/B (2026): overfire 26→21, net −683→−557, but **recall UNCHANGED 45.4% (matched 49, missed 59)**.
-   It makes the gate stricter; the missed-59 need it looser → wrong direction. **Gate-selection break is NOT
-   the 1-bar ADX shift.** Flag kept off (faithful refinement, doesn't earn parity). Harness `diff_e5_2026.py`;
-   code `gates.hpp`/`entries.hpp`/`kenkem_config.hpp`; writeup in `E5_2026_GATETRACE_FINDINGS.md` (UPDATE section).
-   → The real-path trace (item 1) is now the SOLE decisive instrument; missed-59 is the target metric.
+### ▶️ NEXT for E5 — BLOCKER: realtrace lacks the inputs to value-diff the 48 detection-misses
+The 26 unarmed + 15 htf + 7 trend_core are genuine engine-vs-MT5 VALUE diffs, but `realtrace_*.csv` carries
+only `htf_block_long/short`, `aligned_bull/bear`, `ema25`, `ema200` — NOT the M5-HTF EMA/ADX/DI inputs nor
+the full M1 4-EMA stack. `reproduce.set` E5 HTF/trend-core/alignment config MATCHES the engine (no config bug).
+1. **[⚠️ USER — needs my EA edit FIRST, then 1 MT5 re-run]** I will add columns to `Parity/RealTrace.mqh`:
+   **M1 ema0..4** (full strict-alignment stack, for the 26 unarmed), **M5 ema0..4 + M5 adx + M5 di+/di−**
+   (for the 15 htf), and **M1 di+/di−** (for the 7 trend_core). Then user re-runs the SAME E5-only 2026
+   config → I value-diff each bucket against the engine. (Same expert/window/`reproduce.set`, just recompiled.)
+2. **[ENGINE — I can start now without data]** The **26 unarmed (alignment-onset)** is the biggest bucket and
+   may be diagnosable from the 2 EMA cols already present (ema25/ema200 envelope) + onset-timing logic in
+   `triggers.hpp:177-189`. Check whether the engine's onset bar differs from MT5's `up_age/dn_age` (→ early
+   expiry past the 28 cap). Start here while the richer-column run is pending.
+3. **[DONE — DISCONFIRMED] Forming-ADX** (`E5_GATE_FORMING_ADX`, default OFF): recall UNCHANGED 45.4%; makes
+   the gate STRICTER, wrong direction. Not the lever. (`E5_2026_GATETRACE_FINDINGS.md` UPDATE section.)
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`
