@@ -27,6 +27,7 @@
 #include "Inputs.mqh"
 #include "Strategy.mqh"
 #include "SessionNews.mqh"
+#include "Parity.mqh"
 #include "NetVolume.mqh"
 
 CTrade        mvpTrade;
@@ -80,6 +81,7 @@ int OnInit()
    g_peakEquity=AccountInfoDouble(ACCOUNT_EQUITY);
    g_dayStartEquity=g_peakEquity; g_lastDayKey=-1; g_cooldownUntil=0;
 
+   ParityInit();
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
    mvpTrade.SetDeviationInPoints(InpDeviationPoints);
@@ -90,6 +92,18 @@ int OnInit()
 void OnDeinit(const int r){
    IndicatorRelease(hAtr);IndicatorRelease(hRsi);IndicatorRelease(hAdx);IndicatorRelease(hEmaF);IndicatorRelease(hEmaS);
    IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);IndicatorRelease(hAtrM1);
+   ParityClose();
+}
+
+// Trade-level parity: capture realized P&L + exit reason as each position closes (tester-only).
+void OnTradeTransaction(const MqlTradeTransaction &trans,const MqlTradeRequest &req,const MqlTradeResult &res){
+   if(!InpExportParity) return;
+   if(trans.type!=TRADE_TRANSACTION_DEAL_ADD) return;
+   if(!HistoryDealSelect(trans.deal)) return;
+   if(HistoryDealGetString(trans.deal,DEAL_SYMBOL)!=_Symbol) return;
+   if(HistoryDealGetInteger(trans.deal,DEAL_MAGIC)!=(long)InpMVPMagic) return;
+   if(HistoryDealGetInteger(trans.deal,DEAL_ENTRY)!=DEAL_ENTRY_OUT) return;
+   ParityOnDealOut(trans.deal,trans.position);
 }
 
 bool MvpHasPosition(){
@@ -236,7 +250,13 @@ void OnNewBar()
    double entry=sig.is_long?ask:bid;
    double risk=MathAbs(entry-sig.sl); if(risk<=0) return;
    double minDist=KKMinStopDist(_Symbol);
-   double sl=sig.sl, tp=sig.tp2;
+   // Runner TP backstop — MIRROR cpp monster_engine.hpp:275-287. With InpTrailRunner the runner
+   // target extends to entry±risk·RunnerRr (5.3R) and the chandelier trail does the real exit.
+   // The old `tp=sig.tp2` capped the runner at rrBrk (3.0R) -> EA hit TP where the engine trailed.
+   double sl=sig.sl;
+   double tp=(InpTrailRunner && sig.risk>0.0)
+             ? (sig.is_long ? sig.entry+sig.risk*InpRunnerRr : sig.entry-sig.risk*InpRunnerRr)
+             : sig.tp2;
    KKClampStops(sig.is_long,entry,minDist,sl,tp);
    risk=MathAbs(entry-sl); if(risk<=0) return;
    // lot from risk budget (port of RiskManager::compute_lot; risk_unit honored via RiskBudgetUsd).
@@ -248,7 +268,14 @@ void OnNewBar()
    if(lot<=0.0) return;
    sl=NormalizeDouble(sl,_Digits); tp=NormalizeDouble(tp,_Digits);
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
-   if(ok){ g_tp1Done=false; g_best=entry; SN_OnFill(); }
+   if(ok){
+      g_tp1Done=false; g_best=entry; SN_OnFill();
+      if(InpExportParity && PositionSelect(_Symbol)){
+         double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
+         ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
+                      regime.trend,fill,sl,(ask-bid),AtrAt(1));
+      }
+   }
 }
 
 // Per-tick: TP1 partial -> BE, then ATR chandelier trail (tighten-only).
@@ -263,6 +290,7 @@ void MvpManage()
       double risk=MathAbs(entry-sl); if(risk<=0) continue;
       double minDist=KKMinStopDist(_Symbol);
       if(g_best==0) g_best=entry;
+      ParityTrackExcursion(price);
       if(isLong){ if(price>g_best) g_best=price; } else { if(price<g_best) g_best=price; }
       // TP1 partial -> BE
       if(!g_tp1Done){

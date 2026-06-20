@@ -120,4 +120,7 @@ input bool   InpUseEmbeddedNews = true;
 input group "===== Misc ====="
 input ulong  InpMVPMagic        = 88260620;
 
+input group "===== Parity (trade-level CSV vs C++ engine; OFF in live) ====="
+input bool   InpExportParity    = false;    // ON in the MT5 tester to emit trades_<sym>_<tf>.csv for parity_diff.py
+
 #endif // KKMON_INPUTS_MQH
