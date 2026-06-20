@@ -282,6 +282,16 @@ private:
 
         Snapshot snap = build_snapshot(b_, cfg_, f, align);
         if (!snap.valid || snap.atrM1 <= 0.0) return;
+        if (e5val_diag_ && cfg_.enable_e5) {  // KK_E5_VALDUMP: engine M1/M5/M15 DI+ADX (closed AND forming)
+            // the EA realtrace reads cache.diPlus[0] (M1 forming) + cache.adx[2,3]/diPlus/diMinus (HTF).
+            // Join on ts_ms to value-diff the 7 trend_core (M1 DI) + 15 htf (M5/M15 ADX/DI) misses.
+            std::fprintf(stderr,
+                "E5D,%lld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+                (long long)bar.ts_ms,
+                snap.diP[0], snap.diM[0], snap.diPF[0], snap.diMF[0], snap.adx[0], snap.adxF[0],
+                snap.adx[2], snap.diP[2], snap.diM[2], snap.adxF[2], snap.diPF[2], snap.diMF[2],
+                snap.adx[3], snap.diP[3], snap.diM[3], snap.adxF[3], snap.diPF[3], snap.diMF[3]);
+        }
         if (emit_gate_) {   // diagnostic: at each ARMED E1 bar, the gate verdict (vs MT5 KKE1GATE PASS rate)
             if (tg_.ema_up   != -1) std::fprintf(stderr, "EGATE,%lld,L,%s\n", (long long)bar.ts_ms,
                                                  entry_gate_ok(1, true,  b_, snap, align, cfg_) ? "PASS" : "BLOCK");
@@ -494,6 +504,7 @@ private:
     const bool emit_greason_ = std::getenv("KK_EMIT_GATE_REASON") != nullptr; // diagnostic: per-armed-bar E1 first-fail gate LABEL (vs MT5 kke1gate.csv)
     const bool exec_diag_ = std::getenv("KK_EXEC_DIAG") != nullptr;       // diagnostic: per-detected-E5 execute-stage block reason (vs MT5 realtrace)
     const bool e5gate_diag_ = std::getenv("KK_E5_GATE") != nullptr;       // diagnostic: per-bar E5 armed-state + detection-gate first-fail
+    const bool e5val_diag_ = std::getenv("KK_E5_VALDUMP") != nullptr;     // diagnostic: per-bar engine M1/M5/M15 DI+ADX (vs EA realtrace) for value-diff
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)

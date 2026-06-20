@@ -1,6 +1,27 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: E5 RealTrace +10 value-diff cols (M1 EMA stack + M1/M5/M15 DI/ADX) added & compiled 0err → awaiting 1 MT5 re-run._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest: profitability-uplift thrust T1 (dormant quality-gate WF sweeps). Plan in docs/BUILD-PLAN.md "🔥 ACTIVE THRUST"._
+
+## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
+User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting
+gates that ship OFF). 6-fold WF. New harness `research/mastervp_parity/wf_mastervp.py` (XAU M5, mirrors
+`wf_monster.py`). **PORTABILITY:** Monster's 4 gates are real EA `input`s (shippable); MasterVP's
+`InpNodeGateEnabled`+`InpBrkRequireFlow` are compile-constants (`non_input_keys`) → MT5 ignores `.set`,
+adopting needs an EA recompile.
+- **Monster (BTC M3) — DONE, NEGATIVE:** no gate beats baseline (PF 1.199/6-of-6/dd10.6%). BrkRequireFlow
+  HARMFUL (→1.055/4-folds), MtfAgree loses a fold, BrkVetoSfp only trades PF for dd. **NO CHANGE.**
+- **MasterVP (XAU M5) — RUNNING** (`/tmp/mvp_gate_sweep.log`, 32-combo product, ~46min). Baseline to
+  beat: PF **1.243**/6-of-6/worst1.102/dd12.5%/+16.6k. Analyze on completion; adopt only robust improvers.
+- NEXT after T1: T2 session/hour + ATR-band sweep; T3 mean-reversion activation (user's flagged frontier).
+
+## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
+Added two notebooks teaching the half that made MasterVP *reliable* (00→10 only taught finding an edge).
+**NB 11 `parity_ground_truth`** — ground-truth ladder, diff-config-before-logic (real `.set` diff),
+Wilder-vs-SMA ATR bug reproduced on real M1 bars (6.9% mean / 23% bucket flip), trade-level PASS/FAIL
+matcher (real `_locked_oos.csv`). **NB 12 `overfitting_and_drawdown_honesty`** — peak-vs-plateau,
+walk-forward (11/12 months PF>1) + Monte-Carlo (P(profit) 99.6%, PF 5th 1.10) on real `_wf_fullrun.csv`,
+drawdown honesty (calmest 4mo 13.9% vs full-year 27.7% vs MC95th 38.7%). Both executed 0-errors against
+real artifacts; README/GLOSSARY updated additively; generator `ds-study/scratch/_gen_nb11_12.py`. Nothing deleted.
 
 ## 🟢 KK-MasterVP — TRADE-LEVEL PARITY VERIFIER SHIPPED (production gate, commit 5fc34c9)
 **User ask:** make perfect MQL EA editions from the C++ pipeline for production; chose the
@@ -171,41 +192,30 @@ is hardcoded `NONE` (InputParams.mqh NONE=-1) → the E5 high-risk route applies
 had no kind==5 case so it fell through to `c.hr_momentum_e1`=3 (M1_AND_M3), wrongly filtering E5 HR entries.
 **matched 49→57, missed 59→51, recall 45.4→52.8%** (recovered 8 of the 40 HIGH_RISK_ROUTE misses). Golden 28/28._
 
-_**Residual 51 missed DECOMPOSED** (2 new env-gated engine diagnostics, byte-identical off: `KK_EXEC_DIAG`
-= execute-stage block reason; `KK_E5_GATE` = per-bar E5 armed-state + detection-gate first-fail):_
-- _**26 unarmed** — engine never arms the E5 alignment-onset (M1 4-EMA strict-alignment onset divergence)._
-- _**15 armed→htf** — engine E5 HTF(M5) filter blocks where MT5 `htf_block=0` (HTF value diff near thr)._
-- _**7 armed→trend_core** — engine `trend_core_score==0` where MT5 passes (DI/EMA-structure value diff)._
-- _**3 armed→PASS** — timing/occupancy (engine fired the cross on another bar)._
-- _Only **9/51** are execute-stage (ATR). The gap is **DETECTION-stage value divergence**, NOT exec, NOT
-  the high-risk route (now fixed), NOT the disconfirmed ADX-1-bar-shift. **37/42 detection-misses are genuine
-  non-detections** (not firing-timing). All have MT5 adx/tq/price/session PASS, sideway/htf=0, age 0–27<28._
+_**✅ RESIDUAL 51 missed VALUE-DIFFED (v2cols run, this session) — decomposition OVERTURNED.** The richer
+realtrace (10 new gate-INPUT cols, kenkem `ebd1bde`) + 2 new env-gated engine dumps (`KK_E5_VALDUMP`:
+E5V=M1 EMA stack@B-1/B-2/B-3 + alignment verdict; E5D=M1/M5/M15 DI+ADX closed&forming) → tool
+`diff_e5_valuediff.py`. The prior "26 unarmed + 15 htf + 7 trend_core" was a MISATTRIBUTION:_
+- _**42 M1 onset/arming** — engine never arms the M1 4-EMA strict-alignment onset (the near-sole root)._
+- _**1 htf** — engine M5 **closed** adx/di == EA realtrace EXACTLY (20.7,20.0,17.6); NOT an HTF value diff._
+- _**2 trend_core / 2 armed-pass / 4 nojoin** — negligible. HTF & trend-core were arming misclassifications._
 
-_⚠️ **Trace traps** (unchanged): `trace_dumper` close/adx 1 bar staler than EMA; `Entry5.TraceBar` gate cols
-use separate `m_tr_` state + wrong `L_atrlo`. The **real-path `realtrace_*.csv` is the trustworthy instrument**
-(LIVE trigger), but it logs gate RESULTS only — not the HTF/EMA INPUTS needed to value-diff (see blocker)._
+_**ROOT (proven, NOT a value/seeding bug):** the onset BAR-PAIRING. `KK_E5_VALDUMP` shift-test → the EA's
+logged alignment `ema25` matches the engine stack at **B-1 (m1s1) EXACTLY 42/42** (engine EMA values are
+correct == MT5 at the same bar), but the engine onset reads **B-2 (m1s2, faithful)**. **BUT a naive global
+fresh shift REGRESSES** (`KK_E5_FRESH_ONSET`: recall 52.8→41.7%, matched 57→45, overfire 33→53) — arming &
+fire are coupled, faithful B-2 is net-best. The 42 are marginal near-tie alignment bars._
 
-### ▶️ NEXT for E5 — ✅ EA value-diff columns ADDED → AWAITING 1 MT5 re-run
-The 26 unarmed + 15 htf + 7 trend_core are genuine engine-vs-MT5 VALUE diffs; the prior `realtrace_*.csv`
-carried only gate RESULTS (htf_block, aligned, ema25/ema200), not the gate INPUTS. **DONE this session:**
-added **10 value-diff columns** to `kenkem/.../Parity/RealTrace.mqh` + populated them in `Entries/Entry5.mqh`
-(struct copy flows through the EA's `GetRealTrace`→`WriteRealTraceRow`, no EA-body change). **Compiles 0 errors**
-(`KenKemExpert.mq5` v1.8.154, 1 pre-existing version-string warning). New cols appended after `final_decision`:
-- `ema75,ema100` — completes the M1 4-EMA strict-alignment stack (ema25/ema200 already present) → **26 unarmed**
-- `m1_diplus,m1_diminus` — M1 DI± the trend-core reads (adx_m1 already present) → **7 trend_core**
-- `m5_adx,m5_diplus,m5_diminus,m15_adx,m15_diplus,m15_diminus` — exact HTF ADX/DI the E5 HTF filter reads
-  (`Entry5.mqh:272-285`, cache idx 2=M5 / 3=M15; the gate reads ONLY ADX+DI, never M5 EMAs) → **15 htf**
+_**Worth chasing:** the 51 missed MT5 trades net **+466 (53% win)** — REPRESENTATIVE of the full E5 edge
+(+949/52%), unlike E1's all-loser misses. Recovering ≈ half the E5 P&L. Full writeup: `E5_REALTRACE_FINDINGS.md`._
 
-1. **[⚠️ USER — recompile + 1 MT5 re-run, EXACT]** Expert `Experts\…\KenKem\KenKemExpert.mq5` (v1.8.154,
-   recompile F7 to pull the edited includes) · Symbol **XAUUSD** (Exness, `XAUUSD-Exness-KK`) · Period
-   **2026.01.01 → 2026.06.01** · chart TF **M1** · input set
-   `research/kenkem_parity/mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_realtrace/reproduce.set`
-   (already has `InpExportRealTrace=true`, `INPUT_TF0=1`, E5-only). Output =
-   `MQL5/Files/KenKem/realtrace_XAUUSD-Exness-KK.csv`. Then I auto-collect + value-diff each bucket vs engine.
-2. **[ENGINE — startable now]** The **26 unarmed (alignment-onset)** is the biggest bucket; onset-timing in
-   `triggers.hpp:177-189` — check engine onset bar vs MT5 `up_age/dn_age` (early expiry past the 28 cap).
-3. **[DONE — DISCONFIRMED] Forming-ADX** (`E5_GATE_FORMING_ADX`, default OFF): recall UNCHANGED 45.4%; makes
-   the gate STRICTER, wrong direction. Not the lever. (`E5_2026_GATETRACE_FINDINGS.md` UPDATE section.)
+### ▶️ NEXT for E5 — DECISION POINT (recall is at the faithful 52.8% ceiling)
+The 42 onset misses need the EA's **exact latch internals**, not a shift (the shift regressed). To port
+MT5's precise `aligned@cur && !aligned@prv` pairing, the realtrace must add `m_prevBullishAligned`/
+`m_prevBearishAligned` (prior-bar alignment) + `m_lastBullishSignal`/`m_lastBearishSignal` (armed-bar idx).
+**Options:** (A) add those 4 cols to RealTrace.mqh + 1 more MT5 run → port the exact latch (regression risk,
+real +466 edge); (B) accept the 52.8% faithful ceiling and move to **E1/E2/E4** parity (per user's E5→E1
+directive). _Recommend B unless the user wants to push E5 recall._ Engine instruments + analysis committed.
 
 ## 🎯 (KenKem) Goal: optimize E5 then E1 (user directive). Parity first (foundation), then param sweep.
 Ground truth E5 = `research/kenkem_parity/mt5_runs/RUN_2026-06-19_1.8.154_xau_2yr_E5only_cd120/`

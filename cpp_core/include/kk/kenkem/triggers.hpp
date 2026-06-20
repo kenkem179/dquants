@@ -16,6 +16,7 @@
 #include "kk/kenkem/kenkem_config.hpp"
 #include <cstdint>
 #include <cstdlib>
+#include <cstdio>
 
 namespace kk::kenkem {
 
@@ -175,6 +176,11 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
     // onset a bar early -> the e5up/dn_age and signal-fire timing diverged from MT5 (median -1 bar). The
     // legacy (non-faithful) path keeps the chronological B-1/B-2 read for the engine-mechanics tests.
     if (cfg.enable_e5) {
+        // NOTE (KK_E5_VALDUMP shift-test, 42/42): the EA realtrace alignment EMAs match the engine stack
+        // at m1s1 (B-1), one bar fresher than this faithful m1s2 (B-2) onset read. But the global fresh
+        // shift (cur=m1s1/prv=m1s2) REGRESSES net recall 52.8%->41.7% (arming/fire coupling) — so faithful
+        // B-2 is net-best; the 42 onset misses need the EA's exact latch internals, not a shift.
+        // See research/kenkem_parity/E5_REALTRACE_FINDINGS.md (RESOLVED section).
         const int e5_cur = kFaithful ? m1s2 : m1s1;
         const int e5_prv = kFaithful ? m1s2 - 1 : m1s2;
         if (e5_cur >= 0 && e5_prv >= 0) {
@@ -186,6 +192,25 @@ inline void update_triggers(const TfBundle& bundle, const KenKemConfig& cfg, int
             else if (!up2 && st.e5_up == -1) { st.e5_up = B; st.e5_down = -1; }
             if (!dn1) st.e5_down = -1;
             else if (!dn2 && st.e5_down == -1) { st.e5_down = B; st.e5_up = -1; }
+            // PARITY value-diff (KK_E5_VALDUMP): the engine's M1 4-EMA stack at the onset read-bar
+            // (e5_cur=m1s2) + the strict-alignment verdicts, joined on ts_ms vs the EA realtrace's
+            // ema25/75/100/200 + aligned_bull/bear. Diagnoses the 26 "unarmed" detection-misses.
+            static const bool e5v = std::getenv("KK_E5_VALDUMP") != nullptr;
+            if (e5v) {
+                const TfIndicators& m1 = bundle.m1;
+                // ema25 at B-1/B-2/B-3 (m1s1/m1s2/m1s2-1) to test the 1-bar-shift hypothesis vs
+                // the EA's ema25 (logged at GetEMA shift1 = B-2). If the FRESHER bar's stack matches
+                // the EA better, the engine onset read is one bar too stale.
+                const double e25_b1 = (m1s1   >= 0) ? m1.ema[1][m1s1]   : 0.0;
+                const double e25_b3 = (e5_prv >= 0) ? m1.ema[1][e5_prv] : 0.0;
+                const int al_b1 = (m1s1   >= 0 && emas_ready(m1, m1s1,   true, true, 0.0)) ? 1 : 0;
+                const int al_b3 = (e5_prv >= 0 && emas_ready(m1, e5_prv, true, true, 0.0)) ? 1 : 0;
+                std::fprintf(stderr, "E5V,%lld,%.5f,%.5f,%.5f,%.5f,%d,%d,%d,%d,%d,%d,%.5f,%.5f,%d,%d\n",
+                    (long long)bundle.m1.bars[B].ts_ms,
+                    m1.ema[1][e5_cur], m1.ema[2][e5_cur], m1.ema[3][e5_cur], m1.ema[4][e5_cur],
+                    up1?1:0, up2?1:0, dn1?1:0, dn2?1:0, st.e5_up, st.e5_down,
+                    e25_b1, e25_b3, al_b1, al_b3);
+            }
         }
     }
 }

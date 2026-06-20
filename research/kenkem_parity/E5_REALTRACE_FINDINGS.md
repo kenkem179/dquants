@@ -38,8 +38,50 @@ dir-relevant `htf_block=0`, cross age 0–27 (< the 28 cap). Only 5/42 are firin
 genuine engine non-detections. **NOT the "gate ADX 1-bar shift"** (forming-ADX experiment already
 disconfirmed) — it is HTF/trend_core/alignment VALUE divergence.
 
-## BLOCKER — realtrace lacks the HTF/EMA inputs needed to value-diff the 48 detection-misses
-`reproduce.set` E5 HTF/trend-core/alignment config MATCHES the engine (no config mismatch). The
-realtrace logs only the RESULTS (`htf_block_long/short`, `aligned_bull/bear`, `ema25`, `ema200`) — not
-the HTF (M5) EMA/ADX/DI inputs nor the full M1 4-EMA stack. To pin the 26 arming + 15 htf + 7 trend_core
-I need the EA to add these columns to RealTrace.mqh and re-run (see HANDOFF "NEXT for E5").
+## ✅ RESOLVED (2026-06-20, v2cols run) — richer realtrace columns → decomposition OVERTURNED
+Added 10 value-diff columns to RealTrace.mqh (`ema75/ema100`, `m1_diplus/minus`, `m5/m15 adx+di`) +
+populated in Entry5.mqh (kenkem `ebd1bde`). Re-ran the SAME E5-only 2026 config →
+`mt5_runs/RUN_2026-06-20_1.8.154_xau_2026H1_E5only_realtrace_v2cols/`. New engine instruments
+(env-gated, byte-identical off): `KK_E5_VALDUMP` (E5V = M1 EMA stack + alignment verdict at B-1/B-2/B-3;
+E5D = M1/M5/M15 DI+ADX closed AND forming). Analysis tool: `diff_e5_valuediff.py`.
+
+**The prior "26 unarmed + 15 htf + 7 trend_core" was a MISATTRIBUTION.** With real inputs, the 51 missed
+E5 trades decompose as:
+
+| bucket | n | finding |
+|---|---|---|
+| **M1 onset / arming** | **42** | engine never arms the M1 4-EMA strict-alignment onset |
+| htf | 1 | engine M5 **closed** adx/di == EA realtrace EXACTLY (20.7,20.0,17.6) — NOT an HTF value diff |
+| trend_core | 2 | M1 di/adx — negligible |
+| armed+pass | 2 | timing/occupancy |
+| nojoin | 4 | (signal bar outside the ±3min realtrace join) |
+
+So the residual is **almost entirely M1 onset-arming**, not HTF/trend-core. The engine's HTF/trend
+values MATCH MT5 — those buckets were arming misclassifications in the gate-label-only decomposition.
+
+### ROOT (proven, not a value/seeding bug) — it's the onset BAR-PAIRING
+`KK_E5_VALDUMP` shift-test: the EA's logged alignment `ema25` matches the engine's stack at **B-1 (m1s1)
+EXACTLY, 42/42** (e.g. EA 4348.485 == eng.B-1 4348.485), while the engine's E5 onset reads **B-2 (m1s2,
+faithful)**. So the engine EMA *values are correct* (== MT5 at the same bar) — the disagreement is purely
+**which bar pair** the onset latches on: engine arms `aligned@B-2 && !aligned@B-3`; the EA's realtrace
+values imply `aligned@B-1 && !aligned@B-2` (one bar fresher).
+
+### …but a naive global shift REGRESSES — the fix is NOT one line
+A/B (`KK_E5_FRESH_ONSET`, cur=m1s1/prv=m1s2): recall **52.8%→41.7%**, matched **57→45**, overfire
+**33→53**, net **−617→−1231**. The arming bar and the FIRE bar are coupled (d1704ab tuned both for
+net-best at faithful B-2); shifting arming one bar fresher desyncs the fire → more overfire + lost
+matches. So **faithful B-2 onset timing is net-best**, and the 42 are marginal near-tie alignment bars
+where B-2 just misses an onset MT5 caught at B-1.
+
+### Is it worth chasing? YES — the misses carry real edge
+The 51 missed MT5 E5 trades net **+466 (53% win, +9.1 avg)** — REPRESENTATIVE of the full E5 edge
+(+949 net / 52% win). Unlike E1 (whose misses were all losers — recall MAXED), recovering these would add
+~half the E5 P&L. But the global-shift regression shows it needs the EA's EXACT onset latch, not a shift.
+
+### ▶️ NEXT (optional, needs 1 MT5 run + carries regression risk)
+To replicate MT5's exact onset pairing, the realtrace must carry the latch internals it currently lacks:
+`m_prevBullishAligned`/`m_prevBearishAligned` (the prior-bar alignment the EA's onset compares against)
+and `m_lastBullishSignal`/`m_lastBearishSignal` (the armed-bar index). With those I can reproduce
+`aligned@cur && !aligned@prv` at MT5's exact shift and port it precisely (vs the blind shift that
+regressed). DECISION pending: push E5 recall past the faithful 52.8% ceiling (real +466 edge, regression
+risk) vs accept the ceiling and move to E1/E2/E4.
