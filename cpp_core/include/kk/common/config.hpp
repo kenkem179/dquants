@@ -81,6 +81,24 @@ struct Params {
     int    impulse_predict_bars  = 10;     // bars aged out of the master window for the predicted POC/VAH/VAL; 0 = use current
     int    tf_net_look           = 50;     // M1 net: bars summed for the near-price net
     double tf_net_win_atr        = 1.5;    // M1 net: near-price window half-width in ATR
+    // ---- Extreme Reversion entry family (XRev) — default OFF = base byte-identical ----
+    // A failed breakout above master VAH that SWEEPS the recent swing-high liquidity then snaps
+    // back BELOW mVAH on a big sell-flow candle = trapped-breakout SHORT toward mVAL (long mirrors
+    // at mVAL). Reuses the master VP + node order-flow + ATR + SL/TP bracket plumbing; the only new
+    // logic is the sweep+rejection detector. See research/.../KK-MasterVP-ExtremeReversion.md.
+    bool   enable_extreme_reversion = false; // master toggle (OFF)
+    int    xrev_hh_lookback     = 5;     // N: swing-high/low sweep level lookback
+    int    xrev_fail_lookback   = 14;    // M: window for the failed-acceptance count
+    int    xrev_min_closes_beyond = 2;   // min closes beyond mVAH in M (trapped longs)
+    int    xrev_max_closes_beyond = 0;   // cap to exclude a real sustained breakout; 0 = off
+    int    xrev_min_age_bars    = 40;    // min bars since the opposite-edge cross (aged round-trip)
+    double xrev_big_candle_atr  = 1.0;   // rejection-bar range >= x*ATR
+    double xrev_body_pct_min    = 0.4;   // body fraction of range
+    double xrev_wick_frac       = 1.0;   // sweep-tail wick >= x*body
+    double xrev_net_delta_min   = 0.6;   // near-price net magnitude (sell-dominated flow)
+    bool   xrev_use_node_gate   = true;  // require selling/absorption at mVAH
+    double xrev_sl_atr          = 0.7;   // SL distance above the swept high
+    double xrev_rr_min          = 2.0;   // min RR (entry->mVAL vs SL) to take the trade
     // ---- multi-bar net volume (feature #1) — default OFF (inert) ----
     // Per-bar net flow = volume-weighted body ratio (c-o)/range * min(vol/avgVol, 3).
     // Persist: require last N closed bars all flow WITH the trade side beyond min before entry.
@@ -275,6 +293,19 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpImpulsePredictBars") p.impulse_predict_bars = I();
     else if (key == "InpTfNetLook") p.tf_net_look = I();
     else if (key == "InpTfNetWinAtr") p.tf_net_win_atr = D();
+    else if (key == "InpEnableExtremeReversion") p.enable_extreme_reversion = to_bool(val);
+    else if (key == "InpXRevHHLookback") p.xrev_hh_lookback = I();
+    else if (key == "InpXRevFailLookback") p.xrev_fail_lookback = I();
+    else if (key == "InpXRevMinClosesBeyond") p.xrev_min_closes_beyond = I();
+    else if (key == "InpXRevMaxClosesBeyond") p.xrev_max_closes_beyond = I();
+    else if (key == "InpXRevMinAgeBars") p.xrev_min_age_bars = I();
+    else if (key == "InpXRevBigCandleAtr") p.xrev_big_candle_atr = D();
+    else if (key == "InpXRevBodyPctMin") p.xrev_body_pct_min = D();
+    else if (key == "InpXRevWickFrac") p.xrev_wick_frac = D();
+    else if (key == "InpXRevNetDeltaMin") p.xrev_net_delta_min = D();
+    else if (key == "InpXRevUseNodeGate") p.xrev_use_node_gate = to_bool(val);
+    else if (key == "InpXRevSlAtr") p.xrev_sl_atr = D();
+    else if (key == "InpXRevRrMin") p.xrev_rr_min = D();
     else if (key == "InpEnableNetPersist") p.enable_net_persist = to_bool(val);
     else if (key == "InpNetPersistBars") p.net_persist_bars = I();
     else if (key == "InpNetPersistMin") p.net_persist_min = D();

@@ -36,6 +36,7 @@
 #include "kk/mastervp/regime.hpp"
 #include "kk/mastervp/strategy.hpp"
 #include "kk/mastervp/impulse.hpp"
+#include "kk/mastervp/extreme_reversion.hpp"
 #include "kk/common/tf_net.hpp"
 #include "kk/common/filters.hpp"
 #include "kk/common/risk_manager.hpp"
@@ -227,7 +228,38 @@ private:
                     ev.sig = kk::detect_impulse(p_, masterCur, masterPred, s,
                                                 slope_up, slope_dn, net_m1, has_m1);
                 } else {
-                    ev.sig = kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
+                    // Extreme Reversion (XRev) takes priority over the base path when its (stricter)
+                    // failed-breakout-sweep conditions hold; otherwise control falls through to the
+                    // base breakout/reversion detector. Default OFF => this block is skipped entirely
+                    // and the base economics are byte-identical.
+                    Signal xs;
+                    if (p_.enable_extreme_reversion) {
+                        double sweepHi = masterCur.vah, sweepLo = masterCur.val;
+                        const int N = p_.xrev_hh_lookback;
+                        for (int k = std::max(0, (i - 1) - N); k <= i - 2 && k >= 0; ++k) {
+                            sweepHi = std::max(sweepHi, bars_[k].high);
+                            sweepLo = std::min(sweepLo, bars_[k].low);
+                        }
+                        int closesAbove = 0, closesBelow = 0;
+                        const int M = p_.xrev_fail_lookback;
+                        for (int k = std::max(0, (i - 1) - M + 1); k <= i - 1; ++k) {
+                            if (bars_[k].close > masterCur.vah) ++closesAbove;
+                            if (bars_[k].close < masterCur.val) ++closesBelow;
+                        }
+                        // Aged round-trip: NO opposite-edge cross within the last min_age_bars bars
+                        // (a fresh fast leg off the edge still carries momentum — don't fade it).
+                        bool agedShort = true, agedLong = true;
+                        const int AG = p_.xrev_min_age_bars;
+                        for (int k = std::max(1, (i - 1) - AG + 1); k <= i - 1; ++k) {
+                            if (bars_[k - 1].close <= masterCur.val && bars_[k].close > masterCur.val) agedShort = false;
+                            if (bars_[k - 1].close >= masterCur.vah && bars_[k].close < masterCur.vah) agedLong = false;
+                        }
+                        xs = kk::detect_extreme_reversion(p_, masterCur, s, sweepHi, sweepLo,
+                                                          closesAbove, closesBelow, agedShort, agedLong,
+                                                          nsVah, nsVal, nsPx);
+                    }
+                    ev.sig = xs.valid ? xs
+                           : kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
                                                s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
                 }
                 // Feature #2: replace the final/runner target with a node-structure level.

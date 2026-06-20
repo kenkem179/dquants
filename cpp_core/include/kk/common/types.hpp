@@ -61,6 +61,7 @@ struct Signal {
     bool   is_long = false;
     bool   is_rev  = false;       // reversion vs breakout economics
     bool   is_impulse = false;    // Monster kind-4 impulse-thrust (fired above the vol ceiling)
+    bool   is_extreme_rev = false; // XRev: failed-breakout liquidity-sweep reversal (toggle OFF base)
     double entry   = 0.0;         // anchor = shift-1 close
     double sl      = 0.0;
     double tp1     = 0.0;

@@ -26,6 +26,7 @@
 #include "../VP-Common/NodeEngine.mqh"
 #include "Inputs.mqh"
 #include "Strategy.mqh"
+#include "ExtremeReversion.mqh"
 #include "SessionNews.mqh"
 #include "Parity.mqh"
 #include "NetVolume.mqh"
@@ -221,6 +222,26 @@ void OnNewBar()
       isImpulse=sig.valid;
    } else {
       sig=MVP_DetectSignal(masterCur,masterCur,localCur,regime,s,nsVah,nsVal,nsPx,g_pip,g_mintick,1.0);
+      // Extreme Reversion (XRev) priority below the vol ceiling — mirrors tick_engine.hpp. OFF by
+      // default => skipped, base unchanged. (Impulse owns the ABOVE-ceiling band; XRev is base-band.)
+      if(InpEnableExtremeReversion){
+         int needN=(int)MathMax(InpXRevMinAgeBars+2,MathMax(InpXRevFailLookback+2,InpXRevHHLookback+3))+2;
+         MqlRates xr[]; ArraySetAsSeries(xr,true);
+         if(CopyRates(_Symbol,PERIOD_CURRENT,0,needN,xr)>=needN){
+            double sweepHi=masterCur.vah, sweepLo=masterCur.val;
+            for(int k=3;k<=InpXRevHHLookback+2 && k<needN;k++){ sweepHi=MathMax(sweepHi,xr[k].high); sweepLo=MathMin(sweepLo,xr[k].low); }
+            int closesAbove=0, closesBelow=0;
+            for(int k=2;k<=InpXRevFailLookback+1 && k<needN;k++){ if(xr[k].close>masterCur.vah) closesAbove++; if(xr[k].close<masterCur.val) closesBelow++; }
+            bool agedShort=true, agedLong=true;
+            for(int j=2;j<=InpXRevMinAgeBars+1 && j+1<needN;j++){
+               if(xr[j+1].close<=masterCur.val && xr[j].close>masterCur.val) agedShort=false;
+               if(xr[j+1].close>=masterCur.vah && xr[j].close<masterCur.vah) agedLong=false;
+            }
+            Signal xs=MVP_DetectExtremeReversion(masterCur,s,sweepHi,sweepLo,closesAbove,closesBelow,
+                                                 agedShort,agedLong,nsVah,nsVal,nsPx,g_pip,g_mintick);
+            if(xs.valid) sig=xs;
+         }
+      }
    }
    if(!sig.valid) return;
 

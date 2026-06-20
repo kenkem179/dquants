@@ -62,6 +62,24 @@ input int    InpImpulsePredictBars   = 10;     // bars aged out for the predicte
 input int    InpTfNetLook            = 50;     // M1 net: bars summed for the near-price net
 input double InpTfNetWinAtr           = 1.5;   // M1 net: near-price window half-width in ATR
 
+input group "===== Extreme Reversion (XRev) — failed-breakout liquidity-sweep reversal (OFF) ====="
+// Fires BELOW the vol ceiling (base band), priority over the base breakout/reversion signal. OFF by
+// default => Monster byte-identical. Engine BTC M3: additive HELP (base PF 1.202->1.252 OOS, +9 tr).
+// Tiny sample + BTC/Exness feed is historically MT5-over-optimistic on reversion — MT5-confirm first.
+input bool   InpEnableExtremeReversion = false;  // master toggle (OFF = base unchanged)
+input int    InpXRevHHLookback     = 5;     // N: swing-high/low sweep level lookback
+input int    InpXRevFailLookback   = 14;    // M: window for the failed-acceptance count
+input int    InpXRevMinClosesBeyond= 2;     // min closes beyond mVAH in M (trapped positioning)
+input int    InpXRevMaxClosesBeyond= 0;     // cap to exclude a real sustained breakout; 0 = off
+input int    InpXRevMinAgeBars     = 40;    // min bars since the opposite-edge cross (aged round-trip)
+input double InpXRevBigCandleAtr   = 1.0;   // rejection-bar range >= x*ATR (keep <=0.6 per OOS; 1.0 overfits)
+input double InpXRevBodyPctMin     = 0.4;   // body fraction of range
+input double InpXRevWickFrac       = 1.0;   // sweep-tail wick >= x*body (the strongest discriminator)
+input double InpXRevNetDeltaMin    = 0.6;   // near-price node net magnitude (sell/buy-dominated flow)
+input bool   InpXRevUseNodeGate    = true;  // require selling/absorption at mVAH
+input double InpXRevSlAtr           = 0.7;  // SL distance above the swept high
+input double InpXRevRrMin           = 2.0;  // min RR (entry->mVAL vs SL) to take the trade
+
 input group "===== Exit ====="
 input double InpTp1R            = 1.0;
 input double InpTp1ClosePct     = 0.0;     // WF re-lock 2026-06-20 (was 15.0): no TP1 bank; BE-after-TP1 de-risks

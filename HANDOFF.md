@@ -2,6 +2,26 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
 
+## 🆕 KK-MasterVP EXTREME REVERSION (XRev) — BUILT, OFF by default, awaiting MT5 A/B (2026-06-20)
+Built the `research/hypotheses/strategy-descriptions/KK-MasterVP-ExtremeReversion.md` plan: failed-breakout
+liquidity-sweep reversal entry family. **Toggle OFF by default → locked base BYTE-IDENTICAL** (golden test
+`test_parity_golden` unchanged + empirical 103/103 trades identical). Full writeup: `research/mastervp_parity/XREV_FINDINGS.md`.
+- **C++**: `extreme_reversion.hpp` (pure detector) + `is_extreme_rev` Signal + 13 `xrev_*` params/keys +
+  precompute lookbacks & priority dispatch in `tick_engine.hpp` (gated). 9-case golden test green; `make test` 28 OK.
+- **MQL5**: `ExtremeReversion.mqh` 1:1 port wired into BOTH `KK-MasterVP/Engine.mqh` and
+  `KK-MasterVP-Monster/Engine.mqh`, `InpXRev*` default OFF. Both EAs compile **0/0**.
+- **Sweep (isolated + additive, train/OOS; 6-fold WF infeasible — ~1-2 tr/fold, the family is RARE):**
+  upper-wick sweep-tail is the strongest discriminator; `BigCandleAtr` must stay ≤0.6 (1.0 overfits → OOS PF 0.54);
+  node-net gate is noise. Candidate: Wick0.5/BigCandle0.6/Body0.3/Closes2/Age40/RR2.0/Net0.0/NodeOff/SL0.7.
+- **Additive verdict (real overlay):** BTC M3 (Monster, impulse+M1) OOS PF **1.284→1.330**, net +4288→+5138,
+  dd **7.1→6.6%** (HELP, +9 tr, dd↓). XAU M3 OOS PF 1.114→1.122 (mild help). XAU M5 1.422→1.401 (HURT — don't enable M5).
+- **⚠️ CAVEAT:** the big win (BTC M3) is on the BTC/Exness feed that's historically MT5-OVER-optimistic on
+  reversion ([[mastervp-t3-reversion-lock]] revNet eng +5,414 vs MT5 −76). XRev is also reversion on BTC. Sample 9 tr.
+- **▶️ MT5 A/B (toggle `InpEnableExtremeReversion`):** (1) **DECISIVE: BTC M3** — Expert KK-MasterVP-Monster,
+  BTCUSD M3, 2025.08–2026.06, every-tick, preset `KK-MasterVP-Monster-BTCUSD-M3-XRev.set` vs toggle=false.
+  (2) XAU M3 — Expert KK-MasterVP, XAUUSD M3, 2025.06–2026.05, preset `KK-MasterVP-XAUUSD-M3-XRev.set` vs false.
+  Presets copied to MT5 Tester Presets + kenkem Presets. Ship only if MT5 beats base on BOTH net AND PF.
+
 ## 🎨 KK-MasterVP-Profiler INDICATOR — EA-exact parity build (2026-06-20) — Phase A+B DONE, awaiting MT5 confirm
 Goal (user): the Profiler indicator shows an entry on the EXACT candle the KK-MasterVP EA enters, by REUSING
 the EA's own decision code. Single-source via **shared includes** (NOT a one-file compile-switch — impossible

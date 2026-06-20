@@ -49,6 +49,25 @@ input double InpBodyPctMin        = 0.6;
 input double InpRrRev             = 1.2;
 input double InpSlAtrRev          = 1.5;
 
+input group "===== Extreme Reversion (XRev) — failed-breakout liquidity-sweep reversal (OFF) ====="
+// A failed breakout above master VAH that SWEEPS the recent swing-high then snaps back BELOW mVAH
+// on a big sell-flow candle = trapped-breakout SHORT toward mVAL (long mirrors at mVAL). OFF by
+// default => EA byte-identical to the locked base. Engine sweeps: additive HELP on M3 (BTC+XAU),
+// slight HURT on XAU M5; tiny sample (rare setup) — MT5-confirm before trusting (BTC esp.).
+input bool   InpEnableExtremeReversion = false;  // master toggle (OFF = base unchanged)
+input int    InpXRevHHLookback     = 5;     // N: swing-high/low sweep level lookback
+input int    InpXRevFailLookback   = 14;    // M: window for the failed-acceptance count
+input int    InpXRevMinClosesBeyond= 2;     // min closes beyond mVAH in M (trapped positioning)
+input int    InpXRevMaxClosesBeyond= 0;     // cap to exclude a real sustained breakout; 0 = off
+input int    InpXRevMinAgeBars     = 40;    // min bars since the opposite-edge cross (aged round-trip)
+input double InpXRevBigCandleAtr   = 1.0;   // rejection-bar range >= x*ATR (keep <=0.6 per OOS; 1.0 overfits)
+input double InpXRevBodyPctMin     = 0.4;   // body fraction of range
+input double InpXRevWickFrac       = 1.0;   // sweep-tail wick >= x*body (the strongest discriminator)
+input double InpXRevNetDeltaMin    = 0.6;   // near-price node net magnitude (sell/buy-dominated flow)
+input bool   InpXRevUseNodeGate    = true;  // require selling/absorption at mVAH
+input double InpXRevSlAtr           = 0.7;  // SL distance above the swept high
+input double InpXRevRrMin           = 2.0;  // min RR (entry->mVAL vs SL) to take the trade
+
 input group "===== Exit ====="
 input double InpTp1R            = 0.8;
 input double InpTp1ClosePct     = 20.0;

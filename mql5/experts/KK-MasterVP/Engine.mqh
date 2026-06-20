@@ -26,6 +26,7 @@
 #include "../VP-Common/NodeEngine.mqh"
 #include "Inputs.mqh"
 #include "Strategy.mqh"
+#include "ExtremeReversion.mqh"
 #include "Decision.mqh"
 #include "SessionNews.mqh"
 #include "Parity.mqh"
@@ -179,6 +180,33 @@ void OnNewBar()
    NodeState nsVal=g_node.StateAtPrice(masterCur.val,InpNodeSaturation,InpNodeNeutralBand);
    NodeState nsPx =g_node.StateAtPrice(s.c,InpNodeSaturation,InpNodeNeutralBand);
    Signal sig=MVP_DetectSignal(masterCur,masterCur,localCur,regime,s,nsVah,nsVal,nsPx,g_pip,g_mintick,1.0);
+
+   // Extreme Reversion (XRev) priority — mirrors tick_engine.hpp: when enabled and its (stricter)
+   // failed-breakout-sweep conditions hold, XRev OVERRIDES the base signal; otherwise the base
+   // breakout/reversion signal stands. OFF by default => this block is skipped and sig is unchanged.
+   if(InpEnableExtremeReversion){
+      int needN=MathMax(InpXRevMinAgeBars+2,MathMax(InpXRevFailLookback+2,InpXRevHHLookback+3))+2;
+      MqlRates xr[]; ArraySetAsSeries(xr,true);
+      if(CopyRates(_Symbol,PERIOD_CURRENT,0,needN,xr)>=needN){
+         double sweepHi=masterCur.vah, sweepLo=masterCur.val;
+         for(int k=3;k<=InpXRevHHLookback+2 && k<needN;k++){          // N bars preceding the rejection bar (shift 2)
+            sweepHi=MathMax(sweepHi,xr[k].high); sweepLo=MathMin(sweepLo,xr[k].low);
+         }
+         int closesAbove=0, closesBelow=0;
+         for(int k=2;k<=InpXRevFailLookback+1 && k<needN;k++){        // M bars ending at the rejection bar
+            if(xr[k].close>masterCur.vah) closesAbove++;
+            if(xr[k].close<masterCur.val) closesBelow++;
+         }
+         bool agedShort=true, agedLong=true;                          // no opposite-edge cross within min_age_bars
+         for(int j=2;j<=InpXRevMinAgeBars+1 && j+1<needN;j++){
+            if(xr[j+1].close<=masterCur.val && xr[j].close>masterCur.val) agedShort=false;
+            if(xr[j+1].close>=masterCur.vah && xr[j].close<masterCur.vah) agedLong=false;
+         }
+         Signal xs=MVP_DetectExtremeReversion(masterCur,s,sweepHi,sweepLo,closesAbove,closesBelow,
+                                              agedShort,agedLong,nsVah,nsVal,nsPx,g_pip,g_mintick);
+         if(xs.valid) sig=xs;
+      }
+   }
    if(!sig.valid) return;
 
    // ----- safety gate stack (order mirrors tick_engine.hpp on_bar_closed_) -----
