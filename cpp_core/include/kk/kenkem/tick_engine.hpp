@@ -294,6 +294,17 @@ private:
             if (tg_.ema_down != -1) std::fprintf(stderr, "GR,%lld,S,%s\n", (long long)bar.ts_ms,
                                                  e1_first_fail_label(false, b_, snap, align, cfg_));
         }
+        if (e5gate_diag_ && cfg_.enable_e5) {  // diagnostic: per-bar E5 armed-state + detection-gate first-fail
+            const int B = f - 1;
+            const bool uarm = tg_.e5_up   != -1 && (B - tg_.e5_up)   <= cfg_.e5_max_ema_cross_age;
+            const bool darm = tg_.e5_down != -1 && (B - tg_.e5_down) <= cfg_.e5_max_ema_cross_age;
+            if (uarm) std::fprintf(stderr, "E5G,%lld,L,armed,age=%d,%s\n", (long long)bar.ts_ms,
+                                   B - tg_.e5_up, e5_gate_first_fail(true,  b_, snap, align, cfg_));
+            else      std::fprintf(stderr, "E5G,%lld,L,unarmed,age=-1,-\n", (long long)bar.ts_ms);
+            if (darm) std::fprintf(stderr, "E5G,%lld,S,armed,age=%d,%s\n", (long long)bar.ts_ms,
+                                   B - tg_.e5_down, e5_gate_first_fail(false, b_, snap, align, cfg_));
+            else      std::fprintf(stderr, "E5G,%lld,S,unarmed,age=-1,-\n", (long long)bar.ts_ms);
+        }
         if (pctile_oracle_) {   // diagnostic: replace engine percentile with MT5's logged value
             auto it = pctile_oracle_->find(bar.ts_ms);   // tick-engine bars share MT5 trace's ts grid
             if (it != pctile_oracle_->end()) snap.atr_pctile = it->second;
@@ -322,18 +333,27 @@ private:
             ((t.ts_ms - last_entry_ms_) < (int64_t)cfg_.min_seconds_between * 1000);
         double tp = sig.tp;
 
+        // Execute-stage block-reason diagnostic (KK_EXEC_DIAG): one line per detected E5 signal that is
+        // blocked here, labelling WHICH gate short-circuited. Join on ts_ms vs MT5 realtrace missed bars.
+        const bool exdiag = exec_diag_ && sig.kind == 5;
+        auto XD = [&](const char* why) {
+            if (exdiag) std::fprintf(stderr, "EXEC,%lld,%c,E5,%s,hr=%d,plUSD=%.0f,maxL=%.0f,side=%.1f,hrc=%d\n",
+                (long long)bar.ts_ms, sig.is_long?'L':'S', why, potentialLossUSD>=entryMaxLoss?1:0,
+                potentialLossUSD, entryMaxLoss, snap.sideways, high_risk_count_);
+        };
+
         if (potentialLossUSD >= entryMaxLoss) {
             // HandleHighRiskEntry. CanCreateNewEntry()==GetEntryBlockReason()=="" (ATR + min-seconds
             // subset ported), then opposing-dir, accept-flag, per-session cap, sideway warning, momentum.
-            if (entry_blocked_by_atr(snap, cfg_)) return;
-            if (min_sec_blocked) return;
-            if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
-            if (!accept_high_risk(sig.kind, cfg_)) return;
-            if (high_risk_count_ >= cfg_.max_high_risk_per_session) return;
+            if (entry_blocked_by_atr(snap, cfg_)) { XD("HR_atr"); return; }
+            if (min_sec_blocked) { XD("HR_minsec"); return; }
+            if (count_dir_(!sig.is_long) > 0) { XD("HR_opposing"); return; } // HasOpposingDirectionPosition
+            if (!accept_high_risk(sig.kind, cfg_)) { XD("HR_noaccept"); return; }
+            if (high_risk_count_ >= cfg_.max_high_risk_per_session) { XD("HR_sesscap"); return; }
             if (snap.sideways >= cfg_.sideways_warning_thr &&
-                snap.sideways <  cfg_.sideways_block_thr) return;      // IsInSidewayRange(10)
+                snap.sideways <  cfg_.sideways_block_thr) { XD("HR_sideway"); return; } // IsInSidewayRange(10)
             const int level = hr_momentum_level(sig.kind, cfg_);
-            if (!check_momentum_for_level(sig.kind, sig.is_long, level, b_, align, snap, cfg_)) return;
+            if (!check_momentum_for_level(sig.kind, sig.is_long, level, b_, align, snap, cfg_)) { XD("HR_momentum"); return; }
             lot = high_risk_lot(sig.kind, balance_, riskDist, cfg_);   // resize to ~maxLoss*0.98
             const double tpDist = std::fabs(sig.tp - anchorEntry);
             const double tpm = high_risk_tp_mult(session_id_(bar.ts_ms), cfg_);
@@ -343,11 +363,12 @@ private:
             // Normal path: opposing-dir, then per-type consec-loss block, then GetEntryBlockReason.
             // (detect_entry already consumed the trigger — matches Entry::Detect resetting lastX before
             // DetectNewEntry checks IsEntryTypeBlocked, so a block here still costs the trigger.)
-            if (count_dir_(!sig.is_long) > 0) return;                  // HasOpposingDirectionPosition
-            if (cfg_.enable_loss_cooldowns && entry_type_blocked_(sig.kind, sig.is_long, t.ts_ms)) return;
-            if (entry_blocked_by_atr(snap, cfg_)) return;
-            if (min_sec_blocked) return;
+            if (count_dir_(!sig.is_long) > 0) { XD("N_opposing"); return; } // HasOpposingDirectionPosition
+            if (cfg_.enable_loss_cooldowns && entry_type_blocked_(sig.kind, sig.is_long, t.ts_ms)) { XD("N_consec"); return; }
+            if (entry_blocked_by_atr(snap, cfg_)) { XD("N_atr"); return; }
+            if (min_sec_blocked) { XD("N_minsec"); return; }
         }
+        XD("FIRE");
 
         // Fill at THIS tick's real ask (long) / bid (short) — spread is in the price, no synthetic add.
         const double fill = sig.is_long ? t.ask : t.bid;
@@ -471,6 +492,8 @@ private:
     const bool emit_armstate_ = std::getenv("KK_EMIT_ARMSTATE") != nullptr; // diagnostic: per-bar E1 latch age (vs MT5 KKE1ARM)
     const bool emit_gate_ = std::getenv("KK_EMIT_GATE") != nullptr;       // diagnostic: per-armed-bar E1 gate verdict (vs MT5 KKE1GATE)
     const bool emit_greason_ = std::getenv("KK_EMIT_GATE_REASON") != nullptr; // diagnostic: per-armed-bar E1 first-fail gate LABEL (vs MT5 kke1gate.csv)
+    const bool exec_diag_ = std::getenv("KK_EXEC_DIAG") != nullptr;       // diagnostic: per-detected-E5 execute-stage block reason (vs MT5 realtrace)
+    const bool e5gate_diag_ = std::getenv("KK_E5_GATE") != nullptr;       // diagnostic: per-bar E5 armed-state + detection-gate first-fail
     int cur_session_ = 0;       // last named trading session (0=NONE/1=ASIA/2=EU/3=US)
     int session_losses_ = 0;    // sessionLossCount  (real losses this session)
     int session_sltp_ = 0;      // tradeSLTPCountInSession (every close this session)

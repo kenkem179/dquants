@@ -310,6 +310,21 @@ inline const char* e1_first_fail_label(bool is_long, const TfBundle& b, const Sn
     return "PASS";
 }
 
+// E5 detection-gate first-fail label (mirrors the kind==5 branch of entry_gate_ok). Diagnostic only:
+// distinguishes which E5 detection sub-gate blocks an armed cross vs MT5's realtrace (which logs all PASS).
+inline const char* e5_gate_first_fail(bool is_long, const TfBundle& b, const Snapshot& s,
+                                      const TfBundle::Align& align, const KenKemConfig& c) {
+    bool priceOk = is_long ? (s.closeM1 > s.emaM1[1]) : (s.closeM1 < s.emaM1[1]);
+    if (!priceOk) return "price";
+    if (c.e5_require_trend_core && trend_core_score(s, is_long, c) == 0) return "trend_core";
+    const bool fm = c.e5_gate_forming_adx;
+    const double e5adx = fm ? s.adxF[0] : s.adx[0];
+    if (c.e5_min_momentum_adx > 0 && e5adx < c.e5_min_momentum_adx) return "adx";
+    if (c.min_tq_e5 > 0 && trend_quality_score(b, align, s, is_long, 5, c) < c.min_tq_e5) return "trend_quality";
+    if (!htf_filter_ok_src(s, is_long, c.e5_htf_filter, c.e5_htf_min_adx, c.e5_htf_min_di_spread, fm)) return "htf";
+    return "PASS";
+}
+
 // First-match-wins E1->E2->E4, long-before-short. B = forming M1 bar; entry anchor = close[1].
 // CONSUMES the trigger that fires (resets it to -1) so one cross/touch == one entry — mirrors the EA
 // (which clears lastEMACrossing/Touch/IchiCross on a successful build). `tg` is mutated on success.

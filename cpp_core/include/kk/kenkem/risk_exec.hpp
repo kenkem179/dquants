@@ -100,7 +100,8 @@ inline bool accept_high_risk(int kind, const KenKemConfig& c) {
 inline int hr_momentum_level(int kind, const KenKemConfig& c) {
     if (kind == 2) return c.hr_momentum_e2;
     if (kind == 4) return c.hr_momentum_e4;
-    return c.hr_momentum_e1;   // E1 (E5 has no level here; out of scope)
+    if (kind == 5) return -1;  // Entry5::GetHighRiskMomentumCheck() == NONE (hardcoded; no momentum gate)
+    return c.hr_momentum_e1;   // E1
 }
 
 // HasMomentumForTrend(checkAccel=false): closed-bar ADX>=minADX AND directional DI spread>=minDISpread.
