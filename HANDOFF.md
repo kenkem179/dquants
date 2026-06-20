@@ -320,8 +320,15 @@ verdicts, aligned at engine = MT5 + 60s), each of the 68 overfire trades was mat
   MT5=mtf (+10 trend_quality); EVERY other gate matches ~100% (htf 58,672/58,832, price_pos/momentum/
   trend_strength/rsi_div clean). NOT a shift bug — M3/M5 reads already use `align_tf-2` (gates.hpp:88,94).
   It's genuine M3/M5 EMA VALUE divergence near the `tol` band.
-- **22/68 = MT5_not_armed** → engine arms an E1 cross MT5 never armed (cross-DETECTION divergence).
-  INVESTIGABLE NOW from the committed `kke1arm.csv.gz` (509,662 KKE1ARM rows = MT5 cross-arm inputs).
+- **~~22/68 = MT5_not_armed~~ → CORRECTED (2026-06-20): only ~8, and NOT phantom arms.** Cross-referencing
+  each of the 67 current overfire against the actual `kke1arm.csv.gz` arm-state at the entry bar: **0 had
+  MT5 armU/armD = −1** (the gate-trace "not_armed" label conflated expired/consumed arms). 59/67 = MT5
+  DID arm → downstream block (the 41 MTF + ATR/limiter exec). The remaining **8 are arm-TIMING offsets on
+  REAL crosses** (engine-early detection e.g. 2024-02-21 13:15 fires 8min before MT5's armU=0@13:23;
+  re-arm-after-age-80-expiry e.g. 2025-04-29; one opposite-dir). Net **+377 engine-FAVORABLE, 5/8 wins** →
+  NOT worth a fix (regression risk on the 171 matched, heterogeneous, no single bug). The 59 armed-gate
+  overfire net only +35 (near-neutral). **CONCLUSION: E1 overfire has NO clean local fix; the only
+  actionable lever is the MT5 M3/M5 EMA-at-entry dump (item 3) for the 41 MTF value-diff.**
 - 5/68 = MT5_PASS (benign timing/occupancy near-miss).
 - Reverse (engine BLOCK where MT5 PASS) is tiny: 8 conviction + 2 mtf + 1 tq = the engine-only conviction
   gate slightly over-blocks → a minor missed-entry source.
