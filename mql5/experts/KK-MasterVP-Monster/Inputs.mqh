@@ -37,8 +37,8 @@ input double InpEmaSepAtr       = 0.25;
 
 input group "===== Breakout (base path, fires BELOW the vol ceiling) ====="
 input bool   InpEnableBreakout = true;
-input double InpBreakBufAtr      = 0.25;
-input double InpBreakMaxAtr       = 5.0;
+input double InpBreakBufAtr      = 0.1;     // anti-chase opt 2026-06-20 (was 0.25): WF 6/6 folds
+input double InpBreakMaxAtr       = 3.0;    // anti-chase opt 2026-06-20 (was 5.0): PF 1.140->1.199, dd 13.7->10.6%, +31% net
 input double InpRrBrk             = 3.0;
 input double InpSlAtrBrk          = 3.7;
 input bool   InpBrkVetoSfp        = false;

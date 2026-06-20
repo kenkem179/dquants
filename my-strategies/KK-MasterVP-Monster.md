@@ -87,6 +87,25 @@ No fresh-cross requirement, no M3/M5 confirming or opposing net gates, and none 
 
 ## 4. Exit & Trade Management
 
+> **⚠️ EA / C++ lock reality (BTCUSD M3) vs the Pine defaults below.** The shipped EA and the
+> validated tick engine expose a SINGLE TP1 knob (`InpTp1R` / `InpTp1ClosePct`) applied to every
+> kind, not the Pine per-strategy split. On the BTC M3 lock all three runner mechanisms are wired
+> and the first two are **active**:
+> - **TP1 partial scale-out: OFF (`InpTp1ClosePct = 0.0`).** This is NOT an oversight — a 6-fold
+>   walk-forward sweep (`research/monster_parity/wf_monster.py`, 2026-06-20) shows banking *any*
+>   fraction at TP1 strictly hurts: pooled PF 1.140→1.133 (10%) →1.128 (15%) →1.088 (50%), dd
+>   13.7%→19.2%, fold-consistency 6/6→3/6. The runner *is* the edge here; scaling out caps the
+>   winners that pay for the losers. 0% is the robust optimum.
+> - **SL→break-even after TP1: ON (`InpBeAfterTp1 = true`, `InpBeBufAtr = 0.05`).** Fires when price
+>   tags the TP1 *level* (`entry ± risk·InpTp1R`) — the level still arms BE/trail even at 0% close.
+> - **Chandelier runner trail: ON (`InpTrailRunner = true`, `InpTrailAtrMult = 2.6`, `InpRunnerRr = 5.3`).**
+>   The runner opens with a far `RunnerRr` backstop TP and the trail does the real exit.
+> - **TP1 arming level `InpTp1R = 1.0` is itself sweep-optimal:** it is the ONLY value with 6/6 folds
+>   PF>1 (worst-fold 1.001); arming earlier (0.5–0.8R) chokes the runner (PF≤1.10, dd up to 24%),
+>   arming later (1.25–2.0R) degrades the worst fold (PF<0.9). So the de-risking you wanted *is*
+>   on — at the empirically best threshold — it just doesn't bank a partial. (Pine still hard-disables
+>   the trail via `trailRunner = false`; the EA enables it — a deliberate EA-side improvement.)
+
 Each entry gets its own registry slot and bracket (`strategy.exit` per entry id) — stacked positions are managed independently.
 
 - **Bracket:** fixed SL + fixed TP2 (RR-based for breakout/impulse, level-based for reversion) placed at entry.

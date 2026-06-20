@@ -13,6 +13,15 @@
 ;     InpDiSpreadMin        6.0  -> 4.0   (slightly more permissive regime gate lifts the worst fold)
 ;     InpImpulseTrendSlopeBars 10 -> 6    (dominant lever: shorter impulse-slope window; impNet +45%)
 ;     InpTp1ClosePct        15.0 -> 0.0   (no partial bank at TP1; BE-after-TP1 still de-risks at 1R)
+;
+; 2026-06-20 ANTI-CHASE OPTIMIZATION (wf_monster.py 6 folds + wf_mc.py 20k MC):
+;   The breakout anti-chase cap was the single biggest robust lever. Tightening it (and the entry
+;   buffer) refuses over-extended chases -> fewer/better trades. Plateau-confirmed (2.5..4.0 all
+;   6/6 folds, peak 3.0); both raise the WORST fold, so not a curve-fit.
+;     InpBreakMaxAtr        5.0  -> 3.0   (THE lever: pooled PF 1.140->1.199, dd 13.7->10.6%, +31% net)
+;     InpBreakBufAtr        0.25 -> 0.1   (stacks: worst-fold PF 1.001->1.099, full-2026 +30%->+42%)
+;   MC(20k): P(profit) 97.1%, PF 5th-pctile 1.035, RoR-to-50% 0%. DD HONESTY: median 14.5% but
+;   99th-pctile 30.5% / worst shuffle 36.9% -> size for a ~30-40% peak drawdown.
 
 ; ---- VP core (Monster spec: local 50, master 50*3 = 150 bars; Wilder ATR) ----
 InpVpLookback=50
@@ -42,8 +51,8 @@ InpSfpFlowMin=0.15
 
 ; ---- breakout (base path, TUNED BTC economics from best_btc.set; fires BELOW the vol ceiling) ----
 InpEnableBreakout=true
-InpBreakBufAtr=0.25
-InpBreakMaxAtr=5.0
+InpBreakBufAtr=0.1            ; anti-chase opt 2026-06-20 (was 0.25): WF 6/6 folds
+InpBreakMaxAtr=3.0           ; anti-chase opt 2026-06-20 (was 5.0): PF 1.140->1.199, dd 13.7->10.6%, +31% net
 InpRrBrk=3.0
 InpSlAtrBrk=3.7
 InpBrkVetoSfp=false
