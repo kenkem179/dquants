@@ -2,16 +2,14 @@
 ; Master VP=432 bars (36h on M5) = InpVpLookback=108        ; local VP (inert in breakout-only mode)
 ; Swept train->OOS: break_buf 0.85, sl_atr_brk 1.2, trail_atr_mult 2.5. Indicators same-bars (ema24/194 atr14).
 ; OOS PF ~1.33 / dd ~10% (vs M3 lock OOS PF 1.114 / dd 17.5%). See _M5_SWEEP_FINDINGS.md.
-; 2026-06-20 DORMANT-GATE WF SWEEP (research/mastervp_parity/wf_mastervp.py, 6 disjoint folds + 20k MC):
-;   Activated 3 loser-cutting gates that shipped OFF. Each is principled (MomVeto=RSI-midline directional
-;   filter; MtfAgree=MTF EMA agreement; BrkVetoSfp=veto swing-failure breakouts) and MomVeto ALONE already
-;   dominates baseline -> not a combo artifact. Robust ACROSS 6 WF folds (PF 1.243->1.274, worst-fold
-;   1.102->1.191, 6/6), 13 monthly (11/13), 8 anchored (7/8). MC: full-stream PF 1.686->1.802, maxDD
-;   27.7%->23.1%, recov 49->62, P(maxDD>30%) 20.5%->13.1%, MC 5th-pctile net +49.9%->+60.2%. Headline net
-;   essentially flat (best DD-adjusted variant; MomVeto-alone has ~2% more net but ~baseline DD).
-;     InpBrkVetoSfp   false -> true
-;     InpUseMomVeto   false -> true
-;     InpUseMtfAgree  false -> true
+; 2026-06-20 DORMANT-GATE WF SWEEP (research/mastervp_parity/wf_mastervp.py) -> TESTED + REVERTED. DO NOT
+;   RE-ENABLE without re-checking the recent regime. Activating MomVeto+MtfAgree+BrkVetoSfp improved the
+;   POOLED 6-fold PF (1.243->1.274, worst-fold 1.102->1.191) and full-year MC DD (27.7->23.1%) — but a
+;   per-fold + MT5 decomposition (mt5_runs/RUN_2026-06-20_xau_m5_gates_lock) showed the gain is carried by
+;   2025; the gates are momentum/trend-alignment filters that BLOCK continuation breakouts in strong trends
+;   and HURT the most recent 4 months (F5 -28%, F6 -43%). On 2026 H1 baseline beats the lock on EVERY axis
+;   (PF 1.339 vs 1.275, net +12.2k vs +8.6k, maxDD 10.6% vs 16.5%). User chose baseline (recent regime =
+;   forward proxy; "MT5 is reality"). Gates stay OFF. EA↔engine parity itself was CONFIRMED faithful.
 ; KK-MasterVP — Pine-faithful baseline (XAUUSD M5), reproducing research/mastervp_parity/KK-MasterVP.pine
 ; as actually run for the profitable TV log (breakout-only; ALL risk-mgmt layers OFF — those get added
 ; later via disciplined sweeps). Load with backtester --set-all (applies every key incl. MQL non-inputs).
@@ -49,7 +47,7 @@ InpBreakBufAtr=0.85
 InpBreakMaxAtr=1000000     ; Pine has NO anti-chase ceiling -> effectively disabled (swept later, Q2)
 InpRrBrk=1.8               ; Pine rrBrk
 InpSlAtrBrk=1.2        
-InpBrkVetoSfp=true            ; gate-sweep 2026-06-20: loser-cutter (swing-failure breakout veto)
+InpBrkVetoSfp=false
 
 ; ---- reversion (OFF in the profitable run) ----
 InpEnableReversion=false
@@ -88,9 +86,9 @@ InpMaxSpreadTp1Frac=0.0
 InpEnableVolRR=false
 
 ; ---- quality gates: Pine has NEITHER an MTF-agree gate NOR an RSI veto ----
-InpUseMtfAgree=true           ; gate-sweep 2026-06-20: MTF EMA agreement
+InpUseMtfAgree=false
 InpUseAtrPctlGate=false
-InpUseMomVeto=true            ; gate-sweep 2026-06-20: RSI-midline directional veto
+InpUseMomVeto=false
 
 ; ---- sessions (Pine chart-tz = UTC+10: Asia 0000-0700 / London 0700-1300 / NY 1300-2100) ----
 ; The TV log's hour fingerprint proves sessions were evaluated in UTC+10 (Asia-open 00:00 -> 14:00 UTC,
