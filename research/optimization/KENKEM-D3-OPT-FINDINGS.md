@@ -21,6 +21,17 @@
 >   25Q3 (summer chop).
 > - **Still TODO (engine):** fix E4 intrabar exit evaluation so engine sweeps involving E4 are trustworthy
 >   again. Not blocking the lock (E4 is OFF), but required before any future E4 work.
+>
+> ## D4 — E1+E2 sweep candidate (engine, awaiting MT5 confirm)
+> From D3-noE4 base, swept E1 (cross-age/RR/SL/ADX/DI/TQ) + E2 (touch-age/RR/SL) + master gates
+> (`e1e2`/`e1e2b` families). Both winning levers are ENTRY filters → the side the engine models
+> faithfully (E1 parity-clean, E2 ~96% recall), so this should translate to MT5 unlike E4 exits.
+> **D4 = D3-noE4 + `E1_MIN_MOMENTUM_ADX` 19.5→23 + `E2_MAX_TOUCH_AGE` 36→60** (`KK-KenKem-XAUUSD-M1-D4.set`):
+> engine ALL +1247→**+1695 / PF 1.42**, Sharpe 2.47→**3.12**, OOS +251→**+293**, per-quarter keeps BOTH
+> 2026 quarters positive (26Q1 +202, 26Q2 +91). The two levers are ADDITIVE (S1 +ADX23 +1397, S2 +TA60
+> +1470, S3 both +1695). REJECTED: `min_TQ_E1=8` (redundant w/ ADX23), `E1_RR=1.5` (pooled OOS +353 but
+> 26Q2 FLIPS to −98 — per-quarter illusion). Master gates ATRpct70 + sideways45 already optimal; E1 HTF-DI
+> & low min_TQ inert; cross-age 100-120 = overfit trap. ⏳ needs MT5 run to confirm before lock.
 
 
 _2026-06-20. Engine: `cpp_core/build/kenkem/tick_backtester` (TICK engine, the validated one).

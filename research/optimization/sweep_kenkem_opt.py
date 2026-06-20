@@ -239,3 +239,73 @@ if __name__ == "__main__":
         # conviction
         report("CONVICTION_E1=0", {"CONVICTION_THRESHOLD_E1": "0"})
         report("CONVICTION_E4=0", {"CONVICTION_THRESHOLD_E4": "0"})
+
+    elif fam == "e1e2":
+        # E1+E2-only book (E4 OFF — MT5-confirmed loser). Engine E1 is parity-clean (~2% vs MT5),
+        # E2 mildly optimistic; judge levers on 2026 OOS robustness, not pooled peak.
+        print("== E1+E2 SWEEP (from D3-noE4 base: DYNoff, E1cap3.5, sideways45, ATRpct70, E4 OFF) ==")
+        B = {"USE_DYNAMIC_RR_SCALING": "false", "E1_ATR_SL_CAP_MULTIPLIER": "3.5",
+             "SIDEWAYS_BLOCK_THRESHOLD": "45", "MIN_ENTRY_ATR_PERCENTILE": "70",
+             "ENABLE_E4_ENTRIES": "false"}
+        report("D3-noE4 base", B)
+        print("-- E1 cross-age window --")
+        for v in ("40", "60", "80", "100", "120"):
+            report(f"E1_MAX_CROSS_AGE={v}", {**B, "E1_MAX_CROSS_AGE": v})
+        print("-- E1 RR (TP) --")
+        for v in ("1.5", "1.7", "1.9", "2.2", "2.6"):
+            report(f"E1_RR={v}", {**B, "E1_RR": v})
+        print("-- E1 SL cap --")
+        for v in ("3.0", "3.25", "3.5", "3.75", "4.0"):
+            report(f"E1cap={v}", {**B, "E1_ATR_SL_CAP_MULTIPLIER": v})
+        print("-- E1 gates --")
+        for v in ("12", "16", "19.5", "23", "27"):
+            report(f"E1_MIN_ADX={v}", {**B, "E1_MIN_MOMENTUM_ADX": v})
+        for v in ("2.0", "4.0", "6.0", "8.0"):
+            report(f"E1_HTF_DI={v}", {**B, "E1_HTF_MIN_DI_SPREAD": v})
+        for v in ("0", "4", "6", "8", "10"):
+            report(f"min_TQ_E1={v}", {**B, "MIN_TREND_QUALITY_E1": v})
+        print("-- E2 touch-age window --")
+        for v in ("10", "20", "30", "45", "60"):
+            report(f"E2_MAX_TOUCH_AGE={v}", {**B, "E2_MAX_TOUCH_AGE": v})
+        print("-- E2 RR (TP) --")
+        for v in ("1.2", "1.4", "1.575", "1.9", "2.3"):
+            report(f"E2_RR={v}", {**B, "E2_RR": v})
+        print("-- E2 SL cap --")
+        for v in ("2.0", "2.5", "3.0", "3.5", "4.0"):
+            report(f"E2cap={v}", {**B, "E2_ATR_SL_CAP_MULTIPLIER": v})
+        print("-- shared master gates re-checked on the E1+E2 book --")
+        for v in ("60", "65", "70", "75", "80"):
+            report(f"MIN_ATR_PCTILE={v}", {**B, "MIN_ENTRY_ATR_PERCENTILE": v})
+        for v in ("38", "45", "53", "61"):
+            report(f"SIDEWAYS_BLOCK={v}", {**B, "SIDEWAYS_BLOCK_THRESHOLD": v})
+
+    elif fam == "e1e2b":
+        # Stack the clean robust winners from `e1e2` (both 25 & OOS up) + check cannibalization per-quarter.
+        print("== E1+E2 STACK (judge OOS + per-quarter breadth, not pooled peak) ==")
+        B = {"USE_DYNAMIC_RR_SCALING": "false", "E1_ATR_SL_CAP_MULTIPLIER": "3.5",
+             "SIDEWAYS_BLOCK_THRESHOLD": "45", "MIN_ENTRY_ATR_PERCENTILE": "70",
+             "ENABLE_E4_ENTRIES": "false"}
+        ADX = {"E1_MIN_MOMENTUM_ADX": "23"}
+        TA60 = {"E2_MAX_TOUCH_AGE": "60"}
+        TQ8 = {"MIN_TREND_QUALITY_E1": "8"}
+        RR15 = {"E1_RR": "1.5"}
+        cands = {
+            "S0 base": B,
+            "S1 +ADX23": {**B, **ADX},
+            "S2 +TA60": {**B, **TA60},
+            "S3 +ADX23+TA60": {**B, **ADX, **TA60},
+            "S4 S3+TQ8": {**B, **ADX, **TA60, **TQ8},
+            "S5 S3+E1RR1.5": {**B, **ADX, **TA60, **RR15},
+            "S6 S3+TQ8+E1RR1.5": {**B, **ADX, **TA60, **TQ8, **RR15},
+        }
+        for label, ov in cands.items():
+            report(label, ov)
+        QTRS = [("25Q2", "2025.03.01", "2025.06.30"), ("25Q3", "2025.07.01", "2025.09.30"),
+                ("25Q4", "2025.10.01", "2025.12.31"), ("26Q1", "2026.01.01", "2026.03.31"),
+                ("26Q2", "2026.04.01", "2026.05.31")]
+        for label in ("S0 base", "S3 +ADX23+TA60", "S5 S3+E1RR1.5", "S6 S3+TQ8+E1RR1.5"):
+            rows = run(cands[label])
+            print(f"-- {label} per-quarter --")
+            for q, lo, hi in QTRS:
+                m = full_metrics([(t, p) for t, p, d, _ in rows if lo <= d <= hi])
+                print(f"   {q} n={m['n']:3d} net={m['net']:+7.0f} PF={m['pf']:.3f} dd={m['dd']:6.0f}")
