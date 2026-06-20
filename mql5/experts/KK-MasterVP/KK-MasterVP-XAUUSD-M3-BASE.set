@@ -1,4 +1,4 @@
-; KK-MasterVP XAUUSD M3 — reversion banked at mPOC (trail_rev=0), XRev OFF, parity ON
+; KK-MasterVP XAUUSD M3 — CLEAN BASE (reversion OFF, XRev OFF, parity ON) for A/B
 ; Toggles PINNED explicitly (MT5 retains prior dialog values for keys ABSENT from a .set
 ; -> the 2026-06-21 run leaked XRev ON). XRev OFF, parity ON; A/B differs ONLY in reversion keys.
 ;
@@ -74,9 +74,9 @@ InpUsePriorBarVP=false
 InpVaPct=70.0
 InpVpBins=30
 InpVpLookback=120
-InpEnableReversion=true
-InpRevTpMpoc=true
-InpTrailRev=0
+InpEnableReversion=false
+InpRevTpMpoc=false
+InpTrailRev=-1
 InpTrailBrk=-1
 InpTrailImp=-1
 InpTrailXRev=-1
