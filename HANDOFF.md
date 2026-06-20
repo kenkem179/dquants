@@ -12,8 +12,10 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
   REJECTED: news hr0 (net-harmful — post-data hr has continuation winners), Asia hr10 + hr18 (over-block),
   ATR upper-band `InpMaxAtrPct` (non-monotonic curve-fit noise, costs net). `InpBlockedHoursStr` is a REAL EA
   input (same UTC+10 frame via `SN_RefTime`) → ships via `.set`, NO recompile. Engine lock + EA preset
-  `KK-MasterVP-XAUUSD-M5.set` updated + redeployed (kenkem Presets + MT5 Tester Presets). **⏳ NEEDS 1 MT5
-  confirmation run** (recipe handed to user).
+  `KK-MasterVP-XAUUSD-M5.set` updated + redeployed (kenkem Presets + MT5 Tester Presets). **✅ MT5 CONFIRMED**
+  (`mt5_runs/RUN_2026-06-20_xau_m5_T2_hourblock`): blocked hours UTC04/16/17 EXACTLY empty in MT5 (block
+  ported faithfully via `SN_RefTime`); PF 1.370 engine vs 1.366 MT5 (0.3%), lag 3.2%, 468/535 matched.
+  net Δ 9.2% = known feed-noise (strict-gate FAIL only). On this window block lifted PF 1.339→1.370. CLEARED for demo.
 - **Monster (BTC M3) — NO CHANGE (re-validated).** T2 was already done in its lock (`8,10,11,16` + best_btc
   cluster sessions + active ATR band 0.158). Top pooled candidate `8,9,10,11,16` (PF→1.231) is ANOTHER T1
   trap: gain carried by 2025 (F1 +787/F2 +247) while recent F5 −372/F6 −321 + dd worse → REJECTED. Keep current.
