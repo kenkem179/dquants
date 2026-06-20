@@ -2,6 +2,23 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN._
 
+## 🟢 KK-MasterVP — TRADE-LEVEL PARITY VERIFIER SHIPPED (production gate, commit 5fc34c9)
+**User ask:** make perfect MQL EA editions from the C++ pipeline for production; chose the
+**MasterVP parity verifier** track + deploy via **MT5 demo forward-test first**.
+- **Gap found & closed:** the shipped KK-MasterVP EA had NO trade-export, so "compiles" could
+  never be upgraded to "proven-faithful." Added `mql5/experts/KK-MasterVP/Parity.mqh` — a
+  trade-level journal byte-compatible with the C++ `kk::to_trades_csv` ledger (21 cols, matched
+  rounding), gated by **`InpExportParity`** (default OFF). Wired into `Engine.mqh` (init/close,
+  fill-capture, per-tick MFE/MAE, `OnTradeTransaction` → realized P&L across TP1 partial+final,
+  TP/SL-WIN/SL-LOSS/EA tags). Compiles **0/0**.
+- **Chain proven:** engine-vs-engine smoke (108 trades, May-2026 XAU M5) → `parity_diff.py` **PASS**.
+- **Procedure documented:** `research/mastervp_parity/PARITY_WORKFLOW.md` (3 steps: MT5 tester with
+  `InpExportParity=true` → C++ backtester same window/set → `parity_diff.py` PASS/FAIL).
+- **▶️ NEXT ACTION (user, MT5):** run the XAU **M5** lock in the tester with `InpExportParity=true`,
+  then hand back `trades_XAUUSD_PERIOD_M5.csv`; I diff it vs the engine to get the production
+  PASS/FAIL. Then: replicate `Parity.mqh` into **KK-MasterVP-Monster** (not yet wired). KenKem is
+  NOT production-eligible until E5 parity closes (below).
+
 ## 🟣 KK-MasterVP-Monster (BTC) — WALK-FORWARD RE-LOCK this session (robustness ↑, EA re-shipped)
 **User ask (this session):** autopilot the walk-forward / multi-fold robustness path I proposed last
 time (instead of more single-split sweeping), then auto-produce the MQL EA. **DONE — committed/pushed.**
