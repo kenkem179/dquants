@@ -22,10 +22,16 @@ A/B gate. Spec: `research/hypotheses/VMC-SPEC.md` (research verdict, formulas, p
   - root cause = `corr(r_b, bar body)` 0.48–0.69 → tick-flow is **redundant** with E1's EMA-momentum trigger.
   - score-scale lesson: `|vmc|` p50≈0.02 max≈0.5; original `confirm=0.20`/`d_ref=0.5` was off-scale (100% veto). Use
     `--d-ref 0.10 --vmc-confirm 0.01`.
-- **NOT yet:** (1) E5 full-history test running (`--kind 5`, /tmp/vmc_full_e5.txt) — fairest test of the thesis (E5 has
-  NO momentum gate); (2) BTCUSD; (3) VMC as a regime/toxicity gate (spread_z/tick_z) instead of direction.
-- **NEXT ACTION:** read E5 result; if also flat, re-scope VMC from "directional confirm" to "regime/toxicity suppressor"
-  in the spec. Modules stay (parity-ready, tested) — only the *use* changes. (codex CLI auth still expired; debate skipped.)
+  - E5 full-history (644 trades) also flat (AGREES PF 0.933 vs OPPOSES 0.967). KenKem = dead end for VMC.
+- **✅ PIVOT WON — MasterVP/BTC M3 (user directive 2026-06-20):** separated lab `cpp_core/tools/mastervp/vmc_mvp_lab.cpp`
+  (`make mvp_vmc`, non-invasive, reuses real MasterVP TickEngine). Findings: `research/hypotheses/VMC_MASTERVP_BTC_FINDINGS.md`.
+  - **Independence real on BTC:** corr(r_b,body) 0.35–0.47 (vs 0.48–0.69 KenKem); VMC vs MasterVP `node_net` agree only 52–68%.
+  - **M3 DEPLOYABLE:** VMC directional confirm gate (`|vmc|≥0.01–0.02`, `d_ref=0.10`) lifts MasterVP PF ~0.94(losing)→
+    1.09–1.25(profitable), a **plateau** (confirm 0.005–0.05) across IS 2025 **and** OOS 2026. Keeps ~40–55% of entries.
+  - **M5 wrong TF:** confirm gate fails (PF 0.51→0.24); only signal there is inverted (flow-OPPOSES wins) — fragile, .set is M3-tuned.
+- **NEXT ACTION:** wire VMC as an OPT-IN M3 confirm gate inside the MasterVP engine (default off) → concurrency-correct
+  re-sim + walk-forward (costs already in) → MQL5 port + parity_vmc_*.csv. Optional A/B: VMC honest flow vs MasterVP's
+  laundered `node_net` gate. (codex CLI auth still expired; debate skipped.)
 
 ## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
 User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting

@@ -32,8 +32,9 @@ KENKEMTICK:= $(BUILD)/kenkem/tick_backtester
 KENKEMTRACE:= $(BUILD)/kenkem/trace_dumper
 KENKEMENTRY:= $(BUILD)/kenkem/entry_trace
 KENKEMVMC := $(BUILD)/kenkem/vmc_e1_lab
+MVPVMC    := $(BUILD)/mastervp/vmc_mvp_lab
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE) $(KENKEMENTRY) $(KENKEMVMC)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE) $(KENKEMENTRY) $(KENKEMVMC) $(MVPVMC)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -78,6 +79,12 @@ $(KENKEMENTRY): tools/kenkem/entry_trace_dumper.cpp $(HEADERS)
 # VMC-vs-E1 selection A/B lab (non-invasive: reuses the real TickEngine, adds a post-hoc VMC veto).
 kenkem_vmc: $(KENKEMVMC)
 $(KENKEMVMC): tools/kenkem/vmc_e1_lab.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# VMC support-factor lab for MasterVP (BTC M5/M3) — non-invasive, reuses the real MasterVP TickEngine.
+mvp_vmc: $(MVPVMC)
+$(MVPVMC): tools/mastervp/vmc_mvp_lab.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 

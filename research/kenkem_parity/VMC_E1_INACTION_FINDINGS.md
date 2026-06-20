@@ -48,7 +48,16 @@ default config it makes 0 trades. With the set, 2026 window (54 E5 trades):
 - magnitude-confirm gate **NEGATIVE** again: base PF 1.185 / +301 → kept-18 PF 0.996 / −2.6 (removes profitable trades).
 - direction split weak: AGREES (35) PF 1.271 / +263 vs OPPOSES/flat (19) PF 1.058 / +38 — both profitable, small gap.
 - same `corr(r_b, body)` 0.48 → same redundancy. The "no momentum gate" hope doesn't rescue it: E5 is still
-  EMA-alignment, so flow is still redundant with the trigger. [full-history E5-set run pending → append]
+  EMA-alignment, so flow is still redundant with the trigger.
+- **full-history E5 (644 trades, decisive):** AGREES PF **0.933** vs OPPOSES/flat PF **0.967** — identical, no
+  edge in either direction. Magnitude-confirm again worse (kept PF 0.801). E5 conclusively flat for VMC.
+
+## Why the next test is MasterVP/BTC, not more KenKem
+Every KenKem entry (E1/E2/E4/E5) is an **EMA-alignment momentum** trigger → tick-flow is redundant with it
+(corr ~0.5). MasterVP is a **Volume-Profile** strategy: entries key off VP nodes/value-area levels, NOT an
+EMA momentum stack. There VMC's net-delta flow is far less likely to be redundant, so it has a genuine chance
+to act as an independent **confidence/support factor** (user directive 2026-06-20). Next test: BTCUSD M5,
+MasterVP, separated harness — VMC supports the enter-decision when the VP signal alone is marginal.
 
 ## What this does NOT yet test
 - **BTCUSD** — different microstructure (point grid, 24/7), may differ.
