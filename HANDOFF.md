@@ -14,10 +14,17 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 - **Chain proven:** engine-vs-engine smoke (108 trades, May-2026 XAU M5) → `parity_diff.py` **PASS**.
 - **Procedure documented:** `research/mastervp_parity/PARITY_WORKFLOW.md` (3 steps: MT5 tester with
   `InpExportParity=true` → C++ backtester same window/set → `parity_diff.py` PASS/FAIL).
-- **▶️ NEXT ACTION (user, MT5):** run the XAU **M5** lock in the tester with `InpExportParity=true`,
-  then hand back `trades_XAUUSD_PERIOD_M5.csv`; I diff it vs the engine to get the production
-  PASS/FAIL. Then: replicate `Parity.mqh` into **KK-MasterVP-Monster** (not yet wired). KenKem is
-  NOT production-eligible until E5 parity closes (below).
+- **✅ FIRST PARITY RUN DONE → VERDICT FAIL, root-caused** (`research/mastervp_parity/mt5_runs/
+  RUN_2026-06-20_xau_m5_parity/`). XAU M5, 2026.01-06: EA 631 trades vs engine 563, 416 matched.
+  Entries FAITHFUL (entryΔ≈0); SL formula identical. **ROOT CAUSE = 10× broker-feed SPREAD mismatch:**
+  engine ticks avg **18.9 pts** vs live Exness-KK **189 pts** → engine PF **1.31** vs MT5 PF **1.07**.
+  ATR-mode hypothesis tested+DISCONFIRMED. See memory [[mastervp-feed-spread-10x-mismatch]].
+- **🧨 PRODUCTION IMPLICATION:** the locked OOS PF (XAU M3/M5, BTC, Monster — all tuned on the tight-spread
+  imported ticks) is **NOT realizable on the live account**. Locks must be RE-VALIDATED at real spread.
+- **▶️ NEXT ACTION (decision):** (a) re-import Exness-KK ticks for the window + re-run/re-sweep, OR
+  (b) add `--extra-spread` to the mastervp backtester and stress all locks at ~+170 pts, re-check PF +
+  plateau + WF. Backtester currently has NO spread flag (fills on native tick bid/ask). Only after
+  cost-parity holds is the per-trade SL/exit residual worth chasing. KenKem still NOT production-eligible.
 
 ## 🟣 KK-MasterVP-Monster (BTC) — WALK-FORWARD RE-LOCK this session (robustness ↑, EA re-shipped)
 **User ask (this session):** autopilot the walk-forward / multi-fold robustness path I proposed last

@@ -27,22 +27,32 @@ First production-gate parity run for the KK-MasterVP XAU M5 lock. **VERDICT: FAI
 | profit factor | 1.316 | 1.071 |
 | exit-tag mismatch | 141/416 | |
 
-## Diagnosis — entries are faithful; the gap is SL-level + cost/spread, not signal logic
-- **Entry parity is GOOD:** on the 416 matched trades `entryΔ` is mostly **0.000** (a handful off only
-  by 1-bar lag). Signal detection + entry timing port cleanly.
-- **SL level is systematically OFF** by ~0.3–1.5 price on nearly every matched trade (`slΔ` column).
-  This flips outcomes — 141 exit-tag mismatches, dominated by engine **SL-WIN where MT5 hits TP** or
-  **SL-WIN↔SL-LOSS** swaps. That is the direct driver of the P&L gap, not different trades.
-- **Leading root cause — ATR mode mismatch (highest-confidence lead):** the EA computes SL from MT5's
-  built-in `iATR` (Engine.mqh:60), which is an **SMA of True Range**, while the engine ran the lock with
-  `InpAtrMt5Mode=false` = **textbook Wilder/RMA ATR**. Same trap proven on KenKem (memory
-  `kenkem-atr-is-sma-not-wilder`). Different ATR → different `sl_atr_brk*ATR` SL level → the observed slΔ.
-  **Test:** re-run the engine with `InpAtrMt5Mode=true` (or make the EA compute Wilder ATR) and re-diff.
-- **Secondary — cost/spread model:** MT5 ran real Exness variable spread (`spreadPips` 112–196 pts ≈
-  $0.11–0.20/oz); the engine used the set's fixed spread. This explains part of the count gap (MT5 fires
-  more, 631 vs 563 — likely spread/SL interplay near gates) and inflates the engine's net vs MT5's.
+## Diagnosis — entries faithful; ROOT CAUSE = 10× broker-feed SPREAD mismatch
+- **Entry parity is GOOD:** on the matched trades `entryΔ` is mostly **0.000**. Signal detection +
+  entry timing port cleanly. The signal logic is NOT the problem.
+- **SL formula is IDENTICAL** on both sides — `sl = entry_close ± max(sl_atr_brk·atr1, 8·pip)`
+  (Strategy.mqh:71 ≡ strategy.hpp:90). The residual `slΔ ≈ 0.68` is purely an ATR *value* diff, which
+  is itself a symptom of the feed mismatch below (different bars → different ATR).
+- **ATR-mode hypothesis TESTED → DISCONFIRMED:** re-ran engine with `InpAtrMt5Mode=true`. slΔ did NOT
+  collapse (−0.39 → +0.68), exit-mismatch 141→133, net Δ 409%→416%. ATR smoothing is not the lever.
+- **⭐ ROOT CAUSE — the imported tick feed is 10× tighter-spread than the live Exness-KK account:**
+  - engine avg spread = **18.9 points** (0.019/oz) vs MT5 avg = **189 points** (0.189/oz).
+  - The engine fills on the tick file's native bid/ask (no `--spread` flag exists); the lock was
+    optimized/validated on `ticks_xauusd_2026_oos.csv`, a TIGHT-spread source. The real account
+    (Exness MT5Trial, XAUUSD-Exness-KK) charges ~10× the gold spread.
+  - This fully explains the headline gap: engine net +10,334 / PF **1.31** vs MT5 +2,027 / PF **1.07**.
+    At real transaction cost the edge is ~5× smaller. It also drives much of the count/exit divergence
+    (spread shifts which SL/TP triggers near the gates).
 
-## Next actions
-1. Re-run engine with `InpAtrMt5Mode=true`; re-diff. Expect slΔ→~0 and most exit-tag mismatches to clear.
-2. If residual remains, align the engine spread to the MT5 average (or feed per-bar spread) and re-diff.
-3. Then chase the count gap (147/215) via entry-time alignment on the still-unmatched trades.
+## Implication (production)
+**The locked OOS PF 1.31 is NOT realizable on this Exness account** — at the real ~189-pt spread the
+same logic yields PF ~1.07. The lock must be re-validated (and likely re-tuned) against real-spread data
+before deployment. This quantifies the HANDOFF's earlier "residual PF gap is FEED-DRIVEN" note at the
+account level.
+
+## Next actions (decision required — see HANDOFF)
+1. **Re-validate the lock at real spread.** Options: (a) re-import Exness-KK ticks for the window and
+   re-run the engine/sweeps on them; or (b) add an additive-spread option to the backtester
+   (`--extra-spread`) to stress the lock at ~170 extra points and re-check PF/plateau.
+2. Only after cost-parity holds is the trade-by-trade SL/exit residual worth chasing.
+3. The verifier itself WORKS — it caught a real, deployment-blocking cost gap on the first run.
