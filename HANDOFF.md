@@ -63,6 +63,20 @@ time (instead of more single-split sweeping), then auto-produce the MQL EA. **DO
   via iVolume=tick_volume. **MANUAL MT5 FORWARD-TEST is the next action.** `InpEnableImpulse` toggles A/B.
 - **M5:** still NOT robust on BTC (prior session) — Monster ships **M3 only**.
 
+## 🟠 KK-MasterVP-Monster (BTC M3) — EA fixed + parity-ready + spread-stressed (this session)
+- **EA FIXED:** ported the runner-TP fix (`Engine.mqh`: TP=`sig.entry±sig.risk·InpRunnerRr`=5.3R when
+  InpTrailRunner, mirrors monster_engine.hpp:275-287; was capped at sig.tp2=3.0R) + added trade-level
+  `Parity.mqh` (InpExportParity). Compiles **0/0**. Engine lock reproduces OOS PF 1.192.
+- **SPREAD-FRAGILE:** OOS PF 1.192→1.172(+1)→1.157(+2.5)→**1.121(+5)**. Thinner than XAU M5. Cost-aware
+  SL re-tune found NO robust improvement (wider SL curve-fits train, degrades OOS). Lock SL=3.7 is the
+  OOS-optimum. `research/monster_parity/MONSTER_SPREAD_ROBUSTNESS.md`.
+- **▶️ NEXT (user, MT5 — Monster parity + real BTC spread):**
+  - **Pair:** BTCUSD · **Period:** 2026.01.01→2026.06.09 · **TF:** M3
+  - **Expert:** Navigator ▸ `dquants ▸ KK-MasterVP-Monster ▸ KK-MasterVP-Monster` (recompiled, TP fix)
+  - **Set:** `dquants/mql5/experts/KK-MasterVP-Monster/KK-MasterVP-Monster-BTCUSD.set` + `InpExportParity=true`
+  - Hand back `trades_BTCUSD_PERIOD_M3.csv`; I diff vs engine (expect TP-count drop like XAU) + read the
+    real BTC spread. ONLY THEN decide deploy vs cost-robust re-tune. Don't re-tune to the spread proxy first.
+
 ## 🔀 ACTIVE THRUST (2026-06-20): KK-MasterVP Pine-faithful rebuild → param sweep → EA
 **User pivoted** from KenKem E1–E5 parity to optimizing **KK-MasterVP on XAUUSD M3**. KenKem state
 preserved below (📌 PAUSED) — not abandoned.
