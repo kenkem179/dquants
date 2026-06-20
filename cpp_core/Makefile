@@ -31,8 +31,9 @@ KENKEM    := $(BUILD)/kenkem/backtester
 KENKEMTICK:= $(BUILD)/kenkem/tick_backtester
 KENKEMTRACE:= $(BUILD)/kenkem/trace_dumper
 KENKEMENTRY:= $(BUILD)/kenkem/entry_trace
+KENKEMVMC := $(BUILD)/kenkem/vmc_e1_lab
 
-all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE) $(KENKEMENTRY)
+all: $(TEST_BINS) $(PARITY) $(BACKTEST) $(MONSTER) $(KENKEM) $(KENKEMTICK) $(KENKEMTRACE) $(KENKEMENTRY) $(KENKEMVMC)
 
 $(BUILD)/%: tests/%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -71,6 +72,12 @@ $(KENKEMTRACE): tools/kenkem/trace_dumper.cpp $(HEADERS)
 # Per-bar E1/E2/E4 gate-decision localizer (the Stage-2 parity tool). See PARITY_1.8.154_DETECTION_DIAGNOSIS.md.
 kenkem_entry: $(KENKEMENTRY)
 $(KENKEMENTRY): tools/kenkem/entry_trace_dumper.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# VMC-vs-E1 selection A/B lab (non-invasive: reuses the real TickEngine, adds a post-hoc VMC veto).
+kenkem_vmc: $(KENKEMVMC)
+$(KENKEMVMC): tools/kenkem/vmc_e1_lab.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -o $@
 

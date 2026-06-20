@@ -12,10 +12,20 @@ A/B gate. Spec: `research/hypotheses/VMC-SPEC.md` (research verdict, formulas, p
 - **Design locked:** direction = EWMA(r) NOT z-score (z zeroes a sustained push); circularity guard = sign by
   tick-direction COUNTS only (never price-distance weight); integer-point signing for bit-identical parity;
   v1 gates on committed shift-1 bar (no repaint). Timeframe-agnostic (windows in bars).
-- **NOT yet:** (1) data-analytics validation on real ticks (corr(r,bar-return); does r lead vs ADX); (2) E5
-  `use_vmc_gate` wiring + C++ A/B sweep XAU/BTC M1 (costed, plateau, WF); (3) parity_vmc_*.csv diff harness.
-- **NEXT ACTION:** run step (1) quick analytics on imported M1 ticks to confirm partial-independence + set `d_ref`,
-  then wire E5 and sweep. (codex debate was requested but its CLI auth token is expired — `codex login` needed.)
+- **IN-ACTION TEST DONE (E1) → HYPOTHESIS FALSIFIED for E1.** Non-invasive lab `cpp_core/tools/kenkem/vmc_e1_lab.cpp`
+  (`make kenkem_vmc`): runs the REAL TickEngine for baseline trades, rebuilds committed per-bar VMC from the
+  same ticks, applies VMC as a post-hoc veto on `--kind` (no engine/EA edits). Findings doc:
+  `research/kenkem_parity/VMC_E1_INACTION_FINDINGS.md`. On 126 XAU E1 trades (full 2024–2026):
+  - magnitude-confirm gate **robustly NEGATIVE** every window (PF 1.17/+813 → 0.88/−440; removes *profitable* trades).
+  - flow-direction agree/oppose split is **sample-dependent noise** (sign flips: full-sample OPPOSES wins PF 1.58 vs
+    AGREES 1.07; small windows the reverse). No stable edge.
+  - root cause = `corr(r_b, bar body)` 0.48–0.69 → tick-flow is **redundant** with E1's EMA-momentum trigger.
+  - score-scale lesson: `|vmc|` p50≈0.02 max≈0.5; original `confirm=0.20`/`d_ref=0.5` was off-scale (100% veto). Use
+    `--d-ref 0.10 --vmc-confirm 0.01`.
+- **NOT yet:** (1) E5 full-history test running (`--kind 5`, /tmp/vmc_full_e5.txt) — fairest test of the thesis (E5 has
+  NO momentum gate); (2) BTCUSD; (3) VMC as a regime/toxicity gate (spread_z/tick_z) instead of direction.
+- **NEXT ACTION:** read E5 result; if also flat, re-scope VMC from "directional confirm" to "regime/toxicity suppressor"
+  in the spec. Modules stay (parity-ready, tested) — only the *use* changes. (codex CLI auth still expired; debate skipped.)
 
 ## 🔥 PROFITABILITY UPLIFT — T1 dormant quality-gate sweep (2026-06-20)
 User asked for top profitability levers for MasterVP + Monster; chose T1 first (sweep the loser-cutting
