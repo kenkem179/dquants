@@ -1,0 +1,84 @@
+DR	0	11:03:10.641	Tester	"dquants\KK-MasterVP\KK-MasterVP.ex5" X64
+KF	0	11:03:11.340	Tester	XAUUSD-Exness-KK,M5 (Exness-MT5Trial17): testing of Experts\dquants\KK-MasterVP\KK-MasterVP.ex5 from 2026.01.01 00:00 to 2026.06.01 00:00
+MG	0	11:03:17.577	Core 01	45252 bytes of input parameters loaded
+NL	0	11:03:17.577	Core 01	expert file added: Experts\dquants\KK-MasterVP\KK-MasterVP.ex5. 97337 bytes loaded
+PG	0	11:03:17.577	Core 01	XAUUSD-Exness-KK,M5: testing of Experts\dquants\KK-MasterVP\KK-MasterVP.ex5 from 2026.01.01 00:00 to 2026.06.01 00:00 started with inputs:
+GD	0	11:03:17.577	Core 01	  InpVpLookback=108
+MI	0	11:03:17.577	Core 01	  InpVpBins=30
+OL	0	11:03:17.577	Core 01	  InpVaPct=70.0
+JE	0	11:03:17.577	Core 01	  InpMasterMult=4
+CI	0	11:03:17.577	Core 01	  InpAtrLen=14
+GS	0	11:03:17.577	Core 01	  InpAtrMt5Mode=false
+ML	0	11:03:17.577	Core 01	  InpNodeTouchAtr=0.05
+IO	0	11:03:17.577	Core 01	  InpNodeDecay=0.94
+JG	0	11:03:17.577	Core 01	  InpNodeNeutralBand=0.15
+DQ	0	11:03:17.577	Core 01	  InpNodeSaturation=4.0
+QF	0	11:03:17.577	Core 01	  InpNodeGateEnabled=false
+ML	0	11:03:17.577	Core 01	  InpUsePriorBarVP=false
+GL	0	11:03:17.577	Core 01	  InpBrkRequireFlow=false
+GJ	0	11:03:17.577	Core 01	  InpSfpFlowMin=0.15
+QJ	0	11:03:17.577	Core 01	  InpEmaFast=24
+LD	0	11:03:17.577	Core 01	  InpEmaSlow=194
+OR	0	11:03:17.577	Core 01	  InpAdxLen=14
+RH	0	11:03:17.577	Core 01	  InpAdxTrendMin=22.0
+PQ	0	11:03:17.577	Core 01	  InpDiSpreadMin=8.0
+OM	0	11:03:17.577	Core 01	  InpEmaSepAtr=0.25
+RS	0	11:03:17.577	Core 01	  InpEnableBreakout=true
+NG	0	11:03:17.577	Core 01	  InpBreakBufAtr=0.85
+ES	0	11:03:17.577	Core 01	  InpBreakMaxAtr=1000000
+NJ	0	11:03:17.577	Core 01	  InpRrBrk=1.8
+PH	0	11:03:17.577	Core 01	  InpSlAtrBrk=1.2
+EQ	0	11:03:17.577	Core 01	  InpBrkVetoSfp=false
+EN	0	11:03:17.577	Core 01	  InpEnableReversion=false
+QJ	0	11:03:17.577	Core 01	  InpRetestAtr=0.1
+QJ	0	11:03:17.577	Core 01	  InpBodyPctMin=0.6
+DQ	0	11:03:17.577	Core 01	  InpRrRev=1.2
+MG	0	11:03:17.577	Core 01	  InpSlAtrRev=1.5
+CL	0	11:03:17.577	Core 01	  InpTp1R=0.8
+JF	0	11:03:17.577	Core 01	  InpTp1ClosePct=20.0
+PG	0	11:03:17.577	Core 01	  InpBeAfterTp1=true
+JQ	0	11:03:17.577	Core 01	  InpBeBufAtr=0.05
+HK	0	11:03:17.577	Core 01	  InpTrailRunner=true
+CO	0	11:03:17.577	Core 01	  InpRunnerRr=10.0
+RQ	0	11:03:17.577	Core 01	  InpTrailAtrMult=2.5
+CQ	0	11:03:17.577	Core 01	  InpRiskUnit=0
+HG	0	11:03:17.577	Core 01	  InpRiskAccPct=1.0
+JE	0	11:03:17.577	Core 01	  InpRiskUsd=180.0
+KQ	0	11:03:17.577	Core 01	  InpMaxLot=0.0
+DH	0	11:03:17.577	Core 01	  InpDeviationPoints=200
+GQ	0	11:03:17.577	Core 01	  InpSkipIfMinLotOverRisk=false
+QS	0	11:03:17.577	Core 01	  InpMaxDailyDDPct=10.0
+HR	0	11:03:17.577	Core 01	  InpDailyDDCooldownHrs=12.0
+JH	0	11:03:17.577	Core 01	  InpMaxPeakDDPct=0.0
+PR	0	11:03:17.577	Core 01	  InpSoftBlockDDPct=0.0
+FD	0	11:03:17.577	Core 01	  InpSoftBlockLotMult=0.55
+NQ	0	11:03:17.577	Core 01	  InpLossStreakCount=0
+MM	0	11:03:17.577	Core 01	  InpLossStreakCooldownHrs=4.0
+LN	0	11:03:17.577	Core 01	  InpMinAtrPct=0.0
+NE	0	11:03:17.577	Core 01	  InpMaxAtrPct=0.0
+MP	0	11:03:17.577	Core 01	  InpMinAtrTicks=40
+NJ	0	11:03:17.577	Core 01	  InpMaxTradesPerSession=4
+MG	0	11:03:17.577	Core 01	  InpMaxSpreadPips=0.0
+RM	0	11:03:17.577	Core 01	  InpMaxSpreadTp1Frac=0.0
+EP	0	11:03:17.577	Core 01	  InpUseMtfAgree=false
+PH	0	11:03:17.577	Core 01	  InpMtfHardVeto=true
+KR	0	11:03:17.577	Core 01	  InpUseMomVeto=false
+EP	0	11:03:17.577	Core 01	  InpRsiMidline=50.0
+HK	0	11:03:17.577	Core 01	  InpRsiLen=14
+QE	0	11:03:17.577	Core 01	  InpBrokerGMTOffset=10
+RP	0	11:03:17.577	Core 01	  InpAsiaSess=00:00-07:00
+JH	0	11:03:17.577	Core 01	  InpLdnSess=07:00-13:00
+MN	0	11:03:17.577	Core 01	  InpNySess=13:00-21:00
+RJ	0	11:03:17.577	Core 01	  InpBlockedHoursStr=
+CF	0	11:03:17.577	Core 01	  InpForceCloseSessNews=false
+IO	0	11:03:17.577	Core 01	  InpAvoidNews=false
+MS	0	11:03:17.577	Core 01	  InpNewsMinsBefore=15
+NF	0	11:03:17.577	Core 01	  InpNewsMinsAfter=15
+RP	0	11:03:17.577	Core 01	  InpUseEmbeddedNews=true
+PM	0	11:03:17.577	Core 01	  InpMVPMagic=5252510
+IR	0	11:03:17.577	Core 01	  ===== Parity (trade-level CSV vs C++ engine; OFF in live) ======
+CM	0	11:03:17.577	Core 01	  InpExportParity=true
+EQ	0	11:03:17.577	Core 01	2026.01.01 00:00:00   [KK-MasterVP] sessions: brokerUTC=+0 refOffset=+10 Asia[0-420] Ldn[420-780] NY[780-1260]
+IM	0	11:03:17.577	Core 01	2026.01.01 00:00:00   [PARITY] trade-level export -> KK-MasterVP\trades_XAUUSD-Exness-KK_PERIOD_M5.csv
+OQ	0	11:03:17.577	Core 01	2026.01.01 00:00:00   [KK-MasterVP] init pip=0.00100 vppl=100.00 masterLen=432 (VP 108x4)
+HN	0	11:03:22.500	Core 01	final balance 20090.81 USD
