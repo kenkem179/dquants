@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust T2 DONE — hour-block 2,3,14 locked, PF 1.296, needs 1 MT5 confirm (parallel session)._
+_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust — T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (PF 1.335, commit 4f45ec3); full exit-block sweep in flight._
 
 ## 🔥 PROFITABILITY UPLIFT — T2 session/hour + ATR-band sweep (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
@@ -22,8 +22,18 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 - **T1 (gate sweep) — DONE earlier:** MasterVP gates tested→reverted to baseline (commit ded3e81); Monster
   gates negative. MT5 parity confirmed faithful. See [[mastervp-m5-gate-sweep-lock]]. 🔑 LESSON (reconfirmed
   twice in T2): decompose per-fold (esp. recent OOS) BEFORE locking — pooled WF avg hides regime shifts.
-- **NEXT: T3 mean-reversion activation** (kinds 2/3, `InpEnableReversion=false` in both) — user's flagged
-  frontier, the one NEW-edge lever. Own WF+MC; decompose per-fold before locking.
+- **T3-EXIT (XAU M5) — WIN, LOCKED `InpTp1ClosePct` 20→0** (commit 4f45ec3). The Pine 20% partial was
+  INHERITED verbatim, never WF-swept (the M5 lock only swept entry/risk). Per-fold sweep
+  (`wf_mastervp.py --grid InpTp1ClosePct`) is MONOTONIC (0<10<20<35<50 on PF/net/dd/worst-fold) → banking
+  any partial caps the trailed runner. 0%: pooled PF 1.296→**1.335**, net +15.3% (19.3k→22.3k), maxDD
+  10.0→**9.2%**, worst-fold 1.196→**1.219**; ALL 6 folds improve incl. both recent. Matches Monster/BTC.
+  EA recompiled 0/0; shipped `KK-MasterVP-XAUUSD-M5-LOCKED.set` (MT5 Presets). ⏳ needs MT5 re-run.
+  LESSON: WF-sweep even pre-tuned "faithful" values. See [[mastervp-tp1-partial-zero-is-best]].
+- **⏳ IN FLIGHT: full exit-block joint WF sweep** (`InpTp1ClosePct × InpTp1R × InpTrailAtrMult`, 33 combos
+  × 6 folds, `research/mastervp_parity/exit_block_sweep.out`) — the entry side got a joint sweep, the exit
+  side never did. Lock the whole exit block the same way once it lands.
+- **NEXT (after exit-block): T3 mean-reversion activation** (kinds 2/3, `InpEnableReversion=false` in both)
+  — user's flagged frontier, the one NEW-edge lever. Own WF+MC; decompose per-fold before locking.
 
 ## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
 Added two notebooks teaching the half that made MasterVP *reliable* (00→10 only taught finding an edge).
