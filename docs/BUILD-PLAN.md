@@ -28,6 +28,27 @@ Prefer plateaus over peaks. OOS stays OOS. Keep the ATR-regime filter (profitabi
 
 ---
 
+## 🔥 ACTIVE THRUST (2026-06-20) — profitability uplift for MasterVP + Monster
+
+Both EAs are locked & shipped (Monster BTC M3 anti-chase opt PF 1.20; MasterVP XAU M5 PF 1.33). User
+asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-effort robust wins):
+
+- [ ] **T1 — Dormant quality-gate sweep (DOING NOW)** — both editions throw away the loser-cutting gates
+  that already exist in code but ship OFF: `InpBrkRequireFlow`, `InpBrkVetoSfp`, `InpUseMomVeto`,
+  `InpUseMtfAgree` (+ `InpNodeGateEnabled` for MasterVP). 6-fold WF (`wf_monster.py` for Monster BTC M3;
+  new `wf_mastervp.py` for MasterVP XAU M5). Adopt only robust improvers (folds-PF>1 ≥ baseline, no
+  worst-fold regression). ⚠️ **PORTABILITY:** for the **KK-MasterVP EA** `InpNodeGateEnabled` &
+  `InpBrkRequireFlow` are compile-constants (`non_input_keys()` in config.hpp) — MT5 ignores `.set`
+  values, so adopting them needs an EA recompile, not just a preset. For **Monster** all 4 are real `input`s.
+- [ ] **T2 — Session/hour + ATR-band filter sweep** on the post-T1 base (MasterVP has NO hour filter at all).
+- [ ] **T3 — Mean-reversion activation** (kinds 2/3, OFF in both) — the one new-edge lever; own WF+MC. (user's
+  flagged next-frontier, AFTER breakout solid)
+- [ ] **T4 — Impulse sub-optimization** (Monster only; impulse ≈ 21% of net) + **cross-symbol coverage**
+  (Monster on XAU; re-confirm MasterVP M5 XAU edge).
+- [ ] **T5 — Cost realism** (add commission + slippage; current BTC commission=0) before any deploy.
+
+---
+
 ## Phase A 🔒 — KenKem parity to ≥8/9 exact-bar + P&L (the gate to optimization)
 
 Anchor: `KenKemExpert.mq5` v1.8.154 @ defaults · XAUUSD M1 · every-tick · **Feb-2026** · 10000 / 1:500 ·
