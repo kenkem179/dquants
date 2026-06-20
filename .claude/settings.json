@@ -1,0 +1,16 @@
+{
+  "autoCompactEnabled": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/autopilot-compact-continue.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
