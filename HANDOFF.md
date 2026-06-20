@@ -10,8 +10,13 @@ gates that ship OFF). 6-fold WF. New harness `research/mastervp_parity/wf_master
 adopting needs an EA recompile.
 - **Monster (BTC M3) — DONE, NEGATIVE:** no gate beats baseline (PF 1.199/6-of-6/dd10.6%). BrkRequireFlow
   HARMFUL (→1.055/4-folds), MtfAgree loses a fold, BrkVetoSfp only trades PF for dd. **NO CHANGE.**
-- **MasterVP (XAU M5) — RUNNING** (`/tmp/mvp_gate_sweep.log`, 32-combo product, ~46min). Baseline to
-  beat: PF **1.243**/6-of-6/worst1.102/dd12.5%/+16.6k. Analyze on completion; adopt only robust improvers.
+- **MasterVP (XAU M5) — DONE, LOCKED (commit 1c5afbc):** 3 dormant gates beat baseline robustly →
+  `InpBrkVetoSfp`+`InpUseMomVeto`+`InpUseMtfAgree` all OFF→**ON**. 6-fold WF PF 1.243→**1.274**/worst
+  1.102→**1.191**/6-of-6; 20k MC full-stream PF 1.686→**1.802**, maxDD 27.7→**23.1%**, P(>30%) 20.5→13.1%.
+  MomVeto alone already dominates → not overfit. All 3 real EA inputs (no recompile). Shipped to engine
+  LOCK + `KK-MasterVP-XAUUSD-M5.set` (EA folder + kenkem Presets + MT5 Tester Presets dir).
+  ▶️ **AWAITING 1 MT5 PARITY RE-RUN** (XAU **M5** chart, EA `dquants\KK-MasterVP\KK-MasterVP`, preset
+  `KK-MasterVP-XAUUSD-M5.set`, `InpExportParity=true`, 2025.06.19–2026.05.30, every-tick) → `parity_diff.py`.
 - NEXT after T1: T2 session/hour + ATR-band sweep; T3 mean-reversion activation (user's flagged frontier).
 
 ## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
