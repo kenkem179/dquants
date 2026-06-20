@@ -10,6 +10,12 @@
 ;   and HURT the most recent 4 months (F5 -28%, F6 -43%). On 2026 H1 baseline beats the lock on EVERY axis
 ;   (PF 1.339 vs 1.275, net +12.2k vs +8.6k, maxDD 10.6% vs 16.5%). User chose baseline (recent regime =
 ;   forward proxy; "MT5 is reality"). Gates stay OFF. EA↔engine parity itself was CONFIRMED faithful.
+; 2026-06-20 T2 HOUR-BLOCK SWEEP -> LOCKED InpBlockedHoursStr=2,3,14 (research/mastervp_parity/wf_mastervp.py
+;   + hour_atr_decomp.py). Concept = block lunch lull + late-session chop (NOT news — data vetoed it).
+;   6-fold WF: pooled PF 1.243->1.296, net +16.6%, dd 12.5->10.0%, worst-fold 1.102->1.196; 5/6 folds
+;   improve, BOTH recent folds rise (F5 +533, F6 +640) -> passes the T1 recent-regime check. MC(20k):
+;   P(profit) 99.9%, PF 5th-pctile 1.158, maxDD median 22.2%/95th 34.7% (all BETTER than baseline lock).
+;   News hr 0 + Asia-open hr 10 + hr 18 were TESTED and REJECTED (net-harmful / over-block, worst-fold drops).
 ; KK-MasterVP — Pine-faithful baseline (XAUUSD M5), reproducing research/mastervp_parity/KK-MasterVP.pine
 ; as actually run for the profitable TV log (breakout-only; ALL risk-mgmt layers OFF — those get added
 ; later via disciplined sweeps). Load with backtester --set-all (applies every key incl. MQL non-inputs).
@@ -97,7 +103,7 @@ InpBrokerGMTOffset=10
 InpAsiaSess=00:00-07:00
 InpLdnSess=07:00-13:00
 InpNySess=13:00-21:00
-InpBlockedHoursStr=
+InpBlockedHoursStr=2,3,14    ; T2 LOCK (2026-06-20): block ref-tz(UTC+10) hrs 14=UTC04 Asian-lunch lull, 2,3=UTC16,17 late-London chop
 InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
 InpAvoidNews=false
 InpTrailAtrMult=2.5        
