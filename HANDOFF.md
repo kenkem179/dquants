@@ -70,12 +70,15 @@ time (instead of more single-split sweeping), then auto-produce the MQL EA. **DO
 - **SPREAD-FRAGILE:** OOS PF 1.192→1.172(+1)→1.157(+2.5)→**1.121(+5)**. Thinner than XAU M5. Cost-aware
   SL re-tune found NO robust improvement (wider SL curve-fits train, degrades OOS). Lock SL=3.7 is the
   OOS-optimum. `research/monster_parity/MONSTER_SPREAD_ROBUSTNESS.md`.
-- **▶️ NEXT (user, MT5 — Monster parity + real BTC spread):**
-  - **Pair:** BTCUSD · **Period:** 2026.01.01→2026.06.09 · **TF:** M3
-  - **Expert:** Navigator ▸ `dquants ▸ KK-MasterVP-Monster ▸ KK-MasterVP-Monster` (recompiled, TP fix)
-  - **Set:** `dquants/mql5/experts/KK-MasterVP-Monster/KK-MasterVP-Monster-BTCUSD.set` + `InpExportParity=true`
-  - Hand back `trades_BTCUSD_PERIOD_M3.csv`; I diff vs engine (expect TP-count drop like XAU) + read the
-    real BTC spread. ONLY THEN decide deploy vs cost-robust re-tune. Don't re-tune to the spread proxy first.
+- **✅ PARITY RUN DONE** (`research/monster_parity/mt5_runs/RUN_2026-06-20_btc_m3_parity/`). BTC M3,
+  2026.01-06. TP fix CONFIRMED (MT5 TP=3, exit dist 154/3/148/115 ≈ engine 159/3/144/99). Entries faithful.
+  **BTC spread ~$11 ≈ engine feed — NO 10× inflation (unlike XAU);** engine PF was already realistic-cost.
+  **BUT net Δ 498%: engine +2,801/PF 1.178 vs MT5 +469/PF 1.031.** Matched 345 agree; gap = unmatched
+  (75 MT5-only / 59 engine-only) → EA takes ~75 trades the engine doesn't near session boundaries.
+  **→ Monster is MARGINAL live (PF ~1.03), NOT clearly deployable.** XAU M5 is the strong candidate.
+- **▶️ NEXT for Monster (only if pursuing it):** diagnose the 75 MT5-only entries — compare entry-gate /
+  MaxTradesPerSession / cooldown counting between EA & engine near session/force-close boundaries.
+  Otherwise deprioritize vs the XAU M5 forward-test.
 
 ## 🔀 ACTIVE THRUST (2026-06-20): KK-MasterVP Pine-faithful rebuild → param sweep → EA
 **User pivoted** from KenKem E1–E5 parity to optimizing **KK-MasterVP on XAUUSD M3**. KenKem state
