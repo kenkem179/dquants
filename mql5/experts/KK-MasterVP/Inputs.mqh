@@ -107,4 +107,7 @@ input bool   InpUseEmbeddedNews = true;     // fall back to the compiled-in cale
 input group "===== Misc ====="
 input ulong  InpMVPMagic        = 5252510;
 
+input group "===== Parity (trade-level CSV vs C++ engine; OFF in live) ====="
+input bool   InpExportParity    = false;    // ON in the MT5 tester to emit trades_<sym>_<tf>.csv for parity_diff.py
+
 #endif // KKMVP_INPUTS_MQH

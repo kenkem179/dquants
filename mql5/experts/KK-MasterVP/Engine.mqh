@@ -27,6 +27,7 @@
 #include "Inputs.mqh"
 #include "Strategy.mqh"
 #include "SessionNews.mqh"
+#include "Parity.mqh"
 
 CTrade        mvpTrade;
 CPositionInfo mvpPos;
@@ -81,6 +82,7 @@ int OnInit()
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
    mvpTrade.SetDeviationInPoints(InpDeviationPoints);
+   ParityInit();
    PrintFormat("[KK-MasterVP] init pip=%.5f vppl=%.2f masterLen=%d (VP %dx%d)",
                g_pip,g_vppl,g_masterLen,InpVpLookback,InpMasterMult);
    return INIT_SUCCEEDED;
@@ -88,6 +90,18 @@ int OnInit()
 void OnDeinit(const int r){
    IndicatorRelease(hAtr);IndicatorRelease(hRsi);IndicatorRelease(hAdx);IndicatorRelease(hEmaF);IndicatorRelease(hEmaS);
    IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);
+   ParityClose();
+}
+
+// Trade-level parity: capture realized P&L + exit reason as each position closes (tester-only).
+void OnTradeTransaction(const MqlTradeTransaction &trans,const MqlTradeRequest &req,const MqlTradeResult &res){
+   if(!InpExportParity) return;
+   if(trans.type!=TRADE_TRANSACTION_DEAL_ADD) return;
+   if(!HistoryDealSelect(trans.deal)) return;
+   if(HistoryDealGetString(trans.deal,DEAL_SYMBOL)!=_Symbol) return;
+   if(HistoryDealGetInteger(trans.deal,DEAL_MAGIC)!=(long)InpMVPMagic) return;
+   if(HistoryDealGetInteger(trans.deal,DEAL_ENTRY)!=DEAL_ENTRY_OUT) return;
+   ParityOnDealOut(trans.deal,trans.position);
 }
 
 bool MvpHasPosition(){
@@ -221,7 +235,14 @@ void OnNewBar()
    if(lot<=0.0) return;
    sl=NormalizeDouble(sl,_Digits); tp=NormalizeDouble(tp,_Digits);
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
-   if(ok){ g_tp1Done=false; g_best=entry; SN_OnFill(); }
+   if(ok){
+      g_tp1Done=false; g_best=entry; SN_OnFill();
+      if(InpExportParity && PositionSelect(_Symbol)){
+         double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
+         ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
+                      regime.trend,fill,sl,(ask-bid),AtrAt(1));
+      }
+   }
 }
 
 // Per-tick: TP1 partial -> BE, then ATR chandelier trail (tighten-only).
@@ -237,6 +258,7 @@ void MvpManage()
       double minDist=KKMinStopDist(_Symbol);
       if(g_best==0) g_best=entry;
       if(isLong){ if(price>g_best) g_best=price; } else { if(price<g_best) g_best=price; }
+      ParityTrackExcursion(price);
       // TP1 partial -> BE
       if(!g_tp1Done){
          double tp1=isLong?entry+risk*InpTp1R:entry-risk*InpTp1R;

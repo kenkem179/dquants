@@ -19,6 +19,7 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Strategy.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\NewsCalendarEmbedded.mqh
+Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Parity.mqh
  : information: generating code
  : information: generating code 3%
  : information: generating code 6%
@@ -54,4 +55,4 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews
  : information: generating code 95%
  : information: generating code 100%
  : information: code generated
-Result: 0 errors, 0 warnings, 1550 ms elapsed, cpu='X64 Regular'
+Result: 0 errors, 0 warnings, 1574 ms elapsed, cpu='X64 Regular'
