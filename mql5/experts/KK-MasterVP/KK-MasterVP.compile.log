@@ -17,6 +17,7 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\Regime.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\NodeEngine.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Strategy.mqh
+Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Decision.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\NewsCalendarEmbedded.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Parity.mqh
@@ -55,4 +56,4 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
  : information: generating code 95%
  : information: generating code 100%
  : information: code generated
-Result: 0 errors, 0 warnings, 1677 ms elapsed, cpu='X64 Regular'
+Result: 0 errors, 0 warnings, 1641 ms elapsed, cpu='X64 Regular'

@@ -26,6 +26,7 @@
 #include "../VP-Common/NodeEngine.mqh"
 #include "Inputs.mqh"
 #include "Strategy.mqh"
+#include "Decision.mqh"
 #include "SessionNews.mqh"
 #include "Parity.mqh"
 
@@ -136,28 +137,9 @@ void ArmCooldown(double hours){
    if(until>g_cooldownUntil) g_cooldownUntil=until;   // extend-only
 }
 
-// MTF (HTF EMA shift1) + RSI(shift1) quality gate — both OFF in the locked config.
-bool QualityOk(bool isLong)
-{
-   if(InpUseMtfAgree){
-      double hf=KKBuf(hHtfEmaF,0,1), hs=KKBuf(hHtfEmaS,0,1);
-      if(hf>0.0 && hs>0.0){
-         bool bull=hf>hs, bear=hf<hs;
-         if(InpMtfHardVeto){
-            if(isLong && !bull) return false;
-            if(!isLong && !bear) return false;
-         } else {
-            if(isLong && bear) return false;
-            if(!isLong && bull) return false;
-         }
-      }
-   }
-   if(InpUseMomVeto){
-      double rsi=KKBuf(hRsi,0,1);
-      if(rsi>0.0){ if(isLong && rsi<InpRsiMidline) return false; if(!isLong && rsi>InpRsiMidline) return false; }
-   }
-   return true;
-}
+// NOTE: the MTF/RSI quality gate now lives in Decision.mqh as MVP_QualityOk()
+// (pure, shared with the Profiler indicator); the EA reads the buffer values and
+// calls it via MVP_DeterministicGatesPass() in OnNewBar.
 
 void OnNewBar()
 {
@@ -200,23 +182,28 @@ void OnNewBar()
    if(!sig.valid) return;
 
    // ----- safety gate stack (order mirrors tick_engine.hpp on_bar_closed_) -----
-   if(!QualityOk(sig.is_long)) return;                                      // quality (MTF/RSI; off)
+   // (1) CHART-DETERMINISTIC gates — shared verbatim with the Profiler indicator
+   //     via Decision.mqh (quality / session / ATR% / ATR-ticks / blocked-hour /
+   //     news). No side effects, so evaluating them as one group up front is
+   //     behaviour-identical to the old interleaved sequence.
+   double price=s.entry_close;
+   double atrPct=(price>0)?AtrAt(1)/price*100.0:0.0;
+   double hf=KKBuf(hHtfEmaF,0,1), hs=KKBuf(hHtfEmaS,0,1), rsiQ=KKBuf(hRsi,0,1);
+   if(!MVP_DeterministicGatesPass(sig,sessionId,atrPct,AtrAt(1),g_mintick,
+                                  SN_IsBlockedHour(ref),SN_InNewsWindow(utc),hf,hs,rsiQ)) return;
+
+   // (2) LIVE / STATEFUL gates — EA-only (account equity, open position, fire-tick
+   //     spread). An indicator has none of these; in the locked config they are
+   //     OFF/inert except max-trades (replayed indicator-side) and the predictive
+   //     daily-DD (rarely binds).
    if(MvpHasPosition()) return;                                             // flat check
    double nextBudget=RiskBudgetUsd();
-   if(sessionId==0) return;                                                 // out of session
-   double price=s.entry_close;
-   double atrPct=(price>0)?AtrAt(1)/price*100.0:0.0;                        // ATR% band (off=0)
-   if(atrPct<InpMinAtrPct) return;
-   if(InpMaxAtrPct>0.0 && atrPct>InpMaxAtrPct) return;
-   if(InpMinAtrTicks>0.0 && g_mintick>0.0 && AtrAt(1)/g_mintick<InpMinAtrTicks) return; // ATR ticks floor
    double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID), ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    if(InpMaxSpreadPips>0.0 && g_pip>0.0 && (ask-bid)/g_pip>InpMaxSpreadPips) return;    // spread (off)
    if(!SN_MaxTradesOk()) return;                                            // max trades/session
    if(IsDailyDDHit(eq,nextBudget)) return;                                  // daily DD (predictive)
-   if(SN_IsBlockedHour(ref)) return;                                        // blocked hour
    if(IsPeakDDHalt(eq)) return;                                             // peak DD halt (off)
    if(IsInCooldown()) return;                                               // cooldown
-   if(SN_InNewsWindow(utc)) return;                                         // news blackout (overlay)
    // TP1 cost-clearance (off=0)
    if(InpMaxSpreadTp1Frac>0.0){ double t1=MathAbs(sig.tp1-sig.entry); if(t1>0.0 && (ask-bid)>InpMaxSpreadTp1Frac*t1) return; }
 
