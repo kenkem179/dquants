@@ -2,26 +2,24 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
 
-## 🎨 KK-MasterVP-Profiler INDICATOR — EA-exact parity build (2026-06-20) — Phase A DONE, Phase B NEXT
-Goal (user): the Profiler indicator must show an entry on the EXACT candle the KK-MasterVP EA enters,
-by REUSING the EA's own decision code (not a parallel re-implementation). Approach agreed with user:
-single-source via **shared includes** (NOT a one-file EA/indicator compile-switch — MQL5 program-type +
-indicators-can't-trade make that impossible). Target = **locked-preset exact parity**.
-- **Phase A (DONE, EA build GREEN 0/0):**
-  - Copied indicator → `mql5/indicators/KK-MasterVP-Profiler/{KK-MasterVP-Profiler.mq5,CLAUDE.md}` (new files only).
-  - NEW shared `mql5/experts/KK-MasterVP/Decision.mqh` = pure chart-deterministic entry decision
-    (MVP_QualityOk + MVP_DeterministicGatesPass: signal/quality/session/ATR%/ATR-ticks/blocked-hour/news).
-  - Refactored `Engine.mqh` OnNewBar to call it (behaviour-NEUTRAL: same gate set, no gate has a side
-    effect, deterministic gates just grouped ahead of the live ones). Removed inline `QualityOk`. EA still 0/0.
-- **Phase B (NEXT — the indicator itself):** rewrite the Profiler's decision core to `#include` the shared
-  EA stack (Inputs/Strategy/Decision/SessionNews/VP-Common/KK-Common) and run a per-bar REPLAY mirroring the
-  EA: master VP (InpMasterMult×InpVpLookback bars) + node + regime + MVP_DetectSignal +
-  MVP_DeterministicGatesPass + replay-reproducible stateful gates (SN max-trades/session + one-position).
-  Draw: entry marker on the exact fire candle, SL + TP1 levels, BE-after-TP1 + ATR-chandelier-trail preview,
-  master VAH/VAL/POC at the EA's length, **blocked-hour background shading** (SN_IsBlockedHour). ONE residual
-  not chart-reproducible: predictive daily-DD (needs live equity; rarely binds → note it). Q3 (local POC):
-  **inert in the locked breakout-only config** (`Strategy.mqh:72/80` uses local VP ONLY for REVERSION SL,
-  reversion OFF) → render faint/toggleable + labelled "reversion-only", not as a driver.
+## 🎨 KK-MasterVP-Profiler INDICATOR — EA-exact parity build (2026-06-20) — Phase A+B DONE, awaiting MT5 confirm
+Goal (user): the Profiler indicator shows an entry on the EXACT candle the KK-MasterVP EA enters, by REUSING
+the EA's own decision code. Single-source via **shared includes** (NOT a one-file compile-switch — impossible
+in MQL5). Both EA + indicator compile **0/0**.
+- **Phase A DONE:** NEW shared `mql5/experts/KK-MasterVP/Decision.mqh` (pure chart-deterministic gate:
+  MVP_QualityOk + MVP_DeterministicGatesPass). `Engine.mqh` OnNewBar routed through it — BEHAVIOUR-NEUTRAL
+  (same gate set, no side effects, deterministic gates grouped ahead of live ones). EA 0/0.
+- **Phase B DONE (commit pending):** rewrote `mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5`
+  as the EA twin — `#include`s the EA stack (Types/VolumeProfile/Regime/NodeEngine + Inputs/Strategy/Decision/
+  SessionNews; NEVER Engine.mqh) and REPLAYS OnNewBar's shift map per bar (master VP@InpMasterMult×InpVpLookback
+  + node + regime + MVP_DetectSignal + MVP_DeterministicGatesPass + one-position + SN max-trades). Draws entry
+  E/SL/TP1/TP2 + WON/LOST/BE, SL→BE→ATR-trail stop path, master VAH/VAL/POC lines, regime EMAs, **blocked-hour
+  gray shading** (SN_IsBlockedHour via SN_RefTime), status panel. Display knobs prefixed `InpViz*`; all EA
+  `Inp*` inherited → drive from the EA `.set`. Daily-DD IGNORED (user-approved; needs live equity). Local POC
+  INERT in lock (reversion-only SL) → faint + OFF by default. Indicator CLAUDE.md rewritten to match.
+- **⏳ NEXT:** (1) user MT5 visual spot-check: attach indicator to XAU M5 with the EA `.set`, confirm markers
+  sit on the same candles the EA backtest opens. (2) Behaviour-neutral EA confirm: re-run locked XAU M5 set,
+  expect UNCHANGED numbers vs the last XAU M5 MT5 run. Engine/Strategy logic otherwise untouched.
 
 ## 🔥 PROFITABILITY UPLIFT — T2 hour-block + T3-EXIT + T3-REVERSION (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
