@@ -260,10 +260,12 @@ already optimal; E1 HTF-DI & low min_TQ inert; cross-age 100-120 = overfit trap.
    --out X.trades.csv`, then time-align by (minute,dir,kind)). Expect ~+1100–1300 if entry-faithfulness holds.
    If confirmed, D4 becomes the new lock (update preset name + memory + this section).
 2. **E5 evaluation (user explicitly asked why E5 was ignored — it was wrongly dismissed on engine numbers).**
-   Engine CAN'T judge E5 (known ~53% entry-recall ceiling, see [[kenkem-e5-2026-selection-break]] + exit
-   optimism). But the session's accidental first run = **E5-only baseline +1019/331tr in MT5** → NOT weak.
-   Clean test is MT5-side: build `D4 + ENABLE_E5_ENTRIES=true` preset, run in MT5, check if E1+E2+E5 beats
-   E1+E2. (Prep the preset from `KK-KenKem-XAUUSD-M1-D4.set`, flip E5 on, copy to Presets.)
+   ✅ PRESET READY: `KK-KenKem-XAUUSD-M1-D4-E5.set` (D4 + `ENABLE_E5_ENTRIES=true`, flush-left, staged in
+   Presets). Engine reference (DIRECTIONAL only — ~53% E5 recall + exit optimism, [[kenkem-e5-2026-selection-break]]):
+   D4 148tr/+1695/PF1.419 → D4+E5 397tr/+2092/**PF 1.184** (E5's 248 tr = +435 @ PF~1.04, dilutes book +
+   nibbles E1/E2 via slot contention). Engine says "dilutes", but it MISSES ~half of real E5 + the accidental
+   first run = **E5-only +1019/331tr in MT5** → only MT5 settles it. **RUN #2 after D4:** Load D4-E5 preset,
+   same XAU M1 2025.03.02–2026.05.29 every-tick; SHIP E5 only if E1+E2+E5 beats D4 on BOTH net AND PF.
 3. **Engine E4 intrabar-exit fix** — so future E4/E2 exit sweeps are trustworthy (per-tick barrier check at
    `cpp_core/include/kk/kenkem/trade_manager.hpp:110-114` looks correct; suspect entry-bar arming / exit
    granularity or trail level. The MAE stub should also be implemented for diagnosis). Unlocks revisiting E4.

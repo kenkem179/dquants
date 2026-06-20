@@ -32,6 +32,17 @@
 > +1470, S3 both +1695). REJECTED: `min_TQ_E1=8` (redundant w/ ADX23), `E1_RR=1.5` (pooled OOS +353 but
 > 26Q2 FLIPS to −98 — per-quarter illusion). Master gates ATRpct70 + sideways45 already optimal; E1 HTF-DI
 > & low min_TQ inert; cross-age 100-120 = overfit trap. ⏳ needs MT5 run to confirm before lock.
+>
+> ## E5 — MT5 evaluation queued (engine CANNOT judge; user-requested)
+> Preset `KK-KenKem-XAUUSD-M1-D4-E5.set` = D4 + `ENABLE_E5_ENTRIES=true` (E1+E2+E5, E4 OFF). Engine
+> reference (DIRECTIONAL ONLY — engine under-counts E5 entries ~53% recall + is optimistic on E5 exits):
+> D4 148tr/+1695/**PF 1.419** → D4+E5 397tr/+2092/**PF 1.184**. E5's own 248 engine-trades earn +435
+> (PF ~1.04, razor-thin) and dilute book PF; E5 also nibbles E1/E2 via 1-slot/bar contention (E1
+> +1214→+1118). Engine verdict = "E5 dilutes quality", BUT MT5 fires ~2× the E5 entries the engine
+> misses → only MT5 can settle it. (Accidental MT5 E5-*solo* run earlier = +1019, but that's E5 with
+> ALL slots, not the leftovers it gets behind E1/E2.) **RUN #2 after D4 confirms:** same XAU M1
+> 2025.03.02→2026.05.29 every-tick, Load `KK-KenKem-XAUUSD-M1-D4-E5.set`; ship E5 only if E1+E2+E5
+> net AND PF both beat D4's E1+E2.
 
 
 _2026-06-20. Engine: `cpp_core/build/kenkem/tick_backtester` (TICK engine, the validated one).
