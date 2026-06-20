@@ -47,6 +47,18 @@ Each notebook is the hand-cranked, *understand-it-yourself* version of one produ
 | **09** | `quick_backtest` | 7 · Backtest | **Costed** vectorized backtest, equity curve, mini sensitivity sweep | 30m |
 | **10** | `research_to_strategies` | 6–10 · Promote | **Walk-forward**, **Monte Carlo**, the 3 editions, the promotion gauntlet | 35m |
 
+### 🛡️ The reliability half (11 → 12) — how a *found* edge becomes a *trusted* one
+
+Notebooks 00–10 teach you to **find** an edge. These two teach the harder, less-glamorous half that
+actually made KK-MasterVP shippable: proving the edge is **real** (matches the broker trade-for-trade)
+and **honest** (survives out-of-sample and reports the drawdown of the *worst* plausible path, not a
+lucky window). Both run on the project's **real** parity + walk-forward artifacts.
+
+| # | Notebook | SOP phase | What you learn | ⏱️ |
+|---|----------|-----------|----------------|----|
+| **11** | `parity_ground_truth` | 7 · MQL5 parity | **Diff config before logic**, the Wilder-vs-SMA ATR bug, trade-for-trade **PASS/FAIL** matching | 30m |
+| **12** | `overfitting_and_drawdown_honesty` | 8–9 · WF/MC | **Peak vs plateau**, walk-forward & Monte-Carlo on the real locked stream, **drawdown honesty** | 35m |
+
 > 📖 Keep **`GLOSSARY.md`** open in a tab — every term above is defined there with *why it matters here*.
 
 ---
@@ -63,7 +75,10 @@ You said it yourself: you don't have unlimited hours. Pick the path that matches
   The features → which ones actually matter → how that became MasterVP/Monster/KenKem. Best if you care
   more about the *strategies* than the statistics.
 
-- **🟣 The full deep-dive (everything, in order).** `00 → 10`. The complete craft. Do one or two a day;
+- **🛡️ The "why should I trust this number?" path.** `09 → 11 → 12`. A backtest result → proving it
+  matches the broker → proving it isn't overfit and its drawdown is honest. The reliability mindset in 90 min.
+
+- **🟣 The full deep-dive (everything, in order).** `00 → 12`. The complete craft. Do one or two a day;
   re-run each changing **one** thing; then do the **🎯 Your turn** exercises.
 
 > ⚡ **The 10-minute skim.** Open every notebook and read **only** its goal banner + the bold
@@ -102,6 +117,8 @@ The notebooks load the *same* files the project's discovery and strategy work us
 | `data/labels/labels_*_M3.parquet` | forward returns + triple-barrier outcome | NB 04 |
 | `research/discovery/*` | the real Phase-5 feature rankings & regimes | NB 08 |
 | `research/optimization/best_*.set`, `*RESULTS*.md` | the tuned strategies & scorecard | NB 10 |
+| `research/kenkem_parity/*.set`, `bars_xauusd_M1_kk.csv` | real configs + bars for the parity/ATR demos | NB 11 |
+| `research/mastervp_parity/_wf_fullrun.csv`, `WF_MC_FINDINGS.md` | the real locked KK-MasterVP trade stream + WF/MC report | NB 12 |
 
 **The whole project in one sentence:** *which feature columns, at bar `t`, actually predict the future
 — and does trading on them survive costs and out-of-sample testing?* You start poking at that in NB 08,
@@ -113,7 +130,8 @@ and answer it for real in NB 10.
 
 ```
 ds-study/
-  notebooks/00 … 10        ← the curriculum (start at 00, or pick a path above)
+  notebooks/00 … 10        ← the curriculum: find an edge (start at 00, or pick a path above)
+  notebooks/11 … 12        ← the reliability half: prove it's real (parity) & honest (overfitting/DD)
   GLOSSARY.md              ← every term defined + why it matters here + free learning links
   scratch/                 ← your experiments + saved files (gitignored — break things freely)
   README.md

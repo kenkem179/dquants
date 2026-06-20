@@ -113,6 +113,11 @@ learning links are at the bottom.
 | **Monte Carlo bootstrap** | Resample trades thousands of times → a distribution of outcomes. | Luck vs structure: the real KenKem edge was 100% profitable across 5,000 resamples. | 10 |
 | **Overfitting** | A 'strategy' that fits past noise and fails live. | The enemy. OOS, plateaus, costs, walk-forward, MC are all anti-overfitting tools. | 07–10 |
 | **Profit Factor (PF)** | Gross profit ÷ gross loss. | The headline score; the promotion gate is ~PF 1.25 train / 1.15 OOS. | 10 |
+| **Walk-forward efficiency** | OOS PF ÷ in-sample PF across re-opt folds. | ≈1.0 = no degradation on unseen data (not overfit); ≪1.0 = curve-fit. | 12 |
+| **Fixed-beats-reopt** | A single locked param beats per-fold re-optimization. | The signature of a *real plateau*: a config that needs constant re-tuning is fragile. | 12 |
+| **Drawdown honesty** | Quoting the worst plausible DD, not a benign window's. | The shipped '10% DD' was a lucky 4-month slice; the honest full-year figure is ~28% (MC 95th ~38%). Size for the worst. | 12 |
+| **Risk of ruin** | P(equity ever falls below a floor) under random trade order. | Negligible at 1%/trade here, but the lived experience still includes 25%+ dips. | 12 |
+| **Order-shuffle vs bootstrap** | Permute trades (path risk) vs resample with replacement (edge risk). | Shuffle stresses drawdown/sequence; bootstrap stresses the edge itself. | 12 |
 
 ## J. From research to production
 
@@ -120,7 +125,11 @@ learning links are at the bottom.
 |---|---|---|---|
 | **Four-layer architecture** | Python research → C++ core → C++ backtester → thin MQL5 EA. | Decisions never in MQL5; MT5 calls never in C++ core. Lets one strategy be unit-tested *and* shipped. | 10 |
 | **Determinism** | Same ticks → same trades → same equity curve. | What makes C++ unit tests and MQL5 parity meaningful. | 10 |
-| **Parity** | Byte-compatible C++ vs MQL5 output, diffed on identical ticks. | Proves the research core and the live EA produce identical signals. | 10 |
+| **Parity** | Byte-compatible C++ vs MQL5 output, diffed on identical ticks. | Proves the research core and the live EA produce identical signals. | 10, 11 |
+| **Ground-truth ladder** | Python (toy) < C++ engine (model) < MT5 parity PASS (fact). | Confidence flows downward; each layer can lie to the one above. A backtest PF is a *claim* until MT5 reproduces it. | 11 |
+| **Config-before-logic** | Diff the `.set` vs the MT5 `inputs_echo` *before* suspecting code. | One wrong input mimics a deep bug — KenKem's '50% recall' was a single `E1_MAX_CROSS_AGE` mismatch (→93%). | 11 |
+| **Wilder vs SMA ATR** | MT5's `iATR` is a rolling *simple* MA of TR, not textbook Wilder. | A ~7% smoothing gap flipped ~a quarter of ATR-percentile gates; invisible alone, decisive at a boundary. | 11 |
+| **Trade-level parity gate** | Greedy same-direction time-match with entry/P&L tolerances → PASS/FAIL. | Failure taxonomy: count→config, entry→logic, P&L→execution. The last gate before live. | 11 |
 | **The three editions** | **MasterVP** (VP breakout) · **Monster** (VP+net-volume) · **KenKem** (trend menu). | The real optimization targets; each maps to a discovery finding. | 10 |
 | **Promotion gauntlet** | costs → sensitivity → walk-forward → MC → C++ tests → MQL5 parity → demo. | A strategy is production-eligible only after *every* gate passes (`KENKEM_QUANT_OS.md` §7). | 10 |
 
