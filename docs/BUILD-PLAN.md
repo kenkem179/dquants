@@ -53,8 +53,16 @@ asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-
   (real EA input, same UTC+10 frame), no recompile. ⏳ needs 1 MT5 confirmation run. **Monster BTC M3:
   NO CHANGE** — hours already cluster-optimized in lock; the one better-pooled candidate (`8,9,10,11,16`)
   is another T1 trap (helps 2025, hurts recent F5/F6). New diag `hour_atr_decomp.py`.
-- [ ] **T3 — Mean-reversion activation** (kinds 2/3, OFF in both) — the one new-edge lever; own WF+MC. (user's
-  flagged next-frontier, AFTER breakout solid)
+- [x] **T3 — Mean-reversion activation (DONE 2026-06-20)** — generalized 4-config WF harness `wf_t3.py`
+  (enable→retest→body→sl, 6-fold WF + MC, per-fold recent-regime discipline). Reversion fires only in the
+  balance (non-trend) regime = complement of breakout → additive. **2 WINS / 2 REJECTS:**
+  - **BTC M5 (KK-MasterVP): WIN, LOCKED** `EnableReversion=true, Retest 0.1, Body 0.6→0.4, SlRev 1.5→1.2`.
+    Pooled PF 1.217→**1.308**, net **+62%**, maxDD 16.8→**7.7%**, worst-fold 0.904→**1.056**, folds 5/6→**6/6**;
+    revNet +5,158 (strong standalone). MC: P(profit) 98.8%, PF5th 1.101, 8/8 folds. rr_rev INERT; sl flat plateau.
+  - **XAU M5 (KK-MasterVP): WIN, LOCKED** `EnableReversion=true` at default rev params (on TP1=0 base):
+    PF 1.335→**1.344**, maxDD 9.2→**7.8%**, 6/6 folds, worst-fold 1.219→**1.223**. MC: P(profit) 100%, PF5th 1.198.
+  - **XAU M3: REJECT** (revNet ~0, maxDD 14.2→15.9%, worst-fold deepens). **Monster BTC M3: REJECT** (folds 6/6→4/6).
+  Both wins ship via `.set` (real EA inputs, no recompile); presets redeployed. ⏳ needs MT5 re-run.
 - [ ] **T4 — Impulse sub-optimization** (Monster only; impulse ≈ 21% of net) + **cross-symbol coverage**
   (Monster on XAU; re-confirm MasterVP M5 XAU edge).
 - [ ] **T5 — Cost realism** (add commission + slippage; current BTC commission=0) before any deploy.

@@ -2,6 +2,14 @@
 ; Master VP=720 bars (60h on M5)=VpLookback24 x MasterMult30 · adx_trend_min 30 · break_buf 1.0 ·
 ; sl_atr_brk 2.2 · trail_atr_mult 6.0. Robust plateau (positive BOTH train+OOS across master/adx/sl/trail).
 ; TRAIN PF 1.155/dd13.9%/win59.3 · OOS PF 1.214/dd14.2%/win57.4/net+4,228. See BTC_SWEEP_FINDINGS.md.
+; 2026-06-20 T3 MEAN-REVERSION -> LOCKED InpEnableReversion=true + retest 0.1 / body 0.6->0.4 / sl_rev
+;   1.5->1.2 (research/mastervp_parity/wf_t3.py). Reversion fires ONLY in balance (non-trend) regime =
+;   complement of breakout -> additive, and it HALVES drawdown here. 6-fold WF (retest/body/sl swept):
+;   pooled PF 1.217->1.308, net +62% (6,381->10,355), maxDD 16.8->7.7%, worst-fold 0.904->1.056, folds
+;   PF>1 5/6->6/6 (every fold incl. both recent now clears). body 0.4 = only 6/6 at retest 0.1; sl_rev is a
+;   FLAT plateau 1.0-1.4 (picked center 1.2); rr_rev INERT (runner-trail dominates, kept 1.2). revNet
+;   +5,158 (strong standalone edge, unlike XAU). MC(20k): P(profit) 98.8%, PF 5th-pctile 1.101, 8/8
+;   equal-N folds PF>1, maxDD median 16.8%/95th 28.2%, ruin negligible.
 
 ; 3 sessions cover full 24h (Asia 00-08 / Ldn 08-16 / NY 16-24, offset 0) so inAnySession is
 ; always true; per-session trade counter still resets 3x/day (maxTradesPerSession=4 -> 12/day).
@@ -45,11 +53,11 @@ InpSlAtrBrk=2.2
 InpBrkVetoSfp=false
 
 ; ---- reversion (OFF in the profitable run) ----
-InpEnableReversion=false
+InpEnableReversion=true        ; T3 LOCKED 2026-06-20 (balance-regime fade; +62% net, dd HALVED)
 InpRetestAtr=0.1           ; Pine retestAtr
-InpBodyPctMin=0.6          ; Pine bodyPctMin
+InpBodyPctMin=0.4          ; T3 LOCKED (only 6/6-fold body at retest 0.1)
 InpRrRev=1.2               ; Pine rrRev
-InpSlAtrRev=1.5            ; Pine slAtrRev
+InpSlAtrRev=1.2            ; T3 LOCKED (flat plateau 1.0-1.4 center)
 
 ; ---- exit (Pine: TP1 0.8R close 20%, runner fixed TP2 at rrBrk, BE-after-TP1 +0.05ATR, NO trail) ----
 InpTp1R=0.8

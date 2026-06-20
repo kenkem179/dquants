@@ -2,7 +2,7 @@
 
 _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): E4 first parity diff → SL-cap bug fixed → recall 78.7%→94.3% (commit af8b798). Also live: MasterVP profitability thrust — T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (PF 1.335, commit 4f45ec3); full exit-block sweep in flight._
 
-## 🔥 PROFITABILITY UPLIFT — T2 session/hour + ATR-band sweep (2026-06-20) ✅ DONE
+## 🔥 PROFITABILITY UPLIFT — T2 hour-block + T3-EXIT + T3-REVERSION (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
 `research/mastervp_parity/hour_atr_decomp.py` (per-broker-hour net/PF + per-fold split).
 - **MasterVP (XAU M5) — WIN, LOCKED `InpBlockedHoursStr=2,3,14`** (ref-tz UTC+10 = block UTC04 Asian-lunch
@@ -32,8 +32,22 @@ _Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build
 - **⏳ IN FLIGHT: full exit-block joint WF sweep** (`InpTp1ClosePct × InpTp1R × InpTrailAtrMult`, 33 combos
   × 6 folds, `research/mastervp_parity/exit_block_sweep.out`) — the entry side got a joint sweep, the exit
   side never did. Lock the whole exit block the same way once it lands.
-- **NEXT (after exit-block): T3 mean-reversion activation** (kinds 2/3, `InpEnableReversion=false` in both)
-  — user's flagged frontier, the one NEW-edge lever. Own WF+MC; decompose per-fold before locking.
+- **T3-REVERSION (mean-reversion activation) — DONE, 2 WINS / 2 REJECTS** (`research/mastervp_parity/wf_t3.py`,
+  generalized 4-config harness). Reversion fires ONLY in balance (non-trend) regime = complement of breakout
+  → additive. Swept enable→retest→body→sl×4 configs, 6-fold WF + MC, per-fold recent-regime discipline:
+  - **BTC M5 (KK-MasterVP) — WIN, LOCKED** `InpEnableReversion=true, RetestAtr=0.1, BodyPctMin=0.6→0.4,
+    SlAtrRev=1.5→1.2`. Pooled PF 1.217→**1.308**, net **+62%** (6.4k→10.4k), maxDD 16.8→**7.7%**, worst-fold
+    0.904→**1.056**, folds PF>1 5/6→**6/6**. revNet +5,158 = strong standalone edge. body 0.4 = only 6/6 at
+    retest 0.1; sl_rev FLAT plateau 1.0-1.4 (center 1.2); rr_rev INERT (runner-trail dominates). MC(20k):
+    P(profit) 98.8%, PF 5th 1.101, 8/8 equal-N folds, maxDD med 16.8%/95th 28.2%.
+  - **XAU M5 (KK-MasterVP) — WIN, LOCKED** `InpEnableReversion=true` at DEFAULT rev params (no tuning beat
+    them). Measured ON TOP of the T3-EXIT TP1=0 base: pooled PF 1.335→**1.344**, net +3.6%, maxDD 9.2→**7.8%**,
+    6/6 folds, worst-fold 1.219→**1.223** (rises), F6 1.49→1.52. revNet small (+48) = mostly dd-smoothing, not
+    standalone edge. MC(20k): P(profit) 100%, PF 5th 1.198, 11/12 months & 7/8 folds, full-stream maxDD med 23.3%.
+  - **XAU M3 — REJECT** (revNet ~+27 break-even, maxDD 14.2→15.9% worse, worst-fold 0.731→0.674 deepens).
+  - **Monster BTC M3 — REJECT** (default rev: folds PF>1 6/6→4/6, F3+F6 go negative, maxDD 10.6→13.8%).
+  Both wins: engine locks + EA presets (`KK-MasterVP-{XAUUSD,BTCUSD}-M5.set`) updated + redeployed (kenkem
+  Presets + MT5 Tester Presets). All rev keys are REAL EA inputs → ship via `.set`, NO recompile. ⏳ needs MT5 re-run.
 
 ## 📚 ds-study learning track — RELIABILITY HALF ADDED (NB 11 + 12, additive)
 Added two notebooks teaching the half that made MasterVP *reliable* (00→10 only taught finding an edge).

@@ -16,6 +16,14 @@
 ;   improve, BOTH recent folds rise (F5 +533, F6 +640) -> passes the T1 recent-regime check. MC(20k):
 ;   P(profit) 99.9%, PF 5th-pctile 1.158, maxDD median 22.2%/95th 34.7% (all BETTER than baseline lock).
 ;   News hr 0 + Asia-open hr 10 + hr 18 were TESTED and REJECTED (net-harmful / over-block, worst-fold drops).
+; 2026-06-20 T3 MEAN-REVERSION -> LOCKED InpEnableReversion=true at DEFAULT rev params (retest 0.1, body 0.6,
+;   sl_rev 1.5, rr_rev 1.2 — no retest/body/sl tuning beat them) (research/mastervp_parity/wf_t3.py). Reversion
+;   fires ONLY in balance (non-trend) regime = complement of breakout -> additive. Measured ON TOP of the
+;   TP1ClosePct=0 exit lock below. 6-fold WF: pooled PF 1.335->1.344, net +3.6%, dd 9.2->7.8%, 6/6 folds PF>1,
+;   worst-fold 1.219->1.223 (rises), F6 1.49->1.52. revNet small (+48) -> gain is mostly dd-smoothing/sequencing,
+;   not a strong standalone edge (contrast BTC M5 where reversion adds +62% net). MC(20k) on combined config:
+;   P(profit) 100%, PF 5th-pctile 1.198, 11/12 months & 7/8 equal-N folds PF>1, full-stream maxDD median
+;   23.3%/95th 36.1%, ruin negligible. XAU M3 + Monster BTC M3 reversion = REJECTED (no edge / worsens dd+folds).
 ; KK-MasterVP — Pine-faithful baseline (XAUUSD M5), reproducing research/mastervp_parity/KK-MasterVP.pine
 ; as actually run for the profitable TV log (breakout-only; ALL risk-mgmt layers OFF — those get added
 ; later via disciplined sweeps). Load with backtester --set-all (applies every key incl. MQL non-inputs).
@@ -56,7 +64,7 @@ InpSlAtrBrk=1.2
 InpBrkVetoSfp=false
 
 ; ---- reversion (OFF in the profitable run) ----
-InpEnableReversion=false
+InpEnableReversion=true        ; T3 LOCKED 2026-06-20 (balance-regime fade; +dd-smoothing on TP1=0 base)
 InpRetestAtr=0.1           ; Pine retestAtr
 InpBodyPctMin=0.6          ; Pine bodyPctMin
 InpRrRev=1.2               ; Pine rrRev
