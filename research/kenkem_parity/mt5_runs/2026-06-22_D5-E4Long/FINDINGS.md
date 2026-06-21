@@ -49,3 +49,17 @@ in the 25-trade E4-long family (2 of 4 trades stopped out in April). E4-long oth
 - **Prudent next before final lock/release:** walk-forward + Monte-Carlo on D5-E4Long (CLAUDE.md §7),
   watching E4-long's per-fold stability given its small n. Then `make release STRATEGY=KK-KenKem`.
 - E4_LONG_ONLY toggle is default-OFF → base clone stays exact-parity; only D5-E4Long.set turns it on.
+
+## Monte-Carlo hardening (5000 bootstraps, research/optimization/robustness_kenkem.py) — DONE, no MT5 needed
+| MC | D3-noE4 lock | D5-E4Long |
+|---|---|---|
+| % profitable | 91.9% | **94.9%** |
+| net 5th-pctile | −166 | **−7** |
+| PF 5th-pctile | 0.948 | **0.998** |
+| PF median | 1.388 | **1.424** |
+| maxDD | 559 | 609 |
+| gate | PSR 0.920 / MinTRL 139>102 ❌ | **PSR 0.953 / MinTRL 122<126 ✅** |
+
+D5-E4Long dominates the distribution (higher P(profit), far better tail/netP5, all PF percentiles up).
+Minor costs: +$50 maxDD, 7/15 vs 9/15 positive months (E4-long adds trades into some flat months).
+**Conclusion: MC-hardened + gate-clearing → D5-E4Long is the new KenKem XAU M1 lock.**

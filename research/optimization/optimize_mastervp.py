@@ -17,6 +17,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 BIN = os.path.join(ROOT, "cpp_core/build/backtester")
 HERE = os.path.dirname(__file__)
 T = os.path.join(ROOT, "cpp_core/tools")
+sys.path.insert(0, os.path.join(ROOT, "research"))   # shared overfitting-gate sweep context
+from stats.sweep_context import trial_sharpe, report_sweep_context
 SYMS = {
     "btc": dict(bars=f"{T}/bars_btcusd_2025_m3.csv", ticks=f"{T}/ticks_btcusd_2025_window.csv",
                 base=f"{T}/btc_ref_run.set", flag="--symbol-btc", trade_from=1754870400000),
@@ -111,6 +113,7 @@ def main():
                      "test_net": round(te["net"], 1), "test_pf": round(te["pf"], 3)})
         trial.set_user_attr("full_pf", full["pf"]); trial.set_user_attr("full_net", full["net"])
         trial.set_user_attr("test_pf", te["pf"]); trial.set_user_attr("n", full["n"])
+        trial.set_user_attr("sharpe", trial_sharpe(train + test))   # for the Deflated-Sharpe gate
         return score
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -122,10 +125,12 @@ def main():
             w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader()
             w.writerows(sorted(rows, key=lambda r: r["score"], reverse=True))
     b = study.best_trial
-    write_set(os.path.join(HERE, f"best_mastervp_{sym}.set"), b.params)
+    best_set = os.path.join(HERE, f"best_mastervp_{sym}.set")
+    write_set(best_set, b.params)
     a = b.user_attrs
     print(f"[mastervp:{sym}] BEST score={b.value:.2f} full_pf={a['full_pf']:.3f} full_net={a['full_net']:.0f} "
           f"n={a['n']} test_pf={a['test_pf']:.3f} -> best_mastervp_{sym}.set")
+    report_sweep_context(study, best_set, label=f"mastervp:{sym}")
 
 
 if __name__ == "__main__":
