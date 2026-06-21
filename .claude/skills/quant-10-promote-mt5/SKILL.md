@@ -23,6 +23,18 @@ A validated strategy whose logic lives in `cpp_core/` (Layer 2, pure C++20).
 - **Verify parity:** the MQL5 EA must produce the same signals as the C++ core on the same ticks before
   it is trusted.
 
+## Presets & MT5 loading (keep this organized)
+- A locked/deploy `.set` is the source of truth in its **EA folder** (`mql5/experts/<EXPERT>/`),
+  or in `research/kenkem_parity/` for KenKem M1 lock candidates. That is also what `release.conf`
+  and run READMEs reference — never move it out from under them.
+- Surface it for one-click loading: run **`./scripts/sync_presets.sh`**. This rebuilds the tidy
+  by-expert symlink view at `mql5/experts/Presets/<EXPERT>/` (zero drift) AND relinks it into MT5
+  at `MQL5/Profiles/Tester/dquants`. The user then loads via Strategy Tester → Inputs → Load →
+  `dquants/<expert>/<name>.set`.
+- After a fresh clone (or if the MT5 link vanished), run `sync_presets.sh` once.
+- Don't hand-copy single `.set` into the flat `MQL5/Presets/` dir — that habit is superseded.
+  See `mql5/experts/Presets/README.md`.
+
 ## Acceptance
 - C++ unit tests + tick backtest pass deterministically.
 - MQL5 EA reproduces C++ signals on identical tick data (parity check).

@@ -1,6 +1,20 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-20 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
+_Last updated: 2026-06-21 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. **NEW: presets organized by expert under `mql5/experts/Presets/` + symlinked into MT5 `Profiles/Tester/dquants` — load from there; regen via `scripts/sync_presets.sh` (see 🗂️ section).** Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
+
+## 🗂️ PRESETS ARE ORGANIZED + MT5-LINKED (2026-06-21) — how to load any `.set`
+All deploy/A-B presets are surfaced, by expert, under **`mql5/experts/Presets/<EXPERT>/`**
+(`KK-MasterVP`, `KK-MasterVP-Monster`, `KK-KenKem`). Entries are **symlinks** to the canonical
+source (`mql5/experts/<EXPERT>/*.set`; KenKem D3/D4 lock candidates → `research/kenkem_parity/*.set`)
+so there is **zero drift** — edit the source, the view follows. This tree is symlinked into MT5:
+`MQL5/Profiles/Tester/dquants -> dquants/mql5/experts/Presets`, so in the Strategy Tester →
+**Inputs → Load** you open `dquants/<expert>/` and pick the preset directly.
+- **Add a new deploy preset:** drop the real `.set` in the EA folder (or `research/kenkem_parity/`
+  for KenKem locks), then run **`./scripts/sync_presets.sh`** (idempotent; rebuilds the tree + relinks MT5).
+- After a fresh clone, run `sync_presets.sh` once to recreate the MT5 link. See `mql5/experts/Presets/README.md`.
+- ⚠️ Old per-run habit of `cp`-ing single `.set` into the flat `MQL5/Presets/` dir is now superseded —
+  everything loads from `Profiles/Tester/dquants/`. (The flat `MQL5/Presets/` dir is MT5's separate
+  chart-attach mechanism; leave it.) MT5 `.set` Load still needs flush-left `key=val` (no indent).
 
 ## 🆕 PER-ENTRY-TYPE TRAIL OVERRIDE — BUILT + verified + presets ready for MT5 (2026-06-21)
 User asked: let each entry family override the global `trail_runner` SAFELY, then sweep + ship MT5 sets.
