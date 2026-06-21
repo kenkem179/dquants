@@ -34,12 +34,21 @@
 #
 # If release.conf is absent, every *.set in the strategy dir is bundled as-is.
 #
+# Every release also appends a dated entry (newest on top) to the rolling
+# changelog that lives ALONGSIDE the version folders:
+#
+#   mql5/experts/<STRATEGY>/releases/Changelog.md
+#
+# Pass a human description with --notes "..."; re-running the same version
+# replaces that version's block (idempotent).
+#
 # Usage:
-#   scripts/make_release.sh <STRATEGY> [--no-compile] [--major|--minor] [--set-version X.Y]
+#   scripts/make_release.sh <STRATEGY> [--no-compile] [--major|--minor] [--set-version X.Y] [--notes "text"]
 #   STRATEGY       e.g. KK-MasterVP  (folder name under mql5/experts/)
 #   --no-compile   reuse the existing dev .ex5 instead of recompiling
 #   --major|--minor  which digit to auto-bump when a release exists (default minor)
 #   --set-version  force an exact <major>.<minor> (skips auto-bump)
+#   --notes "..."  one-line description recorded in Changelog.md for this version
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -58,12 +67,14 @@ shift || true
 DO_COMPILE=1
 BUMP_KIND="minor"       # default: bump the minor digit when a release already exists
 EXPLICIT_VER=""         # --set-version X.Y forces an exact version (no auto-bump)
+REL_NOTES=""            # --notes "..." -> one-line changelog description for this version
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-compile)  DO_COMPILE=0 ;;
     --major)       BUMP_KIND="major" ;;
     --minor)       BUMP_KIND="minor" ;;
     --set-version) shift; EXPLICIT_VER="${1:-}"; [ -n "$EXPLICIT_VER" ] || die "--set-version needs X.Y" ;;
+    --notes)       shift; REL_NOTES="${1:-}"; [ -n "$REL_NOTES" ] || die "--notes needs a description" ;;
     *)             die "unknown arg: $1" ;;
   esac
   shift || true
@@ -80,7 +91,7 @@ echo -e "${BLUE}  dquants release — $STRATEGY${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # 1) Resolve version: check existing releases, auto-bump, sync the .mq5 --------
-step "[1/5] Resolving version..."
+step "[1/6] Resolving version..."
 RELEASES_DIR="$EA_DIR/releases"
 
 # bump_ver <x.y> <major|minor>  -> next version string
@@ -130,16 +141,16 @@ fi
 
 # 2) Compile (or reuse) the DEV EA -------------------------------------------
 if [ "$DO_COMPILE" -eq 1 ]; then
-  step "[2/5] Compiling dev EA..."
+  step "[2/6] Compiling dev EA..."
   "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" || die "compile failed — fix errors first"
 else
-  step "[2/5] Skipping compile (--no-compile)"
+  step "[2/6] Skipping compile (--no-compile)"
 fi
 [ -f "$EX5_FILE" ] || die "no .ex5 — compile the dev EA first (drop --no-compile)"
 info "dev build: $STRATEGY.ex5"
 
 # 3) Create the versioned release folder -------------------------------------
-step "[3/5] Creating releases/$VERSION/ ..."
+step "[3/6] Creating releases/$VERSION/ ..."
 REL_DIR="$EA_DIR/releases/$VERSION"
 mkdir -p "$REL_DIR"
 REL_EX5="$REL_DIR/$STRATEGY-$VERSION.ex5"
@@ -147,7 +158,7 @@ cp -f "$EX5_FILE" "$REL_EX5"
 info "$STRATEGY-$VERSION.ex5"
 
 # 4) Package the .set variants ------------------------------------------------
-step "[4/5] Packaging parameter sets..."
+step "[4/6] Packaging parameter sets..."
 CONF="$EA_DIR/release.conf"
 declare -a SET_LINES=()   # "variant|relpath|overrides" for the RELEASE.md table
 
@@ -202,7 +213,7 @@ fi
 [ ${#SET_LINES[@]} -gt 0 ] || die "no .set files packaged (none found / none in release.conf)"
 
 # 5) Write RELEASE.md provenance ---------------------------------------------
-step "[5/5] Writing RELEASE.md..."
+step "[5/6] Writing RELEASE.md..."
 GIT_HASH="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo 'n/a')"
 GIT_BRANCH="$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'n/a')"
 BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -225,6 +236,50 @@ REL_MD="$REL_DIR/RELEASE.md"
 } > "$REL_MD"
 info "RELEASE.md"
 
+# 6) Append (newest on top) to the rolling Changelog.md ----------------------
+# Lives alongside the version folders: releases/Changelog.md. Idempotent —
+# re-releasing the same version replaces that version's block.
+step "[6/6] Updating Changelog.md..."
+CHANGELOG="$RELEASES_DIR/Changelog.md"
+CL_TITLE="# $STRATEGY — Changelog"
+NOTES="${REL_NOTES:-Release packaged via make_release.sh (no --notes given).}"
+
+ENTRY="$(mktemp)"
+{
+  echo "## $VERSION — ${BUILD_DATE%%T*}"
+  echo
+  echo "- Built \`$BUILD_DATE\` · commit \`$GIT_HASH\` on \`$GIT_BRANCH\`"
+  echo "- EA: \`$STRATEGY-$VERSION.ex5\` (locked build of \`$STRATEGY.mq5\`)"
+  echo "- $NOTES"
+  printf -- '- Variants:'
+  for row in "${SET_LINES[@]}"; do
+    IFS='|' read -r v _src _ov <<<"$row"
+    printf ' `%s`' "$v"
+  done
+  echo
+  echo
+} > "$ENTRY"
+
+if [ -f "$CHANGELOG" ]; then
+  TMP="$(mktemp)"
+  # drop any existing block for this EXACT version (header "## <VERSION> ..."),
+  # the trailing space in the match guards 1.1 vs 1.10
+  awk -v ver="## $VERSION " '
+    /^## /{ skip = (index($0, ver) == 1) }
+    !skip
+  ' "$CHANGELOG" > "$TMP"
+  {
+    echo "$CL_TITLE"; echo
+    cat "$ENTRY"
+    awk '/^## /{p=1} p' "$TMP"   # all surviving older entries, from first "## " on
+  } > "$CHANGELOG"
+  rm -f "$TMP"
+else
+  { echo "$CL_TITLE"; echo; cat "$ENTRY"; } > "$CHANGELOG"
+fi
+rm -f "$ENTRY"
+info "Changelog.md (${VERSION} entry on top)"
+
 echo
 echo -e "${GREEN}✓ Release $VERSION packaged${NC}  ->  ${BLUE}$REL_DIR${NC}"
-echo -e "${YELLOW}note:${NC} *.ex5 is gitignored (build artifact); the .set files + RELEASE.md commit normally."
+echo -e "${YELLOW}note:${NC} *.ex5 is gitignored (build artifact); the .set files + RELEASE.md + Changelog.md commit normally."
