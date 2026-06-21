@@ -56,3 +56,13 @@ cpp_core/tools/parity_cpp_*.csv
 .idea/
 .vscode/
 research/**/mt5_runs/**/run.log
+
+# Scratch outputs from MasterVP_End_to_End.ipynb (regenerable)
+research/mastervp_parity/_nb_out/
+
+# IDE / clangd / build artifacts (local dev environment, not source)
+.cache/
+.clangd
+.clang-format
+compile_commands.json
+.mql-auto-forwards/

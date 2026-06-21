@@ -14,6 +14,9 @@ A backtesting strategy + its parameter ranges.
 `reports/`: parameter heatmaps (e.g. ADX threshold × ATR threshold) + an Optuna study summary.
 
 ## How
+- **Stay inside the parity envelope** (`/quant-0-parity-baseline`): a swept value that activates an
+  unverified code path/regime re-opens parity — re-confirm before trusting that region. Don't promote
+  a peak the engine was never validated to model.
 - Sweep parameter **pairs** and plot heatmaps of expectancy / Sharpe / profit factor.
 - Use **Optuna** (Bayesian) rather than brute force for higher-dimensional search.
 - Look for **stable plateaus** — broad regions that all work. Reject tiny isolated peaks.

@@ -1,6 +1,26 @@
 # HANDOFF — read me first, update me last
 
-_Last updated: 2026-06-21 by Claude (Opus 4.8). Branch `reliableBaseline`. Build GREEN. **NEW: presets organized by expert under `mql5/experts/Presets/` + symlinked into MT5 `Profiles/Tester/dquants` — load from there; regen via `scripts/sync_presets.sh` (see 🗂️ section).** Latest (KenKem): D3 MT5 confirm OVERTURNED engine (engine E4 EXITS are fictional) → **LOCK = D3-noE4 (E4 OFF), MT5 +1049/PF1.39**; E1+E2 sweep → **D4 candidate** (+ADX23 +touch-age60, engine +1695/PF1.42) awaiting MT5. ⚠️ MT5 `.set` Load needs flush-left (no indent). See 🟢 KenKem D3-noE4 section for the 3 NEXT actions. Also live: MasterVP — **BTC M5 MT5 run BAD: T3 reversion edge FICTIONAL on the BTC/Exness feed (engine revNet +5,414 vs MT5 −76, PF 1.293 vs 1.058) → reverted `InpEnableReversion`→false, BTC M5 NOT deployable; XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner** (`mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md`). Earlier: T2 hour-block 2,3,14 (PF 1.296, MT5-confirmed) + T3-EXIT TP1ClosePct 20→0 locked (commit 4f45ec3)._
+_Last updated: 2026-06-21 by Claude (Opus 4.8). Branch `reliableBaseline`. **🔴 ACTIVE THRUST = KenKem CLEAN REWRITE** (see the red KenKem section + `docs/BUILD-PLAN-KENKEM-REWRITE.md`). **GOAL:** kill trash dquants KK-KenKem, rewrite cleanly transcribing **E1+E2+E5 faithfully from the original KenKemExpert MQL5** (`../kenkem`), E4 excluded (MT5 net-loser). Decisions locked: scope=E1+E2+E5, source=KenKemExpert MQL5. **JUST CHANGED (this session, UNCOMMITTED working tree):** (1) `git rm`'d the old KK-KenKem EA + `mql5/experts/KenKem/` family (P0 kill done); (2) wrote `docs/BUILD-PLAN-KENKEM-REWRITE.md`; (3) `make_release.sh` now AUTO-bumps version (scans `releases/<x.y>/`, bumps to next free, writes back `#property version`, recompiles); (4) memory: best-experts table, rewrite decision, legacy release. User manually released legacy KenKemExpert at `mql5/experts/KK-KenKem/releases/1.8.154-legacy/` (the match target). **NEXT ACTION = P1 foundation** (new `mql5/experts/KK-KenKem/`: Inputs w/ KenKemExpert's REAL input names + State + Indicators + Snapshot; compile 0/0, no trades). **Keystone:** real input names → existing `D3-noE4.set` loads directly → parity = same-`.set` MT5 diff vs `mt5_runs/2026-06-20_D3-noE4/` (+1049/PF1.39/102tr). **BLOCKED ON USER:** MT5 parity runs at P4/P5 (I can't run MT5 headless). ⚠️ Nothing committed yet this session. — Prior context still valid: presets organized under `mql5/experts/Presets/` + MT5-symlinked (🗂️ section); MT5 `.set` Load needs flush-left. MasterVP unchanged: **XAU M5 (+60,264/PF 1.40 MT5) is the sole validated front-runner**; BTC M5 reversion FICTIONAL→reverted/not-deployable._
+
+## 🧪 RESEARCH-PROCESS UPGRADE — parity-Gate-0 + edge-autopsy + pre-gate signal export (2026-06-21, THIS SESSION)
+Closed the "guess-and-sweep with no analytics in the middle" gap the user flagged. Three layers, all
+verified, **committed this session**:
+- **C++ (enabler, ~40 LOC, ZERO regression):** engine now emits the **pre-gate raw signal stream** —
+  `backtester --signals-out <csv>` → every `DetectSignal` (25k) + conditioning features, before gates.
+  New `cpp_core/include/kk/common/signal_journal.hpp`; `tick_engine.hpp` collects at the `++raw_signals_`
+  site (opt-in `set_collect_signals`); trades **byte-identical** with/without the flag, `make test` all pass.
+- **SOP skills (new ordering):** `/quant-0-parity-baseline` (FIRST gate — engine must reproduce an MT5
+  run, or N/A→UNVALIDATED if no reference; **never a hard block** per user) → `/quant-6b-edge-autopsy`
+  (conditional expectancy/IC/cost-margin/gate-ablation on the raw signals) → `/quant-7-backtest` →
+  `/quant-8-sensitivity` (both now say "sweep INSIDE the parity envelope").
+- **Notebook `research/mastervp_parity/MasterVP_End_to_End.ipynb`** (29 cells, executes 0-error in
+  `kenkem`): full lifecycle words→data→algo→**§0 parity gate**→**§4b edge autopsy**→backtest→sweep→
+  WF+MC→§8 candidate re-parity→decision. **Key honest findings:** raw breakout signal HAS edge
+  (fwd(20)=+0.135 ATR, t=6.24, net of cost +0.074 ATR); gates RAISE expectancy (0.172 vs 0.133);
+  feature IC ≈ 0 (don't tune knobs); **engine↔MT5 = NEAR-MATCH not truth** (XAU M5 best ref: 86% match,
+  PF Δ0.9%, net Δ2.4% → strict FAIL) ⇒ engine is a RANKING proxy, re-confirm every lock in MT5.
+- Memory: [[engine-pregate-signal-export]], [[parity-is-gate-0]]. **NEXT (optional):** generate an MT5
+  XAU M3 BASE run so §0 study-config parity flips N/A→real verdict; extend autopsy to BTC.
 
 ## 🗂️ PRESETS ARE ORGANIZED + MT5-LINKED (2026-06-21) — how to load any `.set`
 All deploy/A-B presets are surfaced, by expert, under **`mql5/experts/Presets/<EXPERT>/`**
@@ -53,24 +73,43 @@ liquidity-sweep reversal entry family. **Toggle OFF by default → locked base B
   (2) XAU M3 — Expert KK-MasterVP, XAUUSD M3, 2025.06–2026.05, preset `KK-MasterVP-XAUUSD-M3-XRev.set` vs false.
   Presets copied to MT5 Tester Presets + kenkem Presets. Ship only if MT5 beats base on BOTH net AND PF.
 
-## 🎨 KK-MasterVP-Profiler INDICATOR — EA-exact parity build (2026-06-20) — Phase A+B DONE, awaiting MT5 confirm
-Goal (user): the Profiler indicator shows an entry on the EXACT candle the KK-MasterVP EA enters, by REUSING
-the EA's own decision code. Single-source via **shared includes** (NOT a one-file compile-switch — impossible
-in MQL5). Both EA + indicator compile **0/0**.
-- **Phase A DONE:** NEW shared `mql5/experts/KK-MasterVP/Decision.mqh` (pure chart-deterministic gate:
-  MVP_QualityOk + MVP_DeterministicGatesPass). `Engine.mqh` OnNewBar routed through it — BEHAVIOUR-NEUTRAL
-  (same gate set, no side effects, deterministic gates grouped ahead of live ones). EA 0/0.
-- **Phase B DONE (commit pending):** rewrote `mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5`
-  as the EA twin — `#include`s the EA stack (Types/VolumeProfile/Regime/NodeEngine + Inputs/Strategy/Decision/
-  SessionNews; NEVER Engine.mqh) and REPLAYS OnNewBar's shift map per bar (master VP@InpMasterMult×InpVpLookback
-  + node + regime + MVP_DetectSignal + MVP_DeterministicGatesPass + one-position + SN max-trades). Draws entry
-  E/SL/TP1/TP2 + WON/LOST/BE, SL→BE→ATR-trail stop path, master VAH/VAL/POC lines, regime EMAs, **blocked-hour
-  gray shading** (SN_IsBlockedHour via SN_RefTime), status panel. Display knobs prefixed `InpViz*`; all EA
-  `Inp*` inherited → drive from the EA `.set`. Daily-DD IGNORED (user-approved; needs live equity). Local POC
-  INERT in lock (reversion-only SL) → faint + OFF by default. Indicator CLAUDE.md rewritten to match.
-- **⏳ NEXT:** (1) user MT5 visual spot-check: attach indicator to XAU M5 with the EA `.set`, confirm markers
-  sit on the same candles the EA backtest opens. (2) Behaviour-neutral EA confirm: re-run locked XAU M5 set,
-  expect UNCHANGED numbers vs the last XAU M5 MT5 run. Engine/Strategy logic otherwise untouched.
+## 🎨 KK-MasterVP-Profiler INDICATOR — EA-twin REVERTED → standalone reborn + UX hardening (2026-06-21)
+**User killed the EA-twin Phase-A/B build** ("total failure") and asked to restore the **exact standalone
+kenkem original**. THIS session = restore + align to EA + fix look/feel. All UNCOMMITTED (working tree also
+holds an unrelated KenKem-rewrite session — DO NOT broad-commit; commit ONLY the Profiler `.mq5` + its log).
+Indicator compiles **0 errors / 0 warnings** after every change.
+- **RESTORED:** `cp` kenkem `MQL5/Indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5` (2048-line,
+  self-contained, NO shared includes) over the gutted 469-line EA-twin. (The old `Decision.mqh` EA refactor
+  from Phase A still exists in `KK-MasterVP/` and is harmless/unused by the indicator now.)
+- **VP defaults aligned to the EA** (`KK-MasterVP/Inputs.mqh`): `InpVpLookback` 50→**120**, `InpMasterMult`
+  3→**4** (master VP = **480 bars**), `InpVpBins` 40→**30**. POC/VAH/VAL now match the EA.
+- **`InpVpAbsoluteM5` (M5-absolute VP window) — BUILT then REMOVED.** User wanted a toggle to interpret
+  lookback as M5 bars and scale to chart TF; once told it's only *near*-identical (not bit-exact: bar-feed
+  binning granularity differs), user said drop it. Fully reverted from EA + indicator. Don't re-add.
+- **Label/UX tweaks (user-requested):** histogram "Net Vol"→**"Net"**; POC/VAH/VAL state tags drop the % delta
+  (`mPOC ▲90%`→`mPOC ▲`, `TagText` no longer prints pct); `InpSetShowRejects` default **false** (no more
+  `xS chase 7.2ATR` reject labels by default).
+- **🩹 BLINKING FIXED (root-caused):** the 480-bar **real-tick** window (`CopyTicksRange` ~24h) intermittently
+  fails on BTC M3; `OnTimer` retried every 5s → histogram flipped TICK(fine)↔BAR(chunky) + net%s flipped.
+  **Fix = `InpUseRealTicks` default `false`** → structure ALWAYS bar feed (deterministic, EA-exact, OnTimer
+  thrash now dormant). User chose this over a sticky-tick option.
+- **Resolution 2×:** `InpHistBins` 120→**240** + raised internal clamp **200→600** (the old cap silently
+  throttled it). Thinner/finer rows.
+- **🔀 HYBRID net-delta (user's idea, BUILT):** structure (background buy/sell rows) = bar feed (stable);
+  the **bright net-delta slice + near "Net%"/over/under + bias arrow** = REAL tick-rule signed volume.
+  New `ComputeTickDelta()` bins ticks over a **capped recent window** (reliable, unlike full 480) into
+  `g_binTBuy/g_binTSell`; `BinDeltaNet(bin)` returns tick-net where covered else bar-net (strict superset).
+  New inputs `InpHistTickDelta`=true, `InpHistTickBars`=200. Panel feed tag now `[BAR+tickD]` turquoise /
+  `[BAR]` orange / `[TICK]`. CAVEAT: delta is true-tick only within `InpHistTickBars` (recent prices),
+  bar-net for the older/upper part of a tall profile.
+- **🩹 PANEL OVERFLOW on Retina/scaled Macs FIXED:** top-right table had a hardcoded `w=184` box → text spilled
+  the border. `DrawPanel` now builds all rows first, measures the widest with DPI-aware `TextGetSize`
+  (`TextSetFont("Consolas",-80)` matches OBJ_LABEL rendering) via new `PanelTextW`/`PanelTextW1`, and sizes
+  the box to fit (+12px pad each side). Auto-correct across displays.
+- **⏳ NEXT:** user re-attaches the indicator (saved chart inputs override new defaults — must re-add or set
+  `InpUseRealTicks=false`/`InpHistBins=240` manually) and eyeballs BTC M3 + a Retina screen. Then commit just
+  the Profiler `.mq5` (+compile log). Indicator `CLAUDE.md` still describes the dead EA-twin design — rewrite
+  it to the standalone reality before/at commit.
 
 ## 🔥 PROFITABILITY UPLIFT — T2 hour-block + T3-EXIT + T3-REVERSION (2026-06-20) ✅ DONE
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
@@ -290,6 +329,44 @@ preserved below (📌 PAUSED) — not abandoned.
   (5.2GB); train/oos cuts above. TV log: `~/Downloads/KK_-_Master_VP_OANDA_XAUUSD_2026-06-20.csv`.
 
 ---
+
+## 🟢 KenKem E1/E2/E4/E5 — HONEST SWEEP DONE + MT5-READY CANDIDATES (2026-06-21, THIS SESSION)
+User: "focus E1/E2/E5/E4; find issues in trash KK-KenKem; rewrite + sweep best combos (RR/ATR/ADX);
+I'll MT5-test after. Do NOT mislead me with C++ results again." **Delivered the SWEEP (testable now)
++ made the EA rewrite execution-ready; did NOT ship unvalidated EA logic (that's the next focused pass).**
+- **Engine re-verified as a trustworthy measuring stick:** reproduces every documented baseline EXACTLY
+  (E1E2E4 +2101, D3-noE4 +1247, D4 +1695/PF1.419, D4+E5 +2092). `make test` 28 OK.
+- **Trust boundary (from prior parity work, applied throughout):** E1 entry+exit = trustworthy; E2 entry
+  trustworthy / exit mildly optimistic; **E4 exits FICTIONAL (MT5: net loser)**; **E5 ~53% recall + exit
+  optimism**. So E4/E5 net/PF are MT5-gated; only E1+E2 engine numbers translate.
+- **E4 exit bug NOT fixed (deliberate):** `manage_tick` is shared with the VALIDATED E1/E2 parity; rewriting
+  it risks regressing +1247/+1695. E4 verdict stays MT5's. (Task documented.)
+- **Sweep (RR/ATR/ADX × individual/combined), full writeup `research/optimization/KENKEM-E1E2E4E5-SWEEP-2026-06-21.md`:**
+  confirms the lock is robust at plateau — **no hidden magic combo**. DYN_RR off = the one robust RR lever;
+  E1cap3.5 / ATRpct70 / sideways45 / ADX23 / E2-touch60 = the D4 levers. ⚠️ the E4 fiction even flips the
+  ADX-gate sign (helps the clean E1+E2 book, craters the E4-contaminated book) → run sweeps E4-OFF.
+- **CANDIDATES (flush-left, load into legacy KenKemExpert.ex5; in `research/kenkem_parity/`):**
+  `D3-noE4` (✅MT5-CONFIRMED +1049/PF1.39), `D4` (🟡engine-best E1+E2 +1695, entry-side→MT5-confirm),
+  `D4-E5` (🔴engine flips 26Q2 −427; MT5 decides), `D4-E4` (🔴engine flips 26Q2 −115 + exits fiction; MT5
+  decides), **`D4-E2RR14`** (🟡D4+E2_RR1.4, +1775/PF1.44 — the ONE refinement that survived `d5` joint
+  per-quarter testing; cross-age60/E1cap3.0 were base-dependent illusions, D5-all3 flipped 26Q2 −33).
+  **4 exact MT5 run asks in the findings doc** (run #1=D4 first; #4=D4-E2RR14 follow-up). Sweep COMPLETE
+  (all 9 families in `research/optimization/sweep_logs_2026-06-21/`).
+- **EA rewrite = execution-ready, not started:** open question RESOLVED (live path = OOP Entry1/2/4/5
+  `Detect()` via `DetectNewEntry`, first-match E1→E2→E3→E4→E5); verbatim input map + lock defaults + module
+  order captured in `docs/BUILD-PLAN-KENKEM-REWRITE.md` "Execution-ready facts". Next pass = P1→P6 transcription.
+
+## 🔴 KenKem — CLEAN REWRITE IS THE ACTIVE THRUST (2026-06-21) — read `docs/BUILD-PLAN-KENKEM-REWRITE.md`
+**User directive:** the dquants `KK-KenKem` MQL5 EA was TRASH (no profit); the profitable EA the user
+runs is the original **KenKemExpert** (`../kenkem`). Everything now lives in dquants; `../kenkem` is
+reference only. **Mission: kill KK-KenKem, rewrite it CLEANLY transcribing E1+E2+E5 FAITHFULLY from
+KenKemExpert's own MQL5** (NOT the C++ engine — it has E4-exit fiction + E5 ~53% recall). E4 excluded
+(MT5 net-loser). Decisions locked: scope=**E1+E2+E5**, source=**KenKemExpert MQL5**. Memory
+[[kenkem-clean-rewrite-from-mql-2026-06-21]]. **P0 DONE** (old EA git-rm'd; phased plan written).
+Keystone trick: transcribe KenKemExpert input NAMES verbatim → existing `D3-noE4.set` loads directly →
+parity = same-`.set` MT5 diff vs `mt5_runs/2026-06-20_D3-noE4/` (+1049/PF1.39/102tr). **NEXT = P1
+foundation** (Inputs subset + State + Indicators + Snapshot, compile 0/0). The optimization notes below
+(D3-noE4 lock, D4/E5 candidates) remain valid as the param/parity ground truth FOR the rewrite.
 
 ## 🟢 KenKem XAU M1 — OPTIMIZATION: D3-noE4 LOCKED (MT5-confirmed) → D4 candidate awaiting MT5 (2026-06-20)
 Pivoted parity→profit. Harness `research/optimization/sweep_kenkem_opt.py` (TICK engine; line-mutates a

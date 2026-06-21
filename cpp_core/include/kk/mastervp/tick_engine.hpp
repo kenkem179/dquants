@@ -41,6 +41,7 @@
 #include "kk/common/filters.hpp"
 #include "kk/common/risk_manager.hpp"
 #include "kk/common/position_manager.hpp"
+#include "kk/common/signal_journal.hpp"   // SignalRecord (pre-gate edge-autopsy stream)
 #include "kk/common/execution.hpp"
 
 namespace kk {
@@ -132,8 +133,11 @@ public:
     void set_trade_to_ms(int64_t ms) { trade_to_ms_ = ms; }
     // Cost-parity stress: extra spread (price units) added to every tick's bid/ask gap (0 = off).
     void set_extra_spread(double s) { extra_spread_ = (s > 0.0) ? s : 0.0; }
+    // Edge autopsy: collect the raw PRE-GATE signal stream (off by default = zero overhead).
+    void set_collect_signals(bool on) { collect_signals_ = on; }
 
     const std::vector<TradeRecord>& trades() const { return trades_; }
+    const std::vector<SignalRecord>& signals() const { return signals_; }
     double balance() const { return rm_.balance(); }
     double peak_equity() const { return rm_.peak_equity(); }
     int    raw_signals() const { return raw_signals_; }   // bars with a valid DetectSignal
@@ -269,7 +273,17 @@ private:
                                                     ev.sig.tp2, p_);
                 }
                 ev.valid = true;
-                if (ev.sig.valid) ++raw_signals_;
+                if (ev.sig.valid) {
+                    ++raw_signals_;
+                    if (collect_signals_) {
+                        const Signal& g = ev.sig;
+                        signals_.push_back(SignalRecord{
+                            bars_[i].ts_ms, g.is_long, g.is_rev, g.is_impulse, g.is_extreme_rev,
+                            g.reason, g.entry, g.sl, g.risk,
+                            g.f_brk_dist_atr, g.f_body_pct, g.f_adx, g.f_di_spread,
+                            g.f_runway_atr, g.f_node_net, atr_[i], bars_[i].close, regime.trend});
+                    }
+                }
             }
         }
     }
@@ -538,7 +552,9 @@ private:
     int64_t dbg_from_ = 0, dbg_to_ = 0;
     int64_t trade_to_ms_ = 0;
     double  extra_spread_ = 0.0;
+    bool    collect_signals_ = false;
     std::vector<TradeRecord> trades_;
+    std::vector<SignalRecord> signals_;
 };
 
 }  // namespace kk

@@ -19,9 +19,11 @@
 #include "kk/common/bars_csv.hpp"
 #include "kk/mastervp/tick_engine.hpp"
 #include "kk/common/trade_journal.hpp"
+#include "kk/common/signal_journal.hpp"
 
 int main(int argc, char** argv) {
     std::string bars_path, bars_m1_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
+    std::string signals_path;   // edge-autopsy: pre-gate raw signal stream (empty = off)
     int64_t trade_from_ms = 0;
     int64_t trade_to_ms = 0;   // walk-forward fold cap: open no new positions at/after this ms (0=off)
     double extra_spread = 0.0; // cost-parity stress: extra spread (price units) added to bid/ask gap
@@ -35,6 +37,7 @@ int main(int argc, char** argv) {
         else if (a == "--bars-m1") bars_m1_path = next();   // Monster: M1 series for impulse M1-net
         else if (a == "--ticks") ticks_path = next();
         else if (a == "--out")   out_path   = next();
+        else if (a == "--signals-out") signals_path = next();   // pre-gate signal CSV (edge autopsy)
         else if (a == "--set")   set_path   = next();
         else if (a == "--set-all") { set_path = next(); set_all = true; }
         else if (a == "--trade-from-ms") trade_from_ms = std::stoll(next());
@@ -64,6 +67,7 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "[bt] loaded %zu bars from %s\n", bars.size(), bars_path.c_str());
 
     kk::TickEngine eng(p);
+    if (!signals_path.empty()) eng.set_collect_signals(true);
     if (trade_to_ms > 0) eng.set_trade_to_ms(trade_to_ms);
     if (extra_spread > 0.0) {
         eng.set_extra_spread(extra_spread);
@@ -112,5 +116,15 @@ int main(int argc, char** argv) {
 
     std::fprintf(stderr, "[bt] %zu trades -> %s | final balance %.2f, peak %.2f, raw signals %d\n",
                  trades.size(), out_path.c_str(), eng.balance(), eng.peak_equity(), eng.raw_signals());
+
+    // Edge-autopsy: dump the pre-gate raw signal stream for the Python conditional-expectancy layer.
+    if (!signals_path.empty()) {
+        const std::string scsv = kk::to_signals_csv(eng.signals());
+        std::FILE* fs = std::fopen(signals_path.c_str(), "wb");
+        if (!fs) { std::fprintf(stderr, "could not open signals-out: %s\n", signals_path.c_str()); return 1; }
+        std::fwrite(scsv.data(), 1, scsv.size(), fs);
+        std::fclose(fs);
+        std::fprintf(stderr, "[bt] %zu raw signals -> %s\n", eng.signals().size(), signals_path.c_str());
+    }
     return 0;
 }

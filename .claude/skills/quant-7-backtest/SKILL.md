@@ -15,6 +15,11 @@ A hypothesis from `research/hypotheses/` + bars/ticks Parquet.
 Profit Factor).
 
 ## How
+0a. **Parity gate first (`/quant-0-parity-baseline`)** — the engine must reproduce the MT5 reference to
+   tolerance before any engine number is trusted (or be N/A if no reference exists → results UNVALIDATED).
+   Sweep only INSIDE the parity-validated envelope.
+0b. **Edge gate (`/quant-6b-edge-autopsy`)** — prove the raw signal has positive conditional expectancy
+   (net of costs) on the `--signals-out` stream. If the autopsy fails, kill the idea; do not sweep.
 1. **Vectorized screen** with `vectorbt` for fast iteration.
 2. **C++ TickEngine** (`cpp_core/backtester/`) on real ticks for the authoritative result — this is the
    true tester, not MT5.
