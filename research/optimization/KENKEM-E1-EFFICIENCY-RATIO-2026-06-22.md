@@ -45,15 +45,23 @@ trades); it does not transfer to the free-fire lock book (189 E1).**
 
 ## Decision
 - **D5-E4Long remains the KenKem XAU M1 lock** (E1+E2+E4-long; MT5 +1427/PF1.428/126tr; gate PASS).
-- **ER feature committed default-OFF** — clean, no-regression infrastructure available for future use.
-- **Candidate `KK-KenKem-XAUUSD-M1-D6-E1ER.set`** (= D5-E4Long + `E1_ER_PERIOD=5 / E1_ER_MIN=0.20
-  / E1_ER_ABANDON=true`, flush-left, 416 keys) shipped for an **OPTIONAL** MT5 A/B. Only worth
-  running if the user wants to chase the OOS-E1 signal; engine evidence is too thin to lock.
+- **ER feature committed default-OFF (ENGINE only)** — clean, no-regression infrastructure available
+  for future use; base parity preserved by construction (`make test` 28/28).
+- **`KK-KenKem-XAUUSD-M1-D6-E1ER.set`** (= D5-E4Long + `E1_ER_PERIOD=5 / E1_ER_MIN=0.20 /
+  E1_ER_ABANDON=true`, flush-left, 416 keys) is an **ENGINE-ONLY candidate**. It is **NOT
+  MT5-runnable today**: the MQL5 EA (faithful KenKemExpert clone) does not implement the ER filter,
+  so loading this `.set` into the current `.ex5` silently ignores `E1_ER_*` → B ≡ A (invalid A/B).
 
-## Exact MT5 A/B ask (optional)
-Expert **KK-KenKem**, **XAUUSD M1**, period **2025.03.02 – 2026.05.29**, modelling **every tick**,
-clean MT5 restart (clear Bases/MQL5 Cache so the latest `.ex5` is loaded, verify `E1_ER_*` appear
-in the run-log input dump):
-- **A (lock):** `KK-KenKem-XAUUSD-M1-D5-E4Long.set`
-- **B (candidate):** `KK-KenKem-XAUUSD-M1-D6-E1ER.set`
-Ship the ER filter only if **B beats A on BOTH net AND PF** (esp. 2026 OOS); else keep ER OFF.
+## ⛔ Prerequisite for an MT5 A/B — and why it is deferred
+A valid MT5 test requires first **porting the ER filter into the MQL5 EA** (new `input` keys
+`E1_ER_PERIOD/E1_ER_MIN/E1_ER_ABANDON`, default OFF so the clone stays byte-parity, applied at the
+same post-gate E1 drop site). **This port is NOT justified by the current evidence:** the engine
+gain is a narrow small-n (n=21 OOS-E1) spike at 0.20–0.25, pooled net is negative, and per-trade
+Sharpe barely moves (0.110→0.113). Spending complexity on the parity-validated clone for that is a
+bad trade. **Recommendation: keep ER OFF / D5-E4Long lock; revisit the EA port only if a broader,
+deeper re-sweep (more E1+E2 history, or a wider OOS) turns the narrow spike into a real plateau.**
+
+If the user *does* want to settle it: port ER into the EA (default OFF), recompile headless
+(`scripts/compile_mql5.sh`), clean-restart MT5 (clear Bases/MQL5 Cache, verify `E1_ER_*` appear in
+the run-log input dump), then A/B — Expert **KK-KenKem**, **XAUUSD M1**, **2025.03.02–2026.05.29**,
+**every tick**: A=`D5-E4Long.set` vs B=`D6-E1ER.set`; ship only if B beats A on **both** net AND PF.

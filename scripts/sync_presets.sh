@@ -38,7 +38,7 @@ KENKEM_RESEARCH_SETS=(
   KK-KenKem-XAUUSD-M1-E4only.set       # entry isolation: ONLY E4 on (standalone E4 edge test)
   KK-KenKem-XAUUSD-M1-E3only.set       # entry isolation: ONLY E3 on (standalone E3 reversal edge test)
   KK-KenKem-XAUUSD-M1-D5-E4Long.set    # ⭐ current LOCK: D3-noE4 + E4 LONG-only (E4 shorts are net-loser)
-  KK-KenKem-XAUUSD-M1-D6-E1ER.set      # OPTIONAL A/B: D5-E4Long + E1 Efficiency-Ratio chop filter (5/0.20)
+  KK-KenKem-XAUUSD-M1-D6-E1ER.set      # ENGINE-ONLY candidate: D5-E4Long + E1 Efficiency-Ratio (5/0.20). NOT MT5-runnable until ER ported into the EA (see KENKEM-E1-EFFICIENCY-RATIO-2026-06-22.md)
 )
 
 echo "==> rebuilding $PRESETS"
