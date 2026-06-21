@@ -79,7 +79,15 @@ The new EA exports trades via its own `Parity.mqh` (toggle `InpExportParity`/Tra
   keys are DEAD, [[kenkem-e4-sl-cap-is-e2-not-e4]]); E5 onset reads B-2 faithfully (B-1 regresses).
 
 ## Status
-- P0: ✅ (old killed; plan written). P1+ not started — see the 2026-06-21 session note: this session
-  delivered the **honest E1/E2/E4/E5 sweep + MT5-ready candidate sets** (testable now on the legacy
-  `.ex5`) and made the rewrite execution-ready above. The EA transcription (P1→P6) is the next focused
-  pass; it is intentionally NOT half-shipped (no unvalidated MQL).
+- **P0: ✅** (old killed; plan written; committed `9de0342`).
+- **P1: 🟡 IN PROGRESS — keystone done.** Shell `KK-KenKem.mq5` + `Inputs.mqh` (verbatim copy of
+  `Config/InputParams.mqh`, 696 lines) compile **0/0**. Keystone VERIFIED: 410/412 `D3-noE4.set` keys
+  map to real inputs (the 2 "missing" = `InpExportBarTrace`/`InpExportTradeJournal` = dquants parity
+  toggles → `Parity.mqh` at P4). **Remaining P1 = Core indicator/state layer** via copy-and-prune
+  (GlobalState=State+Snapshot, EMAHelpers+ADXRSIHelpers=Indicators, +RuntimeConfig/MarketCondition/
+  TrendIdentifier/Helpers; stub Alerts/persistence/adaptive/CSV; wire OnInit+OnTick cache; 0/0, no trades).
+- **Approach decided:** faithful copy-and-prune of KenKemExpert's own MQL (clean module shells + verbatim
+  internals), NOT a from-scratch re-derive — the documented parity traps (MTF-EMA off-by-one, sideways
+  5-bar-avg, etc.) live in this machinery and must be carried over byte-faithful. EA uses `iATR` directly
+  so ATR is faithful by construction (SMA-not-Wilder was a C++-engine-only concern).
+- P2→P6 not started. The transcription is intentionally NOT half-shipped (no unvalidated MQL).
