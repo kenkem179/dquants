@@ -5,7 +5,7 @@
 #   1. Rebuilds  mql5/experts/Presets/<EXPERT>/<name>.set  as a tidy, by-expert VIEW
 #      of the canonical deploy/A-B presets. The Presets/ entries are SYMLINKS, never
 #      copies — the source of truth stays where the docs/release.conf already point:
-#        - KK-MasterVP, KK-MasterVP-Monster, KK-KenKem : the EA folder's own *.set
+#        - KK-MasterVP, KK-KenKem : the EA folder's own *.set
 #        - KK-KenKem deploy-candidate winners (D3/D4)   : research/kenkem_parity/*.set
 #      (Symlinks => zero drift. Edit the source .set; the view updates for free.)
 #   2. (Re)creates the MT5 Strategy-Tester symlink so the whole tree shows up in the
@@ -23,7 +23,7 @@ PRESETS="$EXPERTS/Presets"
 MT5_TESTER="/Users/tokyotechies/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Profiles/Tester"
 
 # Experts whose top-level *.set are surfaced verbatim:
-EA_EXPERTS=(KK-MasterVP KK-MasterVP-Monster KK-KenKem)
+EA_EXPERTS=(KK-MasterVP KK-KenKem)
 
 # Extra KK-KenKem deploy candidates whose canonical home is research/kenkem_parity:
 KENKEM_RESEARCH_SETS=(

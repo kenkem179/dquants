@@ -57,15 +57,18 @@ bool MVP_QualityOk(bool isLong,double hfFast,double hfSlow,double rsi)
 //   atrPct  = AtrAt(1)/price*100   (price = signal entry_close)
 //   atr1    = AtrAt(1)             (for the ATR-ticks floor)
 //   mintick = SYMBOL_TRADE_TICK_SIZE
+//   isImpulse = true => skip ONLY the ATR% band (the impulse-thrust path deliberately
+//               owns the band ABOVE the ceiling). Default false => byte-identical to the
+//               base; every other gate still applies to impulse entries.
 bool MVP_DeterministicGatesPass(const Signal &sig,int sessionId,double atrPct,
                                 double atr1,double mintick,bool blockedHour,bool newsWindow,
-                                double hfFast,double hfSlow,double rsi)
+                                double hfFast,double hfSlow,double rsi,bool isImpulse=false)
 {
    if(!sig.valid)                       return false;
    if(!MVP_QualityOk(sig.is_long,hfFast,hfSlow,rsi)) return false;   // quality (MTF/RSI; off)
    if(sessionId==0)                     return false;                 // out of session
-   if(atrPct<InpMinAtrPct)              return false;                 // ATR% min (off=0)
-   if(InpMaxAtrPct>0.0 && atrPct>InpMaxAtrPct) return false;          // ATR% max (off=0)
+   if(!isImpulse && atrPct<InpMinAtrPct)              return false;   // ATR% min (off=0; impulse owns the band)
+   if(!isImpulse && InpMaxAtrPct>0.0 && atrPct>InpMaxAtrPct) return false; // ATR% max (off=0; impulse owns the band)
    if(InpMinAtrTicks>0.0 && mintick>0.0 && atr1/mintick<InpMinAtrTicks) return false; // ATR-ticks floor
    if(blockedHour)                      return false;                 // blocked-hour veto
    if(newsWindow)                       return false;                 // news blackout (overlay; off)

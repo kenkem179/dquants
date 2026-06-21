@@ -99,4 +99,64 @@ Signal MVP_DetectSignal(const VPResult &master_cur,const VPResult &master_sig,co
    return out;
 }
 
+//+------------------------------------------------------------------+
+//|  MVP_DetectImpulse — Monster impulse-thrust (kind 4). 1:1 with     |
+//|  cpp_core kk::detect_impulse. The ONE entry-model delta of the     |
+//|  Monster edition, brought into KK-MasterVP and OFF by default      |
+//|  (InpEnableImpulse=false => never called => base byte-identical).  |
+//|  Fires ONLY above the vol ceiling (caller enforces the band). SL   |
+//|  reuses the base breakout SL. slopeUp/slopeDn: master-POC rising/  |
+//|  falling over the slope lookback. netM1/hasM1: M1 near-price net.  |
+//+------------------------------------------------------------------+
+Signal MVP_DetectImpulse(const VPResult &master_cur,const VPResult &master_pred,const SignalBar &s,
+                         bool slopeUp,bool slopeDn,double netM1,bool hasM1,double pipSize)
+{
+   Signal out; out.valid=false; out.reason="";
+   if(!InpEnableImpulse || !master_cur.valid) return out;
+   if(s.c<=0||s.o<=0||s.h<=0||s.l<=0||s.h<s.l) return out;
+   if(s.entry_close<=0) return out;
+   double atrE=s.atr2, atrSL=s.atr1;
+   if(atrE<=0.0) return out;
+
+   double mVah=master_cur.vah, mVal=master_cur.val, mPoc=master_cur.poc;
+   double pPocRef=master_pred.valid?master_pred.poc:mPoc;
+   double pVahRef=master_pred.valid?master_pred.vah:mVah;
+   double pValRef=master_pred.valid?master_pred.val:mVal;
+
+   double candleH=s.h-s.l;
+   bool thrustBull=(s.c>s.o)&&(candleH>=InpImpulseCandleAtr*atrE);
+   bool thrustBear=(s.c<s.o)&&(candleH>=InpImpulseCandleAtr*atrE);
+   bool netLongOk =hasM1 && (netM1>= InpImpulseNetMin);
+   bool netShortOk=hasM1 && (netM1<=-InpImpulseNetMin);
+   bool trendLong =slopeUp && (pPocRef>=mPoc);
+   bool trendShort=slopeDn && (pPocRef<=mPoc);
+   bool entryL=(s.c>=mVah+InpImpulseEntryBufAtr*atrE) && (InpImpulseMaxDistAtr<=0.0 || s.c<=pVahRef+InpImpulseMaxDistAtr*atrE);
+   bool entryS=(s.c<=mVal-InpImpulseEntryBufAtr*atrE) && (InpImpulseMaxDistAtr<=0.0 || s.c>=pValRef-InpImpulseMaxDistAtr*atrE);
+
+   bool longImp =thrustBull && entryL && trendLong  && netLongOk;
+   bool shortImp=thrustBear && entryS && trendShort && netShortOk;
+   if(longImp==shortImp) return out;   // exactly one direction
+
+   out.is_long=longImp; out.entry=s.entry_close;
+   if(longImp){
+      double sl=s.entry_close-MathMax(InpSlAtrBrk*atrSL,8.0*pipSize);
+      double risk=s.entry_close-sl; if(risk<=0.0) return out;
+      out.sl=sl; out.risk=risk;
+      out.tp1=s.entry_close+risk*InpTp1R; out.tp2=s.entry_close+risk*InpImpulseRr;
+      out.reason="L-IMP";
+   } else {
+      double sl=s.entry_close+MathMax(InpSlAtrBrk*atrSL,8.0*pipSize);
+      double risk=sl-s.entry_close; if(risk<=0.0) return out;
+      out.sl=sl; out.risk=risk;
+      out.tp1=s.entry_close-risk*InpTp1R; out.tp2=s.entry_close-risk*InpImpulseRr;
+      out.reason="S-IMP";
+   }
+   out.valid=true; out.is_rev=false;
+   double atrF=(atrE>0.0)?atrE:1.0;
+   out.f_brk_dist_atr=longImp?(s.c-mVah)/atrF:(mVal-s.c)/atrF;
+   out.f_runway_atr  =longImp?(master_cur.hi-s.c)/atrF:(s.c-master_cur.lo)/atrF;
+   out.f_body_pct=MathAbs(s.c-s.o)/MathMax(candleH,pipSize); out.f_node_net=netM1;
+   return out;
+}
+
 #endif // KKMVP_STRATEGY_MQH

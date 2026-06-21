@@ -28,13 +28,14 @@
 #include "Strategy.mqh"
 #include "ExtremeReversion.mqh"
 #include "Decision.mqh"
+#include "NetVolume.mqh"
 #include "SessionNews.mqh"
 #include "Parity.mqh"
 
 CTrade        mvpTrade;
 CPositionInfo mvpPos;
 CNodeEngine   g_node;
-int  hAtr,hRsi,hAdx,hEmaF,hEmaS,hHtfEmaF,hHtfEmaS;
+int  hAtr,hRsi,hAdx,hEmaF,hEmaS,hHtfEmaF,hHtfEmaS,hAtrM1;   // hAtrM1: impulse M1 near-price-net window ATR
 double g_pip=0.01,g_mintick=0.01,g_vppl=100.0;
 datetime g_mvpLastBar=0;
 int  g_masterLen=480;
@@ -79,6 +80,7 @@ int OnInit()
    hEmaS=iMA(_Symbol,PERIOD_CURRENT,InpEmaSlow,0,MODE_EMA,PRICE_CLOSE);
    hHtfEmaF=iMA(_Symbol,PERIOD_M15,InpEmaFast,0,MODE_EMA,PRICE_CLOSE);
    hHtfEmaS=iMA(_Symbol,PERIOD_M15,InpEmaSlow,0,MODE_EMA,PRICE_CLOSE);
+   hAtrM1=iATR(_Symbol,PERIOD_M1,InpAtrLen);   // impulse path M1 near-price-net window ATR (inert when impulse off)
    g_masterLen=InpVpLookback*InpMasterMult;
    g_node.Init(InpVpBins);
    SN_Init();
@@ -103,7 +105,7 @@ int OnInit()
 }
 void OnDeinit(const int r){
    IndicatorRelease(hAtr);IndicatorRelease(hRsi);IndicatorRelease(hAdx);IndicatorRelease(hEmaF);IndicatorRelease(hEmaS);
-   IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);
+   IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);IndicatorRelease(hAtrM1);
    ParityClose();
 }
 
@@ -191,32 +193,57 @@ void OnNewBar()
    NodeState nsVah=g_node.StateAtPrice(masterCur.vah,InpNodeSaturation,InpNodeNeutralBand);
    NodeState nsVal=g_node.StateAtPrice(masterCur.val,InpNodeSaturation,InpNodeNeutralBand);
    NodeState nsPx =g_node.StateAtPrice(s.c,InpNodeSaturation,InpNodeNeutralBand);
-   Signal sig=MVP_DetectSignal(masterCur,masterCur,localCur,regime,s,nsVah,nsVal,nsPx,g_pip,g_mintick,1.0);
+   // ----- entry detection -----
+   // Impulse-thrust (the Monster delta, OFF by default) REPLACES the base entry ABOVE the vol ceiling
+   // (the band the base breakout/reversion never trades), so the two paths never compete on a bar.
+   // Mirrors tick_engine.hpp. InpEnableImpulse=false => the else branch always runs => base byte-identical.
+   bool   isImpulse=false;
+   double sigAtrPct=(s.entry_close>0)?AtrAt(1)/s.entry_close*100.0:0.0;
+   bool   aboveCeil=(InpMaxAtrPct>0.0)&&(sigAtrPct>InpMaxAtrPct);
+   Signal sig;
+   if(InpEnableImpulse && aboveCeil){
+      VPResult masterPred=masterCur;                            // predicted (aged-out) master VP
+      if(InpImpulsePredictBars>0){
+         int predLen=(int)MathMax(InpVpBins,g_masterLen-InpImpulsePredictBars);
+         VPResult mp; if(VPWindow(1,predLen,mp)) masterPred=mp;
+      }
+      bool slopeUp=false, slopeDn=false;                        // master-POC slope over the lookback
+      VPResult mPrev;
+      if(VPWindow(1+InpImpulseTrendSlopeBars,g_masterLen,mPrev) && mPrev.valid && masterCur.poc>0 && mPrev.poc>0){
+         slopeUp=masterCur.poc>mPrev.poc; slopeDn=masterCur.poc<mPrev.poc;
+      }
+      bool hasM1=false;
+      double netM1=M1NetNear(hAtrM1,InpTfNetLook,InpTfNetWinAtr,g_mintick,hasM1);
+      sig=MVP_DetectImpulse(masterCur,masterPred,s,slopeUp,slopeDn,netM1,hasM1,g_pip);
+      isImpulse=sig.valid;
+   } else {
+      sig=MVP_DetectSignal(masterCur,masterCur,localCur,regime,s,nsVah,nsVal,nsPx,g_pip,g_mintick,1.0);
 
-   // Extreme Reversion (XRev) priority — mirrors tick_engine.hpp: when enabled and its (stricter)
-   // failed-breakout-sweep conditions hold, XRev OVERRIDES the base signal; otherwise the base
-   // breakout/reversion signal stands. OFF by default => this block is skipped and sig is unchanged.
-   if(InpEnableExtremeReversion){
-      int needN=MathMax(InpXRevMinAgeBars+2,MathMax(InpXRevFailLookback+2,InpXRevHHLookback+3))+2;
-      MqlRates xr[]; ArraySetAsSeries(xr,true);
-      if(CopyRates(_Symbol,PERIOD_CURRENT,0,needN,xr)>=needN){
-         double sweepHi=masterCur.vah, sweepLo=masterCur.val;
-         for(int k=3;k<=InpXRevHHLookback+2 && k<needN;k++){          // N bars preceding the rejection bar (shift 2)
-            sweepHi=MathMax(sweepHi,xr[k].high); sweepLo=MathMin(sweepLo,xr[k].low);
+      // Extreme Reversion (XRev) priority — mirrors tick_engine.hpp: when enabled and its (stricter)
+      // failed-breakout-sweep conditions hold, XRev OVERRIDES the base signal; otherwise the base
+      // breakout/reversion signal stands. OFF by default => this block is skipped and sig is unchanged.
+      if(InpEnableExtremeReversion){
+         int needN=MathMax(InpXRevMinAgeBars+2,MathMax(InpXRevFailLookback+2,InpXRevHHLookback+3))+2;
+         MqlRates xr[]; ArraySetAsSeries(xr,true);
+         if(CopyRates(_Symbol,PERIOD_CURRENT,0,needN,xr)>=needN){
+            double sweepHi=masterCur.vah, sweepLo=masterCur.val;
+            for(int k=3;k<=InpXRevHHLookback+2 && k<needN;k++){          // N bars preceding the rejection bar (shift 2)
+               sweepHi=MathMax(sweepHi,xr[k].high); sweepLo=MathMin(sweepLo,xr[k].low);
+            }
+            int closesAbove=0, closesBelow=0;
+            for(int k=2;k<=InpXRevFailLookback+1 && k<needN;k++){        // M bars ending at the rejection bar
+               if(xr[k].close>masterCur.vah) closesAbove++;
+               if(xr[k].close<masterCur.val) closesBelow++;
+            }
+            bool agedShort=true, agedLong=true;                          // no opposite-edge cross within min_age_bars
+            for(int j=2;j<=InpXRevMinAgeBars+1 && j+1<needN;j++){
+               if(xr[j+1].close<=masterCur.val && xr[j].close>masterCur.val) agedShort=false;
+               if(xr[j+1].close>=masterCur.vah && xr[j].close<masterCur.vah) agedLong=false;
+            }
+            Signal xs=MVP_DetectExtremeReversion(masterCur,s,sweepHi,sweepLo,closesAbove,closesBelow,
+                                                 agedShort,agedLong,nsVah,nsVal,nsPx,g_pip,g_mintick);
+            if(xs.valid) sig=xs;
          }
-         int closesAbove=0, closesBelow=0;
-         for(int k=2;k<=InpXRevFailLookback+1 && k<needN;k++){        // M bars ending at the rejection bar
-            if(xr[k].close>masterCur.vah) closesAbove++;
-            if(xr[k].close<masterCur.val) closesBelow++;
-         }
-         bool agedShort=true, agedLong=true;                          // no opposite-edge cross within min_age_bars
-         for(int j=2;j<=InpXRevMinAgeBars+1 && j+1<needN;j++){
-            if(xr[j+1].close<=masterCur.val && xr[j].close>masterCur.val) agedShort=false;
-            if(xr[j+1].close>=masterCur.vah && xr[j].close<masterCur.vah) agedLong=false;
-         }
-         Signal xs=MVP_DetectExtremeReversion(masterCur,s,sweepHi,sweepLo,closesAbove,closesBelow,
-                                              agedShort,agedLong,nsVah,nsVal,nsPx,g_pip,g_mintick);
-         if(xs.valid) sig=xs;
       }
    }
    if(!sig.valid) return;
@@ -230,7 +257,7 @@ void OnNewBar()
    double atrPct=(price>0)?AtrAt(1)/price*100.0:0.0;
    double hf=KKBuf(hHtfEmaF,0,1), hs=KKBuf(hHtfEmaS,0,1), rsiQ=KKBuf(hRsi,0,1);
    if(!MVP_DeterministicGatesPass(sig,sessionId,atrPct,AtrAt(1),g_mintick,
-                                  SN_IsBlockedHour(ref),SN_InNewsWindow(utc),hf,hs,rsiQ)) return;
+                                  SN_IsBlockedHour(ref),SN_InNewsWindow(utc),hf,hs,rsiQ,isImpulse)) return;
 
    // (2) LIVE / STATEFUL gates — EA-only (account equity, open position, fire-tick
    //     spread). An indicator has none of these; in the locked config they are

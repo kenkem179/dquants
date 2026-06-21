@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP-Monster/NetVolume.mqh — M1 near-price net tick volume |
-//|  for the impulse path. 1:1 with cpp_core kk::net_prev_at_time +     |
-//|  tf_net_near_at on the M1 series.                                  |
+//|  KK-MasterVP/NetVolume.mqh — M1 near-price net tick volume for the |
+//|  impulse-thrust path (the Monster delta, OFF by default). 1:1 with  |
+//|  cpp_core kk::net_prev_at_time + tf_net_near_at on the M1 series.   |
 //|                                                                    |
 //|  PARITY-CRITICAL: net is built from iVolume(...) = M1 tick_volume  |
 //|  (== the engine's per-bar tick_count), NOT real broker volume      |
@@ -11,8 +11,8 @@
 //|  CLOSED M1 bar before it is shift `sClosed`; the net is evaluated  |
 //|  one M1 bar earlier (the Pine [1] read) -> refShift = sClosed+1.   |
 //+------------------------------------------------------------------+
-#ifndef KKMON_NETVOLUME_MQH
-#define KKMON_NETVOLUME_MQH
+#ifndef KKMVP_NETVOLUME_MQH
+#define KKMVP_NETVOLUME_MQH
 
 #include "../KK-Common/Indicators.mqh"
 
@@ -47,4 +47,4 @@ double M1NetNear(int atrM1Handle,int look,double winAtr,double mintick,bool &val
    double tot=tB+tS; return (tot>0.0)?(tB-tS)/tot:0.0;
 }
 
-#endif // KKMON_NETVOLUME_MQH
+#endif // KKMVP_NETVOLUME_MQH

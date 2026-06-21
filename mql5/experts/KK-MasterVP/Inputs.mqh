@@ -49,6 +49,23 @@ input double InpBodyPctMin        = 0.6;
 input double InpRrRev             = 1.2;
 input double InpSlAtrRev          = 1.5;
 
+input group "===== Impulse-thrust (the Monster delta; fires ABOVE the vol ceiling) (OFF) ====="
+// A single decisive thrust candle that fires ONLY in the high-vol band the base ceiling
+// (InpMaxAtrPct) vetoes, so impulse and the base breakout/reversion never compete on the same bar.
+// OFF by default => MasterVP byte-identical to the locked base. Was the sole entry-model delta of the
+// (now-removed) KK-MasterVP-Monster edition; defaults = that edition's WF-locked BTCUSD-M3 values.
+// NOTE: impulse needs InpMaxAtrPct>0 (the ceiling it fires above) AND M1 history (M1 net tick vol).
+input bool   InpEnableImpulse        = false;  // master toggle for the impulse path
+input double InpImpulseCandleAtr     = 1.7;    // min thrust-bar range (h-l) in ATR
+input double InpImpulseEntryBufAtr   = 0.4;    // min close beyond master VAH/VAL in ATR
+input double InpImpulseNetMin        = 0.95;   // min one-sided M1 near-price net tick volume
+input double InpImpulseMaxDistAtr    = 2.5;    // anti-chase vs the PREDICTED edge in ATR; 0 = off
+input double InpImpulseRr            = 3.0;    // impulse TP RR (inert while the trail is ON)
+input int    InpImpulseTrendSlopeBars= 6;      // master-POC slope lookback (bars)
+input int    InpImpulsePredictBars   = 10;     // bars aged out for the predicted master VP; 0 = current
+input int    InpTfNetLook            = 50;     // M1 net: bars summed for the near-price net
+input double InpTfNetWinAtr           = 1.5;   // M1 net: near-price window half-width in ATR
+
 input group "===== Extreme Reversion (XRev) — failed-breakout liquidity-sweep reversal (OFF) ====="
 // A failed breakout above master VAH that SWEEPS the recent swing-high then snaps back BELOW mVAH
 // on a big sell-flow candle = trapped-breakout SHORT toward mVAL (long mirrors at mVAL). OFF by
@@ -85,7 +102,7 @@ input double InpTrailAtrMult    = 2.0;      // swept (S4)
 // trailing. Default -1 everywhere => identical to the global flag => base byte-identical.
 input int    InpTrailBrk        = -1;       // breakout path
 input int    InpTrailRev        = -1;       // base reversion
-input int    InpTrailImp        = -1;       // impulse (inert here; KK-MasterVP has no impulse path)
+input int    InpTrailImp        = -1;       // impulse-thrust path (active only when InpEnableImpulse)
 input int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
 input group "===== Risk sizing ====="
