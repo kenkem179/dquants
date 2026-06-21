@@ -128,3 +128,22 @@ Per-type-trail enables reversion@mPOC additively on BTC too. Swept both TFs (OOS
   historically MT5-over-optimistic on reversion → MT5 is the arbiter.
 - A/B presets shipped (pinned toggles, differ in 3 reversion keys): `KK-MasterVP-BTCUSD-M5-{BASE,RevMpoc}.set`,
   `KK-MasterVP-Monster-BTCUSD-M3-{BASE,RevMpoc}.set` (+ MT5 Tester + kenkem Presets).
+
+## XAU M5 reversion@mPOC sweep (2026-06-21) — completes all-pair coverage
+| config (OOS) | PF / net / dd |
+|---|---|
+| base (breakout-only, validated +60k MT5 winner) | **1.461 / +11441 / 8.4%** |
+| +rev TRAIL | 1.422 / +10211 / 8.1% |
+| +rev @mPOC (trail_rev=0) | 1.427 / +10444 / 9.1% |
+| +XRev @mPOC | 1.411 / +10006 / 8.1% |
+**Every overlay DILUTES the XAU M5 base — leave it alone.** Footnote: reversion-ONLY @mPOC (breakout off,
+separate strategy) is high-PF but tiny: OOS PF 2.09 / win 67% / dd 5.3% / **n=18 / +744 net** — a real micro-edge,
+not deployable standalone. A/B presets shipped for MT5-confirming the negative: `KK-MasterVP-XAUUSD-M5-{BASE,RevMpoc}.set`.
+
+## All-pair RevMpoc preset matrix (A/B pairs differ in only EnableReversion/RevTpMpoc/TrailRev; XRev OFF, parity ON)
+| pair | EA | engine verdict (OOS) | priority |
+|---|---|---|---|
+| XAU M3 | KK-MasterVP | rev@mPOC: PF 1.114→1.123, **maxDD 17.5→13.5%** (DD trim) | ⭐ test first |
+| BTC M5 | KK-MasterVP | rev@mPOC: **net +7533→+8634**, DD 14.7→18.7% (mixed) | test second |
+| XAU M5 | KK-MasterVP | rev@mPOC: HURTS (1.461→1.427) | confirm-negative only |
+| BTC M3 | Monster | rev@mPOC: HURTS (1.202→1.108); XRev-trail is its winner | skip |
