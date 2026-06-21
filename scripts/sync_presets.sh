@@ -37,6 +37,7 @@ KENKEM_RESEARCH_SETS=(
   KK-KenKem-XAUUSD-M1-D4-TAonly.set    # D4 lever-isolation: E2 touch-age 60 only (ADX stays 19.5)
   KK-KenKem-XAUUSD-M1-E4only.set       # entry isolation: ONLY E4 on (standalone E4 edge test)
   KK-KenKem-XAUUSD-M1-E3only.set       # entry isolation: ONLY E3 on (standalone E3 reversal edge test)
+  KK-KenKem-XAUUSD-M1-D5-E4Long.set    # D3-noE4 lock + E4 LONG-only add-on (E4 shorts are net-loser)
 )
 
 echo "==> rebuilding $PRESETS"

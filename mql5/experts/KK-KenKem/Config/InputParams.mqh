@@ -417,6 +417,7 @@ input double E3_LADDER_STAGE3_TRAIL_RATIO = 0.50;   // E3: Stage 3 trailing SL r
 
 input group "===== E4 TRADE MANAGEMENT (Ichimoku Cloud Cross - Early Trend) ====="
 input bool BLOCK_E4_WHEN_E1_ACTIVE = false;
+input bool E4_LONG_ONLY = false;                 // E4: only take LONG entries (MT5 isolation: E4 shorts net-loser, longs PF~1.40)
 input int E4_MAX_SIDEWAY_SCORE = 40;
 input bool E4_REQUIRE_M5_DI_ALIGN = true;
 input HTF_TREND_MODE E4_HTF_TREND_FILTER = HTF_M5_OR_M15;

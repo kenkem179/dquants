@@ -153,7 +153,8 @@ public:
         }
         
         // === SHORT E4 Detection (only if LONG didn't trigger) ===
-        if (!result.detected && lastIchiCloudCrossDown != -1 && checkOpenSE4 == -1) {
+        // E4_LONG_ONLY: MT5 isolation showed E4 shorts are net-loser (PF 0.555) while longs are PF~1.40.
+        if (!result.detected && !E4_LONG_ONLY && lastIchiCloudCrossDown != -1 && checkOpenSE4 == -1) {
             // Check cross age - expire stale triggers (Pine parity)
             int crossAge = currentBar - lastIchiCloudCrossDown;
             if (crossAge > E4_MAX_CROSS_AGE) {
