@@ -31,6 +31,8 @@ KENKEM_RESEARCH_SETS=(
   KK-KenKem-XAUUSD-M1-D3.set
   KK-KenKem-XAUUSD-M1-D4.set
   KK-KenKem-XAUUSD-M1-D4-E5.set
+  KK-KenKem-XAUUSD-M1-D4-E4.set        # E4 re-test A/B (engine exits fictional → MT5 decides)
+  KK-KenKem-XAUUSD-M1-D4-E2RR14.set    # D4 + E2_RR 1.4 refinement (survived d5 joint test)
 )
 
 echo "==> rebuilding $PRESETS"
