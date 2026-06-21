@@ -17,6 +17,8 @@ backtests/results/
 # (the broad *.csv above would otherwise hide them, silently breaking the diff tools after a
 #  handoff/clone. Don't rely on `git add -f` — that's how they go missing.)
 !research/**/mt5_runs/**/*.csv
+# TradingView/Pine reference trade logs are handoff-critical cross-check data too — keep tracked.
+!research/**/tv_runs/**/*.csv
 # ...EXCEPT the giant per-bar trace dumps (80-280MB each) — those stay ignored (kept as .gz or
 #  regenerated on demand). Re-ignore by name so only the small artifacts (trades/realtrace/gate) track.
 research/**/mt5_runs/**/trace.csv
