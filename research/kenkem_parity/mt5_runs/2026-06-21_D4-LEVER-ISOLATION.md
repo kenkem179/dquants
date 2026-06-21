@@ -21,6 +21,12 @@ All runs MT5, every-tick, via KK-KenKem clone (exact-parity to legacy). Baseline
 
 ## Decision
 - **D3-noE4 remains the E1+E2 lock** (recent-OOS robust; both 2026 quarters healthy). D4 family rejected.
-- Per the new CLAUDE.md multiple-testing rule, a search-selected lock must pass `research/stats/gate.py`
-  (DSR/PSR/MinTRL) before being called a lock — apply to D3-noE4 as a follow-up.
 - Runs: `2026-06-21_{D4,D4-ADXonly,D4-TAonly}/`. Baseline `2026-06-21_D3-noE4_clone/` (exact-parity).
+
+## Overfitting gate on D3-noE4 (research/stats/gate.py, new CLAUDE.md mandate) — ⚠️ WARN / under-powered
+- per-trade Sharpe 0.138 (n=102) · **PSR vs 0 = 0.922** (WARN band 0.90–0.95, below the 0.95 PASS bar)
+- **Min Track Record Length = 136 trades; we have only 102 → sample TOO SHORT.**
+- DSR = n/a (the D-series sweep doesn't log `sr_trial_std` yet — known gap per research/stats/README).
+- **Read:** D3-noE4 is the best + exact-parity candidate but NOT statistically confirmable at 95% on
+  102 trades. Paths to clear it: (a) more sample — E1+E2+E5 (D4-E5 adds ~248 E5 trades, toward MinTRL)
+  if MT5-profitable; (b) longer history; (c) accept WARN status + lean on MT5 demo forward-test.
