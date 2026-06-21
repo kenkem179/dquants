@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Robustness on OUR engine's trade logs (no MT5 needed — kk::kenkem is the authoritative backtest).
 Monthly breakdown + Monte-Carlo bootstrap for a trades CSV (ts_ms,...,pnlUsd)."""
-import csv, sys, random
+import csv, os, sys, random
 from datetime import datetime, timezone
+
+# shared, strategy-agnostic overfitting gate (research/stats/)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from stats.gate import run_gate, print_gate
 
 def load(path):
     rows=[]
@@ -48,6 +52,8 @@ def report(label, path):
     nets.sort(); pfs.sort()
     prof=sum(1 for v in nets if v>0)/B*100
     print(f"  MC(5000): %profitable={prof:.1f}  netP5={nets[int(.05*B)]:,.0f}  PF_P5={pfs[int(.05*B)]:.3f}  PF_P50={pfs[int(.5*B)]:.3f}")
+    # overfitting gate (fixed-$ sizing -> per-trade pnl IS the return series; Sharpe is scale-free)
+    print_gate(run_gate(pnls), label)
 
 if __name__=="__main__":
     for label,path in [("BTC 2026 OOS (E1+E4+E5)","/tmp/kk_btc26.csv"),

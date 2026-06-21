@@ -21,9 +21,13 @@ Usage:
   python3 research/mastervp_parity/wf_mc.py --trades research/mastervp_parity/_wf_full_trades.csv \
       --label "XAU M5 LOCKED" --iters 20000 --seed 12345
 """
-import argparse, csv, math, random
+import argparse, csv, math, os, random, sys
 from collections import OrderedDict
 from datetime import datetime
+
+# stats/ lives at research/stats; this file is research/mastervp_parity/. Add research/ to path.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from stats.gate import run_gate, print_gate   # noqa: E402  (shared, strategy-agnostic gate)
 
 START_BAL = 10000.0
 
@@ -149,6 +153,10 @@ def main():
     ap.add_argument("--iters", type=int, default=20000)
     ap.add_argument("--seed", type=int, default=12345)
     ap.add_argument("--equal-folds", type=int, default=8)
+    ap.add_argument("--n-trials", type=int, default=0,
+                    help="configs the sweep evaluated before locking (for Deflated Sharpe)")
+    ap.add_argument("--sr-trial-std", type=float, default=0.0,
+                    help="std of per-trade Sharpe across those trials (search dispersion)")
     a = ap.parse_args()
 
     rows = load(a.trades)
@@ -200,6 +208,9 @@ def main():
     print("           " + "".join(f"{int(q*100):>8}%" for q in qs))
     print("maxDD%    " + "".join(f"{pctile(mc['shuf_dd'],q):>8.1f}" for q in qs))
     print(f"shuffle worst-case maxDD (max over {a.iters:,}): {mc['shuf_dd'][-1]:.1f}%")
+
+    # ---- 3) Multiple-testing / overfitting gate (shared, strategy-agnostic) ----
+    print_gate(run_gate(rfracs, a.n_trials, a.sr_trial_std), a.label)
 
 
 if __name__ == "__main__":

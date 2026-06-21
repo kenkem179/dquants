@@ -44,8 +44,23 @@ def full_metrics(rows, ann_days=365):
         sharpe = (mu / sd) * math.sqrt(ann_days) if sd > 0 else 0.0
     else:
         sharpe = 0.0
+    # Sortino: like Sharpe but penalizes only downside (daily) deviation. Tail-aware.
+    if len(daily) >= 2:
+        mu = sum(daily) / len(daily)
+        downside = [min(d, 0.0) ** 2 for d in daily]
+        dd_dev = math.sqrt(sum(downside) / (len(daily) - 1))
+        sortino = (mu / dd_dev) * math.sqrt(ann_days) if dd_dev > 0 else (9.99 if mu > 0 else 0.0)
+    else:
+        sortino = 0.0
+    # Historical tail risk on the per-trade PnL distribution (5% worst trades).
+    s = sorted(pnls)
+    k = max(int(math.ceil(0.05 * len(s))) - 1, 0)
+    var95 = s[k]                       # 5th-percentile single-trade PnL (Value-at-Risk)
+    tail = s[: k + 1]
+    cvar95 = sum(tail) / len(tail)     # mean of the worst-5% trades (Expected Shortfall)
     return dict(n=len(pnls), net=net, pf=pf, dd=dd,
-                recovery=recovery, sharpe=sharpe, tpd=tpd)
+                recovery=recovery, sharpe=sharpe, sortino=sortino,
+                var95=var95, cvar95=cvar95, tpd=tpd)
 
 
 def fmt_row(strategy, settings, symbol_tf, m):

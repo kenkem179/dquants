@@ -77,7 +77,9 @@ Prefer plateaus over peaks. Accept parameters only where sensitivity heatmaps ar
 
 Never mix walk-forward periods. Out-of-sample must stay out-of-sample.
 
-A strategy is production-eligible only after the full chain in docs/KENKEM_QUANT_OS.md §7 passes(costs → sensitivity → walk-forward → Monte Carlo → C++ tests → MQL5 parity → demo forward-test).
+Deflate every lock for multiple testing. Any config chosen by searching N candidates (Optuna, grid,coordinate sweep) MUST be run through the strategy-agnostic overfitting gate (research/stats/gate.py)before it can be called a "lock". The gate needs the search context: record `n_trials` (how manyconfigs were evaluated) and `sr_trial_std` (std of per-trade Sharpe across those trials) from thesweep, and feed them in. A lock is only trustworthy at Deflated-Sharpe (DSR) ≥ 0.95 with a sampleat/above its Min Track Record Length; DSR 0.90–0.95 = WARN (state it), DSR < 0.90 = FAIL (do notlock). PSR-vs-0 + MinTRL still apply even when the search context is unknown. See research/stats/README.md.
+
+A strategy is production-eligible only after the full chain in docs/KENKEM_QUANT_OS.md §7 passes(costs → sensitivity → walk-forward → Monte Carlo → overfitting gate [DSR/PSR/MinTRL] → C++ tests →MQL5 parity → demo forward-test).
 
 ## Project Skills (the 10-phase SOP)
 
@@ -97,7 +99,7 @@ Original strategy descriptions (will need to be improved and optimized) are writ
 
 
 
-Workflow for an existing/new EA: 1. Refer to existing MQL code (of Pine code if user specify), find all required common functions / classes/ helpers (most of them should have been written well in ../kenkem/MQL/KK-Common already), try to reuse equivalent functions/classes/helpers ( like indicator functions, indicator caching functions, trade manager, risk manager, broker helper, session helper, etc...) from dquants C++ common library first before writing code as needed; 2. Write C++  code for missing common functions/class/helpers and strategy specific parts, make sure that classes, functions are all well organized and testable; 3. Use C++ engine and prepared real tick data to conduct the most critical param sweeps to find the best combination =&gt; Lock down the best combination in a .set file in ../kenkem/MQL/Presets; 4. Port the C++ code perfectly to MQL5 code in ./mql5/experts folder
+Workflow for an existing/new EA: 1. Refer to existing MQL code (of Pine code if user specify), find all required common functions / classes/ helpers (most of them should have been written well in ../kenkem/MQL/KK-Common already), try to reuse equivalent functions/classes/helpers ( like indicator functions, indicator caching functions, trade manager, risk manager, broker helper, session helper, etc...) from dquants C++ common library first before writing code as needed; 2. Write C++  code for missing common functions/class/helpers and strategy specific parts, make sure that classes, functions are all well organized and testable; 3. Use C++ engine and prepared real tick data to conduct the most critical param sweeps to find the best combination =&gt; before locking, run the chosen config through the overfitting gate (research/stats/gate.py, passing the sweep's `n_trials` + `sr_trial_std`); only a DSR-PASS config gets locked into a .set file in ../kenkem/MQL/Presets (record n_trials/sr_trial_std/DSR alongside the lock); 4. Port the C++ code perfectly to MQL5 code in ./mql5/experts folder
 
 
 

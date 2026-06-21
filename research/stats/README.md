@@ -1,0 +1,37 @@
+# research/stats — overfitting & multiple-testing gate (strategy-agnostic)
+
+The statistical-rigor layer for the **sweep → lock** workflow. When you evaluate many configs and
+keep the best, the winner's Sharpe is inflated by selection — these methods (Bailey & López de
+Prado) deflate it back. **Not** Green-Book material; this is backtest-selection best practice.
+
+Works for **every** strategy (KenKem, MasterVP, Monster, BTC) — one tool, not a per-strategy copy.
+
+## Files
+- `overfitting.py` — the math: PSR, Deflated Sharpe (DSR), Min Track Record Length, PBO (CSCV),
+  Bonferroni / Benjamini-Hochberg. Pure numpy/scipy, deterministic.
+- `gate.py` — universal CLI/loader. Reads **any** engine's trades CSV (auto-detects
+  `entryTimeUTC`/`ts_ms` time + `realizedUsd`/`pnlUsd` pnl) and runs the gate.
+- `test_overfitting.py` — `pytest`, all green.
+
+## Run it on any locked stream
+```bash
+conda run -n kenkem python research/stats/gate.py \
+    --trades <any engine trades.csv> --label "XAU M5" \
+    --n-trials 200 --sr-trial-std 0.03      # the two sweep-context args unlock the DSR verdict
+```
+- `--n-trials` = how many configs the sweep evaluated before locking.
+- `--sr-trial-std` = std of per-trade Sharpe across those trials (the search dispersion).
+- Omit both → still get PSR-vs-0 + Min Track Record Length (DSR shows `n/a`).
+
+**Verdict:** `PASS` = DSR ≥ 0.95 and sample long enough · `WARN` = DSR ≥ 0.90 · `FAIL` otherwise.
+
+## Already wired into the lock harnesses
+- `research/mastervp_parity/wf_mc.py` — prints the gate after the Monte-Carlo block.
+- `research/optimization/robustness_kenkem.py` — prints the gate per trade log.
+- Monster's `wf_monster.py` is a grid-sweep (no single locked stream) → run `gate.py` on its
+  locked CSV directly.
+
+## Still open
+To get a **real** DSR (not a placeholder dispersion), the sweep that produces the lock must report
+`sr_trial_std` = std of per-trade Sharpe across its trials. The `optimize_*.py` scripts optimize
+`net/(1+dd)`, so they don't log per-trial Sharpe yet — that's the next wiring step.

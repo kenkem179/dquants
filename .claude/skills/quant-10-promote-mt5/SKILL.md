@@ -5,7 +5,9 @@ description: Phase 10 of the KenKem Quant OS SOP — promote a validated C++ str
 
 # Phase 10 — Promote to MT5
 
-The final step. Only run after a strategy passes the full validation chain (§7 of the master plan).
+The final step. Only run after a strategy passes the full validation chain (§7 of the master plan) —
+**including the Phase 9 overfitting gate: a config that did not clear Deflated Sharpe (DSR) ≥ 0.95 is
+not promotable.** If you can't point to a DSR-PASS (or an explicitly-accepted WARN), go back, don't promote.
 
 ## Input
 A validated strategy whose logic lives in `cpp_core/` (Layer 2, pure C++20).
