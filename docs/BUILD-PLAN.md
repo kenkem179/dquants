@@ -28,6 +28,24 @@ Prefer plateaus over peaks. OOS stays OOS. Keep the ATR-regime filter (profitabi
 
 ---
 
+## 🧭 USER ASSUMPTION TO VALIDATE (2026-06-22) — reversion must fade the LOCAL VP node, not master VP
+
+**User's assumption (record + test, do NOT assume true):** Mean-Reversion will only work well when it
+fades a **LOCAL VP node** edge. It should **NOT** use the **master VP** for this entry type.
+
+- **Current reality (verified `cpp_core/include/kk/mastervp/strategy.hpp:32,69-74`):** reversion's
+  `nearVal`/`nearVah` triggers fade `sVal`/`sVah` = **`master_sig`** (the MASTER VP value-area edges).
+  `local_cur` is consumed ONLY for the reversion SL clamp (`:91,105`) and `rev_tp_mpoc` uses
+  `master_cur.poc`. So today reversion is master-VP-driven, contradicting the assumption.
+- **Why plausible:** master VP = 480–720 bars (24–60h) → coarse, slow-moving value edges suited to
+  *breakout* structure; a fresh **local** VP node is the tighter magnet a mean-reversion fade should key
+  off. This also explains why local VP has read "inert" — it was never wired to the reversion *trigger*.
+- **Plan (future task, OFF by default → parity-safe):** add a tri-state `InpRevVpSource`
+  (master / local / both) so reversion `nearVal/nearVah` can fade `local_cur.vah/val`; default = master
+  (byte-identical to lock). Then sweep reversion-on configs (XAU M5 lock has reversion ON; XAU M3 / BTC
+  candidates) local-vs-master on train+OOS. Only adopt if local beats master on BOTH net AND PF with a
+  plateau. Ties into the user's multi-TF VP enrichment idea. See memory [[reversion-local-vp-assumption]].
+
 ## 🔥 ACTIVE THRUST (2026-06-20) — profitability uplift for MasterVP + Monster
 
 Both EAs are locked & shipped (Monster BTC M3 anti-chase opt PF 1.20; MasterVP XAU M5 PF 1.33). User

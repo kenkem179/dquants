@@ -35,6 +35,7 @@
 #include "kk/mastervp/node_engine.hpp"
 #include "kk/mastervp/regime.hpp"
 #include "kk/mastervp/strategy.hpp"
+#include "kk/mastervp/fvg_sl.hpp"
 #include "kk/mastervp/impulse.hpp"
 #include "kk/mastervp/extreme_reversion.hpp"
 #include "kk/common/tf_net.hpp"
@@ -266,6 +267,12 @@ private:
                            : kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
                                                s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
                 }
+                // Feature #3: re-anchor the breakout stop just beyond the most recent significant
+                // FVG (3-bar imbalance) between entry and the value edge. Default OFF => no-op.
+                // Runs BEFORE struct-TP so the latter clamps RR off the re-anchored risk.
+                if (ev.sig.valid && p_.enable_fvg_sl)
+                    kk::apply_fvg_sl(p_, ev.sig, bars_.data(), N_, i - 1, atr_[i],
+                                     masterCur.vah, masterCur.val, /*rr_scale=*/1.0);
                 // Feature #2: replace the final/runner target with a node-structure level.
                 if (ev.sig.valid && p_.enable_struct_tp && ev.sig.risk > 0.0) {
                     ev.sig.tp2 = node.structural_tp(ev.sig.is_long, ev.sig.entry, ev.sig.risk,

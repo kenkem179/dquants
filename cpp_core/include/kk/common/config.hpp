@@ -128,6 +128,28 @@ struct Params {
     double stp_edge_off_atr     = 0.20;  // pull the target inside the shelf by this ATR
     double stp_min_rr           = 1.2;
     double stp_max_rr           = 3.0;
+    // ---- FVG-anchored stop-loss (feature #3) — default OFF (inert / base byte-identical) ----
+    // User thesis (testcases 1-6): anchor the SL just BEYOND the most recent significant Fair Value
+    // Gap (3-bar imbalance) that sits between entry and the broken edge, instead of a fixed ATR stop.
+    // The imbalance is untested price the move must reclaim to invalidate the trade, so a stop past it
+    // is shielded from noise tags. For a LONG (broke up through VAH) the relevant FVG is BULLISH (gap
+    // up: low[k] > high[k-2]); SL = bottom of that gap (high[k-2]) - buffer, i.e. BELOW entry. For a
+    // SHORT (broke down through VAL) the FVG is BEARISH (gap down: high[k] < low[k-2]); SL = top of
+    // that gap (low[k-2]) + buffer, i.e. ABOVE entry. We scan back fvg_lookback bars from the signal
+    // bar, take the NEAREST qualifying gap, recompute risk + TP1/TP2 off the new stop. Guards keep it
+    // sane: gap >= fvg_min_atr*ATR ("significant"); optionally the gap must lie beyond VAL/VAH
+    // (fvg_beyond_va); resulting risk clamped to [fvg_min_risk_atr, fvg_max_risk_atr]*ATR. fvg_mode:
+    // 0=replace (use the FVG stop whenever found), 1=widen-only (only if it is further than the ATR
+    // stop — the user's "give it room" intent), 2=tighten-only. If no qualifying FVG: keep ATR stop.
+    bool   enable_fvg_sl        = false;
+    int    fvg_lookback         = 30;    // bars back from the signal bar to search for the gap
+    double fvg_min_atr          = 0.30;  // min gap size (significance) in ATR
+    double fvg_buf_atr          = 0.10;  // buffer placed beyond the gap edge, in ATR
+    bool   fvg_beyond_va        = true;  // require the gap to sit beyond master VAL/VAH (outside value)
+    int    fvg_mode             = 1;     // 0=replace, 1=widen-only, 2=tighten-only
+    double fvg_min_risk_atr     = 0.50;  // clamp: floor on resulting risk in ATR
+    double fvg_max_risk_atr     = 6.0;   // clamp: cap on resulting risk in ATR (else fall back to ATR SL)
+    bool   fvg_breakout_only    = true;  // apply to breakout entries only (reversion keeps its own SL)
     // ---- deferred / pullback-limit entry (shared module) — default OFF (inert) ----
     // Instead of a market fill on the signal bar, arm a virtual limit at a more favourable
     // price (entry pulled back by defer_pullback_atr*ATR) and fill within defer_bars if price
@@ -335,6 +357,15 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();
     else if (key == "InpStpMinRr") p.stp_min_rr = D();
     else if (key == "InpStpMaxRr") p.stp_max_rr = D();
+    else if (key == "InpEnableFvgSl") p.enable_fvg_sl = to_bool(val);
+    else if (key == "InpFvgLookback") p.fvg_lookback = I();
+    else if (key == "InpFvgMinAtr") p.fvg_min_atr = D();
+    else if (key == "InpFvgBufAtr") p.fvg_buf_atr = D();
+    else if (key == "InpFvgBeyondVa") p.fvg_beyond_va = to_bool(val);
+    else if (key == "InpFvgMode") p.fvg_mode = I();
+    else if (key == "InpFvgMinRiskAtr") p.fvg_min_risk_atr = D();
+    else if (key == "InpFvgMaxRiskAtr") p.fvg_max_risk_atr = D();
+    else if (key == "InpFvgBreakoutOnly") p.fvg_breakout_only = to_bool(val);
     else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
     else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
     else if (key == "InpDeferBars") p.defer_bars = I();
