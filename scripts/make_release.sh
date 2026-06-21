@@ -113,8 +113,11 @@ echo "$DEV_VER" | grep -qE '^[0-9]+\.[0-9]+$' \
 # latest already-released version (max of releases/<x.y>/ dirs)
 LATEST_REL=""
 if [ -d "$RELEASES_DIR" ]; then
+  # `|| true`: under `set -euo pipefail`, grep exits 1 when no numeric-version
+  # folder exists yet (e.g. releases/ holds only a non-standard tag like
+  # 1.8.154-legacy) — that's a valid "no prior release", not an error.
   LATEST_REL="$(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null \
-                 | grep -E '^[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n | tail -1)"
+                 | grep -E '^[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n | tail -1 || true)"
 fi
 
 if [ -n "$EXPLICIT_VER" ]; then

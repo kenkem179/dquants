@@ -1,7 +1,11 @@
 # KK-KenKem — Changelog
 
-_Newest on top. Each dquants release (`make release STRATEGY=KK-KenKem`) appends its
-entry here automatically; pass `NOTES="..."` (or `--notes`) to set the description._
+## 1.0 — 2026-06-21
+
+- Built `2026-06-21T22:59:43Z` · commit `8303652` on `reliableBaseline`
+- EA: `KK-KenKem-1.0.ex5` (locked build of `KK-KenKem.mq5`)
+- D5-E4Long LOCK (E1+E2+E4-long): MT5 +1427.17 / PF 1.428 / 126 tr; MC P(profit) 94.9%; overfitting gate PSR 0.953 / MinTRL 122<126 PASS. Ships personal (as-swept) + prop (daily-loss 4.4% / account-DD 9%) variants.
+- Variants: `xauusd-m1` `xauusd-m1-prop`
 
 ## Unreleased
 

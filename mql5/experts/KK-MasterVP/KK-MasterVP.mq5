@@ -6,7 +6,7 @@
 //|  Attach to the entry TF (M1 or M3 — never M5).                    |
 //+------------------------------------------------------------------+
 #property copyright "KenKem / dquants"
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 
 #include "Inputs.mqh"
