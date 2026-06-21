@@ -67,6 +67,43 @@ asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-
   (Monster on XAU; re-confirm MasterVP M5 XAU edge).
 - [ ] **T5 — Cost realism** (add commission + slippage; current BTC commission=0) before any deploy.
 
+### 🆕 User-raised hypotheses (2026-06-22) — to implement & validate next
+
+- [ ] **H6 — FVG-anchored stop-loss (structural SL, replaces/augments pure ATR-multiple).**
+  **Hypothesis (user):** the current SL is a blind ATR multiple (`strategy.hpp`: long `sl = entry −
+  max(sl_atr_brk·atr1, 8·pip)`, short symmetric; reversion only clamps to local VP hi/lo). It ignores
+  market structure. Anchor the SL just **beyond the most significant Fair Value Gap (FVG / 3-bar price
+  imbalance)** instead — for a **LONG**, the most significant FVG **below VAH**; for a **SHORT**, the
+  most significant FVG **above VAL**. Rationale: you only get stopped when real structure breaks, not on
+  ATR noise → fewer SL-LOSS whipsaws, better risk geometry. Expected to matter for **both M3 and M5,
+  XAU and BTC**.
+  **Build:**
+  1. Add FVG detection to the engine (new `cpp_core/include/kk/mastervp/fvg.hpp`): bullish FVG when
+     `low[i] > high[i−2]` (gap = `low[i] − high[i−2]`), bearish when `high[i] < low[i−2]`. "Most
+     significant" = largest gap (candidate: volume/tick-weighted). Constrain to the value-area side
+     (long→FVGs below VAH; short→FVGs above VAL), within a lookback window. No-lookahead: only bars ≤ t.
+  2. New params: `InpUseFvgSl` (default **false** → byte-identical to current lock), `InpFvgLookback`,
+     `InpFvgBufAtr` (buffer beyond the FVG edge), `InpFvgMinGapAtr` (significance floor), fallback to
+     ATR-SL when no qualifying FVG. Golden parity test: OFF == current trades exactly.
+  3. ⚠️ **Confirm geometry with user at impl time** — the "FVG below VAH (long) / above VAL (short)"
+     wording needs one concrete worked example to pin the exact side & which FVG edge the SL sits beyond.
+  **Validate:** A/B vs ATR-SL across all 4 cases (XAU/BTC × M3/M5) → 6-fold WF (`wf_mastervp.py`) →
+  Monte-Carlo → overfitting gate (`research/stats/gate.py`, record n_trials + sr_trial_std) before any
+  lock. Port to MQL5 (`Strategy.mqh` SL block + new FVG helper) only after a DSR-PASS.
+
+- [ ] **H7 — BTC M3 was NEVER genuinely swept → re-open it (user disputes "no edge").**
+  **Finding that backs the user:** the 2026-06-22 re-sweep's BTC-M3 case loaded the **BTC-M5 LOCKED
+  `.set`** verbatim (`resweep_2026-06-22.py:39 base="…btc_m5_LOCKED.set"`) — there is **no dedicated
+  BTC-M3 config**. So "no edge / OOS collapses" is *M5 params on M3 bars*, not an optimized M3 verdict.
+  **Hypothesis (user):** a proper structural sweep makes BTC M3 viable. Sweep, in priority order:
+  (1) **master VP node length** (`InpMasterMult` / master bars — the dominant lever on every other
+  case), (2) **RR** (`InpRunnerRr`, `InpTp1R`), (3) SL ATR (`InpSlAtrBrk`), break buffer/ceiling
+  (`InpBreakBufAtr`, `InpBreakMaxAtr`), reversion on/off. Combine with **H6 (FVG-SL)** once built —
+  the user flags FVG-SL as potentially critical for M3 specifically.
+  **Validate:** dedicated BTC-M3 train/OOS split first (cheap rank), then 6-fold WF + MC + gate. Lock
+  only on DSR-PASS; remember BTC/Exness feed runs optimistic → **MT5-confirm before trusting** any BTC
+  lock (per [[mastervp-t3-reversion-lock]]). Ship `kkmastervp_btc_m3_LOCKED.set` + EA preset if it clears.
+
 ---
 
 ## Phase A 🔒 — KenKem parity to ≥8/9 exact-bar + P&L (the gate to optimization)
