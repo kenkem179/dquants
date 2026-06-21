@@ -1,0 +1,13 @@
+== ENTRY COMBOS (per-kind net exposes priority-steal; first-match-wins E1>E2>E4>E5) ==
+E1                     ALL n= 106 net=    +894 PF=1.237 | E1 n=106 net=  +894 PF=1.24
+E2                     ALL n=  72 net=    +241 PF=1.143 | E2 n= 72 net=  +241 PF=1.14
+E4                     ALL n=  95 net=   +1008 PF=1.398 | E4 n= 95 net= +1008 PF=1.40
+E5                     ALL n= 310 net=    +357 PF=1.043 | E5 n=310 net=  +357 PF=1.04
+E1E2                   ALL n= 174 net=    +717 PF=1.130 | E1 n=106 net=  +683 PF=1.18  E2 n= 68 net=   +34 PF=1.02
+E1E4                   ALL n= 201 net=   +1654 PF=1.257 | E1 n=106 net=  +882 PF=1.23  E4 n= 95 net=  +771 PF=1.30
+E1E5                   ALL n= 402 net=    +771 PF=1.064 | E1 n=106 net=  +867 PF=1.23  E5 n=296 net=   -96 PF=0.99
+E4E5                   ALL n= 409 net=   +1097 PF=1.095 | E4 n=100 net=  +749 PF=1.26  E5 n=309 net=  +348 PF=1.04
+E1E2E4                 ALL n= 259 net=   +2101 PF=1.269 | E1 n=106 net=  +958 PF=1.25  E2 n= 68 net=  +146 PF=1.08  E4 n= 85 net=  +997 PF=1.45
+E1E4E5                 ALL n= 502 net=   +1508 PF=1.098 | E1 n=107 net=  +804 PF=1.20  E4 n= 98 net=  +635 PF=1.22  E5 n=297 net=   +69 PF=1.01
+E1E2E4E5               ALL n= 556 net=   +1910 PF=1.114 | E1 n=106 net= +1007 PF=1.26  E2 n= 68 net=  +117 PF=1.06  E4 n= 85 net=  +901 PF=1.39  E5 n=297 net=  -114 PF=0.99
+E1E2E4E5+E3            ALL n= 556 net=   +1910 PF=1.114 | E1 n=106 net= +1007 PF=1.26  E2 n= 68 net=  +117 PF=1.06  E4 n= 85 net=  +901 PF=1.39  E5 n=297 net=  -114 PF=0.99

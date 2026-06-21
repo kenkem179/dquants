@@ -1,0 +1,25 @@
+== E5 SWEEP (on D4 base) — ENGINE DIRECTIONAL ONLY, MT5 decides E5 ==
+D4 (E5 off)            ALL n= 148 net=   +1695 PF=1.419 | E1 n= 85 net= +1214 PF=1.46  E2 n= 63 net=  +481 PF=1.34
+D4+E5 base             ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+-- E5 RR --
+E5_RR=1.2              ALL n= 399 net=   +1908 PF=1.175 | E1 n= 86 net= +1063 PF=1.40  E2 n= 64 net=  +543 PF=1.36  E5 n=249 net=  +301 PF=1.04
+E5_RR=1.5              ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+E5_RR=1.8              ALL n= 397 net=   +1918 PF=1.163 | E1 n= 85 net= +1119 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +260 PF=1.03
+E5_RR=2.1              ALL n= 397 net=   +1783 PF=1.151 | E1 n= 85 net= +1121 PF=1.42  E2 n= 64 net=  +541 PF=1.35  E5 n=248 net=  +120 PF=1.02
+-- E5 min M1 ADX --
+E5_MIN_ADX=0           ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+E5_MIN_ADX=18          ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+E5_MIN_ADX=22          ALL n= 390 net=   +2070 PF=1.186 | E1 n= 85 net= +1115 PF=1.42  E2 n= 63 net=  +604 PF=1.41  E5 n=242 net=  +352 PF=1.05
+E5_MIN_ADX=26          ALL n= 382 net=   +1383 PF=1.126 | E1 n= 85 net= +1043 PF=1.40  E2 n= 63 net=  +595 PF=1.42  E5 n=234 net=  -255 PF=0.96
+-- E5 min trend quality --
+min_TQ_E5=3            ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+min_TQ_E5=5            ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+min_TQ_E5=7            ALL n= 399 net=   +1640 PF=1.143 | E1 n= 85 net= +1136 PF=1.43  E2 n= 63 net=  +585 PF=1.40  E5 n=251 net=   -81 PF=0.99
+-- E5 sideways block --
+E5_SIDEWAYS=40         ALL n= 398 net=   +1353 PF=1.135 | E1 n= 85 net= +1038 PF=1.39  E2 n= 64 net=  +426 PF=1.28  E5 n=249 net=  -111 PF=0.98
+E5_SIDEWAYS=50         ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+E5_SIDEWAYS=60         ALL n= 397 net=   +2114 PF=1.174 | E1 n= 85 net= +1099 PF=1.41  E2 n= 64 net=  +536 PF=1.35  E5 n=248 net=  +479 PF=1.06
+-- E5 HTF min ADX --
+E5_HTF_ADX=14          ALL n= 417 net=   +1790 PF=1.154 | E1 n= 85 net= +1142 PF=1.43  E2 n= 64 net=  +548 PF=1.36  E5 n=268 net=  +100 PF=1.01
+E5_HTF_ADX=18          ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+E5_HTF_ADX=22          ALL n= 368 net=   +1644 PF=1.151 | E1 n= 84 net= +1141 PF=1.44  E2 n= 64 net=  +543 PF=1.36  E5 n=220 net=   -40 PF=0.99

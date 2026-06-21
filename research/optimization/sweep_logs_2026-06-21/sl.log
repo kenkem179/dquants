@@ -1,0 +1,23 @@
+== SL ATR CAP/FLOOR SWEEP (E2 cap also drives E4 — dead E4 keys) ==
+base cap4.0/3.0 flr1.2/1.1         ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1cap=2.5                          ALL n= 266 net=   +1120 PF=1.142 dd=   945 sh=+1.17 | 25 n= 207 net=   +1614 PF=1.298 dd=   834 sh=+2.24 | 26 n=  59 net=    -494 PF=0.801 dd=   945 sh=-2.11
+E1cap=3.0                          ALL n= 264 net=   +2160 PF=1.274 dd=   941 sh=+2.18 | 25 n= 205 net=   +2282 PF=1.411 dd=   809 sh=+3.04 | 26 n=  59 net=    -121 PF=0.948 dd=   941 sh=-0.51
+E1cap=3.5                          ALL n= 260 net=   +2092 PF=1.272 dd=   845 sh=+2.15 | 25 n= 205 net=   +2115 PF=1.376 dd=   845 sh=+2.79 | 26 n=  55 net=     -23 PF=0.989 dd=   843 sh=-0.11
+E1cap=4.0                          ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1cap=4.5                          ALL n= 258 net=   +1769 PF=1.235 dd=   856 sh=+1.84 | 25 n= 203 net=   +1890 PF=1.339 dd=   848 sh=+2.50 | 26 n=  55 net=    -121 PF=0.939 dd=   856 sh=-0.60
+E1cap=5.0                          ALL n= 258 net=   +1284 PF=1.170 dd=  1041 sh=+1.34 | 25 n= 203 net=   +1623 PF=1.292 dd=   798 sh=+2.20 | 26 n=  55 net=    -339 PF=0.831 dd=  1041 sh=-1.59
+E2cap=2.0(+E4)                     ALL n= 281 net=   +1043 PF=1.119 dd=  1413 sh=+1.06 | 25 n= 217 net=    +703 PF=1.111 dd=  1413 sh=+1.00 | 26 n=  64 net=    +341 PF=1.138 dd=   800 sh=+1.18
+E2cap=2.5(+E4)                     ALL n= 269 net=   +1097 PF=1.128 dd=  1257 sh=+1.09 | 25 n= 208 net=   +1187 PF=1.195 dd=  1257 sh=+1.62 | 26 n=  61 net=     -90 PF=0.963 dd=  1140 sh=-0.33
+E2cap=3.0(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E2cap=3.5(+E4)                     ALL n= 238 net=   +1137 PF=1.160 dd=   877 sh=+1.30 | 25 n= 191 net=   +1383 PF=1.254 dd=   877 sh=+1.99 | 26 n=  47 net=    -246 PF=0.852 dd=   657 sh=-1.40
+E2cap=4.0(+E4)                     ALL n= 226 net=   +1196 PF=1.179 dd=   990 sh=+1.48 | 25 n= 181 net=   +1571 PF=1.311 dd=   990 sh=+2.45 | 26 n=  45 net=    -375 PF=0.771 dd=   701 sh=-2.29
+E1flr=0.8                          ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1flr=1.0                          ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1flr=1.2                          ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1flr=1.5                          ALL n= 259 net=   +2100 PF=1.269 dd=   908 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   908 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E1flr=1.8                          ALL n= 259 net=   +2096 PF=1.268 dd=   913 sh=+2.09 | 25 n= 204 net=   +2240 PF=1.391 dd=   913 sh=+2.84 | 26 n=  55 net=    -144 PF=0.931 dd=   897 sh=-0.69
+E2flr=0.8(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E2flr=1.0(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E2flr=1.1(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E2flr=1.4(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69
+E2flr=1.7(+E4)                     ALL n= 259 net=   +2101 PF=1.269 dd=   907 sh=+2.09 | 25 n= 204 net=   +2245 PF=1.392 dd=   907 sh=+2.85 | 26 n=  55 net=    -145 PF=0.931 dd=   897 sh=-0.69

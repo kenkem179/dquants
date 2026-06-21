@@ -1,0 +1,32 @@
+== E1+E2 STACK (judge OOS + per-quarter breadth, not pooled peak) ==
+S0 base                            ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+S1 +ADX23                          ALL n= 138 net=   +1397 PF=1.361 dd=   758 sh=+2.69 | 25 n= 105 net=   +1134 PF=1.410 dd=   758 sh=+3.00 | 26 n=  33 net=    +263 PF=1.239 dd=   336 sh=+1.85
+S2 +TA60                           ALL n= 147 net=   +1470 PF=1.361 dd=   609 sh=+2.78 | 25 n= 111 net=   +1180 PF=1.412 dd=   609 sh=+3.10 | 26 n=  36 net=    +290 PF=1.241 dd=   369 sh=+1.93
+S3 +ADX23+TA60                     ALL n= 148 net=   +1695 PF=1.419 dd=   669 sh=+3.12 | 25 n= 112 net=   +1402 PF=1.493 dd=   669 sh=+3.55 | 26 n=  36 net=    +293 PF=1.244 dd=   369 sh=+1.95
+S4 S3+TQ8                          ALL n= 148 net=   +1628 PF=1.400 dd=   614 sh=+3.01 | 25 n= 112 net=   +1334 PF=1.465 dd=   614 sh=+3.40 | 26 n=  36 net=    +293 PF=1.244 dd=   369 sh=+1.95
+S5 S3+E1RR1.5                      ALL n= 148 net=   +1284 PF=1.328 dd=   530 sh=+2.62 | 25 n= 112 net=    +930 PF=1.329 dd=   530 sh=+2.66 | 26 n=  36 net=    +353 PF=1.326 dd=   369 sh=+2.50
+S6 S3+TQ8+E1RR1.5                  ALL n= 148 net=   +1239 PF=1.315 dd=   443 sh=+2.55 | 25 n= 112 net=    +893 PF=1.313 dd=   443 sh=+2.58 | 26 n=  36 net=    +346 PF=1.319 dd=   369 sh=+2.45
+-- S0 base per-quarter --
+   25Q2 n= 37 net=   -117 PF=0.886 dd=   466
+   25Q3 n= 35 net=   -155 PF=0.852 dd=   439
+   25Q4 n= 31 net=  +1268 PF=2.975 dd=   254
+   26Q1 n= 15 net=   +130 PF=1.309 dd=   215
+   26Q2 n= 18 net=   +121 PF=1.178 dd=   336
+-- S3 +ADX23+TA60 per-quarter --
+   25Q2 n= 37 net=   -117 PF=0.886 dd=   466
+   25Q3 n= 40 net=   -126 PF=0.885 dd=   437
+   25Q4 n= 35 net=  +1645 PF=3.295 dd=   282
+   26Q1 n= 17 net=   +202 PF=1.414 dd=   207
+   26Q2 n= 19 net=    +91 PF=1.127 dd=   369
+-- S5 S3+E1RR1.5 per-quarter --
+   25Q2 n= 37 net=   -148 PF=0.856 dd=   397
+   25Q3 n= 40 net=   -136 PF=0.876 dd=   359
+   25Q4 n= 35 net=  +1214 PF=2.725 dd=   282
+   26Q1 n= 17 net=   +452 PF=2.218 dd=   185
+   26Q2 n= 19 net=    -98 PF=0.862 dd=   369
+-- S6 S3+TQ8+E1RR1.5 per-quarter --
+   25Q2 n= 36 net=    -12 PF=0.987 dd=   397
+   25Q3 n= 40 net=   -255 PF=0.782 dd=   408
+   25Q4 n= 36 net=  +1159 PF=2.527 dd=   335
+   26Q1 n= 17 net=   +444 PF=2.198 dd=   185
+   26Q2 n= 19 net=    -98 PF=0.862 dd=   369

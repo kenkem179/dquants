@@ -1,0 +1,25 @@
+== D5 STACK TEST (D4 + cross-age60 / E1cap3.0 / E2_RR1.4) — per-quarter discipline ==
+D4 base                            ALL n= 148 net=   +1695 PF=1.419 dd=   669 sh=+3.12 | 25 n= 112 net=   +1402 PF=1.493 dd=   669 sh=+3.55 | 26 n=  36 net=    +293 PF=1.244 dd=   369 sh=+1.95
+D4+CA60                            ALL n= 144 net=   +1667 PF=1.409 dd=   602 sh=+3.05 | 25 n= 108 net=   +1466 PF=1.525 dd=   602 sh=+3.72 | 26 n=  36 net=    +201 PF=1.157 dd=   369 sh=+1.31
+D4+CAP3.0                          ALL n= 151 net=   +1678 PF=1.399 dd=   516 sh=+3.03 | 25 n= 113 net=   +1428 PF=1.503 dd=   516 sh=+3.66 | 26 n=  38 net=    +250 PF=1.182 dd=   374 sh=+1.53
+D4+E2RR1.4                         ALL n= 148 net=   +1775 PF=1.440 dd=   656 sh=+3.24 | 25 n= 112 net=   +1447 PF=1.514 dd=   656 sh=+3.63 | 26 n=  36 net=    +329 PF=1.269 dd=   369 sh=+2.17
+D5 all3                            ALL n= 146 net=   +1675 PF=1.404 dd=   427 sh=+3.02 | 25 n= 108 net=   +1562 PF=1.581 dd=   427 sh=+4.09 | 26 n=  38 net=    +113 PF=1.077 dd=   417 sh=+0.66
+D5-CA (CAP+E2RR)                   ALL n= 151 net=   +1829 PF=1.437 dd=   503 sh=+3.27 | 25 n= 113 net=   +1562 PF=1.558 dd=   503 sh=+3.97 | 26 n=  38 net=    +266 PF=1.192 dd=   374 sh=+1.61
+-- D4 base per-quarter --
+   25Q2 n= 37 net=   -117 PF=0.886 dd=   466
+   25Q3 n= 40 net=   -126 PF=0.885 dd=   437
+   25Q4 n= 35 net=  +1645 PF=3.295 dd=   282
+   26Q1 n= 17 net=   +202 PF=1.414 dd=   207
+   26Q2 n= 19 net=    +91 PF=1.127 dd=   369
+-- D5 all3 per-quarter --
+   25Q2 n= 35 net=   +146 PF=1.153 dd=   364
+   25Q3 n= 39 net=   -183 PF=0.828 dd=   408
+   25Q4 n= 34 net=  +1598 PF=3.407 dd=   186
+   26Q1 n= 18 net=   +146 PF=1.247 dd=   268
+   26Q2 n= 20 net=    -33 PF=0.962 dd=   417
+-- D5-CA (CAP+E2RR) per-quarter --
+   25Q2 n= 37 net=    +94 PF=1.098 dd=   364
+   25Q3 n= 41 net=   -208 PF=0.810 dd=   408
+   25Q4 n= 35 net=  +1675 PF=3.240 dd=   270
+   26Q1 n= 17 net=   +220 PF=1.424 dd=   225
+   26Q2 n= 21 net=    +46 PF=1.053 dd=   374

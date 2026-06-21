@@ -309,3 +309,86 @@ if __name__ == "__main__":
             for q, lo, hi in QTRS:
                 m = full_metrics([(t, p) for t, p, d, _ in rows if lo <= d <= hi])
                 print(f"   {q} n={m['n']:3d} net={m['net']:+7.0f} PF={m['pf']:.3f} dd={m['dd']:6.0f}")
+
+    # ---- D4 base = the engine-best E1+E2 stack (D3-noE4 + ADX23 + TouchAge60) ----
+    # NOTE: D4 is the engine-best E1+E2 combo. E1 exits parity-clean, E2 mildly
+    # optimistic, so D4 net/PF TRANSLATE to MT5 (both winning levers are ENTRY filters).
+    D4 = {"USE_DYNAMIC_RR_SCALING": "false", "E1_ATR_SL_CAP_MULTIPLIER": "3.5",
+          "SIDEWAYS_BLOCK_THRESHOLD": "45", "MIN_ENTRY_ATR_PERCENTILE": "70",
+          "ENABLE_E4_ENTRIES": "false", "E1_MIN_MOMENTUM_ADX": "23", "E2_MAX_TOUCH_AGE": "60"}
+    QTRS = [("25Q2", "2025.03.01", "2025.06.30"), ("25Q3", "2025.07.01", "2025.09.30"),
+            ("25Q4", "2025.10.01", "2025.12.31"), ("26Q1", "2026.01.01", "2026.03.31"),
+            ("26Q2", "2026.04.01", "2026.05.31")]
+
+    if fam == "e5":
+        # E5 on TOP of D4. ⚠️ ENGINE-DIRECTIONAL ONLY: engine catches ~53% of E5 onsets
+        # and is OPTIMISTIC on E5 exits, so these net/PF are NOT trustworthy for picking
+        # E5 params — only MT5 settles E5. Shown to map the engine's view of the knobs.
+        print("== E5 SWEEP (on D4 base) — ENGINE DIRECTIONAL ONLY, MT5 decides E5 ==")
+        B = {**D4, "ENABLE_E5_ENTRIES": "true"}
+        bykind("D4 (E5 off)", D4)
+        bykind("D4+E5 base", B)
+        print("-- E5 RR --")
+        for v in ("1.2", "1.5", "1.8", "2.1"):
+            bykind(f"E5_RR={v}", {**B, "E5_RR": v})
+        print("-- E5 min M1 ADX --")
+        for v in ("0", "18", "22", "26"):
+            bykind(f"E5_MIN_ADX={v}", {**B, "E5_MIN_MOMENTUM_ADX": v})
+        print("-- E5 min trend quality --")
+        for v in ("3", "5", "7"):
+            bykind(f"min_TQ_E5={v}", {**B, "MIN_TREND_QUALITY_E5": v})
+        print("-- E5 sideways block --")
+        for v in ("40", "50", "60"):
+            bykind(f"E5_SIDEWAYS={v}", {**B, "E5_SIDEWAYS_BLOCK_THRESHOLD": v})
+        print("-- E5 HTF min ADX --")
+        for v in ("14", "18", "22"):
+            bykind(f"E5_HTF_ADX={v}", {**B, "E5_HTF_MIN_ADX": v})
+
+    elif fam == "d5":
+        # Do the granular E1+E2 winners STACK on D4 robustly (per-quarter), or are they
+        # per-quarter illusions? (the e1e2b S5 RR1.5 lesson). All are ENTRY-side levers
+        # (engine-faithful) so a robust D5 would translate to MT5.
+        print("== D5 STACK TEST (D4 + cross-age60 / E1cap3.0 / E2_RR1.4) — per-quarter discipline ==")
+        CA60 = {"E1_MAX_CROSS_AGE": "60"}
+        CAP30 = {"E1_ATR_SL_CAP_MULTIPLIER": "3.0"}
+        E2RR14 = {"E2_RR": "1.4"}
+        cands = {
+            "D4 base": D4,
+            "D4+CA60": {**D4, **CA60},
+            "D4+CAP3.0": {**D4, **CAP30},
+            "D4+E2RR1.4": {**D4, **E2RR14},
+            "D5 all3": {**D4, **CA60, **CAP30, **E2RR14},
+            "D5-CA (CAP+E2RR)": {**D4, **CAP30, **E2RR14},
+        }
+        for label, ov in cands.items():
+            report(label, ov)
+        for label in ("D4 base", "D5 all3", "D5-CA (CAP+E2RR)"):
+            rows = run(cands[label])
+            print(f"-- {label} per-quarter --")
+            for q, lo, hi in QTRS:
+                m = full_metrics([(t, p) for t, p, d, _ in rows if lo <= d <= hi])
+                print(f"   {q} n={m['n']:3d} net={m['net']:+7.0f} PF={m['pf']:.3f} dd={m['dd']:6.0f}")
+
+    elif fam == "final":
+        # Per-quarter robustness table for the DEPLOY candidates. Confidence labels:
+        #   D3-noE4  = MT5-CONFIRMED lock (+1049/PF1.39/102tr live)
+        #   D4       = engine-best E1+E2 (entry-side levers -> should translate; awaiting MT5)
+        #   D4+E5    = engine DIRECTIONAL (E5 ~53% recall + exit-optimism; MT5 decides)
+        #   D4+E4    = E4 entry-side honest; E4 EXIT net/PF is ENGINE FICTION (MT5: E4 net loser)
+        D3noE4 = {"USE_DYNAMIC_RR_SCALING": "false", "E1_ATR_SL_CAP_MULTIPLIER": "3.5",
+                  "SIDEWAYS_BLOCK_THRESHOLD": "45", "MIN_ENTRY_ATR_PERCENTILE": "70",
+                  "ENABLE_E4_ENTRIES": "false"}
+        cands = {
+            "D3-noE4 [MT5-CONFIRMED]": D3noE4,
+            "D4 [engine-best E1E2]": D4,
+            "D4+E5 [engine directional]": {**D4, "ENABLE_E5_ENTRIES": "true"},
+            "D4+E4 [E4 exits=FICTION]": {**D4, "ENABLE_E4_ENTRIES": "true"},
+        }
+        for label, ov in cands.items():
+            bykind(label, ov)
+        for label, ov in cands.items():
+            rows = run(ov)
+            print(f"-- {label} per-quarter --")
+            for q, lo, hi in QTRS:
+                m = full_metrics([(t, p) for t, p, d, _ in rows if lo <= d <= hi])
+                print(f"   {q} n={m['n']:3d} net={m['net']:+7.0f} PF={m['pf']:.3f} dd={m['dd']:6.0f}")

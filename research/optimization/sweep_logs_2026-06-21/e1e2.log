@@ -1,0 +1,63 @@
+== E1+E2 SWEEP (from D3-noE4 base: DYNoff, E1cap3.5, sideways45, ATRpct70, E4 OFF) ==
+D3-noE4 base                       ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+-- E1 cross-age window --
+E1_MAX_CROSS_AGE=40                ALL n= 112 net=    +827 PF=1.269 dd=   630 sh=+2.06 | 25 n=  86 net=    +726 PF=1.337 dd=   630 sh=+2.50 | 26 n=  26 net=    +101 PF=1.110 dd=   418 sh=+0.89
+E1_MAX_CROSS_AGE=60                ALL n= 132 net=   +1434 PF=1.381 dd=   629 sh=+2.83 | 25 n= 100 net=   +1189 PF=1.446 dd=   629 sh=+3.24 | 26 n=  32 net=    +245 PF=1.222 dd=   336 sh=+1.73
+E1_MAX_CROSS_AGE=80                ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_MAX_CROSS_AGE=100               ALL n= 148 net=   +1659 PF=1.372 dd=   452 sh=+2.81 | 25 n= 111 net=   +1591 PF=1.530 dd=   452 sh=+3.75 | 26 n=  37 net=     +68 PF=1.047 dd=   350 sh=+0.41
+E1_MAX_CROSS_AGE=120               ALL n= 158 net=   +1718 PF=1.375 dd=   505 sh=+2.79 | 25 n= 116 net=   +1483 PF=1.491 dd=   505 sh=+3.49 | 26 n=  42 net=    +235 PF=1.150 dd=   463 sh=+1.23
+-- E1 RR (TP) --
+E1_RR=1.5                          ALL n= 137 net=   +1187 PF=1.315 dd=   435 sh=+2.52 | 25 n= 104 net=    +861 PF=1.310 dd=   435 sh=+2.54 | 26 n=  33 net=    +326 PF=1.332 dd=   336 sh=+2.45
+E1_RR=1.7                          ALL n= 136 net=   +1357 PF=1.355 dd=   531 sh=+2.75 | 25 n= 103 net=   +1153 PF=1.424 dd=   531 sh=+3.23 | 26 n=  33 net=    +203 PF=1.185 dd=   336 sh=+1.49
+E1_RR=1.9                          ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_RR=2.2                          ALL n= 137 net=   +1320 PF=1.325 dd=   752 sh=+2.46 | 25 n= 104 net=   +1331 PF=1.471 dd=   752 sh=+3.38 | 26 n=  33 net=     -11 PF=0.991 dd=   435 sh=-0.08
+E1_RR=2.6                          ALL n= 137 net=   +1613 PF=1.389 dd=   715 sh=+2.80 | 25 n= 104 net=   +1593 PF=1.562 dd=   715 sh=+3.79 | 26 n=  33 net=     +20 PF=1.015 dd=   427 sh=+0.13
+-- E1 SL cap --
+E1cap=3.0                          ALL n= 139 net=   +1534 PF=1.385 dd=   553 sh=+2.92 | 25 n= 104 net=   +1313 PF=1.483 dd=   553 sh=+3.54 | 26 n=  35 net=    +221 PF=1.175 dd=   341 sh=+1.43
+E1cap=3.25                         ALL n= 137 net=   +1243 PF=1.318 dd=   656 sh=+2.45 | 25 n= 104 net=    +903 PF=1.321 dd=   656 sh=+2.48 | 26 n=  33 net=    +340 PF=1.312 dd=   326 sh=+2.36
+E1cap=3.5                          ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1cap=3.75                         ALL n= 137 net=   +1150 PF=1.289 dd=   747 sh=+2.28 | 25 n= 103 net=   +1074 PF=1.384 dd=   747 sh=+2.88 | 26 n=  34 net=     +77 PF=1.065 dd=   475 sh=+0.58
+E1cap=4.0                          ALL n= 136 net=   +1023 PF=1.257 dd=   831 sh=+2.04 | 25 n= 103 net=    +861 PF=1.293 dd=   831 sh=+2.28 | 26 n=  33 net=    +161 PF=1.154 dd=   349 sh=+1.29
+-- E1 gates --
+E1_MIN_ADX=12                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_MIN_ADX=16                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_MIN_ADX=19.5                    ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_MIN_ADX=23                      ALL n= 138 net=   +1397 PF=1.361 dd=   758 sh=+2.69 | 25 n= 105 net=   +1134 PF=1.410 dd=   758 sh=+3.00 | 26 n=  33 net=    +263 PF=1.239 dd=   336 sh=+1.85
+E1_MIN_ADX=27                      ALL n= 131 net=    +908 PF=1.241 dd=   671 sh=+1.82 | 25 n=  97 net=    +791 PF=1.309 dd=   671 sh=+2.29 | 26 n=  34 net=    +117 PF=1.097 dd=   354 sh=+0.78
+E1_HTF_DI=2.0                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_HTF_DI=4.0                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_HTF_DI=6.0                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E1_HTF_DI=8.0                      ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+min_TQ_E1=0                        ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+min_TQ_E1=4                        ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+min_TQ_E1=6                        ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+min_TQ_E1=8                        ALL n= 135 net=   +1382 PF=1.365 dd=   645 sh=+2.73 | 25 n= 102 net=   +1119 PF=1.417 dd=   645 sh=+3.06 | 26 n=  33 net=    +263 PF=1.239 dd=   336 sh=+1.85
+min_TQ_E1=10                       ALL n= 124 net=    +106 PF=1.028 dd=   946 sh=+0.25 | 25 n=  94 net=    +201 PF=1.073 dd=   946 sh=+0.65 | 26 n=  30 net=     -95 PF=0.910 dd=   270 sh=-0.80
+-- E2 touch-age window --
+E2_MAX_TOUCH_AGE=10                ALL n= 105 net=   +1192 PF=1.383 dd=   528 sh=+2.84 | 25 n=  80 net=   +1185 PF=1.531 dd=   528 sh=+3.65 | 26 n=  25 net=      +7 PF=1.008 dd=   281 sh=+0.07
+E2_MAX_TOUCH_AGE=20                ALL n= 126 net=    +842 PF=1.226 dd=   726 sh=+1.79 | 25 n=  96 net=    +813 PF=1.305 dd=   726 sh=+2.31 | 26 n=  30 net=     +28 PF=1.027 dd=   329 sh=+0.24
+E2_MAX_TOUCH_AGE=30                ALL n= 135 net=   +1166 PF=1.305 dd=   757 sh=+2.33 | 25 n= 102 net=    +924 PF=1.340 dd=   757 sh=+2.57 | 26 n=  33 net=    +242 PF=1.220 dd=   336 sh=+1.70
+E2_MAX_TOUCH_AGE=45                ALL n= 141 net=   +1336 PF=1.337 dd=   695 sh=+2.56 | 25 n= 107 net=   +1152 PF=1.412 dd=   695 sh=+3.05 | 26 n=  34 net=    +184 PF=1.157 dd=   336 sh=+1.26
+E2_MAX_TOUCH_AGE=60                ALL n= 147 net=   +1470 PF=1.361 dd=   609 sh=+2.78 | 25 n= 111 net=   +1180 PF=1.412 dd=   609 sh=+3.10 | 26 n=  36 net=    +290 PF=1.241 dd=   369 sh=+1.93
+-- E2 RR (TP) --
+E2_RR=1.2                          ALL n= 136 net=   +1277 PF=1.334 dd=   668 sh=+2.54 | 25 n= 103 net=   +1030 PF=1.379 dd=   668 sh=+2.82 | 26 n=  33 net=    +247 PF=1.224 dd=   336 sh=+1.77
+E2_RR=1.4                          ALL n= 136 net=   +1300 PF=1.340 dd=   676 sh=+2.57 | 25 n= 103 net=   +1006 PF=1.370 dd=   676 sh=+2.77 | 26 n=  33 net=    +294 PF=1.267 dd=   336 sh=+2.06
+E2_RR=1.575                        ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E2_RR=1.9                          ALL n= 137 net=   +1308 PF=1.336 dd=   640 sh=+2.54 | 25 n= 104 net=   +1218 PF=1.436 dd=   640 sh=+3.18 | 26 n=  33 net=     +91 PF=1.082 dd=   336 sh=+0.68
+E2_RR=2.3                          ALL n= 137 net=   +1199 PF=1.298 dd=   644 sh=+2.26 | 25 n= 104 net=   +1247 PF=1.439 dd=   644 sh=+3.15 | 26 n=  33 net=     -48 PF=0.960 dd=   357 sh=-0.35
+-- E2 SL cap --
+E2cap=2.0                          ALL n= 140 net=    +820 PF=1.197 dd=   650 sh=+1.65 | 25 n= 106 net=    +827 PF=1.294 dd=   650 sh=+2.34 | 26 n=  34 net=      -7 PF=0.995 dd=   398 sh=-0.05
+E2cap=2.5                          ALL n= 138 net=   +1124 PF=1.274 dd=   682 sh=+2.18 | 25 n= 105 net=   +1067 PF=1.379 dd=   682 sh=+2.89 | 26 n=  33 net=     +57 PF=1.044 dd=   458 sh=+0.39
+E2cap=3.0                          ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+E2cap=3.5                          ALL n= 136 net=   +1354 PF=1.362 dd=   527 sh=+2.68 | 25 n= 103 net=   +1281 PF=1.482 dd=   527 sh=+3.41 | 26 n=  33 net=     +72 PF=1.067 dd=   338 sh=+0.55
+E2cap=4.0                          ALL n= 134 net=   +1235 PF=1.334 dd=   469 sh=+2.55 | 25 n= 101 net=   +1191 PF=1.453 dd=   469 sh=+3.34 | 26 n=  33 net=     +44 PF=1.041 dd=   336 sh=+0.34
+-- shared master gates re-checked on the E1+E2 book --
+MIN_ATR_PCTILE=60                  ALL n= 203 net=    +692 PF=1.112 dd=  1348 sh=+0.99 | 25 n= 150 net=    +423 PF=1.100 dd=  1348 sh=+0.86 | 26 n=  53 net=    +269 PF=1.139 dd=   741 sh=+1.30
+MIN_ATR_PCTILE=65                  ALL n= 173 net=    +789 PF=1.152 dd=  1075 sh=+1.31 | 25 n= 129 net=    +682 PF=1.189 dd=  1075 sh=+1.56 | 26 n=  44 net=    +107 PF=1.067 dd=   703 sh=+0.65
+MIN_ATR_PCTILE=70                  ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+MIN_ATR_PCTILE=75                  ALL n= 113 net=    +743 PF=1.223 dd=   542 sh=+1.75 | 25 n=  87 net=    +706 PF=1.299 dd=   542 sh=+2.27 | 26 n=  26 net=     +37 PF=1.039 dd=   318 sh=+0.32
+MIN_ATR_PCTILE=80                  ALL n=  73 net=    +336 PF=1.164 dd=   347 sh=+1.20 | 25 n=  55 net=    +470 PF=1.357 dd=   313 sh=+2.34 | 26 n=  18 net=    -134 PF=0.816 dd=   347 sh=-1.72
+SIDEWAYS_BLOCK=38                  ALL n= 138 net=    +812 PF=1.206 dd=   814 sh=+1.60 | 25 n= 104 net=    +749 PF=1.274 dd=   814 sh=+2.12 | 26 n=  34 net=     +63 PF=1.052 dd=   472 sh=+0.42
+SIDEWAYS_BLOCK=45                  ALL n= 136 net=   +1247 PF=1.326 dd=   698 sh=+2.47 | 25 n= 103 net=    +996 PF=1.366 dd=   698 sh=+2.74 | 26 n=  33 net=    +251 PF=1.228 dd=   336 sh=+1.77
+SIDEWAYS_BLOCK=53                  ALL n= 139 net=   +1306 PF=1.330 dd=   643 sh=+2.50 | 25 n= 106 net=   +1141 PF=1.401 dd=   643 sh=+3.01 | 26 n=  33 net=    +166 PF=1.148 dd=   336 sh=+1.15
+SIDEWAYS_BLOCK=61                  ALL n= 139 net=   +1306 PF=1.330 dd=   643 sh=+2.50 | 25 n= 106 net=   +1141 PF=1.401 dd=   643 sh=+3.01 | 26 n=  33 net=    +166 PF=1.148 dd=   336 sh=+1.15

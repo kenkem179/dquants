@@ -1,0 +1,28 @@
+D3-noE4 [MT5-CONFIRMED] ALL n= 136 net=   +1247 PF=1.326 | E1 n= 83 net=  +928 PF=1.36  E2 n= 53 net=  +319 PF=1.25
+D4 [engine-best E1E2]  ALL n= 148 net=   +1695 PF=1.419 | E1 n= 85 net= +1214 PF=1.46  E2 n= 63 net=  +481 PF=1.34
+D4+E5 [engine directional] ALL n= 397 net=   +2092 PF=1.184 | E1 n= 85 net= +1118 PF=1.42  E2 n= 64 net=  +539 PF=1.35  E5 n=248 net=  +435 PF=1.06
+D4+E4 [E4 exits=FICTION] ALL n= 209 net=   +2414 PF=1.416 | E1 n= 84 net= +1172 PF=1.45  E2 n= 64 net=  +531 PF=1.35  E4 n= 61 net=  +711 PF=1.42
+-- D3-noE4 [MT5-CONFIRMED] per-quarter --
+   25Q2 n= 37 net=   -117 PF=0.886 dd=   466
+   25Q3 n= 35 net=   -155 PF=0.852 dd=   439
+   25Q4 n= 31 net=  +1268 PF=2.975 dd=   254
+   26Q1 n= 15 net=   +130 PF=1.309 dd=   215
+   26Q2 n= 18 net=   +121 PF=1.178 dd=   336
+-- D4 [engine-best E1E2] per-quarter --
+   25Q2 n= 37 net=   -117 PF=0.886 dd=   466
+   25Q3 n= 40 net=   -126 PF=0.885 dd=   437
+   25Q4 n= 35 net=  +1645 PF=3.295 dd=   282
+   26Q1 n= 17 net=   +202 PF=1.414 dd=   207
+   26Q2 n= 19 net=    +91 PF=1.127 dd=   369
+-- D4+E5 [engine directional] per-quarter --
+   25Q2 n= 97 net=    -38 PF=0.986 dd=   814
+   25Q3 n=100 net=    +26 PF=1.011 dd=   504
+   25Q4 n= 83 net=  +2111 PF=2.040 dd=   511
+   26Q1 n= 65 net=   +421 PF=1.195 dd=   610
+   26Q2 n= 52 net=   -427 PF=0.791 dd=   846
+-- D4+E4 [E4 exits=FICTION] per-quarter --
+   25Q2 n= 60 net=   +249 PF=1.159 dd=   522
+   25Q3 n= 57 net=   -300 PF=0.804 dd=   406
+   25Q4 n= 48 net=  +1983 PF=2.875 dd=   406
+   26Q1 n= 19 net=   +598 PF=2.177 dd=   220
+   26Q2 n= 25 net=   -115 PF=0.898 dd=   487
