@@ -17,6 +17,8 @@ import optuna
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 BIN = os.path.join(ROOT, "cpp_core", "build", "kenkem", "backtester")
+sys.path.insert(0, os.path.join(ROOT, "research"))   # shared overfitting-gate sweep context
+from stats.sweep_context import trial_sharpe, report_sweep_context
 
 SYMS = {
     "btc": dict(flag="--symbol-btc", m1=os.path.join(ROOT, "cpp_core/tools/bars_btcusd_2025_m1.csv"), spread=2.0),
@@ -143,6 +145,7 @@ def make_objective(cfg, rows_out):
         trial.set_user_attr("full_net", full["net"]); trial.set_user_attr("full_pf", full["pf"])
         trial.set_user_attr("full_dd", full["dd"]); trial.set_user_attr("n", full["n"])
         trial.set_user_attr("test_net", te["net"]); trial.set_user_attr("test_pf", te["pf"])
+        trial.set_user_attr("sharpe", trial_sharpe(pnls))   # for the Deflated-Sharpe gate
         return score
     return objective
 
@@ -163,12 +166,14 @@ def main():
             w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 
     best = study.best_trial
-    write_set(os.path.join(HERE, f"best_kenkem_{sym}.set"), best.params)
+    best_set = os.path.join(HERE, f"best_kenkem_{sym}.set")
+    write_set(best_set, best.params)
     a = best.user_attrs
     print(f"[kenkem:{sym}] BEST score={best.value:.2f} full_net={a['full_net']:.0f} "
           f"full_pf={a['full_pf']:.3f} dd={a['full_dd']:.0f} n={a['n']} "
           f"test_net={a['test_net']:.0f} test_pf={a['test_pf']:.3f}")
     print(f"  -> best_kenkem_{sym}.set")
+    report_sweep_context(study, best_set, label=f"kenkem:{sym}")
 
 
 if __name__ == "__main__":

@@ -30,13 +30,16 @@ Closed the "swept N configs, locked the best, never deflated for selection bias"
 - `gate.py` — universal CLI: auto-detects `entryTimeUTC`|`ts_ms` + `realizedUsd`|`pnlUsd`, so every
   engine's trades CSV loads through one path. `run_gate()`/`print_gate()` reusable.
 - **Wired:** `mastervp_parity/wf_mc.py` (refactored to delegate) + `optimization/robustness_kenkem.py`
-  print the gate; `report_metrics.py` gained Sortino/VaR/CVaR. `wf_monster.py` = grid-sweep → run
-  `gate.py` on its locked CSV directly.
+  print the gate; `report_metrics.py` gained Sortino/VaR/CVaR; both lifecycle notebooks
+  (`MasterVP_End_to_End` §7/§9, ds-study `12_overfitting…` Step 6) show it. `wf_monster.py` = grid-sweep
+  → run `gate.py` on its locked CSV directly.
+- **Sweep context CLOSED (2026-06-22):** `research/stats/sweep_context.py` wired into ALL FIVE
+  `optimize_*.py` — each objective records its trial's per-trade Sharpe, and post-study the harness
+  prints `n_trials`+`sr_trial_std`, drops a `<best>.set.sweepctx.json` sidecar, and echoes the exact
+  `gate.py` command. No more placeholder dispersion for real sweeps. (Verified: all 5 import clean +
+  reporter emits real numbers/sidecar.)
 - **Now enforced:** CLAUDE.md non-negotiables + §7 chain + Phase 9/10 skills. **Verdict: DSR ≥ 0.95 = PASS,
   0.90–0.95 = WARN (state it), < 0.90 = FAIL (don't lock).** Memory: [[overfitting-gate-mandatory]].
-- **⚠️ OPEN GAP (next step):** real DSR needs `sr_trial_std` (std of per-trade Sharpe across trials);
-  `optimize_*.py` optimize `net/(1+dd)` and don't log it yet → DSR runs use a PLACEHOLDER dispersion
-  (verdict illustrative until wired). NEXT = emit `n_trials`+`sr_trial_std` from the optimize harnesses.
 
 ## 🗂️ PRESETS ARE ORGANIZED + MT5-LINKED (2026-06-21) — how to load any `.set`
 All deploy/A-B presets are surfaced, by expert, under **`mql5/experts/Presets/<EXPERT>/`**

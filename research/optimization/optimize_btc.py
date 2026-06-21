@@ -25,6 +25,8 @@ import optuna
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 BIN = os.path.join(ROOT, "cpp_core/build/backtester")
+sys.path.insert(0, os.path.join(ROOT, "research"))   # shared overfitting-gate sweep context
+from stats.sweep_context import trial_sharpe, report_sweep_context
 BARS = os.path.join(ROOT, "cpp_core/tools/bars_btcusd_2025_m3.csv")
 TICKS = os.path.join(ROOT, "cpp_core/tools/ticks_btcusd_2025_window.csv")
 BASE_SET = os.path.join(ROOT, "cpp_core/tools/btc_ref_run.set")
@@ -138,6 +140,7 @@ def objective(trial):
     trial.set_user_attr("train_net", tr["net"])
     trial.set_user_attr("test_net", te["net"])
     trial.set_user_attr("test_pf", te["pf"])
+    trial.set_user_attr("sharpe", trial_sharpe(train + test))   # for the Deflated-Sharpe gate
     return score
 
 
@@ -161,6 +164,7 @@ def main():
           f"test_net={b.user_attrs.get('test_net'):.2f} test_pf={b.user_attrs.get('test_pf'):.3f}")
     for k, v in b.params.items():
         print(f"       {k}={v}")
+    report_sweep_context(study, RESULTS, label="btc")
 
 
 if __name__ == "__main__":

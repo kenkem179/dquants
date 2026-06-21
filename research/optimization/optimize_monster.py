@@ -24,6 +24,8 @@ import optuna
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HERE = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(ROOT, "research"))   # shared overfitting-gate sweep context
+from stats.sweep_context import trial_sharpe, report_sweep_context
 BIN = os.path.join(ROOT, "cpp_core/build/backtester")
 
 SYM = {
@@ -128,6 +130,7 @@ def make_objective(cfg, base_lines, rows_out):
                          "test_pf": round(te["pf"], 3), "n": full["n"]})
         trial.set_user_attr("full_net", full["net"]); trial.set_user_attr("full_pf", full["pf"])
         trial.set_user_attr("test_net", te["net"]); trial.set_user_attr("test_pf", te["pf"])
+        trial.set_user_attr("sharpe", trial_sharpe(train + test))   # for the Deflated-Sharpe gate
         return score
     return objective
 
@@ -153,11 +156,13 @@ def main():
     # write the winner's full .set
     best = study.best_trial
     ov = dict(FORCE, **best.params)
-    write_set(os.path.join(HERE, f"best_monster_{sym}.set"), base_lines, ov)
+    best_set = os.path.join(HERE, f"best_monster_{sym}.set")
+    write_set(best_set, base_lines, ov)
     print(f"[monster:{sym}] {len(rows)} trials -> {res}")
     print(f"[monster:{sym}] BEST score={best.value:.2f} full_net={best.user_attrs['full_net']:.0f} "
           f"full_pf={best.user_attrs['full_pf']:.3f} test_net={best.user_attrs['test_net']:.0f} "
           f"test_pf={best.user_attrs['test_pf']:.3f}")
+    report_sweep_context(study, best_set, label=f"monster:{sym}")
 
 
 if __name__ == "__main__":

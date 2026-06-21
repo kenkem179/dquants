@@ -31,7 +31,10 @@ conda run -n kenkem python research/stats/gate.py \
 - Monster's `wf_monster.py` is a grid-sweep (no single locked stream) → run `gate.py` on its
   locked CSV directly.
 
-## Still open
-To get a **real** DSR (not a placeholder dispersion), the sweep that produces the lock must report
-`sr_trial_std` = std of per-trade Sharpe across its trials. The `optimize_*.py` scripts optimize
-`net/(1+dd)`, so they don't log per-trial Sharpe yet — that's the next wiring step.
+## Sweep context — where `--n-trials` / `--sr-trial-std` come from (wired)
+The `optimize_*.py` harnesses now emit the real search width. Each objective records its trial's
+per-trade Sharpe (`trial.set_user_attr("sharpe", trial_sharpe(train+test))`), and after the study
+`report_sweep_context(study, best_set, label=...)` (in `sweep_context.py`) prints `n_trials` +
+`sr_trial_std`, writes a sidecar `<best>.set.sweepctx.json`, and echoes the exact `gate.py` command.
+So the flow is: run the sweep → read the printed command (or the sidecar) → run `gate.py` on the
+locked trade stream with those two numbers. No more placeholder dispersion.
