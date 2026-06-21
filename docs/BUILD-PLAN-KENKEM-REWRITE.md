@@ -80,14 +80,21 @@ The new EA exports trades via its own `Parity.mqh` (toggle `InpExportParity`/Tra
 
 ## Status
 - **P0: ✅** (old killed; plan written; committed `9de0342`).
-- **P1: 🟡 IN PROGRESS — keystone done.** Shell `KK-KenKem.mq5` + `Inputs.mqh` (verbatim copy of
-  `Config/InputParams.mqh`, 696 lines) compile **0/0**. Keystone VERIFIED: 410/412 `D3-noE4.set` keys
-  map to real inputs (the 2 "missing" = `InpExportBarTrace`/`InpExportTradeJournal` = dquants parity
-  toggles → `Parity.mqh` at P4). **Remaining P1 = Core indicator/state layer** via copy-and-prune
-  (GlobalState=State+Snapshot, EMAHelpers+ADXRSIHelpers=Indicators, +RuntimeConfig/MarketCondition/
-  TrendIdentifier/Helpers; stub Alerts/persistence/adaptive/CSV; wire OnInit+OnTick cache; 0/0, no trades).
-- **Approach decided:** faithful copy-and-prune of KenKemExpert's own MQL (clean module shells + verbatim
-  internals), NOT a from-scratch re-derive — the documented parity traps (MTF-EMA off-by-one, sideways
-  5-bar-avg, etc.) live in this machinery and must be carried over byte-faithful. EA uses `iATR` directly
-  so ATR is faithful by construction (SMA-not-Wilder was a C++-engine-only concern).
-- P2→P6 not started. The transcription is intentionally NOT half-shipped (no unvalidated MQL).
+- **APPROACH PIVOT → FAITHFUL FULL CLONE (supersedes the surgical-module plan above).** Reason: Alerts
+  are woven into the trading files (EntryBase/RiskManager/TradeManager/EMAHelpers all call alert funcs),
+  so excising them surgically risks parity. Safer methodology: **clone faithfully (parity by
+  construction) → confirm parity in MT5 (P4) → THEN prune cosmetics with a known-good safety net.** A
+  parity failure after pruning is then unambiguously the prune, not a port bug. The phase plan above
+  (P1 foundation → P2 entries → P3 exits) is collapsed by the clone; it remains the map for the P5 prune.
+- **P1–P3: ✅ DONE — faithful clone compiles 0/0.** `mql5/experts/KK-KenKem/` = clone of
+  `KenKemExpert.mq5` v1.8.154: all 31 `.mqh` + Data CSV + the `.mq5` (header → `version "1.0"`).
+  Compiles **0 errors / 0 warnings**. All 412 keys of D3-noE4/D4/D4-E5/D4-E2RR14 `.set` resolve;
+  parity export built in. Excluded subsystems present-but-inert (gated off; E4 off via `.set`).
+  Deployed: MT5-visible via `Experts\dquants` symlink; presets synced. EA uses `iATR` → ATR faithful
+  by construction (SMA-not-Wilder was a C++-engine-only concern).
+- **P4: ⏳ BLOCKED ON USER — the review point.** MT5 parity run (D3-noE4, XAU M1, 2025.03.02–2026.05.29,
+  every-tick, `InpExportTradeJournal=true`) → `diff_kk.py` vs `mt5_runs/2026-06-20_D3-noE4/`. Expect
+  near-exact (clone of the producing EA). Confirms dquants EA == legacy.
+- **P5 (post-parity): prune cosmetics + re-verify + release.** Remove Alerts/CSV/adaptive/persistence/
+  E3/E4, re-running the same parity diff after each removal to prove zero behavior change; then
+  `make release STRATEGY=KK-KenKem` + update [[best-experts-release-table]].
