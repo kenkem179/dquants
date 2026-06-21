@@ -14,8 +14,13 @@
 #   mql5/experts/<STRATEGY>/releases/<VER>/<STRATEGY>-<VER>-<variant>.set
 #   mql5/experts/<STRATEGY>/releases/<VER>/RELEASE.md
 #
-# VER comes from `#property version "<major>.<minor>"` in the .mq5 (MQL5 rule).
-# Bump major for a real strategy change, minor for a fine-tune, then re-run.
+# Versioning is AUTOMATIC:
+#   - Scans releases/<x.y>/ for the latest already-released version.
+#   - If none exists, releases at the dev `#property version`.
+#   - If one exists, bumps to the next free version (minor by default, or
+#     --major) and writes that back into the .mq5 `#property version`, so the
+#     dev source always matches the newest release.
+#   - --set-version X.Y forces an exact version (no auto-bump).
 #
 # Multiple .set variants per EA (e.g. one for XAU, one for BTC, a prop build
 # with tighter risk) are declared in release.conf. Each line:
@@ -30,9 +35,11 @@
 # If release.conf is absent, every *.set in the strategy dir is bundled as-is.
 #
 # Usage:
-#   scripts/make_release.sh <STRATEGY> [--no-compile]
-#   STRATEGY  e.g. KK-MasterVP  (folder name under mql5/experts/)
-#   --no-compile  reuse the existing dev .ex5 instead of recompiling
+#   scripts/make_release.sh <STRATEGY> [--no-compile] [--major|--minor] [--set-version X.Y]
+#   STRATEGY       e.g. KK-MasterVP  (folder name under mql5/experts/)
+#   --no-compile   reuse the existing dev .ex5 instead of recompiling
+#   --major|--minor  which digit to auto-bump when a release exists (default minor)
+#   --set-version  force an exact <major>.<minor> (skips auto-bump)
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -46,9 +53,21 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EXPERTS_DIR="$PROJECT_ROOT/mql5/experts"
 
 STRATEGY="${1:-}"
-[ -n "$STRATEGY" ] || die "usage: make_release.sh <STRATEGY> [--no-compile]"
+[ -n "$STRATEGY" ] || die "usage: make_release.sh <STRATEGY> [--no-compile] [--major|--minor] [--set-version X.Y]"
+shift || true
 DO_COMPILE=1
-[ "${2:-}" = "--no-compile" ] && DO_COMPILE=0
+BUMP_KIND="minor"       # default: bump the minor digit when a release already exists
+EXPLICIT_VER=""         # --set-version X.Y forces an exact version (no auto-bump)
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-compile)  DO_COMPILE=0 ;;
+    --major)       BUMP_KIND="major" ;;
+    --minor)       BUMP_KIND="minor" ;;
+    --set-version) shift; EXPLICIT_VER="${1:-}"; [ -n "$EXPLICIT_VER" ] || die "--set-version needs X.Y" ;;
+    *)             die "unknown arg: $1" ;;
+  esac
+  shift || true
+done
 
 EA_DIR="$EXPERTS_DIR/$STRATEGY"
 MQ5_FILE="$EA_DIR/$STRATEGY.mq5"
@@ -60,14 +79,54 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BLUE}  dquants release — $STRATEGY${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# 1) Version from #property version (MQL5 <major>.<minor>) --------------------
-step "[1/5] Reading version..."
-VERSION="$(grep -E '^#property[[:space:]]+version' "$MQ5_FILE" \
+# 1) Resolve version: check existing releases, auto-bump, sync the .mq5 --------
+step "[1/5] Resolving version..."
+RELEASES_DIR="$EA_DIR/releases"
+
+# bump_ver <x.y> <major|minor>  -> next version string
+bump_ver() {
+  local v="$1" kind="$2" maj min
+  maj="${v%%.*}"; min="${v#*.}"
+  if [ "$kind" = "major" ]; then maj=$((maj + 1)); min=0; else min=$((min + 1)); fi
+  printf '%d.%02d' "$maj" "$min"   # MQL5 minor is 2-digit (1.00, 1.10, 1.11)
+}
+# ver_ge <a> <b>  -> true if a >= b (numeric major.minor compare)
+ver_ge() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n | tail -1)" = "$1" ]; }
+
+DEV_VER="$(grep -E '^#property[[:space:]]+version' "$MQ5_FILE" \
             | sed -E 's/.*"([^"]+)".*/\1/' | head -1)"
-[ -n "$VERSION" ] || die "no '#property version \"x.y\"' found in $MQ5_FILE"
-echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+$' \
-  || die "version '$VERSION' is not <major>.<minor> (MQL5 rule)"
-info "version $VERSION"
+[ -n "$DEV_VER" ] || die "no '#property version \"x.y\"' found in $MQ5_FILE"
+echo "$DEV_VER" | grep -qE '^[0-9]+\.[0-9]+$' \
+  || die "version '$DEV_VER' is not <major>.<minor> (MQL5 rule)"
+
+# latest already-released version (max of releases/<x.y>/ dirs)
+LATEST_REL=""
+if [ -d "$RELEASES_DIR" ]; then
+  LATEST_REL="$(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null \
+                 | grep -E '^[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n | tail -1)"
+fi
+
+if [ -n "$EXPLICIT_VER" ]; then
+  echo "$EXPLICIT_VER" | grep -qE '^[0-9]+\.[0-9]+$' || die "--set-version '$EXPLICIT_VER' not <major>.<minor>"
+  VERSION="$EXPLICIT_VER"
+  info "explicit version $VERSION (--set-version; no auto-bump)"
+elif [ -z "$LATEST_REL" ]; then
+  VERSION="$DEV_VER"
+  info "no prior release found — first release at dev version $VERSION"
+else
+  # candidate = max(dev, latest released); bump while that folder already exists
+  VERSION="$DEV_VER"
+  ver_ge "$LATEST_REL" "$VERSION" && VERSION="$LATEST_REL"
+  while [ -d "$RELEASES_DIR/$VERSION" ]; do VERSION="$(bump_ver "$VERSION" "$BUMP_KIND")"; done
+  info "latest release $LATEST_REL (dev $DEV_VER) -> next ($BUMP_KIND) = $VERSION"
+fi
+
+# Sync the resolved version back into the dev .mq5 so source == released build.
+if [ "$VERSION" != "$DEV_VER" ]; then
+  sed -E "s|(^#property[[:space:]]+version[[:space:]]+\")[^\"]+(\")|\1$VERSION\2|" \
+      "$MQ5_FILE" > "$MQ5_FILE.tmp" && mv "$MQ5_FILE.tmp" "$MQ5_FILE"
+  info "bumped #property version in $STRATEGY.mq5: $DEV_VER -> $VERSION"
+fi
 
 # 2) Compile (or reuse) the DEV EA -------------------------------------------
 if [ "$DO_COMPILE" -eq 1 ]; then
