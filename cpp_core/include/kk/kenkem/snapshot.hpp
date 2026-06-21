@@ -56,6 +56,9 @@ struct Snapshot {
     // Regime.
     int    sideways = 0;          // 0-100 chop score
     double atr_pctile = 50.0;     // ATR percentile over lookback
+    double erM1 = 1.0;            // Kaufman Efficiency Ratio over cfg.e1_er_period closed M1 closes ending
+                                  // at shift 1 (leading chop filter, E1-lead). 0=pure chop, 1=clean move.
+                                  // 1.0 when uncomputable -> never blocks (default-off parity).
     bool   valid = false;
 };
 
@@ -328,6 +331,20 @@ inline Snapshot build_snapshot(const TfBundle& b, const KenKemConfig& cfg, int B
     // shift-0 forming as the reference, verified against the fresh 1.8.154 atr_pctile column.)
     s.atr_pctile = atr_percentile(b.m1, i1, s.atrM1, cfg.atr_percentile_lookback);
     s.sideways = sideways_score(s, cfg);
+
+    // Kaufman Efficiency Ratio over the last cfg.e1_er_period CLOSED M1 closes ending at shift 1 (i1).
+    // ER = |close[i1]-close[i1-N]| / sum_k|close[i1-k]-close[i1-k-1]|. Strictly past data (no lookahead).
+    // Used only by the E1-lead chop filter (entries.hpp); default e1_er_min=0 leaves behaviour unchanged.
+    {
+        const int N = cfg.e1_er_period;
+        if (N > 0 && i1 - N >= 0) {
+            const double net = std::fabs(b.m1.bars[i1].close - b.m1.bars[i1 - N].close);
+            double vol = 0.0;
+            for (int k = 0; k < N; ++k)
+                vol += std::fabs(b.m1.bars[i1 - k].close - b.m1.bars[i1 - k - 1].close);
+            s.erM1 = (vol > 0.0) ? net / vol : 1.0;
+        }
+    }
     s.valid = true;
     return s;
 }

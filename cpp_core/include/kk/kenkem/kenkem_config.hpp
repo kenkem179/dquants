@@ -213,6 +213,14 @@ struct KenKemConfig {
     double e1_htf_min_di_spread   = 4.0;
     double e1_min_momentum_adx    = 19.5;
     int    e1_max_cross_age       = 28;   // capped 80->28 (align with E5; cut E1 late-fire over-trading)
+    // E1-LEAD variant: Kaufman Efficiency-Ratio leading chop filter (research/optimization/e1_decomp).
+    // Reject E1 entries whose immediate pre-entry e1_er_period closes were choppy (ER < e1_er_min).
+    // e1_er_min = 0.0 -> never blocks -> EXACT parity with the faithful clone (default OFF). Short
+    // windows (N~5) reject whipsaw entries; N>=10 gates the wrong way (cuts winners). See snapshot.erM1.
+    int    e1_er_period           = 5;    // E1_ER_PERIOD  (closes in the ER window)
+    double e1_er_min              = 0.0;  // E1_ER_MIN     (0 = off; ~0.20 = chop-reject)
+    bool   e1_er_abandon          = true; // E1_ER_ABANDON true = drop the cross on chop (post-hoc drop
+                                          // semantics); false = delay to a cleaner bar (worse on E1).
     // Faithful EA buffer-inversion model for the E1 EMA-cross + EMA200-touch triggers (see triggers.hpp).
     // true = port the EA's non-series emaBuffers trap exactly (GetEMA shift1->B-2, shift2->B-1); fixes the
     // ~3.5x E1 cross over-arm and lands EMA200-touch arm count EXACTLY on MT5 (105=105, Feb-2026 XAU).
@@ -597,6 +605,9 @@ inline bool apply_kv(KenKemConfig& p, const std::string& key, const std::string&
     else if (key == "E1_HTF_MIN_ADX") p.e1_htf_min_adx = D();
     else if (key == "E1_HTF_MIN_DI_SPREAD") p.e1_htf_min_di_spread = D();
     else if (key == "E1_MIN_MOMENTUM_ADX") p.e1_min_momentum_adx = D();
+    else if (key == "E1_ER_PERIOD") p.e1_er_period = I();
+    else if (key == "E1_ER_MIN") p.e1_er_min = D();
+    else if (key == "E1_ER_ABANDON") p.e1_er_abandon = kbool(val);
     else if (key == "E1_MAX_CROSS_AGE") p.e1_max_cross_age = I();
     else if (key == "E1_MOMENTUM_BYPASS_LEVEL") p.e1_momentum_bypass = I();
     else if (key == "E1_RR") p.e1_rr = D();

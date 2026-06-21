@@ -185,6 +185,8 @@ inline bool entry_gate_ok(int kind, bool is_long, const TfBundle& b, const Snaps
     if (!quality_filters_ok(kind, is_long, b, s, align, c)) return false;
     switch (kind) {
         case 1: {  // E1 faithful gate — CheckE1EntryConditions_Internal (Entry1.mqh:215-314), IN ORDER.
+            // (E1-LEAD ER chop filter is applied in detect_entry AFTER this gate passes — i.e. only when
+            //  the entry would otherwise fire — so it matches the post-hoc drop semantics, see there.)
             // E1.5 ADX floor (cache.adx[0] < E1_MIN_MOMENTUM_ADX).
             if (s.adx[0] < c.e1_min_momentum_adx) return false;
             // E1.6 HTF M5 block-COUNTER-only (NOT require-aligned).
@@ -387,6 +389,14 @@ inline EntrySignal detect_entry(const TfBundle& b, const KenKemConfig& c, int B,
             }
             if (occ && occ[cd.kind][dir]) continue;    // slot occupied -> block WITHOUT consuming
             if (!entry_gate_ok(cd.kind, is_long, b, s, align, c)) continue;
+            // E1-LEAD immediate-chop filter (Efficiency Ratio), applied ONLY now that the entry would
+            // otherwise fire -> matches the post-hoc "drop this trade" semantics exactly. e1_er_min=0 -> off
+            // (exact parity). abandon=true clears the cross (true drop); abandon=false preserves the trigger
+            // (delays to a later, cleaner bar — empirically WORSE on E1: late entry into an extended move).
+            if (cd.kind == 1 && c.e1_er_min > 0.0 && s.erM1 < c.e1_er_min) {
+                if (c.e1_er_abandon) clear_trigger(1, is_long);
+                continue;
+            }
             r.detected = true; r.is_long = is_long; r.kind = cd.kind; r.entry = entry; r.age = B - fired;
             r.sl = compute_sl(cd.kind, is_long, entry, s, hi, lo, c, b.m1.bars[i1].spread_mean);
             r.tp = compute_tp(cd.kind, is_long, entry, r.sl, s, c,

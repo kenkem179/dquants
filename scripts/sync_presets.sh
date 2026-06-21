@@ -27,7 +27,7 @@ EA_EXPERTS=(KK-MasterVP KK-KenKem)
 
 # Extra KK-KenKem deploy candidates whose canonical home is research/kenkem_parity:
 KENKEM_RESEARCH_SETS=(
-  KK-KenKem-XAUUSD-M1-D3-noE4.set   # ⭐ current LOCK
+  KK-KenKem-XAUUSD-M1-D3-noE4.set   # prior lock (E1+E2; gate WARN)
   KK-KenKem-XAUUSD-M1-D3.set
   KK-KenKem-XAUUSD-M1-D4.set
   KK-KenKem-XAUUSD-M1-D4-E5.set
@@ -37,7 +37,8 @@ KENKEM_RESEARCH_SETS=(
   KK-KenKem-XAUUSD-M1-D4-TAonly.set    # D4 lever-isolation: E2 touch-age 60 only (ADX stays 19.5)
   KK-KenKem-XAUUSD-M1-E4only.set       # entry isolation: ONLY E4 on (standalone E4 edge test)
   KK-KenKem-XAUUSD-M1-E3only.set       # entry isolation: ONLY E3 on (standalone E3 reversal edge test)
-  KK-KenKem-XAUUSD-M1-D5-E4Long.set    # D3-noE4 lock + E4 LONG-only add-on (E4 shorts are net-loser)
+  KK-KenKem-XAUUSD-M1-D5-E4Long.set    # ⭐ current LOCK: D3-noE4 + E4 LONG-only (E4 shorts are net-loser)
+  KK-KenKem-XAUUSD-M1-D6-E1ER.set      # OPTIONAL A/B: D5-E4Long + E1 Efficiency-Ratio chop filter (5/0.20)
 )
 
 echo "==> rebuilding $PRESETS"

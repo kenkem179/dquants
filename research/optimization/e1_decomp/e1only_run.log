@@ -1,0 +1,10 @@
+[set] applied 199 keys from research/kenkem_parity/KK-KenKem-XAUUSD-M1-E1only-fromlock.set
+[out] 83 trades -> research/optimization/e1_decomp/trades_e1only_xau.csv
+=== KenKem TICK backtest (XAUUSD) ===
+M1 bars: 849963   ticks: 162761235   warmup: 250
+trades:   83  (wins 48, win% 57.8)
+net:      932.62 USD   (end balance 10932.62)
+PF:       1.368
+max DD:   402.59 USD
+by entry: E1 83 (933)  E2 0 (0)  E4 0 (0)  E5 0 (0)
+ARM events: E1 2015 (cross 692, touch 1323)  E2 31425
