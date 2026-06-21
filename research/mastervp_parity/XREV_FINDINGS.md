@@ -112,3 +112,19 @@ breakout base keeps trailing — the additive deployment that was previously imp
 2. **XAU M3** — Expert `KK-MasterVP`, XAUUSD **M3**, 2025.06–2026.05, every-tick.
    Preset `KK-MasterVP-XAUUSD-M3-XRev.set` vs toggle false. Engine: OOS PF 1.114→1.122.
 Ship XRev (flip a base default ON) only if MT5 beats the base on BOTH net AND PF, BTC especially.
+
+## BTC M3 + M5 reversion@mPOC sweep (2026-06-21) — completes the per-type-trail coverage
+Per-type-trail enables reversion@mPOC additively on BTC too. Swept both TFs (OOS):
+| config | BTC M3 (Monster) | BTC M5 (KK-MasterVP) |
+|---|---|---|
+| base | PF 1.202 / +2803 / dd 8.4% | PF 1.318 / +7533 / dd 14.7% |
+| +rev TRAIL | PF 1.132 / +2462 / dd 12.1% | PF 1.252 / +6460 / dd 16.2% |
+| **+rev @mPOC (trail_rev=0)** | PF 1.108 / +1975 / dd 12.9% | PF 1.299 / **+8634** / dd 18.7% |
+| +XRev TRAIL (shipped) | **PF 1.252 / +3610** / dd 8.6% | PF 1.283 / +6786 / dd 18.0% |
+
+- **BTC M3: reversion@mPOC HURTS** (1.202→1.108). The BTC M3 winner stays **XRev-trail** (Monster-BTCUSD-M3-XRev.set).
+- **BTC M5: reversion@mPOC raises OOS net +7533→+8634 and rescues the losing train (−724→+455), but DD 14.7→18.7%
+  and PF 1.318→1.299 — MIXED.** mPOC beats trailing-the-reversion on net (+8634 vs +6460). BTC/Exness feed is
+  historically MT5-over-optimistic on reversion → MT5 is the arbiter.
+- A/B presets shipped (pinned toggles, differ in 3 reversion keys): `KK-MasterVP-BTCUSD-M5-{BASE,RevMpoc}.set`,
+  `KK-MasterVP-Monster-BTCUSD-M3-{BASE,RevMpoc}.set` (+ MT5 Tester + kenkem Presets).
