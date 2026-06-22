@@ -1,5 +1,31 @@
 # HANDOFF — read me first, update me last
 
+## 🎯 FOR THE FRESH TP1-VALIDATION AGENT (start here)
+**Mission:** validate the TP1 profit-protect idea more carefully than I did. The feature is BUILT and
+default-OFF (base byte-identical); my 6-fold WF said "marginal, don't lock" but only on XAU-M5. Your job
+is a rigorous, broader verdict.
+- **What exists (commit `ef7dd1b`):** two engine levers, both default-OFF.
+  (A) blind `giveback-cap` keys `InpPmGiveback / InpPmGivebackArmR / InpPmGivebackCapFrac`.
+  (B) `conviction-protect` (partial bank + stop ratchet on near-price VP node-net flip) keys
+  `InpEnableConvictionProtect / InpConvictionArmR / InpConvictionNetMin / InpConvictionPartialFrac /
+  InpConvictionLockFrac`. Code: `PositionManager::conviction_protect()` + per-bar `node_net_close_` in
+  `cpp_core/include/kk/mastervp/tick_engine.hpp`; params in `config.hpp`.
+- **Tools:** single-split `research/mastervp_parity/tp1_conviction_sweep_2026-06-22.py`;
+  6-fold WF `research/mastervp_parity/wf_mastervp.py --grid '{...}'` (XAU-M5 ONLY — no BTC fold harness yet).
+  Prior findings: `research/mastervp_parity/TP1_CONVICTION_STUDY_2026-06-22.md`.
+- **⚠️ MUST-KNOW traps:** (1) run `make -C cpp_core backtester` after ANY config.hpp edit — `make test`
+  does NOT rebuild the backtester (stale binary truncates/ignores keys). (2) The motivating chart is
+  SURVIVORSHIP — judge on the full book + per-fold WF + the overfitting gate (`research/stats/gate.py`),
+  never on examples ([[overfitting-gate-mandatory]]). (3) BTC engine partial/reversion wins are
+  MT5-FICTIONAL on the Exness feed ([[mastervp-t3-reversion-lock]]) — BTC-M5's tempting +88% single-split
+  needs a real BTC WF harness + MT5 A/B before any trust.
+- **Suggested next steps:** build a BTC fold harness (clone `wf_mastervp.py` for BTC-M5) to honestly test
+  conv `p0.3 lk0.6`; sweep `conviction_partial_frac/lock_frac` under WF (I only swept arm/net_min there);
+  run the gate on any candidate that survives WF; if a config clears WF+gate, THEN port to the EA
+  (Inputs + Engine.mqh ProfitManager/conviction port) and MT5-confirm. Only then lock.
+- ⚠️ Tree note: 2 RED tests committed in `e8fcb11` (portfolio + cpcv, another session's WIP) — not yours,
+  not TP1-related; ignore unless they break your runs.
+
 ## ▶ ACTIVE THREAD 2026-06-23 — KK-MasterVP: float master-mult ✅ + TP1 conviction/giveback ✅ NOT-LOCKED
 **Goal:** (1) make `InpMasterMult` a float + sweep at 0.5 steps; (2) revise the no-TP1 policy so a winner
 that nearly hits TP doesn't hand back >50% on a retrace — bank a partial WITH CONVICTION (VP near-price
