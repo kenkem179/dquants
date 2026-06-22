@@ -160,6 +160,26 @@ static void test_fvg_sl_default_off_and_mode_gate() {
     KK_CHECK_NEAR(sig2.sl, sl2, 1e-12);              // unchanged (gap was tighter than ATR stop)
 }
 
+static void test_fvg_sl_require_gate() {
+    // A short breakout with NO qualifying gap above entry. With fvg_require -> trade is dropped.
+    auto p = fvg_base(); p.fvg_require = true; p.fvg_mode = 1;
+    auto m = mvp(110, 100, 90, 115);
+    kk::SignalBar s{.o = 99.5, .h = 99.7, .l = 98.3, .c = 98.5, .atr2 = 2, .atr1 = 2, .entry_close = 99};
+    kk::RegimeState r = trend_up(); r.plus = 10; r.minus = 30;
+    auto sig = kk::detect_signal(p, m, m, kk::VPResult{}, r, s, NS, NS, NS);
+    KK_CHECK(sig.valid && !sig.is_long);
+    std::vector<kk::Bar> flat = { bar(100,98), bar(100,98), bar(100,98), bar(100,98), bar(100,98) };
+    kk::apply_fvg_sl(p, sig, flat.data(), (int)flat.size(), 4, 2, 110, 100);
+    KK_CHECK(!sig.valid);                              // no structural gap -> breakout dropped
+    // Same flat bars but require OFF -> trade survives with its ATR stop unchanged.
+    auto p2 = fvg_base(); p2.fvg_require = false; p2.fvg_mode = 1;
+    auto sig2 = kk::detect_signal(p2, m, m, kk::VPResult{}, r, s, NS, NS, NS);
+    const double sl2 = sig2.sl;
+    kk::apply_fvg_sl(p2, sig2, flat.data(), (int)flat.size(), 4, 2, 110, 100);
+    KK_CHECK(sig2.valid);
+    KK_CHECK_NEAR(sig2.sl, sl2, 1e-12);
+}
+
 static void run_all() {
     KK_RUN(test_breakout_long_economics);
     KK_RUN(test_breakout_short_economics);
@@ -170,6 +190,7 @@ static void run_all() {
     KK_RUN(test_fvg_sl_short_replace);
     KK_RUN(test_fvg_sl_long_replace);
     KK_RUN(test_fvg_sl_default_off_and_mode_gate);
+    KK_RUN(test_fvg_sl_require_gate);
 }
 
 KK_TEST_MAIN()

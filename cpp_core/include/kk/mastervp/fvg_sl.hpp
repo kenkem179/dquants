@@ -45,6 +45,7 @@ inline void apply_fvg_sl(const Params& p, Signal& sig,
     const int    kLo    = std::max(2, sigBar - p.fvg_lookback + 1);
 
     double newSl = 0.0, newRisk = 0.0;
+    bool found = false;                                   // a qualifying gap exists on the correct side
     if (sig.is_long) {
         double anchor = 0.0;                              // bottom of the bullish gap
         for (int k = kHi; k >= kLo; --k) {
@@ -54,10 +55,7 @@ inline void apply_fvg_sl(const Params& p, Signal& sig,
             if (p.fvg_beyond_va && vah > 0.0 && gbot < vah) continue;   // gap in breakout territory
             anchor = gbot; break;                        // nearest (most recent) qualifying
         }
-        if (anchor <= 0.0) return;
-        newSl = anchor - buf;
-        if (newSl >= entry) return;
-        newRisk = entry - newSl;
+        if (anchor > 0.0 && anchor - buf < entry) { found = true; newSl = anchor - buf; newRisk = entry - newSl; }
     } else {
         double anchor = 0.0;                              // top of the bearish gap
         for (int k = kHi; k >= kLo; --k) {
@@ -67,11 +65,12 @@ inline void apply_fvg_sl(const Params& p, Signal& sig,
             if (p.fvg_beyond_va && val > 0.0 && gtop > val) continue;   // gap in breakdown territory
             anchor = gtop; break;
         }
-        if (anchor <= 0.0) return;
-        newSl = anchor + buf;
-        if (newSl <= entry) return;
-        newRisk = newSl - entry;
+        if (anchor > 0.0 && anchor + buf > entry) { found = true; newSl = anchor + buf; newRisk = newSl - entry; }
     }
+
+    // Entry-gate: with fvg_require, a breakout with no qualifying structural gap to hide behind is
+    // dropped entirely (the user's "ensure successful breakouts" framing — trade only protected setups).
+    if (!found) { if (p.fvg_require) sig = Signal{}; return; }
 
     if (p.fvg_mode == 1 && newRisk <= sig.risk) return;  // widen-only
     if (p.fvg_mode == 2 && newRisk >= sig.risk) return;  // tighten-only

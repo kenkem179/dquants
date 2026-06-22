@@ -12,7 +12,7 @@ bars), so each row is a clean master-length probe against the locked config.
 Run from repo root, conda env kenkem:
   python research/mastervp_parity/vp_length_sweep_2026-06-22.py [XAU-M3|BTC-M5|BTC-M3|all]
 """
-import csv, subprocess, sys, tempfile
+import csv, os, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -142,6 +142,12 @@ FVG_GRID = [
   dict(label="wdn  VA min.25 cap2.0 buf.05", InpEnableFvgSl="true", InpFvgMode=1, InpFvgBeyondVa="false", InpFvgMinAtr=0.25, InpFvgMaxRiskAtr=2.0, InpFvgBufAtr=0.05),
   # tighten-only mode (structural stop INSIDE the ATR stop = smaller risk, more trades survive?)
   dict(label="tgt  VA min.25 flr.5 buf.10",  InpEnableFvgSl="true", InpFvgMode=2, InpFvgBeyondVa="false", InpFvgMinAtr=0.25, InpFvgMinRiskAtr=0.5, InpFvgBufAtr=0.10),
+  # REQUIRE-FVG entry gate: only take breakouts that HAVE a qualifying structural gap (user thesis:
+  # "ensure successful breakouts"). Pairs the gate with a sane widen-only beyond-VA stop.
+  dict(label="REQ wdn bVA min.25 cap3.0",   InpEnableFvgSl="true", InpFvgRequire="true", InpFvgMode=1, InpFvgBeyondVa="true",  InpFvgMinAtr=0.25, InpFvgMaxRiskAtr=3.0, InpFvgBufAtr=0.10),
+  dict(label="REQ wdn  VA min.25 cap3.0",   InpEnableFvgSl="true", InpFvgRequire="true", InpFvgMode=1, InpFvgBeyondVa="false", InpFvgMinAtr=0.25, InpFvgMaxRiskAtr=3.0, InpFvgBufAtr=0.10),
+  dict(label="REQ rep bVA min.25 cap2.5",   InpEnableFvgSl="true", InpFvgRequire="true", InpFvgMode=0, InpFvgBeyondVa="true",  InpFvgMinAtr=0.25, InpFvgMaxRiskAtr=2.5, InpFvgBufAtr=0.10),
+  dict(label="REQ rep  VA min.50 cap2.5",   InpEnableFvgSl="true", InpFvgRequire="true", InpFvgMode=0, InpFvgBeyondVa="false", InpFvgMinAtr=0.50, InpFvgMaxRiskAtr=2.5, InpFvgBufAtr=0.10),
 ]
 
 def fvg_case(name):
@@ -151,7 +157,9 @@ def fvg_case(name):
     print("="*108)
     print(f"{'config':<30} | {'TRAIN':^42} | {'OOS':^42}")
     print("-"*108)
-    for g in FVG_GRID:
+    only=os.environ.get("FVG_ONLY","")
+    grid=[g for g in FVG_GRID if (not only) or only in g["label"] or g["label"].startswith("OFF")] if only else FVG_GRID
+    for g in grid:
         ov={k:v for k,v in g.items() if k!="label"}
         sp=tempfile.mktemp(suffix=".set"); write_set(base,ov,sp)
         tr=run(c, sp, c["train"], c["train_from"], c["train_to"])

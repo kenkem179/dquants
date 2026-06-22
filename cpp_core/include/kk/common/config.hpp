@@ -150,6 +150,7 @@ struct Params {
     double fvg_min_risk_atr     = 0.50;  // clamp: floor on resulting risk in ATR
     double fvg_max_risk_atr     = 6.0;   // clamp: cap on resulting risk in ATR (else fall back to ATR SL)
     bool   fvg_breakout_only    = true;  // apply to breakout entries only (reversion keeps its own SL)
+    bool   fvg_require          = false; // entry-gate: DROP a breakout with no qualifying structural FVG
     // ---- deferred / pullback-limit entry (shared module) — default OFF (inert) ----
     // Instead of a market fill on the signal bar, arm a virtual limit at a more favourable
     // price (entry pulled back by defer_pullback_atr*ATR) and fill within defer_bars if price
@@ -366,6 +367,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpFvgMinRiskAtr") p.fvg_min_risk_atr = D();
     else if (key == "InpFvgMaxRiskAtr") p.fvg_max_risk_atr = D();
     else if (key == "InpFvgBreakoutOnly") p.fvg_breakout_only = to_bool(val);
+    else if (key == "InpFvgRequire") p.fvg_require = to_bool(val);
     else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
     else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
     else if (key == "InpDeferBars") p.defer_bars = I();
