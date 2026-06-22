@@ -97,7 +97,9 @@ input bool   InpWeightedNet   = true;  // ON: chart-TF net weights each bin by H
 input double InpWHvn          = 1.5;   // Tier weight for high-volume bins (> 66% of near-window max)
 input double InpWMvn          = 1.0;   // Tier weight for mid-volume bins
 input double InpWLvn          = 0.5;   // Tier weight for low-volume bins (< 33% of near-window max)
-input double InpVerdictAtr    = 1.2;   // Near-verdict window half-width (x ATR) around live price
+input double InpVerdictAtr    = 1.2;   // CENTER "Net" verdict window half-width (x ATR) + near-vol HIGH/LOW magnitude window (MUST match the ring at RebuildAll)
+input double InpVerdictInnerAtr = 1.2; // over/under NEAR reach (x ATR): how far each side extends PAST live price into the OPPOSITE zone (overlap -> stability)
+input double InpVerdictOuterAtr = 1.8; // over/under FAR reach (x ATR): how far each side extends into its OWN zone (over=above price, under=below price)
 input int    InpVerdictBalPct = 15;    // |net| percent below which the verdict reads balanced
 input int    InpVerdictHoldSec = 4;    // Seconds a flipped direction must HOLD before the headline arrow changes - kills bid/ask-bounce flicker
 
@@ -1732,30 +1734,44 @@ void UpdateVerdictAndRuler(bool force) {
    // instead of reading a band price has already left.
    double range0 = iHigh(_Symbol, g_tf, 0) - iLow(_Symbol, g_tf, 0);
    double effAtr = MathMax(atr1, range0);
-   double nd = InpVerdictAtr * effAtr;
-   // Split accumulation: bins below price (support side) and above price
-   // (resistance side) are different trades - never blend the wall away.
-   double tBu = 0.0, tSu = 0.0, tBo = 0.0, tSo = 0.0, nearVol = 0.0;
+   // Three INDEPENDENT (overlapping) ATR windows, all configurable so the user
+   // can tune/lock the feel. over/under reach FAR into their own zone (outer)
+   // and a little PAST price into the other zone (inner) - the shared center
+   // band dilutes the still-forming live ticks, so the % stops flickering:
+   //   over  : [px - inner, px + outer]   (resistance shelf)
+   //   under : [px - outer, px + inner]   (support shelf)
+   //   Net   : [px - netW , px + netW ]   (center read + HIGH/LOW magnitude)
+   // The center window MUST equal the ring push in RebuildAll (InpVerdictAtr)
+   // so the nearVol percentrank stays apples-to-apples.
+   double inner = InpVerdictInnerAtr * effAtr;
+   double outer = InpVerdictOuterAtr * effAtr;
+   double netW  = InpVerdictAtr      * effAtr;
+   double tBu = 0.0, tSu = 0.0, tBo = 0.0, tSo = 0.0, tBn = 0.0, tSn = 0.0, nearVol = 0.0;
    for(int b = 0; b < g_histBins; b++) {
       double bpx = g_dLo + (b + 0.5) * g_dStep;
-      if(MathAbs(bpx - px) > nd) continue;
+      double d   = bpx - px;
+      // Skip bins outside every window (outer is the widest reach either side).
+      if(MathAbs(d) > outer) continue;
       double bv = g_binBuy[b]  + g_liveBuy[b];
       double sv = g_binSell[b] + g_liveSell[b];
       double binVol = bv + sv;
       if(binVol <= 0.0) continue;
-      nearVol += binVol;
       // Tick-rule net direction (when the hybrid pass covered this bin),
-      // weighted by the bar-feed volume so nearVol stays scale-consistent.
-      // With no ticks this collapses to the original (bv - sv).
+      // weighted by the bar-feed volume so the sums stay scale-consistent.
+      // With no ticks this collapses to (bv - sv).
       double signedV = BinDeltaNet(b, bv, sv) * binVol;
-      if(bpx <= px) { if(signedV >= 0.0) tBu += signedV; else tSu += -signedV; }
-      else          { if(signedV >= 0.0) tBo += signedV; else tSo += -signedV; }
+      if(d >= -inner && d <= outer) { if(signedV >= 0.0) tBo += signedV; else tSo += -signedV; }  // over
+      if(d >= -outer && d <=  inner) { if(signedV >= 0.0) tBu += signedV; else tSu += -signedV; }  // under
+      if(MathAbs(d) <= netW) {                                                                     // center Net + magnitude
+         if(signedV >= 0.0) tBn += signedV; else tSn += -signedV;
+         nearVol += binVol;
+      }
    }
    double totU = tBu + tSu, totO = tBo + tSo;
    double netU = (totU > 0.0) ? (tBu - tSu) / totU : 0.0;
    double netO = (totO > 0.0) ? (tBo - tSo) / totO : 0.0;
-   double tot  = totU + totO;
-   double net  = (tot > 0.0) ? ((tBu + tBo) - (tSu + tSo)) / tot : 0.0;
+   double tot  = tBn + tSn;
+   double net  = (tot > 0.0) ? (tBn - tSn) / tot : 0.0;
    int    pct  = (int)MathRound(MathAbs(net) * 100.0);
    bool   bal  = (pct < InpVerdictBalPct) || (tot <= 0.0);
    // Flip hysteresis: live magnitude, gated direction - the arrow only
@@ -1780,8 +1796,9 @@ void UpdateVerdictAndRuler(bool force) {
    color vc = (shown == 0) ? clrSilver : (shown > 0 ? COL_UP_TXT : COL_DN_TXT);
    // All three readouts sit in clear space InpVerdLabelGapBars LEFT of the
    // histogram baseline so they never overprint the gray rows. Right-anchored
-   // into a tidy column: over (price + nd) / Net Vol (price midline) / under
-   // (price - nd), each separated by nd.
+   // into a tidy column: over (price + inner) / Net (price midline) / under
+   // (price - inner) - anchored at the NEAR reach so the labels stay close to
+   // price and readable no matter how wide outer/Net get.
    datetime tLbl = tHistL - (datetime)(MathMax(InpVerdLabelGapBars, 0) * ps);
    int pU = (int)MathRound(MathAbs(netU) * 100.0);
    int pO = (int)MathRound(MathAbs(netO) * 100.0);
@@ -1791,9 +1808,9 @@ void UpdateVerdictAndRuler(bool force) {
    string sO = balO ? "over ~"  : "over "  + (netO > 0.0 ? SymUp() : SymDn()) + IntegerToString(pO) + "%";
    color cU = balU ? clrSilver : (netU > 0.0 ? COL_UP_TXT : COL_DN_TXT);
    color cO = balO ? clrSilver : (netO > 0.0 ? COL_UP_TXT : COL_DN_TXT);
-   Txt(OBJPFX "verdO", tLbl, px + nd, sO, cO, 8, ANCHOR_RIGHT);
-   Txt(OBJPFX "verd",  tLbl, px,      txt, vc, 9, ANCHOR_RIGHT);
-   Txt(OBJPFX "verdU", tLbl, px - nd, sU, cU, 8, ANCHOR_RIGHT);
+   Txt(OBJPFX "verdO", tLbl, px + inner, sO, cO, 8, ANCHOR_RIGHT);
+   Txt(OBJPFX "verd",  tLbl, px,         txt, vc, 9, ANCHOR_RIGHT);
+   Txt(OBJPFX "verdU", tLbl, px - inner, sU, cU, 8, ANCHOR_RIGHT);
 }
 
 //+------------------------------------------------------------------+
