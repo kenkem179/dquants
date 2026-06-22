@@ -80,12 +80,13 @@ def test_diversification_ratio_at_least_one():
 def test_returns_matrix_build_and_align(tmp_path):
     """Two streams with disjoint trade days align on a daily grid with zero-fill."""
     s1 = [(datetime(2025, 1, 1, 10), 100.0), (datetime(2025, 1, 3, 10), -50.0)]
-    s2 = [(datetime(2025, 1, 2, 10), 30.0), (datetime(2025, 1, 3, 12), 20.0)]
+    s2 = [(datetime(2025, 1, 2, 10), 30.0),
+          (datetime(2025, 1, 3, 10), 30.0), (datetime(2025, 1, 3, 12), 20.0)]  # two trades on Jan 3
     mat = P.build_returns_matrix({"X": s1, "Y": s2}, freq="D")
     assert list(mat.columns) == ["X", "Y"]
     assert mat.shape[0] == 3                       # Jan 1,2,3
     assert mat.loc["2025-01-02", "X"] == 0.0       # X flat that day
-    assert mat.loc["2025-01-03", "Y"] == pytest.approx(50.0 / P.START_BALANCE)  # two trades summed
+    assert mat.loc["2025-01-03", "Y"] == pytest.approx(50.0 / P.START_BALANCE)  # 30+20 summed
 
 
 if __name__ == "__main__":

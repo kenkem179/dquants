@@ -1,5 +1,25 @@
 # HANDOFF — read me first, update me last
 
+## 🧬 PORTFOLIO STUDY — MasterVP 3-book (XAU M5 + BTC M5 + BTC M3) on ONE account (2026-06-23)
+**User ask:** run MasterVP on BTC M3, BTC M5, XAU M5 at once — maximize joint profit without conflicts.
+**Done.** Used MT5-CONFIRMED trade streams (engine exit-model unreliable on BTC), common window
+2026-01→05, via the parallel-session `research/portfolio/portfolio.py`. Study + repro:
+`research/portfolio/MASTERVP_3BOOK_FINDINGS_2026-06-23.md` + `mastervp_3book_2026-06-23.py`.
+- **Only XAU M5 has a validated edge** (PF 1.366). BTC_M5 full-17mo PF **1.013 (breakeven)**; BTC_M3
+  PF 1.031 (marginal). Portfolio math can't manufacture profit from breakeven legs.
+- **Correlations:** XAU ⊥ BTC ≈ 0 (real diversifier); **BTC_M3 ↔ BTC_M5 = +0.34** → the two BTC TFs are
+  partly REDUNDANT, not independent. Risk-normalized to the 4.4% daily cap, **dropping BTC_M3 is better**
+  ($4,123 vs $4,073, lower DD); adding BTC at all only beats XAU-alone by ~3% net + more DD.
+- **Don't use naive risk-parity/HRP** — they equalize risk and STARVE the only edge (HRP → XAU weight
+  0.10, book Sharpe 2.85→1.60). Edge-aware (max-Sharpe/Kelly) keeps XAU ~0.59, zeros BTC_M3.
+- **Prop-cap conflict is real:** `InpMaxDailyDDPct=4.4` is PER-INSTANCE → 3 EAs can lose 3×4.4%/day.
+  Full-size stack: worstDay −15.2%, maxDD −28.3%, 15 breach-days (vs XAU-alone 8). Budget risk ACROSS
+  the book: scale so COMBINED worst-day ≤ 4.4% (XAU ≈0.32–0.34× as-run risk on a shared account).
+- **▶ REC:** core = XAU M5 at full risk budget; optional = BTC_M5 only at ~0.5× XAU risk (drop BTC_M3);
+  real growth lever = a genuinely uncorrelated *new* edge, not a 2nd BTC timeframe.
+- **Infra:** fixed the 2 RED tests from checkpoint `e8fcb11` (portfolio + cpcv) — BOTH were
+  test-expectation bugs, code verified correct. `research/portfolio/ + research/stats/test_cpcv.py` = 18 green.
+
 ## 🎯 TP1 + "move SL closer to entry" — VALIDATED (both REJECTED) + a trail win found (2026-06-23)
 **Done this session.** Re-ran the user's TWO ideas with the *simple* reading (not the prior agent's
 VP "conviction-protect", which WF already killed). Generalized 6-fold WF across all 4 markets

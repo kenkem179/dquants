@@ -40,12 +40,22 @@ def test_embargo_removes_post_test_indices():
 
 
 def test_pbo_overfit_detection_on_noise():
-    """Pure-noise configs: the IS-best should NOT generalize -> PBO near/above 0.5."""
-    rng = np.random.default_rng(1)
-    M = rng.normal(0, 1, size=(240, 30))  # 30 noise configs
-    rep = cpcv.cpcv_pbo(M, n_groups=8, test_size=2, embargo=0.0)
-    assert 0.0 <= rep["pbo"] <= 1.0
-    assert rep["pbo"] > 0.35  # noise selection is far from reliable
+    """Pure-noise configs: selecting the IS-best is no better than chance -> PBO ~ 0.5.
+
+    PBO -> 0.5 is an EXPECTATION over many noise realizations, not a property of any single draw:
+    in one fixed draw some config has the highest full-sample Sharpe by luck and dominates most
+    OOS sub-blocks too (low PBO on that draw). So we average over seeds. We also use the canonical
+    complementary split (test_size = n_groups/2); with a tiny OOS block (test_size<<N) the train set
+    is ~the whole sample and the IS-best is just the global-best, which biases PBO down by design.
+    """
+    pbos = []
+    for seed in range(40):
+        rng = np.random.default_rng(seed)
+        M = rng.normal(0, 1, size=(240, 30))  # 30 noise configs
+        rep = cpcv.cpcv_pbo(M, n_groups=8, test_size=4, embargo=0.0)
+        assert 0.0 <= rep["pbo"] <= 1.0
+        pbos.append(rep["pbo"])
+    assert 0.40 < float(np.mean(pbos)) < 0.60  # noise selection is no better than a coin flip
 
 
 def test_pbo_low_for_genuinely_dominant_config():
