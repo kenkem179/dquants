@@ -1,0 +1,8 @@
+28:CS	0	03:28:41.964	Tester	XAUUSD-Exness-KK,M5: testing of Experts\dquants\KK-MasterVP\KK-MasterVP.ex5 from 2025.06.01 00:00 to 2026.05.29 00:00 started with inputs:
+100:CS	0	03:28:41.964	Tester	  InpTrailAtrMult=2.5
+215518:CS	0	03:29:06.067	Tester	final balance 72731.58 USD
+215519:CS	0	03:29:06.074	Tester	XAUUSD-Exness-KK,M5: 94173877 ticks, 70302 bars generated. Environment synchronized in 0:00:00.023. Test passed in 0:00:24.204 (including ticks preprocessing 0:00:05.604).
+215538:CS	0	03:29:29.789	Tester	XAUUSD-Exness-KK,M5: testing of Experts\dquants\KK-MasterVP\KK-MasterVP.ex5 from 2025.06.01 00:00 to 2026.05.29 00:00 started with inputs:
+215610:CS	0	03:29:29.789	Tester	  InpTrailAtrMult=3.5
+397141:CS	0	03:29:47.969	Tester	final balance 57791.10 USD
+397142:CS	0	03:29:47.975	Tester	XAUUSD-Exness-KK,M5: 94173877 ticks, 70302 bars generated. Test passed in 0:00:18.187.

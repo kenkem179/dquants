@@ -17,10 +17,19 @@ VP "conviction-protect", which WF already killed). Generalized 6-fold WF across 
   folds. **Plateau-confirmed** (4.0 corroborates) and **overfitting gate PASS** (DSR 1.000 / PSR 1.000 /
   MinTRL 194<1207, n_trials=28). **Zero parity risk** — `InpTrailAtrMult` is an existing MT5-confirmed EA
   input → `.set`-only, NO recompile. (XAU-M3 trail noisy, BTC-M5 flat, BTC-M3 dead — XAU-M5-specific.)
-- **▶ NEXT (user-gated — MT5 A/B is the only open step):** Expert **KK-MasterVP**, **XAUUSD M5**,
-  2025.06–2026.05, every-tick. Candidate `KK-MasterVP-XAUUSD-M5-Trail35.set` vs live `KK-MasterVP-XAUUSD-M5.set`
-  (MT5 Tester→Inputs→Load→`dquants/KK-MasterVP/`). Only diff = `InpTrailAtrMult` 2.5→3.5. If MT5 confirms
-  (engine = ranking proxy, [[parity-is-gate-0]]) → lock trail 3.5 into the live set + best-experts table.
+- **🧨 MT5 A/B RAN → trail 3.5 REJECTED, engine ranking FLIPPED** (`research/mastervp_parity/mt5_runs/
+  2026-06-23_xau_m5_trail35_AB/`). Same window/ticks/deposit, only `InpTrailAtrMult` differs: **lock 2.5 =
+  +62,732 vs candidate 3.5 = +47,791 (−24%)** — exact OPPOSITE of the engine's +24% "clean win". Trail-3.5
+  set deleted. **Lock STAYS trail 2.5.**
+- **⚠️ BIG IMPLICATION — engine exit-model is directionally UNRELIABLE (over-credits the trailed runner).**
+  The engine rejected BOTH user ideas (TP1-bank "caps runner"; move-SL "cuts runner") for the very runner
+  gains it over-credits. Its rejection is NOT trustworthy; MT5's 2.5≫3.5 (tighter protection wins) is
+  evidence FOR the user's instinct. **The user's TP1/SL ideas must be judged in MT5, not the engine.**
+- **▶ NEXT (user-gated, MT5 A/B — all existing inputs, zero parity risk, vs lock `KK-MasterVP-XAUUSD-M5.set`
+  +62,732):** built 4 candidates in `mql5/experts/KK-MasterVP/` (deployed via sync_presets):
+  `-Trail20` (trail 2.0), `-Trail15` (trail 1.5) [downward trail = MORE winner protection, the direction MT5
+  just favored]; `-Tp1bank25` (InpTp1ClosePct 25, idea 1); `-SL10` (InpSlAtrBrk 1.0, idea 2). Same XAU M5
+  2025.06.01–2026.05.29 every-tick, deposit 10k. Adopt any that beats +62,732.
 - ⚠️ Tree note: 2 RED tests committed in `e8fcb11` (portfolio + cpcv, another session's WIP) — not yours; ignore.
 
 ## ▶ ACTIVE THREAD 2026-06-23 — KK-MasterVP: float master-mult ✅ + TP1 conviction/giveback ✅ NOT-LOCKED
