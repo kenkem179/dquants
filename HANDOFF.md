@@ -1,6 +1,41 @@
 # HANDOFF — read me first, update me last
 
-## ▶ ACTIVE THREAD 2026-06-22 (b) — KK-MasterVP: VP-length re-sweep ✅ + FVG-anchored SL ✅ REJECTED
+## ▶ ACTIVE THREAD 2026-06-23 — KK-MasterVP: float master-mult ✅ + TP1 conviction/giveback ✅ NOT-LOCKED
+**Goal:** (1) make `InpMasterMult` a float + sweep at 0.5 steps; (2) revise the no-TP1 policy so a winner
+that nearly hits TP doesn't hand back >50% on a retrace — bank a partial WITH CONVICTION (VP near-price
+verdict / net delta against the trade), not blindly. Commit `ef7dd1b` (pushed).
+1. **✅ FLOAT master-VP multiple SHIPPED.** `master_len = round(vp_lookback × mult)`. Wired C++
+   (`Params::master_mult` double, `master_len()` rounds, `D()` parse), EA (`Inputs.mqh`/`Engine.mqh`),
+   Profiler. Byte-identical at integer mults (`make test` 37/37 + golden parity). ⚠️ GOTCHA: `make test`
+   does NOT rebuild the backtester app — `make backtester` after touching config.hpp or half-steps
+   silently truncate via the stale binary. 0.5-step sweep (`vp_length_float_sweep_2026-06-22.py`,
+   findings `VP_LENGTH_FLOAT_SWEEP_2026-06-22.md`): XAU-M3 (480b/4.0), BTC-M5 (720b/30), BTC-M3 (dead)
+   all CONFIRMED — no float gain. **XAU-M5: float reveals shorter master (mult 3.0–3.5 = 324–378b)
+   generalizes better OOS (PF 1.42–1.51, dd ~8% vs lock 4.0's 1.322/12.3%) BUT lock owns TRAIN (1.355)
+   → single-window, queued as a per-fold WF candidate, NOT re-locked.**
+2. **✅ TP1 PROFIT-PROTECT — BUILT (both default-OFF), FULLY TESTED → NOT LOCKED (NOT ported to EA).**
+   (A) **giveback-cap** (blind, `ProfitManager` #3, already engine-wired): lock (1−cap) of peak after
+   MFE≥arm. (B) **conviction-protect** (NEW, the user's idea): one-shot partial bank + stop ratchet when
+   MFE≥arm AND near-price VP node-net flips against the trade (long net≤−min). New per-bar
+   `node_net_close_` array + `PositionManager::conviction_protect()`; keys `InpEnableConvictionProtect/
+   ConvictionArmR/NetMin/PartialFrac/LockFrac` + `InpPmGiveback*`. Base byte-identical (golden green).
+   Single XAU-M5 split looked great (OOS PF 1.322→1.409) but **6-fold WALK-FORWARD KILLS the lock case:**
+   baseline POOLED PF 1.344/net 23,098/dd 7.8%/**worstPF 1.223** is best on worst-fold; EVERY variant
+   degrades worstPF (giveback arm2 → net −24%). Best variant conv arm1.0/net0.2 improves pooled net
+   +5.7%/dd 7.1% but worstPF→1.192 + 2/6 folds down → **fails "improve pooled AND not degrade worst
+   fold"** (the T1 rule). The motivating chart was **survivorship** (same as FVG/VMC). XAU-M3 marginal-
+   negative; **BTC-M5 single-split jump (+88% OOS net) is FEED-SUSPECT** ([[mastervp-t3-reversion-lock]]
+   BTC partial/reversion wins are MT5-FICTIONAL) → needs a BTC WF harness + MT5 A/B, not chased. Full
+   study: `research/mastervp_parity/TP1_CONVICTION_STUDY_2026-06-22.md`. **Verdict: ships as tested
+   default-OFF infra; user can toggle on a chart for discretionary peace-of-mind, but it is NOT a
+   portfolio improvement and is NOT locked.**
+3. **▶ NEXT (recorded, optional):** (a) per-fold WF of XAU-M5 master mult ∈ {3.0,3.5,4.0} (the one float
+   lever with OOS signal); (b) build a BTC fold harness to honestly test conv `p0.3 lk0.6` on BTC-M5
+   (feed-caveated); (c) the older lever — reversion should fade LOCAL VP not master
+   ([[reversion-local-vp-assumption]]). All three are research, not blocked on the user.
+_Below: prior MasterVP threads + KenKem (separate)._
+
+## ▶ PRIOR THREAD 2026-06-22 (b) — KK-MasterVP: VP-length re-sweep ✅ + FVG-anchored SL ✅ REJECTED
 **Goal:** make sure we're not missing edge on BTC-M3, BTC-M5, XAU-M3, then add the user's FVG-beyond-SL idea.
 1. **✅ VP-length re-sweep DONE — no missed edge.** On corrected M1-resampled bars (a stale per-year XAU
    bar file was missing whole trading days — fixed via `cpp_core/tools/resample_m1.py`): XAU-M3 lock 480 &
