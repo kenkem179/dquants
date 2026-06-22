@@ -694,8 +694,14 @@ bool ComputePredicted(VPResult &res) {
    return true;
 }
 
-// Bar-feed display histogram fallback (Pine parity): bar tick_volume split
-// by the close-position direction proxy, dwell = bar seconds at hlc3.
+// Bar-feed display histogram fallback: bar tick_volume split by the
+// close-position direction proxy, SPREAD across the bins the bar's high->low
+// range actually traded (not dumped at a single hlc3 point). This is a
+// DISPLAY-ONLY change: in bar mode the histogram feeds no level or decision
+// (master POC/VAH/VAL come from ComputeVPBar at g_bins; tick mode is untouched),
+// so spreading only closes the comb gaps a per-bar single-point deposit leaves
+// when g_histBins >> bar count - bins the candle crossed get their share of the
+// volume instead of rendering empty. Dwell = bar seconds, spread the same way.
 bool ComputeDisplayBar(double lo, double step) {
    ArrayResize(g_binBuy, g_histBins);    ArrayInitialize(g_binBuy, 0.0);
    ArrayResize(g_binSell, g_histBins);   ArrayInitialize(g_binSell, 0.0);
@@ -713,8 +719,6 @@ bool ComputeDisplayBar(double lo, double step) {
       if(closes[i] <= 0.0 || highs[i] < lows[i]) continue;
       double rng = MathMax(highs[i] - lows[i], g_mintick);
       double dp  = (closes[i] - opens[i]) / rng;
-      double p   = (highs[i] + lows[i] + closes[i]) / 3.0;
-      int    bi  = ClampI((int)MathFloor((p - lo) / step), 0, g_histBins - 1);
       double v   = (double)vols[i];
       if(InpHistRecency) {
          // Same per-bar memory decay as the tick path (and the Pine twin's
@@ -723,9 +727,21 @@ bool ComputeDisplayBar(double lo, double step) {
          // i=0 is the OLDEST bar (shift g_masterLen), i=len-1 is shift 1.
          v *= MathPow(InpNodeDecay, (double)(g_masterLen - 1 - i));
       }
-      g_binBuy[bi]    += v * MathMax(dp, 0.0);
-      g_binSell[bi]   += v * MathMax(-dp, 0.0);
-      g_binTimeMs[bi] += barMs;
+      // Distribute the bar's volume/dwell evenly across the bins its
+      // high->low range spans, so the rows reflect every price the bar
+      // actually traded instead of a single hlc3 point.
+      int loIdx = ClampI((int)MathFloor((lows[i]  - lo) / step), 0, g_histBins - 1);
+      int hiIdx = ClampI((int)MathFloor((highs[i] - lo) / step), 0, g_histBins - 1);
+      int span  = hiIdx - loIdx + 1;
+      double vShare    = v / span;
+      double buyShare  = vShare * MathMax(dp, 0.0);
+      double sellShare = vShare * MathMax(-dp, 0.0);
+      double dwellShare = barMs / span;
+      for(int b = loIdx; b <= hiIdx; b++) {
+         g_binBuy[b]    += buyShare;
+         g_binSell[b]   += sellShare;
+         g_binTimeMs[b] += dwellShare;
+      }
    }
    return true;
 }
