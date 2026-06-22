@@ -57,6 +57,36 @@ public:
     bool is_long() const { return is_long_; }
     const TradeRecord& record() const { return rec_; }
 
+    // Current max-favorable-excursion in R (peak gain / risk). Used by the engine's conviction-protect
+    // gate to arm only after a winner has actually run. 0 while risk is degenerate.
+    double mfe_r() const { return (risk_ > 0.0) ? mfe_ / risk_ : 0.0; }
+
+    // Conviction-protect (TP1 redesign): a ONE-SHOT partial bank + stop ratchet, fired by the engine when
+    // a winner has run AND near-price VP flow has flipped against the trade. Banks `partial_frac` of the
+    // INITIAL volume at the exit-side price, then tightens the stop to lock `lock_frac` of the PEAK gain
+    // (giveback-style; never loosens). Returns true if it acted. Composes with the per-tick trail (the
+    // tighter of the two stops wins). No-op once already fired, or if the position is closed.
+    bool conviction_protect(double bid, double ask, double partial_frac, double lock_frac) {
+        if (!open_ || convict_done_) return false;
+        convict_done_ = true;                       // one-shot regardless of whether it could split
+        const double exit_px = is_long_ ? bid : ask;
+        const double dir = is_long_ ? 1.0 : -1.0;
+        bool acted = false;
+        if (partial_frac > 0.0) {
+            const double close_vol = p_->normalize_lot(initial_vol_ * std::min(1.0, partial_frac));
+            if (close_vol >= p_->min_lot && (cur_vol_ - close_vol) >= p_->min_lot) {
+                book_pnl(exit_px, close_vol);
+                cur_vol_ -= close_vol;
+                acted = true;
+            }
+        }
+        if (lock_frac > 0.0 && mfe_ > 0.0) {
+            const double cand = entry_ + dir * lock_frac * mfe_;   // lock_frac of peak gain
+            if (is_long_ ? (cand > sl_) : (cand < sl_)) { sl_ = cand; acted = true; }
+        }
+        return acted;
+    }
+
     // Trade's contribution to account equity beyond the running balance: realized-so-far
     // (TP1 partial already booked to balance in MT5) + floating MtM of the remaining volume
     // on the exit side (long->bid, short->ask). Used by the engine for peak/daily-DD tracking.
@@ -108,6 +138,7 @@ public:
         tp1_ = sig.tp1;
         tp1_done_ = false; be_applied_ = false;
         pm_partial_done_ = false; pm_tp_ext_count_ = 0;
+        convict_done_ = false;
         mfe_ = 0.0; mae_ = 0.0;
         last_atr_ = entry_atr1;
 
@@ -239,6 +270,7 @@ private:
     bool   open_ = false, is_long_ = false, tp1_done_ = false, be_applied_ = false;
     bool   eff_trail_ = true;   // effective trail flag for THIS position (resolved at open)
     bool   pm_partial_done_ = false;
+    bool   convict_done_ = false;   // conviction-protect one-shot guard
     int    pm_tp_ext_count_ = 0;
     double entry_ = 0.0, sl_ = 0.0, tp1_ = 0.0, tp_backstop_ = 0.0, risk_ = 0.0;
     double initial_vol_ = 0.0, cur_vol_ = 0.0, realized_usd_ = 0.0;

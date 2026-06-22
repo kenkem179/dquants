@@ -81,7 +81,7 @@ int OnInit()
    hHtfEmaF=iMA(_Symbol,PERIOD_M15,InpEmaFast,0,MODE_EMA,PRICE_CLOSE);
    hHtfEmaS=iMA(_Symbol,PERIOD_M15,InpEmaSlow,0,MODE_EMA,PRICE_CLOSE);
    hAtrM1=iATR(_Symbol,PERIOD_M1,InpAtrLen);   // impulse path M1 near-price-net window ATR (inert when impulse off)
-   g_masterLen=InpVpLookback*InpMasterMult;
+   g_masterLen=(int)MathRound(InpVpLookback*InpMasterMult);   // float mult -> rounded master VP length
    g_node.Init(InpVpBins);
    SN_Init();
 
@@ -99,7 +99,7 @@ int OnInit()
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
    mvpTrade.SetDeviationInPoints(InpDeviationPoints);
    ParityInit();
-   PrintFormat("[KK-MasterVP] init pip=%.5f vppl=%.2f masterLen=%d (VP %dx%d)",
+   PrintFormat("[KK-MasterVP] init pip=%.5f vppl=%.2f masterLen=%d (VP %dx%.2f)",
                g_pip,g_vppl,g_masterLen,InpVpLookback,InpMasterMult);
    return INIT_SUCCEEDED;
 }

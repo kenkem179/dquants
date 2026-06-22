@@ -25,7 +25,7 @@ struct Params {
     int    vp_lookback        = 50;
     int    vp_bins            = 30;
     double va_pct             = 70.0;
-    int    master_mult        = 3;
+    double master_mult        = 3.0;   // float: master_len = round(vp_lookback * master_mult)
     double node_touch_atr     = 0.05;
     double node_decay         = 0.94;
     double node_neutral_band  = 0.15;
@@ -121,6 +121,16 @@ struct Params {
     int    net_flip_bars        = 3;
     double net_flip_min         = 0.5;
     int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
+    // ---- conviction-protect (TP1 redesign) — default OFF (inert) ----
+    // Once a winner has run (MFE >= arm_r) AND the near-price VP node-net flips AGAINST the position
+    // (long: net <= -net_min ; short: net >= +net_min — the panel's "Net ▼/over/under" verdict), bank a
+    // one-shot partial AND ratchet the stop to lock lock_frac of the PEAK gain (giveback-style). This is
+    // the "take TP1 with conviction, not blindly" exit: it fires only when flow confirms the retrace.
+    bool   enable_conviction_protect = false;
+    double conviction_arm_r       = 1.0;  // min MFE (in R) before the protect can arm
+    double conviction_net_min     = 0.30; // near-price node-net magnitude against the trade to trigger
+    double conviction_partial_frac= 0.50; // fraction of INITIAL volume to bank on trigger (one-shot)
+    double conviction_lock_frac   = 0.50; // lock this fraction of PEAK gain as the new (tighter) stop
     // ---- node-structure TP (feature #2) — default OFF (inert) ----
     // Override the final/runner target with the next HVN shelf beyond TP1, clamped in R.
     bool   enable_struct_tp     = false;
@@ -238,7 +248,7 @@ struct Params {
         lot_step = 0.01; min_lot = 0.01; commission_per_lot = 0.0; start_balance = 10000.0;
     }
 
-    int master_len() const { return vp_lookback * master_mult; }
+    int master_len() const { return static_cast<int>(std::lround(vp_lookback * master_mult)); }
     // USD change per 1.0 price unit per 1.0 lot.
     double value_per_price_per_lot() const {
         return (tick_value > 0.0 && tick_size > 0.0) ? (tick_value / tick_size) : contract_size;
@@ -282,7 +292,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     if (key == "InpVpLookback") p.vp_lookback = I();
     else if (key == "InpVpBins") p.vp_bins = I();
     else if (key == "InpVaPct") p.va_pct = D();
-    else if (key == "InpMasterMult") p.master_mult = I();
+    else if (key == "InpMasterMult") p.master_mult = D();
     else if (key == "InpNodeTouchAtr") p.node_touch_atr = D();
     else if (key == "InpNodeDecay") p.node_decay = D();
     else if (key == "InpNodeNeutralBand") p.node_neutral_band = D();
@@ -352,6 +362,11 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpEnableNetFlipExit") p.enable_net_flip_exit = to_bool(val);
     else if (key == "InpNetFlipBars") p.net_flip_bars = I();
     else if (key == "InpNetFlipMin") p.net_flip_min = D();
+    else if (key == "InpEnableConvictionProtect") p.enable_conviction_protect = to_bool(val);
+    else if (key == "InpConvictionArmR") p.conviction_arm_r = D();
+    else if (key == "InpConvictionNetMin") p.conviction_net_min = D();
+    else if (key == "InpConvictionPartialFrac") p.conviction_partial_frac = D();
+    else if (key == "InpConvictionLockFrac") p.conviction_lock_frac = D();
     else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
     else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
     else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();

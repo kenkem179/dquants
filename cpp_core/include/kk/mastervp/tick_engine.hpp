@@ -172,6 +172,7 @@ private:
 
         // Monster: per-bar master POC (impulse trend slope) + M1 near-price net series.
         mpoc_.assign(N_, 0.0);
+        node_net_close_.assign(N_, 0.0);
         if (p_.enable_impulse && !m1_bars_.empty())
             m1_series_ = build_tf_series(m1_bars_, p_.atr_len, 60);
 
@@ -186,6 +187,9 @@ private:
                 kk::vp::compute_vp_bars(&bars_[i - master_len + 1], master_len, p_.vp_bins, p_.va_pct);
             if (masterCur.valid) mpoc_[i] = masterCur.poc;   // Monster: slope source
             node.update(masterCur, bars_[i], atr_[i], p_);   // update BEFORE the signal read
+            // Near-price VP node-net at this just-closed bar's close (the panel's "Net" verdict).
+            // Stored per bar so the conviction-protect exit can read it at management cadence.
+            node_net_close_[i] = node.state_at_price(bars_[i].close, p_).net;
 
             VPResult localCur;
             if (i >= local_len - 1)
@@ -422,6 +426,18 @@ private:
             finalize_trade_(t.ts_ms);
         }
 
+        // Conviction-protect (TP1 redesign): a winner that has run (MFE >= arm_r) AND whose near-price
+        // VP node-net has flipped AGAINST it (the panel's "Net ▼/over" verdict) banks a one-shot partial
+        // and ratchets the stop to lock part of the peak. Fires at most once per position. Default OFF.
+        if (p_.enable_conviction_protect && pos_.open()
+            && pos_.mfe_r() >= p_.conviction_arm_r) {
+            const double nn = node_net_close_[sig_bar];
+            const bool against = pos_.is_long() ? (nn <= -p_.conviction_net_min)
+                                                : (nn >=  p_.conviction_net_min);
+            if (against)
+                pos_.conviction_protect(t.bid, t.ask, p_.conviction_partial_frac, p_.conviction_lock_frac);
+        }
+
         // Walk-forward fold cap: at/after trade_to_ms, keep managing & closing open positions
         // (exits above still run) but open NO new positions. 0 (default) = no cap.
         if (trade_to_ms_ > 0 && bars_[sig_bar].ts_ms >= trade_to_ms_) return;
@@ -544,6 +560,7 @@ private:
     std::vector<double>  atr_, rsi_;
     std::vector<double>  net_flow_;   // feature #1: per-bar volume-weighted net flow
     std::vector<double>  mpoc_;       // Monster: master-POC per bar (impulse trend-slope source)
+    std::vector<double>  node_net_close_;  // near-price VP node-net at each bar's close (conviction-protect)
     std::vector<Bar>     m1_bars_;    // Monster: M1 bars (impulse M1 near-price net)
     TfSeries             m1_series_;  // Monster: built from m1_bars_ once in precompute_
     std::vector<int64_t> m15_start_;

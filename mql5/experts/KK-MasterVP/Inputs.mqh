@@ -12,7 +12,7 @@ input group "===== VP core ====="
 input int    InpVpLookback     = 120;     // local VP window (bars) — swept (S8b); long-window OOS plateau
 input int    InpVpBins         = 30;
 input double InpVaPct          = 70.0;
-input int    InpMasterMult     = 4;       // master VP = lookback*mult = 480 bars; OOS PF 1.114
+input double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 480 bars; OOS PF 1.114 (float; 0.5-step swept)
 input int    InpAtrLen         = 14;
 input bool   InpAtrMt5Mode     = false;   // false = textbook Wilder ATR (Pine ta.atr = RMA)
 

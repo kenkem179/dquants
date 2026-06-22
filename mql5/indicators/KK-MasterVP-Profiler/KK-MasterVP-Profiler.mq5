@@ -142,7 +142,7 @@ input group "Volume Profile Core"
 input int    InpVpLookback   = 120;   // Local window (bars) - master window = this x master multiplier (matches EA InpVpLookback)
 input int    InpVpBins       = 30;    // Node bins - price buckets for POC/VAH/VAL + node-state math (matches EA InpVpBins)
 input int    InpHistBins     = 240;    // Display bins - resolution of the drawn histogram rows (higher = thinner/finer rows; bar feed places each bar's volume at one bin so rows stay discrete)
-input int    InpMasterMult   = 4;     // Master multiplier - master window = local window x this (matches EA InpMasterMult -> 480-bar master VP)
+input double InpMasterMult   = 4.0;   // Master multiplier (float) - master window = round(local window x this); matches EA InpMasterMult -> 480-bar master VP
 input bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 — deterministic, no CopyTicksRange flicker, POC/VAH/VAL match the EA exactly (EA is bar-feed). ON: bin the real broker tick stream (true volume/delta/dwell at price) — higher-res look but the large master window can intermittently fail to fetch ticks and flip resolution
 input bool   InpHistTickDelta = true;  // HYBRID (only when InpUseRealTicks=OFF): keep the bar-feed structure (stable rows) but tint the bright net-delta slice + near-price Net readout from REAL tick-rule signed volume over the recent window; bins beyond tick coverage fall back to bar-direction net
 input int    InpHistTickBars  = 200;   // Hybrid tick-delta lookback cap (bars): how far back to fetch real ticks for the delta tint — kept short enough that the fetch is reliable (the full 480-bar window is not). Delta is true-tick within this; bar-net beyond it
@@ -1103,7 +1103,7 @@ int OnInit() {
    g_bins      = ClampI(InpVpBins, 4, 200);
    g_histBins  = ClampI(InpHistBins, 4, 600);
    g_localLen  = ClampI(InpVpLookback, 10, 1000);
-   g_masterLen = g_localLen * ClampI(InpMasterMult, 1, 10);
+   g_masterLen = (int)MathRound(g_localLen * MathMax(0.5, MathMin(10.0, InpMasterMult)));
 
    g_hAtrChart = iATR(_Symbol, g_tf, InpAtrLen);
    g_hAtrM1    = (g_tf == PERIOD_M1)  ? g_hAtrChart : iATR(_Symbol, PERIOD_M1,  InpAtrLen);
@@ -1448,10 +1448,13 @@ void DrawAll(double close1, double atr1) {
    }
 
    // --- predicted master POC ---
+   // Twice as long as before (6 bars) and the "pPOC" tag sits centered ON TOP
+   // of the line (ANCHOR_LOWER at the midpoint) so it reads distinctly from the
+   // master/local VP rays, which tag at their right end.
    if(InpShowPredictedPoc && g_pred.valid) {
-      Seg(OBJPFX "pPOC", tLast, g_pred.poc, tLast + (datetime)(3 * ps), g_pred.poc, clrDodgerBlue, 2, STYLE_SOLID);
+      Seg(OBJPFX "pPOC", tLast, g_pred.poc, tLast + (datetime)(6 * ps), g_pred.poc, clrDodgerBlue, 2, STYLE_SOLID);
       Txt(OBJPFX "pPOCt", tLast + (datetime)(3 * ps), g_pred.poc,
-          "pPOC", clrDodgerBlue, 8, ANCHOR_LEFT);
+          "pPOC", clrDodgerBlue, 8, ANCHOR_LOWER);
    } else {
       Kill(OBJPFX "pPOC"); Kill(OBJPFX "pPOCt");
    }
@@ -1585,19 +1588,11 @@ void DrawHvnLines(datetime tLast, int ps) {
 }
 
 void DrawProjection(datetime tLast, int ps, double close1) {
-   // Weak conviction is noise - keep it off the chart (the table always
-   // shows the full signed score), draw only a decisive read.
-   if(!InpShowProjection || !g_master.valid || g_biasKind == "" ||
-      MathAbs(g_bias) < InpBiasShowMin) {
-      Kill(OBJPFX "proj"); Kill(OBJPFX "projT");
-      return;
-   }
-   color dirC = (g_bias > 0.0) ? COL_UP_TXT : COL_DN_TXT;
-   Seg(OBJPFX "proj", tLast, close1, tLast + (datetime)(8 * ps), g_biasTarget, clrYellow, 2, STYLE_DASHDOT, true);
-   Txt(OBJPFX "projT", tLast + (datetime)(9 * ps), g_biasTarget,
-       (g_bias > 0.0 ? SymUp() : SymDn()) + " " +
-       IntegerToString((int)MathRound(MathAbs(g_bias) * 100.0)) + "%",
-       dirC, 9, ANCHOR_LEFT);
+   // On-chart bias arrow (price -> projected magnet, with % text) removed by
+   // request: it read as a "prediction" and cluttered the live price area. The
+   // signed bias score still lives in the panel headline row. Kill any leftover
+   // objects from a previous build so nothing lingers on re-attach.
+   Kill(OBJPFX "proj"); Kill(OBJPFX "projT");
 }
 
 string TfShort() {
@@ -1621,14 +1616,6 @@ void DrawPanel(double atr1) {
    string feedTag = g_tickFeed ? "TICK" : (g_binTickOk ? "BAR+tickD" : "BAR");
    color  feedCol = g_tickFeed ? clrDeepSkyBlue : (g_binTickOk ? clrMediumTurquoise : clrOrange);
 
-   string stab = "n/a";
-   color  stabC = clrSilver;
-   if(g_pred.valid && g_master.valid && atr1 > 0.0) {
-      double gap = MathAbs(g_pred.poc - g_master.poc) / atr1;
-      bool stable = (gap <= InpPocStableAtr);
-      stab  = StringFormat("%s %.2f ATR", stable ? "STABLE" : "MIGRATING", gap);
-      stabC = stable ? COL_UP_TXT : clrOrange;
-   }
    // Plain-language headline: arrow + direction word + the magnet PRICE the
    // bias engine projects to. TREND only when the master-POC slope agrees;
    // a trailing ? marks a weak (sub-arrow-threshold) read.
@@ -1657,17 +1644,16 @@ void DrawPanel(double atr1) {
    int n = 0;
    ArrayResize(txt, 8); ArrayResize(col, 8);
    txt[n] = StringFormat("KK-VP %s [%s]", TfShort(), feedTag); col[n] = feedCol; n++;
-   txt[n] = StringFormat("net M1 %+d%% %s %+d%%",
-            (int)MathRound((g_hasM1 ? g_netM1 : 0.0) * 100.0), TfShort(),
-            (int)MathRound(g_netChartTick * 100.0)); col[n] = clrWhite; n++;
    txt[n] = StringFormat("net M5 %+d%% M15 %+d%%",
             (int)MathRound((g_hasM5 ? g_netM5 : 0.0) * 100.0),
             (int)MathRound((g_hasM15 ? g_netM15 : 0.0) * 100.0)); col[n] = clrWhite; n++;
    txt[n] = StringFormat("ATR%% %.3f slp %s", atrPct,
             g_slopeKnown ? StringFormat("%+.2f", g_slopeNorm) : "n/a"); col[n] = clrSilver; n++;
-   txt[n] = "POC " + stab; col[n] = stabC; n++;
+   // Exec-health row only carries information on the real-tick feed (live spread
+   // vs slip ratios). In bar-feed mode it could only ever say "exec n/a (bar
+   // feed)", which was pure noise, so the row is suppressed unless ticks are on.
    int execIdx = -1;
-   if(InpShowExecRow) { execIdx = n; txt[n] = "exec n/a (bar feed)"; col[n] = clrSilver; n++; }
+   if(InpShowExecRow && g_tickFeed) { execIdx = n; txt[n] = "spr n/a  slip n/a"; col[n] = clrSilver; n++; }
    txt[n] = ht; col[n] = hc; n++;
 
    // Measure the widest row at the label font (Consolas 8pt). TextGetSize is
