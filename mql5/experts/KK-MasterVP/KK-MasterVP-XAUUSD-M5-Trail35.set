@@ -1,0 +1,85 @@
+; KK-MasterVP — XAUUSD M5 preset (dedicated M5 sweep 2026-06-20). Attach EA to an M5 XAUUSD chart.
+; Master VP=432 bars (36h on M5) = InpVpLookback=108 x InpMasterMult=4. Swept break_buf 0.85 / sl 1.2 / trail 2.5.
+; OOS PF 1.327 / dd 10.3% / win 58.6% (vs M3 lock OOS PF 1.114 / dd 17.5%). Same-bars indicators (ema24/194 atr14).
+; HARDENED 2026-06-20 (walk-forward + Monte-Carlo, WF_MC_FINDINGS.md): 11/12 months & 7/8 folds & 4/5 anchored
+; re-opt folds PF>1; WF-eff ~1.0; fixed 432b BEATS per-fold re-opt (not a curve-fit). MC: P(profit) 99.6%,
+; PF 5th-pctile 1.108, risk-of-ruin negligible at 1%/trade.
+; ⚠️ DRAWDOWN REALITY: the 10.3% above was a benign 4-month window. Over a FULL YEAR expect maxDD ~28% (MC
+; 95th-pctile ~38%, worst-case ~55%). Size for ~30-40% peak-to-trough, not 10%. Edge robust; equity dips deep.
+; T3 EXIT LOCK 2026-06-20: InpTp1ClosePct 20->0 (6-fold WF, MONOTONIC: less partial = better on every axis).
+;   Pooled PF 1.296->1.335, net +15.3%, maxDD 10.0->9.2%, worst-fold 1.196->1.219; all 6 folds improve.
+;   The Pine 20% partial was inherited, never swept; banking it caps the trailed runner. BE+trail unaffected.
+
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpAsiaSess=00:00-07:00
+InpAtrLen=14
+InpAtrMt5Mode=false
+InpAvoidNews=false
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpBlockedHoursStr=2,3,14
+InpBodyPctMin=0.6
+InpBreakBufAtr=0.85
+InpBreakMaxAtr=1000000
+InpBrkRequireFlow=false
+InpBrkVetoSfp=false
+InpBrokerGMTOffset=10
+InpDailyDDCooldownHrs=12.0
+InpDeviationPoints=200
+InpDiSpreadMin=8.0
+InpEmaFast=24
+InpEmaSepAtr=0.25
+InpEmaSlow=194
+InpEnableBreakout=true
+InpEnableReversion=true
+InpForceCloseSessNews=false
+InpLdnSess=07:00-13:00
+InpLossStreakCooldownHrs=4.0
+InpLossStreakCount=0
+InpMVPMagic=5252510
+InpMasterMult=4
+InpMaxAtrPct=0.0
+InpMaxDailyDDPct=10.0
+InpMaxLot=0.0
+InpMaxPeakDDPct=0.0
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+InpMaxTradesPerSession=4
+InpMinAtrPct=0.0
+InpMinAtrTicks=40
+InpMtfHardVeto=true
+InpNewsMinsAfter=15
+InpNewsMinsBefore=15
+InpNodeDecay=0.94
+InpNodeGateEnabled=false
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpNodeTouchAtr=0.05
+InpNySess=13:00-21:00
+InpRetestAtr=0.1
+InpRiskAccPct=1.0
+InpRiskUnit=0
+InpRiskUsd=180.0
+InpRrBrk=1.8
+InpRrRev=1.2
+InpRsiLen=14
+InpRsiMidline=50.0
+InpRunnerRr=10.0
+InpSfpFlowMin=0.15
+InpSkipIfMinLotOverRisk=false
+InpSlAtrBrk=1.2
+InpSlAtrRev=1.5
+InpSoftBlockDDPct=0.0
+InpSoftBlockLotMult=0.55
+InpTp1ClosePct=0.0
+InpTp1R=0.8
+InpTrailAtrMult=3.5
+InpTrailRunner=true
+InpUseEmbeddedNews=true
+InpUseMomVeto=false
+InpUseMtfAgree=false
+InpUsePriorBarVP=false
+InpVaPct=70.0
+InpVpBins=30
+InpVpLookback=108

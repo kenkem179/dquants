@@ -1,30 +1,27 @@
 # HANDOFF — read me first, update me last
 
-## 🎯 FOR THE FRESH TP1-VALIDATION AGENT (start here)
-**Mission:** validate the TP1 profit-protect idea more carefully than I did. The feature is BUILT and
-default-OFF (base byte-identical); my 6-fold WF said "marginal, don't lock" but only on XAU-M5. Your job
-is a rigorous, broader verdict.
-- **What exists (commit `ef7dd1b`):** two engine levers, both default-OFF.
-  (A) blind `giveback-cap` keys `InpPmGiveback / InpPmGivebackArmR / InpPmGivebackCapFrac`.
-  (B) `conviction-protect` (partial bank + stop ratchet on near-price VP node-net flip) keys
-  `InpEnableConvictionProtect / InpConvictionArmR / InpConvictionNetMin / InpConvictionPartialFrac /
-  InpConvictionLockFrac`. Code: `PositionManager::conviction_protect()` + per-bar `node_net_close_` in
-  `cpp_core/include/kk/mastervp/tick_engine.hpp`; params in `config.hpp`.
-- **Tools:** single-split `research/mastervp_parity/tp1_conviction_sweep_2026-06-22.py`;
-  6-fold WF `research/mastervp_parity/wf_mastervp.py --grid '{...}'` (XAU-M5 ONLY — no BTC fold harness yet).
-  Prior findings: `research/mastervp_parity/TP1_CONVICTION_STUDY_2026-06-22.md`.
-- **⚠️ MUST-KNOW traps:** (1) run `make -C cpp_core backtester` after ANY config.hpp edit — `make test`
-  does NOT rebuild the backtester (stale binary truncates/ignores keys). (2) The motivating chart is
-  SURVIVORSHIP — judge on the full book + per-fold WF + the overfitting gate (`research/stats/gate.py`),
-  never on examples ([[overfitting-gate-mandatory]]). (3) BTC engine partial/reversion wins are
-  MT5-FICTIONAL on the Exness feed ([[mastervp-t3-reversion-lock]]) — BTC-M5's tempting +88% single-split
-  needs a real BTC WF harness + MT5 A/B before any trust.
-- **Suggested next steps:** build a BTC fold harness (clone `wf_mastervp.py` for BTC-M5) to honestly test
-  conv `p0.3 lk0.6`; sweep `conviction_partial_frac/lock_frac` under WF (I only swept arm/net_min there);
-  run the gate on any candidate that survives WF; if a config clears WF+gate, THEN port to the EA
-  (Inputs + Engine.mqh ProfitManager/conviction port) and MT5-confirm. Only then lock.
-- ⚠️ Tree note: 2 RED tests committed in `e8fcb11` (portfolio + cpcv, another session's WIP) — not yours,
-  not TP1-related; ignore unless they break your runs.
+## 🎯 TP1 + "move SL closer to entry" — VALIDATED (both REJECTED) + a trail win found (2026-06-23)
+**Done this session.** Re-ran the user's TWO ideas with the *simple* reading (not the prior agent's
+VP "conviction-protect", which WF already killed). Generalized 6-fold WF across all 4 markets
+(`wf_mvp_generic.py` + `slice_ticks_by_fold.py`; baselines reproduce prior study exactly). Full writeup:
+`research/mastervp_parity/tp1_2026-06-23/FINDINGS.md`.
+- **Idea 1 — TP1 partial bank (`InpTp1ClosePct`) → REJECTED.** Banking any % monotonically hurts every
+  axis on every market (caps the runner). Re-confirms the 2026-06-20 `InpTp1ClosePct=0` lock, broader basis.
+- **Idea 2 — move SL closer to entry → REJECTED (all readings).** BE-ratchet to entry (`InpBeBufAtr 0.0`)
+  gives a microscopic pooled bump but **degrades worst-fold** (XAU-M5 1.223→1.175); tighter initial SL
+  (`InpSlAtrBrk`) strictly hurts XAU and is **catastrophic on BTC-M5** (PF<1, dd 43–74%). Confirmed on the
+  trail-3.5 base too. The edge is a trend runner — pulling the stop IN chops winners; the giveback chart
+  was survivorship.
+- **🟢 GENUINE WIN (opposite direction): wider runner trail `InpTrailAtrMult` 2.5→3.5 on XAU-M5.** Beats
+  the lock on EVERY axis: PF 1.344→**1.472**, net +24%, dd 7.8→**7.4%**, worst-fold 1.223→**1.316**, 6/6
+  folds. **Plateau-confirmed** (4.0 corroborates) and **overfitting gate PASS** (DSR 1.000 / PSR 1.000 /
+  MinTRL 194<1207, n_trials=28). **Zero parity risk** — `InpTrailAtrMult` is an existing MT5-confirmed EA
+  input → `.set`-only, NO recompile. (XAU-M3 trail noisy, BTC-M5 flat, BTC-M3 dead — XAU-M5-specific.)
+- **▶ NEXT (user-gated — MT5 A/B is the only open step):** Expert **KK-MasterVP**, **XAUUSD M5**,
+  2025.06–2026.05, every-tick. Candidate `KK-MasterVP-XAUUSD-M5-Trail35.set` vs live `KK-MasterVP-XAUUSD-M5.set`
+  (MT5 Tester→Inputs→Load→`dquants/KK-MasterVP/`). Only diff = `InpTrailAtrMult` 2.5→3.5. If MT5 confirms
+  (engine = ranking proxy, [[parity-is-gate-0]]) → lock trail 3.5 into the live set + best-experts table.
+- ⚠️ Tree note: 2 RED tests committed in `e8fcb11` (portfolio + cpcv, another session's WIP) — not yours; ignore.
 
 ## ▶ ACTIVE THREAD 2026-06-23 — KK-MasterVP: float master-mult ✅ + TP1 conviction/giveback ✅ NOT-LOCKED
 **Goal:** (1) make `InpMasterMult` a float + sweep at 0.5 steps; (2) revise the no-TP1 policy so a winner

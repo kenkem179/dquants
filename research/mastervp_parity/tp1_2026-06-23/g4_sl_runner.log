@@ -1,0 +1,33 @@
+=== grid [g4_sl] ALL 4 MARKETS DONE ===
+############ tp1_2026-06-23/g4_sl_btc_m3.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — btc-m3 g4_sl ===
+  POOLED n=2739 win=53.6 PF=0.841 net=-17,724 dd=184.4% | folds+=0/6 PF>1=0/6 worstPF=0.817 meanPF=0.841  {'InpSlAtrBrk': '1.5'}
+  POOLED n=2837 win=53.3 PF=0.817 net=-20,553 dd=204.4% | folds+=0/6 PF>1=0/6 worstPF=0.755 meanPF=0.815  {'InpSlAtrBrk': '1.2'}
+  POOLED n=2952 win=52.9 PF=0.796 net=-23,100 dd=232.0% | folds+=0/6 PF>1=0/6 worstPF=0.769 meanPF=0.795  {'InpSlAtrBrk': '0.8'}
+  POOLED n=2902 win=52.1 PF=0.781 net=-24,491 dd=244.6% | folds+=0/6 PF>1=0/6 worstPF=0.703 meanPF=0.779  BASELINE
+  POOLED n=2902 win=52.1 PF=0.781 net=-24,491 dd=244.6% | folds+=0/6 PF>1=0/6 worstPF=0.703 meanPF=0.779  {'InpSlAtrBrk': '1.0'}
+
+############ tp1_2026-06-23/g4_sl_btc_m5.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — btc-m5 g4_sl ===
+  POOLED n=1524 win=54.7 PF=0.997 net=-201 dd=43.6% | folds+=5/6 PF>1=5/6 worstPF=0.756 meanPF=0.987  {'InpSlAtrBrk': '1.0'}
+  POOLED n=772 win=57.5 PF=1.108 net=3,671 dd=22.1% | folds+=3/6 PF>1=3/6 worstPF=0.743 meanPF=1.125  BASELINE
+  POOLED n=1717 win=52.9 PF=0.946 net=-4,373 dd=54.2% | folds+=2/6 PF>1=2/6 worstPF=0.775 meanPF=0.939  {'InpSlAtrBrk': '0.8'}
+  POOLED n=1083 win=53.7 PF=0.910 net=-4,399 dd=50.4% | folds+=2/6 PF>1=2/6 worstPF=0.680 meanPF=0.902  {'InpSlAtrBrk': '1.5'}
+  POOLED n=1328 win=53.9 PF=0.906 net=-5,689 dd=73.9% | folds+=2/6 PF>1=2/6 worstPF=0.569 meanPF=0.900  {'InpSlAtrBrk': '1.2'}
+
+############ tp1_2026-06-23/g4_sl_xau_m3.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — xau-m3 g4_sl ===
+  POOLED n=1932 win=56.4 PF=1.245 net=25,635 dd=14.9% | folds+=5/6 PF>1=5/6 worstPF=0.713 meanPF=1.200  {'InpSlAtrBrk': '1.2'}
+  POOLED n=1991 win=55.6 PF=1.230 net=25,561 dd=14.2% | folds+=4/6 PF>1=4/6 worstPF=0.731 meanPF=1.160  BASELINE
+  POOLED n=1991 win=55.6 PF=1.230 net=25,561 dd=14.2% | folds+=4/6 PF>1=4/6 worstPF=0.731 meanPF=1.160  {'InpSlAtrBrk': '1.0'}
+  POOLED n=2061 win=55.6 PF=1.204 net=24,188 dd=14.0% | folds+=4/6 PF>1=4/6 worstPF=0.825 meanPF=1.150  {'InpSlAtrBrk': '0.8'}
+  POOLED n=1824 win=55.7 PF=1.181 net=17,101 dd=14.1% | folds+=4/6 PF>1=4/6 worstPF=0.844 meanPF=1.158  {'InpSlAtrBrk': '1.5'}
+
+############ tp1_2026-06-23/g4_sl_xau_m5.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — xau-m5 g4_sl ===
+  POOLED n=1352 win=59.1 PF=1.344 net=23,098 dd=7.8% | folds+=6/6 PF>1=6/6 worstPF=1.223 meanPF=1.355  BASELINE
+  POOLED n=1352 win=59.1 PF=1.344 net=23,098 dd=7.8% | folds+=6/6 PF>1=6/6 worstPF=1.223 meanPF=1.355  {'InpSlAtrBrk': '1.2'}
+  POOLED n=1220 win=57.6 PF=1.290 net=17,216 dd=8.7% | folds+=6/6 PF>1=6/6 worstPF=1.130 meanPF=1.288  {'InpSlAtrBrk': '1.5'}
+  POOLED n=1446 win=57.1 PF=1.289 net=22,043 dd=9.6% | folds+=6/6 PF>1=6/6 worstPF=1.084 meanPF=1.292  {'InpSlAtrBrk': '1.0'}
+  POOLED n=1564 win=57.7 PF=1.277 net=22,779 dd=9.3% | folds+=6/6 PF>1=6/6 worstPF=1.022 meanPF=1.276  {'InpSlAtrBrk': '0.8'}
+

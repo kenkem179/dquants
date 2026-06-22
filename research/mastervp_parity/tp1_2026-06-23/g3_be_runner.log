@@ -1,0 +1,53 @@
+=== grid [g3_be] ALL 4 MARKETS DONE ===
+############ tp1_2026-06-23/g3_be_btc_m3.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — btc-m3 g3_be ===
+  POOLED n=2894 win=47.5 PF=0.814 net=-23,223 dd=229.2% | folds+=0/6 PF>1=0/6 worstPF=0.697 meanPF=0.808  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.15'}
+  POOLED n=2870 win=47.9 PF=0.805 net=-23,582 dd=231.3% | folds+=0/6 PF>1=0/6 worstPF=0.720 meanPF=0.802  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.0'}
+  POOLED n=2879 win=47.9 PF=0.805 net=-23,745 dd=233.4% | folds+=0/6 PF>1=0/6 worstPF=0.724 meanPF=0.801  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.05'}
+  POOLED n=2920 win=51.8 PF=0.783 net=-24,586 dd=243.6% | folds+=0/6 PF>1=0/6 worstPF=0.632 meanPF=0.776  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.15'}
+  POOLED n=2902 win=52.1 PF=0.781 net=-24,491 dd=244.6% | folds+=0/6 PF>1=0/6 worstPF=0.703 meanPF=0.779  BASELINE
+  POOLED n=2902 win=52.1 PF=0.781 net=-24,491 dd=244.6% | folds+=0/6 PF>1=0/6 worstPF=0.703 meanPF=0.779  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.05'}
+  POOLED n=2894 win=52.2 PF=0.781 net=-24,399 dd=244.0% | folds+=0/6 PF>1=0/6 worstPF=0.693 meanPF=0.776  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.0'}
+  POOLED n=2945 win=62.3 PF=0.754 net=-22,291 dd=229.1% | folds+=0/6 PF>1=0/6 worstPF=0.659 meanPF=0.754  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.0'}
+  POOLED n=2958 win=62.5 PF=0.747 net=-22,895 dd=233.1% | folds+=0/6 PF>1=0/6 worstPF=0.677 meanPF=0.747  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.05'}
+  POOLED n=2978 win=62.6 PF=0.744 net=-23,177 dd=237.5% | folds+=0/6 PF>1=0/6 worstPF=0.631 meanPF=0.744  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.15'}
+
+############ tp1_2026-06-23/g3_be_btc_m5.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — btc-m5 g3_be ===
+  POOLED n=764 win=57.5 PF=1.110 net=3,656 dd=22.5% | folds+=3/6 PF>1=3/6 worstPF=0.749 meanPF=1.133  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.0'}
+  POOLED n=772 win=57.5 PF=1.108 net=3,671 dd=22.1% | folds+=3/6 PF>1=3/6 worstPF=0.743 meanPF=1.125  BASELINE
+  POOLED n=772 win=57.5 PF=1.108 net=3,671 dd=22.1% | folds+=3/6 PF>1=3/6 worstPF=0.743 meanPF=1.125  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.05'}
+  POOLED n=714 win=52.2 PF=1.101 net=3,563 dd=24.1% | folds+=3/6 PF>1=3/6 worstPF=0.753 meanPF=1.118  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.05'}
+  POOLED n=791 win=57.6 PF=1.100 net=3,444 dd=23.3% | folds+=3/6 PF>1=3/6 worstPF=0.767 meanPF=1.122  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.15'}
+  POOLED n=720 win=51.8 PF=1.094 net=3,368 dd=25.0% | folds+=3/6 PF>1=3/6 worstPF=0.749 meanPF=1.111  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.15'}
+  POOLED n=713 win=51.9 PF=1.085 net=3,001 dd=24.4% | folds+=3/6 PF>1=3/6 worstPF=0.749 meanPF=1.103  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.0'}
+  POOLED n=1008 win=67.2 PF=1.052 net=1,762 dd=29.9% | folds+=3/6 PF>1=3/6 worstPF=0.771 meanPF=1.065  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.15'}
+  POOLED n=965 win=67.0 PF=1.051 net=1,654 dd=31.2% | folds+=3/6 PF>1=3/6 worstPF=0.802 meanPF=1.061  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.05'}
+  POOLED n=949 win=67.3 PF=1.047 net=1,483 dd=33.0% | folds+=3/6 PF>1=3/6 worstPF=0.754 meanPF=1.072  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.0'}
+
+############ tp1_2026-06-23/g3_be_xau_m3.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — xau-m3 g3_be ===
+  POOLED n=1948 win=50.2 PF=1.200 net=23,873 dd=15.6% | folds+=5/6 PF>1=5/6 worstPF=0.740 meanPF=1.152  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.0'}
+  POOLED n=1984 win=56.2 PF=1.252 net=27,750 dd=13.4% | folds+=4/6 PF>1=4/6 worstPF=0.734 meanPF=1.188  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.0'}
+  POOLED n=1991 win=55.6 PF=1.230 net=25,561 dd=14.2% | folds+=4/6 PF>1=4/6 worstPF=0.731 meanPF=1.160  BASELINE
+  POOLED n=1991 win=55.6 PF=1.230 net=25,561 dd=14.2% | folds+=4/6 PF>1=4/6 worstPF=0.731 meanPF=1.160  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.05'}
+  POOLED n=2011 win=55.6 PF=1.224 net=25,182 dd=15.3% | folds+=4/6 PF>1=4/6 worstPF=0.744 meanPF=1.143  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.15'}
+  POOLED n=2067 win=66.8 PF=1.201 net=16,227 dd=14.2% | folds+=4/6 PF>1=4/6 worstPF=0.790 meanPF=1.145  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.0'}
+  POOLED n=1951 win=49.7 PF=1.192 net=23,362 dd=15.5% | folds+=4/6 PF>1=4/6 worstPF=0.741 meanPF=1.140  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.05'}
+  POOLED n=1958 win=49.8 PF=1.191 net=23,087 dd=14.5% | folds+=4/6 PF>1=4/6 worstPF=0.741 meanPF=1.138  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.15'}
+  POOLED n=2078 win=66.7 PF=1.185 net=15,006 dd=13.6% | folds+=4/6 PF>1=4/6 worstPF=0.817 meanPF=1.135  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.05'}
+  POOLED n=2104 win=66.6 PF=1.153 net=12,547 dd=15.5% | folds+=4/6 PF>1=4/6 worstPF=0.781 meanPF=1.104  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.15'}
+
+############ tp1_2026-06-23/g3_be_xau_m5.out
+=== RANKED by robustness (folds PF>1, pooled PF, worst-fold PF) — xau-m5 g3_be ===
+  POOLED n=1339 win=59.4 PF=1.350 net=22,923 dd=7.7% | folds+=6/6 PF>1=6/6 worstPF=1.175 meanPF=1.357  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.0'}
+  POOLED n=1352 win=59.1 PF=1.344 net=23,098 dd=7.8% | folds+=6/6 PF>1=6/6 worstPF=1.223 meanPF=1.355  BASELINE
+  POOLED n=1352 win=59.1 PF=1.344 net=23,098 dd=7.8% | folds+=6/6 PF>1=6/6 worstPF=1.223 meanPF=1.355  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.05'}
+  POOLED n=1375 win=58.9 PF=1.330 net=22,886 dd=7.8% | folds+=6/6 PF>1=6/6 worstPF=1.194 meanPF=1.338  {'InpTp1R': '0.8', 'InpBeBufAtr': '0.15'}
+  POOLED n=1261 win=53.1 PF=1.293 net=20,640 dd=7.7% | folds+=6/6 PF>1=6/6 worstPF=1.170 meanPF=1.295  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.0'}
+  POOLED n=1478 win=68.2 PF=1.291 net=15,989 dd=9.9% | folds+=6/6 PF>1=6/6 worstPF=1.063 meanPF=1.288  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.0'}
+  POOLED n=1271 win=53.0 PF=1.289 net=20,520 dd=7.7% | folds+=6/6 PF>1=6/6 worstPF=1.189 meanPF=1.291  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.05'}
+  POOLED n=1505 win=68.0 PF=1.265 net=14,663 dd=9.7% | folds+=6/6 PF>1=6/6 worstPF=1.104 meanPF=1.266  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.05'}
+  POOLED n=1281 win=53.2 PF=1.257 net=18,224 dd=9.9% | folds+=6/6 PF>1=6/6 worstPF=1.194 meanPF=1.258  {'InpTp1R': '1.0', 'InpBeBufAtr': '0.15'}
+  POOLED n=1542 win=68.0 PF=1.220 net=12,607 dd=9.8% | folds+=6/6 PF>1=6/6 worstPF=1.070 meanPF=1.215  {'InpTp1R': '0.5', 'InpBeBufAtr': '0.15'}
+
