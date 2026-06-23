@@ -1,5 +1,12 @@
 # KK-MasterVP — Changelog
 
+## 1.03 — 2026-06-23
+
+- Built `2026-06-23T06:33:17Z` · commit `0ddfc64` on `reliableBaseline`
+- EA: `KK-MasterVP-1.03.ex5` (locked build of `KK-MasterVP.mq5`)
+- Marketplace validation fix: clamp lots to SYMBOL_VOLUME_LIMIT + widen stop-distance by spread (no more Volume-limit-reached / Invalid-stops on validator symbols)
+- Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop`
+
 ## 1.02 — 2026-06-23
 
 - Built `2026-06-23T06:22:56Z` · commit `66b34b1` on `reliableBaseline`

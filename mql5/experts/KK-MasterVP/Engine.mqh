@@ -125,6 +125,17 @@ bool MvpHasPosition(){
       if(mvpPos.Symbol()==_Symbol && mvpPos.Magic()==InpMVPMagic) return true; } return false;
 }
 
+// Volume already open for this symbol+magic in the given direction (counts against the
+// broker's per-symbol/direction SYMBOL_VOLUME_LIMIT). MasterVP is single-position, so this
+// is normally 0 at entry; computed defensively for the volume-limit clamp.
+double MvpOpenVolume(bool isLong){
+   double v=0.0;
+   for(int i=PositionsTotal()-1;i>=0;i--){ if(!mvpPos.SelectByIndex(i)) continue;
+      if(mvpPos.Symbol()!=_Symbol || mvpPos.Magic()!=InpMVPMagic) continue;
+      if((mvpPos.PositionType()==POSITION_TYPE_BUY)==isLong) v+=mvpPos.Volume(); }
+   return v;
+}
+
 // ----- risk-manager ports (RiskManager.mqh) -----
 double RiskBudgetUsd(){
    double bal=AccountInfoDouble(ACCOUNT_BALANCE);
@@ -276,7 +287,9 @@ void OnNewBar()
 
    double entry=sig.is_long?ask:bid;
    double risk=MathAbs(entry-sig.sl); if(risk<=0) return;
-   double minDist=KKMinStopDist(_Symbol);
+   // Min legal SL/TP distance + a safety margin (current spread + 2 points) so a market
+   // order's stops always clear the broker's stops/freeze level even as price ticks.
+   double minDist=KKMinStopDist(_Symbol)+(ask-bid)+2.0*_Point;
    // Runner TP backstop - MIRROR cpp position_manager.hpp:93-97. With InpTrailRunner the runner
    // target is entry+/-risk*RunnerRr (~trail-to-exit); the chandelier trail does the real exit.
    // The old `tp=sig.tp2` capped the runner at rrBrk (1.8R) -> EA hit TP where the engine trailed
@@ -293,7 +306,9 @@ void OnNewBar()
    double lot=KKPositionSize(budget,1.0,risk,g_vppl,
                              SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN),
                              (InpMaxLot>0?InpMaxLot:SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MAX)),
-                             SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP));
+                             SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP),
+                             SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_LIMIT),
+                             MvpOpenVolume(sig.is_long));
    if(lot<=0.0) return;
    sl=NormalizeDouble(sl,_Digits); tp=NormalizeDouble(tp,_Digits);
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
