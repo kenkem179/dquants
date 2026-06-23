@@ -63,45 +63,46 @@
 //+------------------------------------------------------------------+
 //| Inputs - defaults mirror KK-MasterVP-Monster.pine                |
 //+------------------------------------------------------------------+
-input group "Trade Setups (Monster breakout)"
+input group "Trade Setups (breakout)"
 input bool   InpSetShow        = true;  // Detect + draw breakout setups: Entry/SL/TP1/TP2 lines with WON/LOST history
 input int    InpSetLookback    = 1800;   // Bars scanned back for historical setups (must be <= trail bars)
 input int    InpSetKeep        = 12;    // Max setups kept on the chart (oldest dropped first)
-input double InpSetEntryBufAtr = 1.0;   // Trigger: confirmed close must clear master VAH/VAL by this x ATR (EA InpBrkEntryBufAtr)
-input double InpSetMaxDistAtr  = 1.8;   // Anti-chase: skip when the close is beyond the edge by MORE than this x ATR; 0 = off (EA InpBrkMaxDistAtr)
-input double InpSetNetMin      = 0.50;  // Min same direction near-price net % at the signal bar (scout default; the EA trades 0.80)
-input double InpSetSlBufAtr    = 0.25;  // SL anchor: broken edge -/+ this x ATR (EA InpBrkSlBufAtr)
-input double InpSetSlAtrMult   = 2.0;   // SL protective term: close -/+ this x ATR; SL = the FARTHER of the two (EA InpBrkSlAtrMult)
-input double InpSetTp1R        = 1.05;  // TP1 distance in R (EA InpTp1RrBrk); TP1 touch before SL = WON
-input double InpSetTp2R        = 2.0;   // TP2 distance in R, reference line only (EA InpBrkRrNear; the EA adapts 2.0/3.0)
-input double InpSetRiskPct     = 1.0;   // Position size shown on the E label: risk this % of account balance across the entry->SL distance (display-only; broker min/step/max applied - mirrors the EA ComputeLot math)
-input bool   InpSetShowRejects = false; // Mark edge-cross triggers that were REJECTED, with the reason (pos open / chase / weak net / EMA opp)
-input int    InpSetRejKeep     = 20;    // Max rejection markers kept on the chart (newest first)
-input bool   InpSetBeRatchet   = false; // Break-even ratchet: once a setup reaches the trigger profit, its stop jumps to entry +/- the BE buffer - retraces then resolve BE (silver) instead of LOST (KenKem-strategy twin; OFF = pure Monster TP1-vs-SL history)
-input double InpSetBeTrigR     = 0.3;   // Profit (in R, risk multiples) a setup must reach before the BE ratchet arms
-input double InpSetBeBufAtr    = 0.05;  // BE stop offset (x ATR at the signal bar) IN the profit direction - a BE exit still covers spread/commission
-input bool   InpSetEmaVeto     = false; // Veto VP based entry by opposite EMA alignment - blocks a setup when the FULL EMA stack is aligned against it, even with volume confirmation (OFF = Monster default: EMA structure does not count)
+double InpSetEntryBufAtr = 0.85;  // LOCK: confirmed close must clear master VAH/VAL by this x ATR (EA InpBreakBufAtr=0.85)
+double InpSetNetMin      = 0.80;  // LOCK: min same-direction near-price net at the signal bar (the EA trades 0.80)
+double InpSetSlAtrMult   = 1.2;   // LOCK: SL = close -/+ this x ATR (EA InpSlAtrBrk=1.2)
+input double InpSetTp1R        = 0.8;   // TP1 distance in R; TP1 touch before SL = WON
+input double InpSetTp2R        = 1.8;   // TP2 distance in R
+input double InpSetRiskPct     = 1.0;   // risk this % of balance for the E-label lot (display-only; broker min/step/max applied)
+input bool   InpSetShowRejects = false; // Mark edge-cross triggers that were filtered out, with a short reason tag
+input bool   InpSetBeRatchet   = false; // Break-even ratchet: stop jumps to entry +/- the BE buffer once a setup reaches trigger profit (KenKem twin; OFF = pure breakout TP1-vs-SL history)
+input bool   InpSetEmaFilter     = false; // Optional EMA-alignment filter for drawn setups (OFF by default)
+//--- hidden (fixed): lock mirrors (anti-chase off, pure close-based SL) + BE/reject fine knobs ---
+double InpSetMaxDistAtr  = 0.0;   // Anti-chase cap (x ATR); 0 = off - matches the lock (EA InpBreakMaxAtr huge = no cap)
+double InpSetSlBufAtr    = 0.0;   // Edge-anchor SL term; 0 = pure close-based SL like the EA
+int    InpSetRejKeep     = 20;    // Max rejection markers kept on the chart (newest first)
+double InpSetBeTrigR     = 0.3;   // Profit (R) a setup must reach before the BE ratchet arms
+double InpSetBeBufAtr    = 0.05;  // BE stop offset (x ATR) in the profit direction
 
-input group "Node State Engine"
-input double InpNodeTouchAtr    = 0.05;  // Node touch distance (x ATR): a bar "touches" a bin within this of its center
-input double InpNodeDecay       = 0.94;  // Per-bar node memory decay (~11-bar half-life at 0.94)
-input double InpNodeNeutralBand = 0.15;  // |net| at/below this = balanced (no buy/sell dominance)
-input double InpNodeSaturation  = 4.0;   // Touch count at/over which a balanced node counts as DEAD (absorbed)
+//--- hidden (fixed): node-state internals ---
+double InpNodeTouchAtr    = 0.05;  // Node touch distance (x ATR): a bar "touches" a bin within this of its center
+double InpNodeDecay       = 0.94;  // Per-bar node memory decay (~11-bar half-life at 0.94)
+double InpNodeNeutralBand = 0.15;  // |net| at/below this = balanced (no buy/sell dominance)
+double InpNodeSaturation  = 4.0;   // Touch count at/over which a balanced node counts as DEAD (absorbed)
 
-input group "Net Tick Volume (multi-TF)"
-input int    InpTfNetLook     = 50;    // Bars summed per timeframe for the near-price net read
-input int    InpNearVolLook   = 100;   // Bars of near-volume history for the HIGH/med/LOW magnitude rank
-
-input double InpNetWinAtr     = 1.5;   // Near-price window half-width (x ATR) for the net reads
-input bool   InpWeightedNet   = true;  // ON: chart-TF net weights each bin by HVN/MED/LVN tier; OFF: flat weights
-input double InpWHvn          = 1.5;   // Tier weight for high-volume bins (> 66% of near-window max)
-input double InpWMvn          = 1.0;   // Tier weight for mid-volume bins
-input double InpWLvn          = 0.5;   // Tier weight for low-volume bins (< 33% of near-window max)
-input double InpVerdictAtr    = 1.2;   // CENTER "Net" verdict window half-width (x ATR) + near-vol HIGH/LOW magnitude window (MUST match the ring at RebuildAll)
-input double InpVerdictInnerAtr = 1.2; // over/under NEAR reach (x ATR): how far each side extends PAST live price into the OPPOSITE zone (overlap -> stability)
-input double InpVerdictOuterAtr = 1.8; // over/under FAR reach (x ATR): how far each side extends into its OWN zone (over=above price, under=below price)
-input int    InpVerdictBalPct = 15;    // |net| percent below which the verdict reads balanced
-input int    InpVerdictHoldSec = 4;    // Seconds a flipped direction must HOLD before the headline arrow changes - kills bid/ask-bounce flicker
+//input group "Net Tick Volume (multi-TF)"
+double InpNetWinAtr     = 1.5;   // Near-price window half-width (x ATR) for the net reads
+bool   InpWeightedNet   = true;  // ON: chart-TF net weights each bin by HVN/MED/LVN tier; OFF: flat weights
+double InpVerdictAtr    = 1.2;   // CENTER "Net" verdict window half-width (x ATR) + near-vol HIGH/LOW magnitude window (MUST match the ring at RebuildAll)
+//--- hidden (fixed): tier weights, verdict reach + flicker, net lookbacks ---
+int    InpTfNetLook      = 50;    // Bars summed per timeframe for the near-price net read
+int    InpNearVolLook    = 100;   // Bars of near-volume history for the HIGH/med/LOW magnitude rank
+double InpWHvn           = 1.5;   // Tier weight for high-volume bins (> 66% of near-window max)
+double InpWMvn           = 1.0;   // Tier weight for mid-volume bins
+double InpWLvn           = 0.5;   // Tier weight for low-volume bins (< 33% of near-window max)
+double InpVerdictInnerAtr= 1.2;   // over/under NEAR reach (x ATR) into the OPPOSITE zone (overlap -> stability)
+double InpVerdictOuterAtr= 1.8;   // over/under FAR reach (x ATR) into its OWN zone
+int    InpVerdictBalPct  = 15;    // |net| percent below which the verdict reads balanced
+int    InpVerdictHoldSec = 4;     // Seconds a flipped direction must HOLD before the headline arrow changes
 
 int    InpAtrLen          = 14;    // ATR period used for all ATR-scaled distances
 int    InpNearStrongPct = 70;    // Percentile at/over which near volume tags HIGH
@@ -109,22 +110,23 @@ int    InpNearWeakPct   = 35;    // Percentile at/under which near volume tags L
 double InpHvnPct        = 70.0;  // Bin-volume percentile (vs occupied bins) at/over which a bin is an HVN
 double InpLvnPct        = 35.0;  // Bin-volume percentile at/under which a bin is an LVN (vacuum, fast travel)
 
-input group "HVN Structure + Projection"
-input bool   InpShowHvnLines  = false; // Draw marker stubs at high-volume-node bins ON the profile zone (off: the histogram rows already tell the story)
-
-input int    InpMaxHvnLines   = 4;     // Max HVN rays drawn (strongest first)
-input bool   InpShowProjection = true; // Draw the bias arrow toward the projected magnet (next HVN / POC / predicted edge)
-input double InpBiasBalanced  = 0.15;  // |bias score| below which the projection is "rotation back to POC"
-input double InpBiasShowMin   = 0.50;  // Min |bias score| before the arrow is drawn ON the chart - weaker reads are noise and live only in the table
-input int    InpSlopeBars     = 10;    // Master-POC slope lookback (bars), ATR-normalized - the regime read
-input double InpPocStableAtr  = 0.2;   // Predicted-vs-current master-POC gap (x ATR) at/under which the POC is STABLE
-input double InpTrendSlopeMin = 0.30;  // |master-POC slope| (x ATR over the slope lookback) at/over which the panel headline upgrades UP/DOWN to TREND
+//--- hidden (fixed): structure + projection internals ---
+bool   InpShowHvnLines  = false; // Draw marker stubs at high-volume-node bins ON the profile zone (off: the histogram rows already tell the story)
+bool   InpShowProjection = true; // Draw the bias arrow toward the projected magnet (next HVN / POC / predicted edge)
+double InpBiasShowMin   = 0.50;  // Min |bias score| before the arrow is drawn ON the chart - weaker reads are noise and live only in the table
+int    InpSlopeBars     = 10;    // Master-POC slope lookback (bars), ATR-normalized - the regime read
+double InpTrendSlopeMin = 0.30;  // |master-POC slope| (x ATR over the slope lookback) at/over which the panel headline upgrades UP/DOWN to TREND
+//--- hidden (fixed) ---
+int    InpMaxHvnLines    = 4;     // Max HVN rays drawn (strongest first)
+double InpBiasBalanced   = 0.15;  // |bias score| below which the projection is "rotation back to POC"
+double InpPocStableAtr   = 0.2;   // Predicted-vs-current master-POC gap (x ATR) at/under which the POC is STABLE
 
 input group "Execution Health"
 input bool   InpShowExecRow   = true;  // Panel row: CURRENT spread + tape speed vs their averages over the master VP window (100% = average conditions)
-input int    InpExecWindowSec = 60;    // Seconds of recent ticks behind the CURRENT spread/speed reads
-input int    InpExecWarnPct   = 140;   // Ratio percent at/over which a reading colors orange (elevated, single !)
-input int    InpExecAlarmPct  = 250;   // Ratio percent at/over which a reading colors red (hostile fills likely, double !!) - "slip" is price travel per second, the slippage RISK proxy (an indicator sees no fills, so true slippage is not measurable)
+//--- hidden (fixed): warn/alarm thresholds ---
+int    InpExecWindowSec  = 60;    // Seconds of recent ticks behind the CURRENT spread/speed reads
+int    InpExecWarnPct    = 140;   // Ratio percent at/over which a reading colors orange (elevated)
+int    InpExecAlarmPct   = 250;   // Ratio percent at/over which a reading colors red (hostile fills likely)
 
 input group "Visuals"
 input bool   InpShowMasterLines = true;  // Master POC/VAH/VAL rays + state tags
@@ -134,33 +136,35 @@ input bool   InpHistFront       = true;  // Draw the VP histogram in front of ca
 input bool   InpShowPredictedPoc = true; // Predicted master POC line (age-out preview)
 input bool   InpShowPanel       = true;  // Compact top-right telemetry card: feed, net M1/chart/M5/M15, ATR%/slope, POC stability, bias
 input bool   InpShowVerdict     = true;  // Near-price verdict tag above the histogram
-input double InpAtrRulerMult    = 1.0;   // Guide lines at live price +/- this x ATR; 0 = hidden
-input int    InpHistShiftBars   = 70;    // How many bars LEFT of the current candle the histogram zone starts - keeps the live price area clear
-input int    InpHistWidthBars   = 25;    // Max histogram row length (bars, growing rightward; delta-colored slice sits at the row base)
-input int    InpVerdLabelGapBars = 6;    // Gap (bars) left of the histogram baseline for the Net Vol / over / under labels - clears them off the bars so the values are readable
-input int    InpTrailBars       = 1500;  // How many recent bars get the POC/VAH/VAL trail plots (history cost cap)
+double InpAtrRulerMult    = 1.0;   // Guide lines at live price +/- this x ATR; 0 = hidden
+//--- hidden (fixed): histogram layout / trail history ---
+int    InpHistShiftBars  = 70;    // Bars LEFT of the current candle the histogram zone starts (keeps the live price area clear)
+int    InpHistWidthBars  = 25;    // Max histogram row length (bars, growing rightward)
+int    InpVerdLabelGapBars = 6;   // Gap (bars) left of the histogram baseline for the Net Vol / over / under labels
+int    InpTrailBars      = 1500;  // How many recent bars get the POC/VAH/VAL trail plots (history cost cap)
 
 input group "Volume Profile Core"
-input int    InpVpLookback   = 120;   // Local window (bars) - master window = this x master multiplier (matches EA InpVpLookback)
-input int    InpVpBins       = 30;    // Node bins - price buckets for POC/VAH/VAL + node-state math (matches EA InpVpBins)
-input int    InpHistBins     = 240;    // Display bins - resolution of the drawn histogram rows (higher = thinner/finer rows; bar feed places each bar's volume at one bin so rows stay discrete)
-input double InpMasterMult   = 4.0;   // Master multiplier (float) - master window = round(local window x this); matches EA InpMasterMult -> 480-bar master VP
-input bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 — deterministic, no CopyTicksRange flicker, POC/VAH/VAL match the EA exactly (EA is bar-feed). ON: bin the real broker tick stream (true volume/delta/dwell at price) — higher-res look but the large master window can intermittently fail to fetch ticks and flip resolution
-input bool   InpHistTickDelta = true;  // HYBRID (only when InpUseRealTicks=OFF): keep the bar-feed structure (stable rows) but tint the bright net-delta slice + near-price Net readout from REAL tick-rule signed volume over the recent window; bins beyond tick coverage fall back to bar-direction net
-input int    InpHistTickBars  = 200;   // Hybrid tick-delta lookback cap (bars): how far back to fetch real ticks for the delta tint — kept short enough that the fetch is reliable (the full 480-bar window is not). Delta is true-tick within this; bar-net beyond it
-input bool   InpHistRecency  = true;  // ON: weight ticks by the node decay per bar of age (TV twin look - RECENT flow dominates the green/red); OFF: classic undecayed volume profile
-input bool   InpHistNetScale = true;  // ON: green/red slice scaled by the strongest bin imbalance (relative ranking, visible on any TF); OFF: raw delta share (true tick-rule |net| - near-invisible on high TFs)
-input int    InpDwellCapSec  = 120;   // Cap (seconds) on the per-tick dwell credit so session gaps cannot dominate time-at-price
+input int    InpVpLookback   = 100;   // Local window (bars); master = this x mult
+int    InpVpBins       = 75;    // LOCK: node bins for POC/VAH/VAL + node-state math (EA InpVpBins=30)
+input double InpMasterMult   = 3.0;   // Master window = round(local x this)
+input bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 (bar-feed), no CopyTicksRange flicker. ON: real broker tick stream (higher-res but the large master window can fail to fetch and flip resolution)
+input bool   InpHistTickDelta = true;  // HYBRID (when InpUseRealTicks=OFF): bar-feed structure (stable rows) + REAL tick-rule signed-delta tint on the recent window; bins beyond coverage fall back to bar-direction net
+input bool   InpHistRecency  = true;  // ON: weight ticks by the node decay per bar of age (TV twin look - RECENT flow dominates); OFF: classic undecayed volume profile
+input bool   InpHistNetScale = true;  // ON: green/red slice scaled by the strongest bin imbalance (visible on any TF); OFF: raw delta share (near-invisible on high TFs)
+//--- hidden (fixed): display resolution / tick-delta internals ---
+int    InpHistBins       = 240;   // Display bins - resolution of the drawn histogram rows (higher = thinner/finer rows)
+int    InpHistTickBars   = 200;   // Hybrid tick-delta lookback cap (bars) - kept short so the fetch stays reliable
+int    InpDwellCapSec    = 120;   // Cap (seconds) on the per-tick dwell credit so session gaps cannot dominate time-at-price
 // hard coded params
 double InpVaPct        = 70.0;  // Value-area percent of total volume around the POC
 int    InpPredictBars  = 10;    // Predicted-POC age-out (bars): drop the oldest N bars to preview the next master POC/VAH/VAL; 0 = off
 
 input group "EMA Overlay (SuperBros twin)"
 input bool   InpShowEmas = true;  // Master switch: draw the four EMA lines (colors/widths match the Pine SuperBros plots)
-input int    InpEma1Len  = 24;    // EMA 1 period (yellow)
-input int    InpEma2Len  = 72;    // EMA 2 period (green)
-input int    InpEma3Len  = 96;   // EMA 3 period (sky blue)
-input int    InpEma4Len  = 196;   // EMA 4 period (purple, thick)
+input int    InpEma1Len  = 24;    // Fast EMA
+input int    InpEma2Len  = 72;    // Middle EMA
+int    InpEma3Len  = 96;   // EMA 3 period (sky blue) - visual only, no EA equivalent
+input int    InpEma4Len  = 194;   // Slow EMA
 input bool   InpShowEmaZone = true; // Thin green/red ribbon between EMA 1 and 2 while the full stack is aligned (buy/sell zone, Pine bgcolor twin)
 
 input group "Chart Theme"
@@ -1139,7 +1143,7 @@ int OnInit() {
    g_emaSynced = false;
    // Handles are needed for the DISPLAY and for the setup-engine EMA veto -
    // the veto must work even with the lines hidden.
-   bool needEma = InpShowEmas || InpSetEmaVeto;
+   bool needEma = InpShowEmas || InpSetEmaFilter;
    for(int e = 0; e < 4; e++) {
       PlotIndexSetDouble(4 + e, PLOT_EMPTY_VALUE, EMPTY_VALUE);
       PlotIndexSetInteger(4 + e, PLOT_DRAW_BEGIN, emaLens[e]);
@@ -1907,7 +1911,7 @@ void RescanSetups(int rates_total, const datetime &time[], const double &open[],
       // Regime veto (opt-in): a FULL EMA stack aligned AGAINST the trade
       // blocks the entry even with volume confirmation. Checked after the
       // net gate so the marker means "volume said yes, EMA regime said no".
-      if(InpSetEmaVeto && g_emaSynced) {
+      if(InpSetEmaFilter && g_emaSynced) {
          double e1 = BufEma1[i], e2 = BufEma2[i], e3 = BufEma3[i], e4 = BufEma4[i];
          bool emaOk = (e1 > 0.0 && e2 > 0.0 && e3 > 0.0 && e4 > 0.0 &&
                        e1 != EMPTY_VALUE && e2 != EMPTY_VALUE &&
@@ -2079,7 +2083,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
       ArrayInitialize(BufLPoc, EMPTY_VALUE);
    }
    // --- EMA overlay buffers (also feed the setup-engine EMA veto) ---
-   if(InpShowEmas || InpSetEmaVeto) {
+   if(InpShowEmas || InpSetEmaFilter) {
       // Full history on the first successful pass (a handle may still be
       // calculating right after init - retry until all four copies land),
       // then only the live tail. A short/failed copy never poisons a buffer:

@@ -12,6 +12,25 @@ WINE="/Applications/MetaTrader 5.app/Contents/SharedSupport/wine/bin/wine64"
 SRC="${1:?usage: compile_mql5.sh <file.mq5>}"
 [ -f "$SRC" ] || { echo "✗ not found: $SRC"; exit 1; }
 SRC_ABS="$(cd "$(dirname "$SRC")" && pwd)/$(basename "$SRC")"
+
+# MQL5 Market validator rejects non-Latin chars in displayed strings/labels
+# (error NON_LATIN: "All program messages must be in English"). Comments after
+# an `input` become the on-screen parameter label, so they count too. Catch any
+# non-ASCII byte locally before it reaches the Market. We scan the .mq5 plus the
+# .mqh it pulls in (resolved relative to its dir) so an include can't smuggle a
+# stray em-dash past us. Pure ASCII source can never trip NON_LATIN.
+SCAN_FILES="$SRC_ABS"
+while IFS= read -r inc; do
+  cand="$(cd "$(dirname "$SRC_ABS")" && cd "$(dirname "$inc")" 2>/dev/null && pwd)/$(basename "$inc")"
+  [ -f "$cand" ] && SCAN_FILES="$SCAN_FILES"$'\n'"$cand"
+done < <(grep -hoE '#include[[:space:]]+"[^"]+"' "$SRC_ABS" 2>/dev/null | sed -E 's/.*"([^"]+)".*/\1/')
+NONASCII="$(printf '%s\n' "$SCAN_FILES" | sort -u | tr '\n' '\0' | xargs -0 grep -nP '[^\x00-\x7F]' 2>/dev/null || true)"
+if [ -n "$NONASCII" ]; then
+  echo "✗ NON-ASCII characters found (MQL5 Market NON_LATIN risk). Fix these:"
+  echo "$NONASCII"
+  echo "  -> replace em/en dashes (— –) with '-', smart quotes with ' \", etc."
+  exit 1
+fi
 LOG="${SRC_ABS%.mq5}.compile.log"
 EX5="${SRC_ABS%.mq5}.ex5"
 rm -f "$EX5"

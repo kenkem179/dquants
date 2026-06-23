@@ -1,0 +1,35 @@
+; KK-MasterVP-Profiler preset - XAUUSD M5 configuration.
+; Load it onto the indicator (Inputs tab -> Load) so the visual matches the
+; intended Volume-Profile window without typing the values by hand. Attach to an
+; M5 XAUUSD chart. Master VP window = InpVpLookback x InpMasterMult bars.
+; Values here drive the display only; nothing about it is financial advice.
+
+InpSetShow=true
+InpSetLookback=1800
+InpSetKeep=12
+InpSetTp1R=0.8
+InpSetTp2R=1.8
+InpSetRiskPct=1.0
+InpSetShowRejects=false
+InpSetBeRatchet=false
+InpSetEmaFilter=false
+InpShowExecRow=true
+InpShowMasterLines=true
+InpShowLocalLines=true
+InpShowHistogram=true
+InpHistFront=true
+InpShowPredictedPoc=true
+InpShowPanel=true
+InpShowVerdict=true
+InpVpLookback=108
+InpMasterMult=4.0
+InpUseRealTicks=false
+InpHistTickDelta=true
+InpHistRecency=true
+InpHistNetScale=true
+InpShowEmas=true
+InpEma1Len=24
+InpEma2Len=72
+InpEma4Len=194
+InpShowEmaZone=true
+InpApplyTheme=true
