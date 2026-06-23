@@ -1,5 +1,12 @@
 # KK-KenKem — Changelog
 
+## 1.01 — 2026-06-23
+
+- Built `2026-06-23T07:23:14Z` · commit `7bcbe35` on `reliableBaseline`
+- EA: `KK-KenKem-1.01.ex5` (locked build of `KK-KenKem.mq5`)
+- MQL5 Market hardening: clamp lot to SYMBOL_VOLUME_LIMIT in NormalizeLotSize (margin + stop-distance guards already present)
+- Variants: `xauusd-m1` `xauusd-m1-prop`
+
 ## 1.0 — 2026-06-21
 
 - Built `2026-06-21T22:59:43Z` · commit `8303652` on `reliableBaseline`

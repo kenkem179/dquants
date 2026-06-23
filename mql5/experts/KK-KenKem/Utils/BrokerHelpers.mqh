@@ -142,22 +142,25 @@ void NormalizePriceToTickSize(double &price) {
 
 // Normalize lot size to broker requirements
 double NormalizeLotSize(double lotSize) {
-    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+    double minLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+    double maxLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
     double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
-    
-    // Ensure lot size is within broker limits
-    if(lotSize < minLot) lotSize = minLot;
-    if(lotSize > maxLot) lotSize = maxLot;
-    
-    // Round to nearest lot step
-    if(lotStep > 0) {
-        lotSize = MathRound(lotSize / lotStep) * lotStep;
-    }
-    
+    double volLimit= SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_LIMIT); // max TOTAL vol per symbol/dir (0=none)
+
+    // Ceiling = broker per-order max AND the per-symbol/direction limit (prevents the
+    // "Volume limit reached" reject when a large deposit sizes a big lot). Floor the
+    // ceiling to a valid step so a later round can never push the lot back over it.
+    double ceil = maxLot;
+    if(volLimit > 0 && volLimit < ceil) ceil = volLimit;
+    if(lotStep > 0) ceil = MathFloor(ceil / lotStep) * lotStep;
+
+    if(lotSize > ceil) lotSize = ceil;
+    if(lotStep > 0) lotSize = MathRound(lotSize / lotStep) * lotStep;  // existing rounding preserved
+    if(lotSize > ceil) lotSize = ceil;                                 // re-cap if rounding stepped over
+
     // Final validation
     if(lotSize < minLot) lotSize = minLot;
-    
+
     return lotSize;
 }
 

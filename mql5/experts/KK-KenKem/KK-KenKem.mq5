@@ -1,6 +1,6 @@
 #property copyright "Copyright 2026, KenKem / dquants"
 #property link ""
-#property version "1.0"
+#property version "1.01"
 #property strict
 #define VERSION "KK-KenKem 1.0-dev"
 #property description "KK-KenKem — dquants-native faithful clone of KenKemExpert v1.8.154 (E1/E2/E5; E4 off via .set). Parity baseline for C++-driven optimization; cosmetic pruning deferred until post-P4 parity confirm. See docs/BUILD-PLAN-KENKEM-REWRITE.md."
