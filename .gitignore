@@ -68,3 +68,8 @@ research/mastervp_parity/_nb_out/
 .clang-format
 compile_commands.json
 .mql-auto-forwards/
+
+# Per-account deployment lists (hold live MT5 account numbers — keep local)
+scripts/deployment_accounts.txt
+scripts/deployment_accounts.*.txt
+!scripts/deployment_accounts.txt.example

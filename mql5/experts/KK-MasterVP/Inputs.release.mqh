@@ -197,4 +197,8 @@ bool   InpForceCloseSessNews = false;
 // ----- Parity (dev only) -----
 bool   InpExportParity    = false;
 
+// ----- Account lock (hidden internals; baked per-account by the release script) -----
+string ALLOWED_ACCOUNT_ID     = "";  // Internal: empty=any account
+string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server
+
 #endif // KKMVP_INPUTS_MQH

@@ -189,4 +189,11 @@ input ulong  InpMVPMagic        = 5252510;
 input group "===== Parity (trade-level CSV vs C++ engine; OFF in live) ====="
 input bool   InpExportParity    = false;    // ON in the MT5 tester to emit trades_<sym>_<tf>.csv for parity_diff.py
 
+// ----- Account lock (hidden internals; NOT inputs) -----
+// Empty by default = runs on any account. The per-account release script bakes
+// one (id, server) pair in to lock a build to a single MT5 account. A login
+// number is only unique within a server, so both are pinned together.
+string ALLOWED_ACCOUNT_ID     = "";  // Internal: empty=any account
+string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server
+
 #endif // KKMVP_INPUTS_MQH

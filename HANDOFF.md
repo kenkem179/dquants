@@ -1,5 +1,30 @@
 # HANDOFF — read me first, update me last
 
+## 🔐 PER-ACCOUNT LOCKED BUILDS — shared guard + release script (2026-06-23, THIS SESSION)
+**User ask:** a release script that takes a local file of MT5 account IDs (1/line) and builds 1 EA per
+account; account-lock is a hidden EA param (empty default); ALL EAs share ONE valid-account-check module;
+on mismatch show `Alert("Invalid Account ID")` and stop all EA logic (no detect/execute). **DONE, tested.**
+- **Each line = `<AccountID>  <ServerName>`** (user's call, agreed — a login is only unique *within* a
+  server). Whitespace- or comma-separated; server optional (omit → lock login on any server); `#` comments.
+- **Shared module `mql5/experts/KK-Common/AccountLock.mqh`** — `KK_AccountAuthorized(id, server="")`:
+  empty id → true (unlocked); else compares baked pair vs live `ACCOUNT_LOGIN`+`ACCOUNT_SERVER`; on
+  mismatch `Alert("Invalid Account ID")` + returns false. Both EAs then `return INIT_FAILED` in OnInit →
+  MT5 never ticks the EA (no detection/execution).
+- **Wired into BOTH EAs:** KK-KenKem (refactored its old inline Print/INIT_FAILED check to the shared
+  module; added `ALLOWED_ACCOUNT_SERVER` in `Config/InputParams.mqh`) + KK-MasterVP (added both hidden
+  globals to `Inputs.mqh` + `Inputs.release.mqh`, include in `Engine.mqh`, guard at top of OnInit).
+  Both globals are plain (NOT `input`) → hidden. Both compile **0/0**.
+- **Release script `scripts/make_account_releases.sh <STRATEGY> [--accounts FILE] [--out DIR]`** — bakes
+  each (id,server) into the hidden globals, compiles, emits `releases/<VER>/accounts/<STRATEGY>-<VER>_<id>.ex5`
+  + `ACCOUNTS.md` manifest. Auto-detects the lock-source file per EA. **Dev source + dev .ex5 restored
+  byte-identical after the run** (trap-guarded — verified). Uses `sed -E` (BSD sed can't do `\+` in BRE).
+- **Accounts file (gitignored — holds live numbers):** default `scripts/deployment_accounts.txt`, or
+  per-strategy `scripts/deployment_accounts.<STRATEGY>.txt` (auto-detected). Template committed:
+  `scripts/deployment_accounts.txt.example`. Run e.g. `scripts/make_account_releases.sh KK-KenKem`.
+- **Tested:** MasterVP built 3 locked EAs, KenKem built 1 — both restored clean, manifests correct.
+- **▶ NEXT (user):** drop real account IDs+servers in `scripts/deployment_accounts.txt` and run the script
+  per EA. Optional: commit decision pending (source changes staged-ready).
+
 ## 🔒 KK-MasterVP PROFIT-LOCK LADDER — BUILT + ported to EA (default-OFF) + MT5 A/B shipped (2026-06-23)
 **User ask:** the M3-BTC version trailed SL to bank profit on a reversal; the new M5 lock rides a big
 floating profit back to BE. Add smarter SL trailing / partial TP to secure profit. **DONE — awaiting user MT5 A/B.**

@@ -20,6 +20,7 @@
 #include <Trade/PositionInfo.mqh>
 #include "../KK-Common/Indicators.mqh"
 #include "../KK-Common/Sizing.mqh"
+#include "../KK-Common/AccountLock.mqh"
 #include "../VP-Common/Types.mqh"
 #include "../VP-Common/VolumeProfile.mqh"
 #include "../VP-Common/Regime.mqh"
@@ -78,6 +79,12 @@ bool VPWindow(int startShift,int count,VPResult &out)
 
 int OnInit()
 {
+   // Account lock: hidden ALLOWED_ACCOUNT_ID/SERVER (empty=any) are baked
+   // per-account by the release script. On mismatch the shared guard Alerts
+   // and we abort init so MT5 never ticks the EA (no detection, no execution).
+   if(!KK_AccountAuthorized(ALLOWED_ACCOUNT_ID, ALLOWED_ACCOUNT_SERVER))
+      return INIT_FAILED;
+
    hAtr =iATR(_Symbol,PERIOD_CURRENT,InpAtrLen);
    hRsi =iRSI(_Symbol,PERIOD_CURRENT,InpRsiLen,PRICE_CLOSE);
    hAdx =iADX(_Symbol,PERIOD_CURRENT,InpAdxLen);

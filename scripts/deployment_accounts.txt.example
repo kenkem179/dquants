@@ -1,0 +1,24 @@
+# dquants per-account deployment list  (template — copy to deployment_accounts.txt)
+# ---------------------------------------------------------------------------
+# One MT5 account per line, used by scripts/make_account_releases.sh to build
+# one account-locked EA per line.
+#
+# Format:   <AccountID>  <ServerName>
+#   - AccountID  : the MT5 login number (digits only)
+#   - ServerName : the MT5 trade-server name exactly as shown in MT5
+#                  (Tools > Options > Server, or the login dialog). Optional —
+#                  leave it off to lock the login on ANY server. A login number
+#                  is only unique within a server, so include it when you can.
+#   - separator  : whitespace OR a comma. ServerName may contain spaces.
+#   - blank lines and lines starting with '#' are ignored.
+#
+# The real file (deployment_accounts.txt) is gitignored — it holds live account
+# numbers. You can also keep per-strategy lists that are auto-detected:
+#   scripts/deployment_accounts.KK-KenKem.txt
+#   scripts/deployment_accounts.KK-MasterVP.txt
+#
+# Examples:
+12345678   FundedNext-Server
+87654321   Exness-MT5Real8
+22223333,  ICMarketsSC-MT5
+11112222              # no server -> locks this login on any server

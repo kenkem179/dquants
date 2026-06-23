@@ -8,6 +8,9 @@
 // Include necessary libraries
 #include <Trade\Trade.mqh>
 
+// Shared account-lock guard (common to all KK EAs)
+#include "../KK-Common/AccountLock.mqh"
+
 // Include modular configuration files
 #include "Config/InputParams.mqh"
 #include "Core/GlobalState.mqh"
@@ -65,16 +68,11 @@ int g_atrM3Handle = INVALID_HANDLE;  // M3 ATR (E4 cloud + E5 multi-TF sideway)
 int g_atrM5Handle = INVALID_HANDLE;  // E5: M5 ATR for multi-TF sideway scoring
 
 int OnInit() {
-    // Account lock: if ALLOWED_ACCOUNT_ID is set, verify current account matches
-    if (StringLen(ALLOWED_ACCOUNT_ID) > 0) {
-        long currentAccount = AccountInfoInteger(ACCOUNT_LOGIN);
-        if (IntegerToString(currentAccount) != ALLOWED_ACCOUNT_ID) {
-            Print("[ACCOUNT LOCK] EA is not authorized for account ", currentAccount,
-                  ". Expected: ", ALLOWED_ACCOUNT_ID);
-            return INIT_FAILED;
-        }
-        Print("[ACCOUNT LOCK] Authorized for account ", currentAccount);
-    }
+    // Account lock: hidden ALLOWED_ACCOUNT_ID (empty=any) is baked per-account
+    // by the release script. On mismatch the shared guard Alerts and we abort
+    // init so MT5 never ticks the EA (no detection, no execution).
+    if (!KK_AccountAuthorized(ALLOWED_ACCOUNT_ID, ALLOWED_ACCOUNT_SERVER))
+        return INIT_FAILED;
 
     // Auto-detect account leverage from broker (overrides fallback value in InputParams.mqh)
     int detectedLeverage = (int)AccountInfoInteger(ACCOUNT_LEVERAGE);

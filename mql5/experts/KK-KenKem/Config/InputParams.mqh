@@ -581,7 +581,8 @@ enum NOTIFICATION_MODE {
 };
 input NOTIFICATION_MODE NotificationMode = NOTIFY_DISABLED;
 input bool MADE_FOR_PROP_TRADING = false;     // Simplified alerts, hard block near maximum balance drawdown
-string ALLOWED_ACCOUNT_ID = "";  // Internal: empty=any account, set by release script to lock EA to specific account
+string ALLOWED_ACCOUNT_ID = "";      // Internal: empty=any account, baked per-account by the release script to lock the EA to one login
+string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server, baked alongside ALLOWED_ACCOUNT_ID (login is only unique within a server)
 input bool ENABLE_HEALTH_CHECK_MESSAGES = false;      // Send periodic health check via Discord/Telegram
 input int HEALTH_CHECK_INTERVAL_MINUTES = 180;        // Health check frequency (minutes)
 input bool ENABLE_NEWS_COUNTDOWN_IN_TELEGRAM = true; // Alert 60min before high-impact news
