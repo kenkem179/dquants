@@ -1,5 +1,29 @@
 # HANDOFF — read me first, update me last
 
+## 🔒 KK-MasterVP PROFIT-LOCK LADDER — BUILT + ported to EA (default-OFF) + MT5 A/B shipped (2026-06-23)
+**User ask:** the M3-BTC version trailed SL to bank profit on a reversal; the new M5 lock rides a big
+floating profit back to BE. Add smarter SL trailing / partial TP to secure profit. **DONE — awaiting user MT5 A/B.**
+- **Root cause = the 0.8R→chandelier DEAD ZONE.** SL is at break-even from 0.8R (`InpTp1R`) until the
+  2.5×ATR chandelier engages (~2.5R). Any winner peaking in between round-trips to BE. Engine-WF round-trip
+  rate (winners ≥1R ending ≤0.15R): **XAU-M5 45.3% · BTC-M5 62.8%** · XAU-M3 4.7% (clean) · BTC-M3 n/a.
+- **⚠️ ENGINE CAN'T JUDGE THIS** (over-credits the trailed runner; HANDOFF 2026-06-23 MT5 said trail-2.5≫3.5).
+  So the sweep's job was only (1) confirm PM-OFF==base, (2) give the *mechanical* round-trip rate to pick the
+  least-aggressive config that fills the dead zone. **MT5 is the judge.**
+- **PORTED `kk::common::ProfitManager` → EA** `mql5/experts/KK-MasterVP/ProfitManager.mqh` (1:1 w/ `pm_evaluate`),
+  wired into `Engine.mqh` after the chandelier (merged tighten-only SL / extend-only TP / one-shot partial).
+  New `InpPm*` inputs (Inputs.mqh) — **same key names the engine already parses, so ONE `.set` drives both.**
+  All toggles default OFF → `MvpPmAny()` false → base byte-identical. Captured g_riskOpen (original R) at fill.
+  **Compiles 0/0.** Engine confirms the bundled `.set` block parses (XAU-M5 F4 round-trip 48.6%→25.9%).
+- **MT5 A/B candidates (deployed via sync_presets → `dquants/KK-MasterVP/`):** two levers per market —
+  **Ladder** (progressive-trail 1.0/0.3/0.20, smooth ratchet) + **Floor** (giveback arm 1.5R, keep 50/67%).
+  `KK-MasterVP-{XAUUSD,BTCUSD}-M5-{Ladder,Floor}.set`. Engine WF (net cost OVER-stated): XAU-M5 Ladder RT
+  45→21% net −4.5% DD flat; Floor RT 45→29% net −4.6% DD 7.8→**7.0%**. BTC-M5 Ladder RT 63→25% DD flat.
+- **XAU-M3 = no candidate** (winners already run clean, 4.7% RT — protection only costs net). **BTC-M3 = DO
+  NOT DEPLOY** (breakout dead: PF 0.78 / −$24k / 244% DD; the lucky M3-BTC screenshot is survivorship).
+- **▶ NEXT (user, MT5):** run base vs Ladder vs Floor on XAU M5 + BTC M5, 2025.06.01–2026.05.29 every-tick,
+  deposit 10k. Adopt a candidate if it banks ≥ base or cuts DD with ≤ small net give-up AND the curve stops
+  round-tripping winners to BE. Study + exact runs: `research/mastervp_parity/PROFIT_LOCK_STUDY_2026-06-23.md`.
+
 ## 🏪 KK-KenKem MQL5-MARKET EDITION + GUIDES SHIPPED (2026-06-23)
 User: revise the KK-KenKem release to expose only safe knobs (like KK-MasterVP / the original
 kenkem marketplace build), hide all secrets; then write internal + marketplace guides. **DONE.**

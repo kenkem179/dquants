@@ -1,0 +1,15 @@
+# PROFIT-LOCK BTC-M3 [giveback]: 10 combos x 6 folds
+# base=m3_base_btc.set  (round-trip = mfeR>=1.0 ending <= 0.15R)
+  [ 0] n=2902 PF=0.781 net=  -24,491 dd=244.6% win=52.1 | roundtrip 136/1073=12.7%  BASELINE (PM off)
+  [ 1] n=3001 PF=0.853 net=  -18,622 dd=178.9% win=52.8 | roundtrip 3/1143=0.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.25"}
+  [ 2] n=2996 PF=0.837 net=  -20,164 dd=190.3% win=52.8 | roundtrip 3/1147=0.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.33"}
+  [ 3] n=2979 PF=0.809 net=  -23,170 dd=224.6% win=51.9 | roundtrip 3/1105=0.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.50"}
+  [ 4] n=2976 PF=0.841 net=  -19,716 dd=189.9% win=53.1 | roundtrip 61/1128=5.4%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.25"}
+  [ 5] n=2968 PF=0.843 net=  -19,488 dd=187.7% win=53.0 | roundtrip 62/1122=5.5%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.33"}
+  [ 6] n=2954 PF=0.811 net=  -22,365 dd=218.9% win=52.5 | roundtrip 81/1107=7.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.50"}
+  [ 7] n=2960 PF=0.847 net=  -18,492 dd=181.1% win=53.6 | roundtrip 86/1128=7.6%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.25"}
+  [ 8] n=2952 PF=0.856 net=  -17,540 dd=170.2% win=53.8 | roundtrip 77/1126=6.8%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.33"}
+  [ 9] n=2934 PF=0.830 net=  -19,980 dd=203.2% win=52.9 | roundtrip 102/1100=9.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.50"}
+
+# base round-trip rate = 12.7% (136/1073); base net=-24,491 dd=244.6%
+# pick: lowest roundtrip% with smallest net give-up vs base, dd not worse — that's the MT5 candidate

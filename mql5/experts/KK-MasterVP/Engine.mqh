@@ -30,6 +30,7 @@
 #include "Decision.mqh"
 #include "NetVolume.mqh"
 #include "SessionNews.mqh"
+#include "ProfitManager.mqh"
 #include "Parity.mqh"
 
 CTrade        mvpTrade;
@@ -42,6 +43,10 @@ int  g_masterLen=480;
 // per-position management state
 bool   g_tp1Done=false; double g_best=0.0;
 bool   g_effTrail=true;   // effective trail flag for the OPEN position (resolved at fill; mirrors cpp eff_trail_)
+// ProfitManager (profit-lock ladder) per-position state (mirrors cpp PositionManager risk_/pm_*).
+double g_riskOpen=0.0;    // ORIGINAL risk |entry-initialSL| captured at fill (R unit for InpPm* toggles)
+bool   g_pmPartialDone=false;   // PM one-shot partial already executed
+int    g_pmTpExt=0;             // PM TP extensions taken so far
 
 // Per-entry-type trail override (mirrors cpp PositionManager open). reason encodes the family:
 // XREV > IMP > REV(is_rev) > BRK. -1 => inherit InpTrailRunner (default => base byte-identical).
@@ -320,6 +325,7 @@ void OnNewBar()
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
    if(ok){
       g_tp1Done=false; g_best=entry; g_effTrail=effTrail; SN_OnFill();
+      g_riskOpen=risk; g_pmPartialDone=false; g_pmTpExt=0;   // capture original R for the profit-lock ladder
       if(InpExportParity && PositionSelect(_Symbol)){
          double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
          ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
@@ -365,6 +371,31 @@ void MvpManage()
          double cur=mvpPos.StopLoss();
          bool okSide=(isLong&&trail>cur)||(!isLong&&trail<cur), okDist=(isLong?(price-trail>=minDist):(trail-price>=minDist));
          if(okSide&&okDist) mvpTrade.PositionModify(tk,trail,mvpPos.TakeProfit());
+      }
+      // ProfitManager profit-lock ladder (mirrors cpp on_tick step 4: pm_evaluate merged tighten-only SL /
+      // extend-only TP / one-shot partial). Runs every tick, independent of TP1/BE/trail, against the
+      // ORIGINAL risk g_riskOpen. All toggles OFF => MvpPmAny() false => skipped => base byte-identical.
+      if(MvpPmAny() && g_riskOpen>0.0){
+         double pmAtr=AtrAt(1);
+         double curSL=mvpPos.StopLoss(), curTP=mvpPos.TakeProfit();
+         MvpPmActions act=MvpPmEvaluate(isLong,entry,curSL,curTP,price,g_best,g_riskOpen,pmAtr,
+                                        g_pmTpExt,g_pmPartialDone,(g_tp1Done&&InpBeAfterTp1),0.0,false);
+         double newSL=curSL, newTP=curTP; bool changed=false;
+         // SL: tighten-only AND must clear the broker stop distance, else leave it for a later tick.
+         if((isLong?(act.sl>curSL):(act.sl<curSL))
+            && (isLong?(price-act.sl>=minDist):(act.sl-price>=minDist))){
+            newSL=NormalizeDouble(act.sl,_Digits); changed=true;
+         }
+         // TP: extend-only (further from price).
+         if(isLong?(act.tp>curTP):(act.tp<curTP)){ newTP=NormalizeDouble(act.tp,_Digits); g_pmTpExt++; changed=true; }
+         if(changed) mvpTrade.PositionModify(tk,newSL,newTP);
+         // one-shot partial close
+         if(act.partial_frac>0.0 && !g_pmPartialDone){
+            double step=SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP), mn=SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN);
+            double q=vol*act.partial_frac; if(step>0) q=MathFloor(q/step)*step;
+            if(q>=mn && q<vol) mvpTrade.PositionClosePartial(tk,q);
+            g_pmPartialDone=true;
+         }
       }
    }
 }

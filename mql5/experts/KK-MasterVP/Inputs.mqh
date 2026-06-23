@@ -105,6 +105,38 @@ input int    InpTrailRev        = -1;       // base reversion
 input int    InpTrailImp        = -1;       // impulse-thrust path (active only when InpEnableImpulse)
 input int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
+input group "===== Profit-lock ladder (ProfitManager; default OFF = base byte-identical) ====="
+// 1:1 mirror of cpp_core kk::common::pm_evaluate. Every toggle OFF => MvpProfitManager() returns the stop
+// unchanged => the EA is byte-identical to its pre-ProfitManager behaviour. R is measured against the
+// ORIGINAL risk captured at fill (g_riskOpen), NOT the moving stop. Composes tighten-only with BE+chandelier.
+// (1) be_protect: at >= trigger_r CURRENT gain, move SL to entry + buffer_r*risk.
+input bool   InpPmBeProtect       = false;
+input double InpPmBeTriggerR      = 1.0;
+input double InpPmBeBufferR       = 0.0;
+// (2) prog_trail: SL->entry at trigger_r, then advance step_r per increment_r of EXTRA gain (smooth ratchet
+//     that fills the 0.8R..chandelier dead zone — the "trail SL nicely to bank profit" behaviour).
+input bool   InpPmProgTrail       = false;
+input double InpPmProgTriggerR    = 1.0;
+input double InpPmProgIncrementR  = 0.5;
+input double InpPmProgStepR       = 0.10;
+// (3) giveback: once PEAK gain (MFE) >= arm_r, keep >= (1-cap_frac) of peak locked as SL. Hard profit floor.
+input bool   InpPmGiveback        = false;
+input double InpPmGivebackArmR    = 2.0;
+input double InpPmGivebackCapFrac = 0.30;
+// (4) tp_extension: push final TP further while price nears it (needs trend signal; inert here = engine).
+input bool   InpPmTpExtension     = false;
+input double InpPmTpExtProgress   = 0.90;
+input double InpPmTpExtAtrMult    = 1.0;
+input int    InpPmTpExtMax        = 5;
+// (5) pre_be_structure: tighten to a prior swing before BE (needs structure level; inert here = engine).
+input bool   InpPmPreBeStructure  = false;
+input double InpPmPreBeTriggerR   = 0.5;
+input double InpPmPreBeBuffer     = 0.0;
+// (6) partial_tp: one-shot fractional close once CURRENT gain >= trigger_r.
+input bool   InpPmPartialTp       = false;
+input double InpPmPartialTriggerR = 1.0;
+input double InpPmPartialFrac     = 0.5;
+
 input group "===== Risk sizing ====="
 input int    InpRiskUnit        = 0;        // 0=%acct,1=USD,2=min,3=max
 input double InpRiskAccPct      = 1.0;      // % balance risked/trade - swept (S6b lowest-DD plateau)

@@ -1,0 +1,14 @@
+# PROFIT-LOCK BTC-M5 [prog]: 9 combos x 6 folds
+# base=kkmastervp_btc_m5_LOCKED.set  (round-trip = mfeR>=1.0 ending <= 0.15R)
+  [ 0] n= 772 PF=1.108 net=    3,671 dd=22.1% win=57.5 | roundtrip 218/347=62.8%  BASELINE (PM off)
+  [ 1] n= 853 PF=1.030 net=    1,115 dd=27.6% win=56.4 | roundtrip 112/368=30.4%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "0.8", "InpPmProgIncrementR": "0.3", "InpPmProgStepR": "0.10"}
+  [ 2] n=1000 PF=1.047 net=    2,185 dd=24.8% win=55.1 | roundtrip 40/426=9.4%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "0.8", "InpPmProgIncrementR": "0.3", "InpPmProgStepR": "0.20"}
+  [ 3] n= 801 PF=1.107 net=    3,758 dd=21.0% win=57.2 | roundtrip 151/351=43.0%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "0.8", "InpPmProgIncrementR": "0.5", "InpPmProgStepR": "0.10"}
+  [ 4] n= 856 PF=1.024 net=      898 dd=28.9% win=56.7 | roundtrip 93/373=24.9%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "0.8", "InpPmProgIncrementR": "0.5", "InpPmProgStepR": "0.20"}
+  [ 5] n= 828 PF=1.052 net=    1,874 dd=24.9% win=56.8 | roundtrip 137/361=38.0%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "1.0", "InpPmProgIncrementR": "0.3", "InpPmProgStepR": "0.10"}
+  [ 6] n= 928 PF=1.078 net=    3,343 dd=22.9% win=55.7 | roundtrip 98/398=24.6%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "1.0", "InpPmProgIncrementR": "0.3", "InpPmProgStepR": "0.20"}
+  [ 7] n= 795 PF=1.101 net=    3,493 dd=21.7% win=57.7 | roundtrip 163/352=46.3%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "1.0", "InpPmProgIncrementR": "0.5", "InpPmProgStepR": "0.10"}
+  [ 8] n= 830 PF=1.055 net=    2,003 dd=22.6% win=57.1 | roundtrip 125/363=34.4%  {"InpPmProgTrail": "true", "InpPmProgTriggerR": "1.0", "InpPmProgIncrementR": "0.5", "InpPmProgStepR": "0.20"}
+
+# base round-trip rate = 62.8% (218/347); base net=3,671 dd=22.1%
+# pick: lowest roundtrip% with smallest net give-up vs base, dd not worse — that's the MT5 candidate

@@ -1,0 +1,15 @@
+# PROFIT-LOCK XAU-M5 [giveback]: 10 combos x 6 folds
+# base=kkmastervp_xau_m5_LOCKED.set  (round-trip = mfeR>=1.0 ending <= 0.15R)
+  [ 0] n=1352 PF=1.344 net=   23,098 dd= 7.8% win=59.1 | roundtrip 272/600=45.3%  BASELINE (PM off)
+  [ 1] n=1604 PF=1.203 net=   15,300 dd=10.5% win=59.2 | roundtrip 1/726=0.1%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.25"}
+  [ 2] n=1589 PF=1.204 net=   15,119 dd=10.3% win=59.0 | roundtrip 1/715=0.1%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.33"}
+  [ 3] n=1533 PF=1.244 net=   18,075 dd= 8.3% win=58.6 | roundtrip 2/687=0.3%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.0", "InpPmGivebackCapFrac": "0.50"}
+  [ 4] n=1563 PF=1.187 net=   13,553 dd=11.9% win=58.9 | roundtrip 204/693=29.4%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.25"}
+  [ 5] n=1541 PF=1.190 net=   13,734 dd=11.4% win=58.5 | roundtrip 198/680=29.1%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.33"}
+  [ 6] n=1480 PF=1.301 net=   22,024 dd= 7.0% win=58.6 | roundtrip 190/658=28.9%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "1.5", "InpPmGivebackCapFrac": "0.50"}
+  [ 7] n=1514 PF=1.254 net=   18,589 dd= 9.4% win=58.5 | roundtrip 279/666=41.9%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.25"}
+  [ 8] n=1494 PF=1.261 net=   19,149 dd=10.1% win=58.4 | roundtrip 267/649=41.1%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.33"}
+  [ 9] n=1434 PF=1.309 net=   22,180 dd= 8.1% win=58.6 | roundtrip 271/638=42.5%  {"InpPmGiveback": "true", "InpPmGivebackArmR": "2.0", "InpPmGivebackCapFrac": "0.50"}
+
+# base round-trip rate = 45.3% (272/600); base net=23,098 dd=7.8%
+# pick: lowest roundtrip% with smallest net give-up vs base, dd not worse — that's the MT5 candidate
