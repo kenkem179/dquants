@@ -122,6 +122,24 @@ asked for the top actionable profitability levers. Ranked plan (Tier 1 = lowest-
   only on DSR-PASS; remember BTC/Exness feed runs optimistic → **MT5-confirm before trusting** any BTC
   lock (per [[mastervp-t3-reversion-lock]]). Ship `kkmastervp_btc_m3_LOCKED.set` + EA preset if it clears.
 
+- [x] **H8 — Volume-flow CONDITIONED exit (bank only when delta reverses) → TESTED → REJECTED (2026-06-23).**
+  **Hypothesis (user):** the unconditional profit-locks (Ladder/Floor/trail/partial) all lost in MT5
+  because they tax every winner; a *conditioned* exit that banks only when the Profiler's net delta
+  (`tickCount×(c−o)/(h−l)`) shows the move reversing is a different category and might flip the sign.
+  **This was the genuine GAP** — every other exit mechanism in the plan is price/R-mechanical and
+  unconditional; nothing used information to condition the bank. (The mechanism partly existed already:
+  engine `enable_net_flip_exit` + `enable_conviction_protect`, WF-rejected on net P&L — the biased metric.)
+  **Method (Step 0, unbiased):** new `backtester --flow-path-out` dumps per-bar {unreal_r, mfe_r, net_flow,
+  node_net} + true intrabar `exit_r`; `flow_separation_2026-06-23.py` measures, in pure R-geometry (no
+  net-P&L bias), whether a flip/divergence exit banks more R than it sacrifices, split round-trippers vs
+  runners. Validity: reproduces the 46.8% giveback baseline AND the MT5 Ladder −27% (geometry == live).
+  **Result: REJECT — structural, not tuning.** Both signal forms (against-flow + divergence), every
+  tuning: runner-cost > round-trip-rescue. Continuation pullbacks and reversals look the same in flow, so
+  any threshold catching round-trippers also cuts runners 2–3× harder. The round-trip (47% of ≥1R winners)
+  is opportunity cost, NOT capital risk (BE arm @0.8R already protects → they exit ~0R, not −1R). Full
+  write-up: `research/mastervp_parity/FLOW_EXIT_SEPARATION_STUDY_2026-06-23.md`. **Do not re-chase a
+  single-pass flow exit.** BTC M5 Ladder remains the one place protection helps (MT5 +51%, tail fictional).
+
 ---
 
 ## Phase A 🔒 — KenKem parity to ≥8/9 exact-bar + P&L (the gate to optimization)

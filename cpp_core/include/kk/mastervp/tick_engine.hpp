@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <fstream>
 #include <cmath>
 #include <algorithm>
 #include "kk/common/types.hpp"
@@ -136,6 +137,17 @@ public:
     void set_extra_spread(double s) { extra_spread_ = (s > 0.0) ? s : 0.0; }
     // Edge autopsy: collect the raw PRE-GATE signal stream (off by default = zero overhead).
     void set_collect_signals(bool on) { collect_signals_ = on; }
+    // Step-0 profit-protection measurement: per-closed-bar flow path while a position is open.
+    // One row per (open trade, closed bar): the unbiased PRICE/FLOW geometry (unreal R, peak R so
+    // far, net_flow, near-price node_net) used to test whether flow rollover separates winners that
+    // round-trip to BE from genuine runners. Keyed by entry_ts_ms to join the trades CSV. Off = no file.
+    void set_flow_path(const std::string& path) {
+        flow_path_os_.open(path);
+        if (flow_path_os_) {
+            flow_path_os_ << "entry_ts_ms,bar_ts_ms,dir,unreal_r,mfe_r,net_flow,node_net\n";
+            flow_path_on_ = true;
+        }
+    }
 
     const std::vector<TradeRecord>& trades() const { return trades_; }
     const std::vector<SignalRecord>& signals() const { return signals_; }
@@ -407,6 +419,17 @@ private:
         const int64_t off_ms = static_cast<int64_t>(p_.broker_gmt_offset) * 3600000LL;
         const UtcParts u = utc_parts(bars_[sig_bar].ts_ms + off_ms);   // SignalBarUtc = shift-1 bar time
 
+        // Step-0 flow-path dump (before any exit logic on this bar, so the bar an exit fires on is
+        // still captured). One row per open trade per closed bar; unbiased price/flow geometry only.
+        if (flow_path_on_ && pos_.open() && pos_.risk() > 0.0) {
+            const double dir    = pos_.is_long() ? 1.0 : -1.0;
+            const double exitpx = pos_.is_long() ? t.bid : t.ask;
+            const double rr     = (exitpx - pos_.entry()) * dir / pos_.risk();
+            flow_path_os_ << pos_.entry_ts_ms() << ',' << bars_[sig_bar].ts_ms << ','
+                          << (pos_.is_long() ? 'L' : 'S') << ',' << rr << ',' << pos_.mfe_r() << ','
+                          << net_flow_[sig_bar] << ',' << node_net_close_[sig_bar] << '\n';
+        }
+
         // Session/day context (counter resets on session change inside update()).
         const int sessionId = sess_.update(u.min_of_day);
         rm_.seed_day_if_new(u.day_key, equity_);
@@ -547,6 +570,11 @@ private:
 
     void finalize_trade_(int64_t ts_ms) {
         const TradeRecord& rec = pos_.record();
+        // Step-0: per-trade summary row (bar_ts_ms=-1) carrying the TRUE exit R (intrabar-accurate)
+        // + peak R, so the Python measurement classifies giveback correctly (last closed-bar R misses
+        // the intrabar BE/trail giveback). dir='X' marks the summary; net_flow/node_net columns reused.
+        if (flow_path_on_)
+            flow_path_os_ << rec.entry_ts_ms << ",-1,X," << rec.exit_r << ',' << rec.mfe_r << ",0,0\n";
         trades_.push_back(rec);
         rm_.register_trade_close(rec.realized_usd, ts_ms);   // bank P&L + loss-streak cooldown
     }
@@ -577,6 +605,8 @@ private:
     int64_t trade_to_ms_ = 0;
     double  extra_spread_ = 0.0;
     bool    collect_signals_ = false;
+    std::ofstream flow_path_os_;          // Step-0: per-bar flow path (off unless set_flow_path)
+    bool          flow_path_on_ = false;
     std::vector<TradeRecord> trades_;
     std::vector<SignalRecord> signals_;
 };

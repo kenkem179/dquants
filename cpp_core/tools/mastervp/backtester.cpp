@@ -24,6 +24,7 @@
 int main(int argc, char** argv) {
     std::string bars_path, bars_m1_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
     std::string signals_path;   // edge-autopsy: pre-gate raw signal stream (empty = off)
+    std::string flow_path;      // Step-0: per-bar flow path while a position is open (empty = off)
     int64_t trade_from_ms = 0;
     int64_t trade_to_ms = 0;   // walk-forward fold cap: open no new positions at/after this ms (0=off)
     double extra_spread = 0.0; // cost-parity stress: extra spread (price units) added to bid/ask gap
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
         else if (a == "--ticks") ticks_path = next();
         else if (a == "--out")   out_path   = next();
         else if (a == "--signals-out") signals_path = next();   // pre-gate signal CSV (edge autopsy)
+        else if (a == "--flow-path-out") flow_path = next();     // Step-0 per-bar flow path CSV
         else if (a == "--set")   set_path   = next();
         else if (a == "--set-all") { set_path = next(); set_all = true; }
         else if (a == "--trade-from-ms") trade_from_ms = std::stoll(next());
@@ -68,6 +70,7 @@ int main(int argc, char** argv) {
 
     kk::TickEngine eng(p);
     if (!signals_path.empty()) eng.set_collect_signals(true);
+    if (!flow_path.empty()) eng.set_flow_path(flow_path);
     if (trade_to_ms > 0) eng.set_trade_to_ms(trade_to_ms);
     if (extra_spread > 0.0) {
         eng.set_extra_spread(extra_spread);

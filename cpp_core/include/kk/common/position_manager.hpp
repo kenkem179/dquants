@@ -43,6 +43,7 @@ struct TradeRecord {
     double  risk_price = 0.0;  // |entry - initial sl|
     double  mfe_r = 0.0;       // max favorable excursion / risk
     double  mae_r = 0.0;       // max adverse excursion / risk
+    double  exit_r = 0.0;      // TRUE realized exit excursion / risk (captures intrabar giveback)
     double  realized_usd = 0.0;
     const char* reason = "";
     ExitTag exit_tag = ExitTag::NONE;
@@ -56,6 +57,11 @@ public:
     bool open() const { return open_; }
     bool is_long() const { return is_long_; }
     const TradeRecord& record() const { return rec_; }
+    // Open-position accessors (Step-0 flow-path instrumentation): the FILL entry, the effective
+    // risk |fill-SL| (same R the journal scores mfeR/maeR against), and the entry timestamp key.
+    double  entry() const { return entry_; }
+    double  risk()  const { return risk_; }
+    int64_t entry_ts_ms() const { return rec_.entry_ts_ms; }
 
     // Current max-favorable-excursion in R (peak gain / risk). Used by the engine's conviction-protect
     // gate to arm only after a winner has actually run. 0 while risk is degenerate.
@@ -262,6 +268,7 @@ private:
         rec_.realized_usd = realized_usd_;
         rec_.mfe_r = (risk_ > 0.0) ? mfe_ / risk_ : 0.0;
         rec_.mae_r = (risk_ > 0.0) ? mae_ / risk_ : 0.0;
+        rec_.exit_r = (risk_ > 0.0) ? ((exit_px - entry_) * (is_long_ ? 1.0 : -1.0)) / risk_ : 0.0;
         open_ = false;
         return true;
     }
