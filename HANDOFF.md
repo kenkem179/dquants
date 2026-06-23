@@ -15,8 +15,14 @@
 - **Prop-cap conflict is real:** `InpMaxDailyDDPct=4.4` is PER-INSTANCE → 3 EAs can lose 3×4.4%/day.
   Full-size stack: worstDay −15.2%, maxDD −28.3%, 15 breach-days (vs XAU-alone 8). Budget risk ACROSS
   the book: scale so COMBINED worst-day ≤ 4.4% (XAU ≈0.32–0.34× as-run risk on a shared account).
-- **▶ REC:** core = XAU M5 at full risk budget; optional = BTC_M5 only at ~0.5× XAU risk (drop BTC_M3);
-  real growth lever = a genuinely uncorrelated *new* edge, not a 2nd BTC timeframe.
+- **▶ FOLLOW-UP (user: drop BTC M3, combine MasterVP + KenKem):** added KenKem D5-E4Long (XAU M1) MT5
+  run. **KenKem is the uncorrelated leg BTC never was — XAU_MVP↔KenKem daily corr = 0.082** despite both
+  being XAUUSD (VP-breakout-M5 vs Ichimoku/EMA-M1 fire on different things). Risk-normalized 2-book
+  (BTC dropped): risk-parity blend **net $10,349 / maxDD 10.9%** beats XAU-alone $9,939 / 11.8% — a
+  genuine free lunch (≈+4% net, LOWER DD). REC = **run XAU M5 MasterVP + KenKem XAU M1, drop both BTC
+  legs** (BTC_M5 breakeven). Caveats: KenKem only 126tr (barely cleared gate) → don't over-concentrate
+  (risk allocators want 96% KenKem); both XAUUSD+long-trend → size for tail co-movement, not the 0.08.
+  Repro `research/portfolio/mastervp_kenkem_book_2026-06-23.py`; study appended to the 3book FINDINGS.
 - **Infra:** fixed the 2 RED tests from checkpoint `e8fcb11` (portfolio + cpcv) — BOTH were
   test-expectation bugs, code verified correct. `research/portfolio/ + research/stats/test_cpcv.py` = 18 green.
 

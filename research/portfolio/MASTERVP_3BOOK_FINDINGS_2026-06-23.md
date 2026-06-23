@@ -53,6 +53,46 @@ Risk-normalized to the SAME 4.4% prop daily cap (uniform downscale so combined w
   timeframe: either give BTC a real edge first (engine says none on M3, marginal on M5), or add a
   different symbol / non-MasterVP strategy as the third leg.
 
+## Follow-up: drop BTC M3, add KenKem (cross-strategy book)
+
+User: drop BTC M3, combine MasterVP with KenKem. Added **KenKem D5-E4Long** (XAU M1, Ichimoku/EMA
+entries — a genuinely different strategy) using its MT5 lock run (126 trades). Used the full 17-mo MT5
+XAU M5 MasterVP run for overlap. Repro: `mastervp_kenkem_book_2026-06-23.py`. Common window
+2025-03-05 → 2026-05-26.
+
+**KenKem is the uncorrelated leg BTC never was.** Despite both being XAUUSD:
+
+| pair | daily corr |
+|---|---|
+| XAU_M5_MVP ↔ **KENKEM_M1** | **0.082** (near-zero — different signal) |
+| XAU_M5_MVP ↔ BTC_M5 | 0.012 |
+| KENKEM_M1 ↔ BTC_M5 | 0.118 |
+
+Standalone (common window): XAU_M5_MVP PF 1.83 / Sharpe 2.37 (but as-run sizing is HOT, maxDD 70%);
+KenKem PF 1.48 / Sharpe 1.14 / maxDD only 5.5% (most risk-efficient stream); BTC_M5 PF 1.03 (dead).
+
+Risk-normalized to the 4.4% prop daily cap (2-book, BTC dropped):
+
+| book | net | maxDD | ann.Sharpe |
+|---|---|---|---|
+| XAU_MVP only | $9,939 | 11.8% | 2.37 |
+| KenKem only | $3,641 | 13.6% | 1.14 |
+| **risk-parity blend** | **$10,349** | **10.9%** | 2.38 |
+| 60/40 $ split | $10,055 | 11.8% | 2.39 |
+
+**Verdict:** combining XAU-MasterVP + KenKem is a **genuine (if modest) free lunch** — ≈+4% net at
+*lower* drawdown vs XAU-alone, because corr ≈ 0.08. This is real diversification, unlike the redundant
+BTC legs. **BTC_M5 stays dropped** (breakeven, adds nothing). Caveats: (1) risk-based allocators pile
+96% into KenKem (low-vol, high-Sharpe) — but KenKem is only 126 trades and *barely* cleared the
+overfitting gate (PSR 0.955, MinTRL 118<126), so don't over-concentrate there; a balanced edge-aware
+split (XAU primary $ engine + KenKem co-equal-risk diversifier) is sounder. (2) Both are XAUUSD and
+both long-trend-biased — daily corr 0.08 is benign-regime; a sharp gold shock can hit both, so size for
+tail co-movement, not the 0.08.
+
+**Recommendation:** Run **XAU M5 MasterVP + KenKem XAU M1** as the book; drop both BTC legs. Budget total
+risk so the COMBINED worst-day ≤ 4.4% (≈ scale XAU to ~0.12× its as-run hot risk; let KenKem run at ~1×
+its small native size, or up to ~1.5–2× given its tiny DD). Expect ≈ XAU-alone net with a smoother curve.
+
 ## Infra fixed this session
 Two RED tests from the parallel-session checkpoint (`e8fcb11`) resolved — both were
 test-expectation bugs, not code bugs:
