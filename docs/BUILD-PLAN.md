@@ -28,23 +28,23 @@ Prefer plateaus over peaks. OOS stays OOS. Keep the ATR-regime filter (profitabi
 
 ---
 
-## 🧭 USER ASSUMPTION TO VALIDATE (2026-06-22) — reversion must fade the LOCAL VP node, not master VP
+## ✅ USER ASSUMPTION — reversion fade LOCAL vs MASTER VP — TESTED 2026-06-23 (assumption RIGHT, but REJECT for lock)
 
-**User's assumption (record + test, do NOT assume true):** Mean-Reversion will only work well when it
-fades a **LOCAL VP node** edge. It should **NOT** use the **master VP** for this entry type.
+**User's assumption:** Mean-Reversion only works well fading a **LOCAL VP node** edge, NOT the master VP.
+**Verdict: directionally CORRECT but reversion still loses → keep OFF.** Full study:
+`research/mastervp_parity/REVERSION_LOCAL_VP_STUDY_2026-06-23.md`.
 
-- **Current reality (verified `cpp_core/include/kk/mastervp/strategy.hpp:32,69-74`):** reversion's
-  `nearVal`/`nearVah` triggers fade `sVal`/`sVah` = **`master_sig`** (the MASTER VP value-area edges).
-  `local_cur` is consumed ONLY for the reversion SL clamp (`:91,105`) and `rev_tp_mpoc` uses
-  `master_cur.poc`. So today reversion is master-VP-driven, contradicting the assumption.
-- **Why plausible:** master VP = 480–720 bars (24–60h) → coarse, slow-moving value edges suited to
-  *breakout* structure; a fresh **local** VP node is the tighter magnet a mean-reversion fade should key
-  off. This also explains why local VP has read "inert" — it was never wired to the reversion *trigger*.
-- **Plan (future task, OFF by default → parity-safe):** add a tri-state `InpRevVpSource`
-  (master / local / both) so reversion `nearVal/nearVah` can fade `local_cur.vah/val`; default = master
-  (byte-identical to lock). Then sweep reversion-on configs (XAU M5 lock has reversion ON; XAU M3 / BTC
-  candidates) local-vs-master on train+OOS. Only adopt if local beats master on BOTH net AND PF with a
-  plateau. Ties into the user's multi-TF VP enrichment idea. See memory [[reversion-local-vp-assumption]].
+- **BUILT (default-OFF, base byte-identical):** separable switches `rev_entry_local` / `rev_tp_local`
+  (`InpRevEntryLocal`/`InpRevTpLocal`) in `config.hpp` + `strategy.hpp` — local edge trigger + local-POC
+  magnet. `make test` 37/37 incl. golden parity; baseline WF row `rev=0` = the lock.
+- **XAU M3 6-fold WF (reversion's only home):** local-fade beats master-fade on EVERY axis (net
+  $6,998→$9,280, dd 31.6→**22.4%**, folds+ 4→5, least-negative revNet) → **assumption confirmed.** BUT the
+  reversion sub-book is negative-expectancy in all 5 forms (revNet −431 to −1,189), and baseline
+  (breakout-only) beats them all on net ($11,642) AND pooled PF (1.108). The prior "rev @ mPOC trims DD
+  17.5→13.5%" master-POC candidate was survivorship — under WF the master form is net-HARMFUL (dd 31.6%).
+- **Decision:** keep reversion OFF on all markets; switches ship as tested default-OFF infra; no gate run
+  (loses to baseline → cannot be a lock). **This closes the last open MasterVP research lever** — VP-length,
+  FVG-SL, TP1-partial, move-SL, conviction-protect, flow-exit, and now local-reversion all tested→rejected.
 
 ## 🔥 ACTIVE THRUST (2026-06-20) — profitability uplift for MasterVP + Monster
 

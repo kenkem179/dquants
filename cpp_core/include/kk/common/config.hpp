@@ -58,6 +58,11 @@ struct Params {
     double rr_rev             = 1.35;
     double sl_atr_rev         = 1.45;
     bool   rev_tp_mpoc        = false;   // reversion TP = master POC (full bank at the value magnet); OFF=rr_rev
+    // Reversion is a TACTICAL fade in a balance regime. By default it triggers on, and targets, the
+    // slow MASTER VP (480-bar). The user's standing hypothesis: a near-term fade should reference the
+    // LOCAL (recent) value, not the slow master magnet. Both default OFF => base byte-identical.
+    bool   rev_entry_local    = false;   // reversion touch trigger uses LOCAL VP edges instead of master
+    bool   rev_tp_local       = false;   // rev_tp_mpoc target = LOCAL POC instead of master POC
     // ---- exit ----
     double tp1_r              = 0.8;
     double tp1_close_pct      = 20.0;
@@ -209,7 +214,6 @@ struct Params {
     int    rsi_len            = 14;
     double rsi_midline        = 50.0;
     // ---- sessions / news ----
-    int    broker_gmt_offset  = 0;
     std::string asia_sess     = "00:00-06:00";
     std::string ldn_sess      = "07:00-11:00";
     std::string ny_sess       = "12:30-16:30";
@@ -321,6 +325,8 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpRrRev") p.rr_rev = D();
     else if (key == "InpSlAtrRev") p.sl_atr_rev = D();
     else if (key == "InpRevTpMpoc") p.rev_tp_mpoc = to_bool(val);
+    else if (key == "InpRevEntryLocal") p.rev_entry_local = to_bool(val);
+    else if (key == "InpRevTpLocal") p.rev_tp_local = to_bool(val);
     else if (key == "InpTp1R") p.tp1_r = D();
     else if (key == "InpTp1ClosePct") p.tp1_close_pct = D();
     else if (key == "InpBeAfterTp1") p.be_after_tp1 = to_bool(val);
@@ -435,7 +441,6 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpUseMomVeto") p.use_mom_veto = to_bool(val);
     else if (key == "InpRsiLen") p.rsi_len = I();
     else if (key == "InpRsiMidline") p.rsi_midline = D();
-    else if (key == "InpBrokerGMTOffset") p.broker_gmt_offset = I();
     else if (key == "InpAsiaSess") p.asia_sess = val;
     else if (key == "InpLdnSess") p.ldn_sess = val;
     else if (key == "InpNySess") p.ny_sess = val;

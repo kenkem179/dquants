@@ -65,9 +65,14 @@ inline Signal detect_signal(const Params& p,
     const bool shortBrk = p.enable_breakout && regime.trend && brkShort
                           && (regime.minus > regime.plus) && brkShortOk && brkFlowShortOk && brkVetoShortOk;
 
-    // reversion (fades the opposite edge; FORBIDS absorbed nodes)
-    const bool nearVal = haveSig && (std::fabs(s.l - sVal) <= touch);
-    const bool nearVah = haveSig && (std::fabs(s.h - sVah) <= touch);
+    // reversion (fades the opposite edge; FORBIDS absorbed nodes).
+    // Edge source: master VP by default; LOCAL VP when rev_entry_local (the user's near-term-fade idea).
+    // With the flag off, revVal/revVah/haveRev collapse to the master values => byte-identical.
+    const double revVal  = (p.rev_entry_local && local_cur.valid) ? local_cur.val : sVal;
+    const double revVah  = (p.rev_entry_local && local_cur.valid) ? local_cur.vah : sVah;
+    const bool   haveRev = p.rev_entry_local ? local_cur.valid : haveSig;
+    const bool nearVal = haveRev && (std::fabs(s.l - revVal) <= touch);
+    const bool nearVah = haveRev && (std::fabs(s.h - revVah) <= touch);
     const bool revLongOk  = !p.node_gate_enabled || (!ns_val.absorbed && ns_val.state >= 0);
     const bool revShortOk = !p.node_gate_enabled || (!ns_vah.absorbed && ns_vah.state <= 0);
     const bool longRev  = p.enable_reversion && regime.balance && nearVal && bullBody && revLongOk;
@@ -96,7 +101,10 @@ inline Signal detect_signal(const Params& p,
         out.tp2 = s.entry_close + risk * rr;
         // Full-bank-at-mPOC option (reversion only): target the value magnet (humble RR) instead
         // of the fixed rr_rev multiple. Run with trail_runner OFF + tp1_close_pct 0 to bank it whole.
-        if (isRev && p.rev_tp_mpoc && master_cur.poc > s.entry_close) out.tp2 = master_cur.poc;
+        {
+            const double revPoc = (p.rev_tp_local && local_cur.valid) ? local_cur.poc : master_cur.poc;
+            if (isRev && p.rev_tp_mpoc && revPoc > s.entry_close) out.tp2 = revPoc;
+        }
         out.reason = isRev ? "L-REV" : "L-BRK";
     } else {
         const bool isRev = shortRev;
@@ -108,7 +116,10 @@ inline Signal detect_signal(const Params& p,
         out.is_rev = isRev; out.sl = sl; out.risk = risk;
         out.tp1 = s.entry_close - risk * p.tp1_r;
         out.tp2 = s.entry_close - risk * rr;
-        if (isRev && p.rev_tp_mpoc && master_cur.poc > 0.0 && master_cur.poc < s.entry_close) out.tp2 = master_cur.poc;
+        {
+            const double revPoc = (p.rev_tp_local && local_cur.valid) ? local_cur.poc : master_cur.poc;
+            if (isRev && p.rev_tp_mpoc && revPoc > 0.0 && revPoc < s.entry_close) out.tp2 = revPoc;
+        }
         out.reason = isRev ? "S-REV" : "S-BRK";
     }
 
