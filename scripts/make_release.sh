@@ -142,6 +142,23 @@ if [ "$VERSION" != "$DEV_VER" ]; then
   info "bumped #property version in $STRATEGY.mq5: $DEV_VER -> $VERSION"
 fi
 
+# Marketplace-edition plumbing (used in the optional [market] step at the end).
+# If a release-only inputs file (Inputs.release.mqh) exists, the script also
+# emits a second, MQL5-Market-ready build where the technical strategy params
+# are hidden (fixed). That build is produced by transiently swapping this file
+# in for the compile; the DEV Inputs.mqh is backed up and restored via a trap,
+# so `make release` NEVER mutates the committed source. The NORMAL release below
+# (full EA + personal/prop sets) is unaffected and exposes every input.
+PUBLIC_INPUTS="$EA_DIR/Inputs.release.mqh"
+DEV_INPUTS="$EA_DIR/Inputs.mqh"
+INPUTS_BACKUP=""
+restore_inputs() {
+  if [ -n "$INPUTS_BACKUP" ] && [ -f "$INPUTS_BACKUP" ]; then
+    mv -f "$INPUTS_BACKUP" "$DEV_INPUTS"; INPUTS_BACKUP=""
+  fi
+}
+trap restore_inputs EXIT INT TERM
+
 # 2) Compile (or reuse) the DEV EA -------------------------------------------
 if [ "$DO_COMPILE" -eq 1 ]; then
   step "[2/6] Compiling dev EA..."
@@ -178,6 +195,39 @@ apply_overrides() {
       printf '%s=%s\n' "$key" "$val" >> "$f"
     fi
   done
+}
+
+# Allowlist of dialog-visible input keys (lines beginning `input <type> Inp...`)
+# taken from the market inputs file (Inputs.release.mqh). Used ONLY by the
+# marketplace edition below to strip hidden-internal keys from its .set files so
+# they are never leaked in the shipped preset text. The NORMAL .set files above
+# are NOT filtered. Empty (no filtering) if Inputs.release.mqh is absent.
+VISIBLE_KEYS=""
+if [ -f "$PUBLIC_INPUTS" ]; then
+  VISIBLE_KEYS="$(grep -oE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' "$PUBLIC_INPUTS" \
+                  | awk '{print $NF}' || true)"
+fi
+
+# filter_set_to_visible <set-file> : drop every line whose key is not a visible
+# input (and all comment/blank lines); prepend a clean header.
+filter_set_to_visible() {
+  local f="$1"
+  [ -n "$VISIBLE_KEYS" ] || return 0
+  local tmp="$f.flt" line key
+  {
+    echo "; $STRATEGY $VERSION preset. Strategy internals are fixed inside the EA;"
+    echo "; only the user-adjustable inputs below are present."
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in \;*|'') continue ;; esac
+      key="$(printf '%s' "${line%%=*}" | tr -d '[:space:]')"
+      # `if` (no else) returns 0 even when the key is hidden, so the while loop
+      # always ends 0 and the redirected group below never trips `set -e`.
+      if printf '%s\n' "$VISIBLE_KEYS" | grep -qx "$key"; then
+        printf '%s\n' "$line"
+      fi
+    done < "$f"
+  } > "$tmp"
+  mv -f "$tmp" "$f"
 }
 
 if [ -f "$CONF" ]; then
@@ -283,6 +333,79 @@ fi
 rm -f "$ENTRY"
 info "Changelog.md (${VERSION} entry on top)"
 
+# --- Marketplace edition (internals hidden) ---------------------------------
+# A SECOND build off the same source for the MQL5 Market: technical strategy
+# params are hidden (fixed) by swapping in Inputs.release.mqh for the compile,
+# and its .set files are filtered to the user-facing keys only. The dev source
+# is restored immediately after (trap-guarded). Variants come from
+# release.market.conf (falls back to release.conf). Skipped if there is no
+# Inputs.release.mqh or when --no-compile is given (needs a fresh hidden build).
+if [ -f "$PUBLIC_INPUTS" ] && [ "$DO_COMPILE" -eq 1 ]; then
+  step "[market] Building MQL5-Market edition (internals hidden)..."
+  MKT_DIR="$REL_DIR/market"
+  mkdir -p "$MKT_DIR"
+
+  # compile with the internals hidden, capture the .ex5, then restore dev source
+  INPUTS_BACKUP="$DEV_INPUTS.devbak"
+  cp -f "$DEV_INPUTS" "$INPUTS_BACKUP"
+  cp -f "$PUBLIC_INPUTS" "$DEV_INPUTS"
+  "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" || die "market compile failed — fix errors first"
+  MKT_EX5="$MKT_DIR/$STRATEGY-Market-$VERSION.ex5"
+  cp -f "$EX5_FILE" "$MKT_EX5"
+  info "$STRATEGY-Market-$VERSION.ex5  (internals hidden)"
+  restore_inputs                                   # dev Inputs.mqh back in place
+  "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" >/dev/null 2>&1 || true   # dev .ex5 back
+  info "dev source restored + dev .ex5 rebuilt (working tree unchanged)"
+
+  # filtered .set variants for the market edition
+  MKT_CONF="$EA_DIR/release.market.conf"; [ -f "$MKT_CONF" ] || MKT_CONF="$CONF"
+  declare -a MKT_SET_LINES=()
+  if [ -f "$MKT_CONF" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      line="${line%%#*}"
+      line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      [ -z "$line" ] && continue
+      read -r variant source rest <<<"$line"
+      [ -n "$variant" ] && [ -n "$source" ] || die "bad release.market.conf line: $line"
+      local_src="$EA_DIR/$source"
+      [ -f "$local_src" ] || die "market source set not found: $local_src"
+      out="$MKT_DIR/$STRATEGY-Market-$VERSION-$variant.set"
+      cp -f "$local_src" "$out"
+      if [ -n "${rest:-}" ]; then
+        # shellcheck disable=SC2086
+        apply_overrides "$out" $rest
+      fi
+      filter_set_to_visible "$out"
+      info "$STRATEGY-Market-$VERSION-$variant.set  ($source${rest:+  [$rest]})"
+      MKT_SET_LINES+=("$variant|$source|${rest:-—}")
+    done < "$MKT_CONF"
+  fi
+
+  # market RELEASE.md
+  {
+    echo "# $STRATEGY (MQL5-Market edition) — release $VERSION"
+    echo
+    echo "- Built: \`$BUILD_DATE\` (UTC)"
+    echo "- Source commit: \`$GIT_HASH\` on \`$GIT_BRANCH\`"
+    echo "- EA: \`$STRATEGY-Market-$VERSION.ex5\` — strategy internals are HIDDEN (fixed);"
+    echo "  only the user-facing inputs (risk, profit-taking, trading hours, news, basic"
+    echo "  execution safety) appear in the dialog."
+    echo "- Compiled by swapping \`Inputs.release.mqh\` in for the build; dev source untouched."
+    echo "- \`.set\` files are stripped to the user-facing keys only (no internal params leaked)."
+    echo
+    echo "## User-facing parameter sets"
+    echo
+    echo "| variant | .set file | base preset | overrides |"
+    echo "|---------|-----------|-------------|-----------|"
+    for row in "${MKT_SET_LINES[@]}"; do
+      IFS='|' read -r v src ov <<<"$row"
+      echo "| $v | \`$STRATEGY-Market-$VERSION-$v.set\` | \`$src\` | $ov |"
+    done
+  } > "$MKT_DIR/RELEASE.md"
+  info "market/RELEASE.md"
+fi
+
 echo
 echo -e "${GREEN}✓ Release $VERSION packaged${NC}  ->  ${BLUE}$REL_DIR${NC}"
+[ -d "${MKT_DIR:-/nonexistent}" ] && echo -e "${GREEN}✓ MQL5-Market edition${NC}  ->  ${BLUE}$MKT_DIR${NC} (internals hidden)"
 echo -e "${YELLOW}note:${NC} *.ex5 is gitignored (build artifact); the .set files + RELEASE.md + Changelog.md commit normally."

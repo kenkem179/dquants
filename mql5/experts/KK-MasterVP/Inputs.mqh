@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|  KK-MasterVP/Inputs.mqh - trading input schema (mirrors            |
 //|  cpp_core kk::Params 1:1). Compiled-in DEFAULTS == the locked,     |
-//|  OOS-validated XAUUSD-M3 preset (research/mastervp_parity sweeps), |
+//|  OOS- + MT5-validated XAUUSD M5 lock (PF 1.341 / OOS 1.393),       |
 //|  so the EA runs tuned out-of-the-box; load the shipped .set to     |
 //|  override. Key names match the C++ Inp* keys exactly for parity.   |
 //+------------------------------------------------------------------+
@@ -9,10 +9,10 @@
 #define KKMVP_INPUTS_MQH
 
 input group "===== VP core ====="
-input int    InpVpLookback     = 120;     // local VP window (bars) - swept (S8b); long-window OOS plateau
+input int    InpVpLookback     = 108;     // local VP window (bars) - swept (S8b); long-window OOS plateau
 input int    InpVpBins         = 30;
 input double InpVaPct          = 70.0;
-input double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 480 bars; OOS PF 1.114 (float; 0.5-step swept)
+input double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 432 bars (XAUUSD M5 lock)
 input int    InpAtrLen         = 14;
 input bool   InpAtrMt5Mode     = false;   // false = textbook Wilder ATR (Pine ta.atr = RMA)
 
@@ -36,14 +36,14 @@ input double InpEmaSepAtr       = 0.25;
 
 input group "===== Breakout (the active entry path) ====="
 input bool   InpEnableBreakout = true;
-input double InpBreakBufAtr      = 0.7;     // swept (S1)
+input double InpBreakBufAtr      = 0.85;     // swept (S1)
 input double InpBreakMaxAtr       = 1000000;// anti-chase OFF - swept (Q2): capping hurts on this feed
 input double InpRrBrk             = 1.8;
-input double InpSlAtrBrk          = 1.0;    // swept (S4)
+input double InpSlAtrBrk          = 1.2;    // swept (S4)
 input bool   InpBrkVetoSfp        = false;
 
 input group "===== Reversion (OFF) ====="
-input bool   InpEnableReversion = false;
+input bool   InpEnableReversion = true;
 input double InpRetestAtr         = 0.1;
 input double InpBodyPctMin        = 0.6;
 input double InpRrRev             = 1.2;
@@ -91,12 +91,12 @@ input bool   InpRevTpMpoc           = false;// base reversion TP = master POC in
 
 input group "===== Exit ====="
 input double InpTp1R            = 0.8;
-input double InpTp1ClosePct     = 20.0;
+input double InpTp1ClosePct     = 0.0;
 input bool   InpBeAfterTp1      = true;
 input double InpBeBufAtr        = 0.05;
 input bool   InpTrailRunner     = true;     // ATR chandelier trail on runner (GLOBAL default)
 input double InpRunnerRr        = 10.0;     // runner TP cap (effectively trail-to-exit)
-input double InpTrailAtrMult    = 2.0;      // swept (S4)
+input double InpTrailAtrMult    = 2.5;      // swept (S4)
 // Per-entry-type trail override (tri-state: -1 inherit InpTrailRunner / 0 fixed-TP no-trail / 1 force trail).
 // Lets reversion/XRev bank a fixed TP (e.g. mPOC via InpRevTpMpoc/InpXRevTpMpoc) while breakout keeps
 // trailing. Default -1 everywhere => identical to the global flag => base byte-identical.
@@ -142,7 +142,7 @@ input int    InpBrokerGMTOffset = 10;       // hours ADDED to UTC to reach the s
 input string InpAsiaSess        = "00:00-07:00";
 input string InpLdnSess         = "07:00-13:00";
 input string InpNySess          = "13:00-21:00";
-input string InpBlockedHoursStr = "";       // low-liquidity veto, ref-tz hours: "8,16" or "9-11"
+input string InpBlockedHoursStr = "2,3,14";       // low-liquidity veto, ref-tz hours: "8,16" or "9-11"
 input bool   InpForceCloseSessNews = false; // Pine never force-closes on session exit
 
 input group "===== News avoidance (live-safety overlay; CSV of UTC release times) ====="
