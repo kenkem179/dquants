@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/Decision.mqh — SHARED entry decision (single source). |
+//|  KK-MasterVP/Decision.mqh - SHARED entry decision (single source). |
 //|                                                                    |
 //|  This is the load-bearing reuse boundary between the EA and the    |
 //|  KK-MasterVP-Profiler INDICATOR. It holds ONLY chart-deterministic |
 //|  logic: the signal (MVP_DetectSignal) plus the gates that can be   |
-//|  reproduced from bar/indicator history alone — quality (MTF/RSI),  |
+//|  reproduced from bar/indicator history alone - quality (MTF/RSI),  |
 //|  session, ATR% band, ATR-ticks floor, blocked-hour, news.          |
 //|                                                                    |
 //|  NOTHING here touches the live account, open positions, spread at  |
@@ -14,9 +14,9 @@
 //|                                                                    |
 //|  Because both the EA and the indicator call MVP_DeterministicGates  |
 //|  Pass() over the SAME inputs, they cannot disagree on which bar a   |
-//|  signal clears the deterministic gate stack — that is the parity    |
+//|  signal clears the deterministic gate stack - that is the parity    |
 //|  guarantee. (Replay-reproducible stateful gates the indicator still |
-//|  needs — max-trades/session and one-position-at-a-time — live in    |
+//|  needs - max-trades/session and one-position-at-a-time - live in    |
 //|  SessionNews.mqh + the indicator's own replay loop, not here.)      |
 //+------------------------------------------------------------------+
 #ifndef KKMVP_DECISION_MQH

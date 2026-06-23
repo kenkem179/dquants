@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/NetVolume.mqh — M1 near-price net tick volume for the |
+//|  KK-MasterVP/NetVolume.mqh - M1 near-price net tick volume for the |
 //|  impulse-thrust path (the Monster delta, OFF by default). 1:1 with  |
 //|  cpp_core kk::net_prev_at_time + tf_net_near_at on the M1 series.   |
 //|                                                                    |
 //|  PARITY-CRITICAL: net is built from iVolume(...) = M1 tick_volume  |
 //|  (== the engine's per-bar tick_count), NOT real broker volume      |
-//|  (~0 on Exness) — the bug that made the old Monster EA trade ZERO. |
+//|  (~0 on Exness) - the bug that made the old Monster EA trade ZERO. |
 //|                                                                    |
 //|  Decision time = current chart bar open (the entry bar). The last  |
 //|  CLOSED M1 bar before it is shift `sClosed`; the net is evaluated  |

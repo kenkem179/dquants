@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/Parity.mqh — TRADE-LEVEL parity journal.              |
+//|  KK-MasterVP/Parity.mqh - TRADE-LEVEL parity journal.              |
 //|                                                                    |
 //|  Emits one row per CLOSED position, byte-compatible with the C++   |
 //|  kk::to_trades_csv ledger (cpp_core/include/kk/common/             |

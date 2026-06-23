@@ -1,8 +1,8 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/SessionNews.mqh — self-contained sessions + news.    |
+//|  KK-MasterVP/SessionNews.mqh - self-contained sessions + news.    |
 //|  Ports cpp_core kk::Sessions (filters.hpp) 1:1 and the KenKem      |
 //|  NewsFilter (CSV calendar + embedded fallback). No external        |
-//|  framework deps — include AFTER Inputs.mqh.                        |
+//|  framework deps - include AFTER Inputs.mqh.                        |
 //|                                                                    |
 //|  TIME MODEL (load-bearing): the C++ engine evaluates sessions on   |
 //|  UTC tick time + InpBrokerGMTOffset (=10, the TV chart tz). MT5     |
@@ -150,10 +150,10 @@ void SN_LoadNews(){
    if(InpUseEmbeddedNews){
       string lines[]; int n=StringSplit(EmbeddedNewsCsv(),'\n',lines);
       for(int i=0;i<n;i++) SN_ParseNewsLine(lines[i]);
-      PrintFormat("[KK-MasterVP][NEWS] CSV not found — using EMBEDDED calendar (%d events)",g_newsCount);
+      PrintFormat("[KK-MasterVP][NEWS] CSV not found - using EMBEDDED calendar (%d events)",g_newsCount);
       return;
    }
-   Print("[KK-MasterVP][NEWS] calendar absent and embedded disabled — news filter inert");
+   Print("[KK-MasterVP][NEWS] calendar absent and embedded disabled - news filter inert");
 }
 // True when the UTC time falls in [event-before, event+after] of any high-impact event.
 bool SN_InNewsWindow(datetime utc){

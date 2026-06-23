@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/Strategy.mqh — DetectSignal (breakout L/S +          |
+//|  KK-MasterVP/Strategy.mqh - DetectSignal (breakout L/S +          |
 //|  reversion L/S). Faithful transcription of cpp_core               |
 //|  kk::detect_signal (== Entries/EntryVP.mqh::DetectSignal).        |
 //|  Shift map (caller): signal-bar OHLC + atr2 = shift 2; entry_close |
@@ -100,7 +100,7 @@ Signal MVP_DetectSignal(const VPResult &master_cur,const VPResult &master_sig,co
 }
 
 //+------------------------------------------------------------------+
-//|  MVP_DetectImpulse — Monster impulse-thrust (kind 4). 1:1 with     |
+//|  MVP_DetectImpulse - Monster impulse-thrust (kind 4). 1:1 with     |
 //|  cpp_core kk::detect_impulse. The ONE entry-model delta of the     |
 //|  Monster edition, brought into KK-MasterVP and OFF by default      |
 //|  (InpEnableImpulse=false => never called => base byte-identical).  |

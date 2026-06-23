@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/Engine.mqh — OnTick orchestration. Faithful port of   |
+//|  KK-MasterVP/Engine.mqh - OnTick orchestration. Faithful port of   |
 //|  cpp_core kk::mastervp::TickEngine (signal + FULL safety gate      |
 //|  stack), minus the backtest harness. Per new bar: master VP        |
 //|  (lookback*mult) + local VP + node update + regime +               |
@@ -219,7 +219,7 @@ void OnNewBar()
    } else {
       sig=MVP_DetectSignal(masterCur,masterCur,localCur,regime,s,nsVah,nsVal,nsPx,g_pip,g_mintick,1.0);
 
-      // Extreme Reversion (XRev) priority — mirrors tick_engine.hpp: when enabled and its (stricter)
+      // Extreme Reversion (XRev) priority - mirrors tick_engine.hpp: when enabled and its (stricter)
       // failed-breakout-sweep conditions hold, XRev OVERRIDES the base signal; otherwise the base
       // breakout/reversion signal stands. OFF by default => this block is skipped and sig is unchanged.
       if(InpEnableExtremeReversion){
@@ -249,7 +249,7 @@ void OnNewBar()
    if(!sig.valid) return;
 
    // ----- safety gate stack (order mirrors tick_engine.hpp on_bar_closed_) -----
-   // (1) CHART-DETERMINISTIC gates — shared verbatim with the Profiler indicator
+   // (1) CHART-DETERMINISTIC gates - shared verbatim with the Profiler indicator
    //     via Decision.mqh (quality / session / ATR% / ATR-ticks / blocked-hour /
    //     news). No side effects, so evaluating them as one group up front is
    //     behaviour-identical to the old interleaved sequence.
@@ -259,7 +259,7 @@ void OnNewBar()
    if(!MVP_DeterministicGatesPass(sig,sessionId,atrPct,AtrAt(1),g_mintick,
                                   SN_IsBlockedHour(ref),SN_InNewsWindow(utc),hf,hs,rsiQ,isImpulse)) return;
 
-   // (2) LIVE / STATEFUL gates — EA-only (account equity, open position, fire-tick
+   // (2) LIVE / STATEFUL gates - EA-only (account equity, open position, fire-tick
    //     spread). An indicator has none of these; in the locked config they are
    //     OFF/inert except max-trades (replayed indicator-side) and the predictive
    //     daily-DD (rarely binds).
@@ -277,8 +277,8 @@ void OnNewBar()
    double entry=sig.is_long?ask:bid;
    double risk=MathAbs(entry-sig.sl); if(risk<=0) return;
    double minDist=KKMinStopDist(_Symbol);
-   // Runner TP backstop — MIRROR cpp position_manager.hpp:93-97. With InpTrailRunner the runner
-   // target is entry±risk·RunnerRr (≈trail-to-exit); the chandelier trail does the real exit.
+   // Runner TP backstop - MIRROR cpp position_manager.hpp:93-97. With InpTrailRunner the runner
+   // target is entry+/-risk*RunnerRr (~trail-to-exit); the chandelier trail does the real exit.
    // The old `tp=sig.tp2` capped the runner at rrBrk (1.8R) -> EA hit TP where the engine trailed
    // (parity: EA 170 TP vs engine 10 TP). Uses signal entry/risk like the engine, not the fill.
    double sl=sig.sl;

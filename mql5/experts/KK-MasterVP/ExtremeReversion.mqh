@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/ExtremeReversion.mqh — failed-breakout liquidity-     |
+//|  KK-MasterVP/ExtremeReversion.mqh - failed-breakout liquidity-     |
 //|  sweep reversal entry (XRev). 1:1 port of cpp_core                 |
 //|  kk::detect_extreme_reversion (extreme_reversion.hpp).             |
 //|  Toggle OFF by default => never invoked; base byte-identical.      |

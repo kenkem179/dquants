@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|  KK-MasterVP/Inputs.mqh — trading input schema (mirrors            |
+//|  KK-MasterVP/Inputs.mqh - trading input schema (mirrors            |
 //|  cpp_core kk::Params 1:1). Compiled-in DEFAULTS == the locked,     |
 //|  OOS-validated XAUUSD-M3 preset (research/mastervp_parity sweeps), |
 //|  so the EA runs tuned out-of-the-box; load the shipped .set to     |
@@ -9,7 +9,7 @@
 #define KKMVP_INPUTS_MQH
 
 input group "===== VP core ====="
-input int    InpVpLookback     = 120;     // local VP window (bars) — swept (S8b); long-window OOS plateau
+input int    InpVpLookback     = 120;     // local VP window (bars) - swept (S8b); long-window OOS plateau
 input int    InpVpBins         = 30;
 input double InpVaPct          = 70.0;
 input double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 480 bars; OOS PF 1.114 (float; 0.5-step swept)
@@ -37,7 +37,7 @@ input double InpEmaSepAtr       = 0.25;
 input group "===== Breakout (the active entry path) ====="
 input bool   InpEnableBreakout = true;
 input double InpBreakBufAtr      = 0.7;     // swept (S1)
-input double InpBreakMaxAtr       = 1000000;// anti-chase OFF — swept (Q2): capping hurts on this feed
+input double InpBreakMaxAtr       = 1000000;// anti-chase OFF - swept (Q2): capping hurts on this feed
 input double InpRrBrk             = 1.8;
 input double InpSlAtrBrk          = 1.0;    // swept (S4)
 input bool   InpBrkVetoSfp        = false;
@@ -66,11 +66,11 @@ input int    InpImpulsePredictBars   = 10;     // bars aged out for the predicte
 input int    InpTfNetLook            = 50;     // M1 net: bars summed for the near-price net
 input double InpTfNetWinAtr           = 1.5;   // M1 net: near-price window half-width in ATR
 
-input group "===== Extreme Reversion (XRev) — failed-breakout liquidity-sweep reversal (OFF) ====="
+input group "===== Extreme Reversion (XRev) - failed-breakout liquidity-sweep reversal (OFF) ====="
 // A failed breakout above master VAH that SWEEPS the recent swing-high then snaps back BELOW mVAH
 // on a big sell-flow candle = trapped-breakout SHORT toward mVAL (long mirrors at mVAL). OFF by
 // default => EA byte-identical to the locked base. Engine sweeps: additive HELP on M3 (BTC+XAU),
-// slight HURT on XAU M5; tiny sample (rare setup) — MT5-confirm before trusting (BTC esp.).
+// slight HURT on XAU M5; tiny sample (rare setup) - MT5-confirm before trusting (BTC esp.).
 input bool   InpEnableExtremeReversion = false;  // master toggle (OFF = base unchanged)
 input int    InpXRevHHLookback     = 5;     // N: swing-high/low sweep level lookback
 input int    InpXRevFailLookback   = 14;    // M: window for the failed-acceptance count
@@ -107,19 +107,19 @@ input int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
 input group "===== Risk sizing ====="
 input int    InpRiskUnit        = 0;        // 0=%acct,1=USD,2=min,3=max
-input double InpRiskAccPct      = 1.0;      // % balance risked/trade — swept (S6b lowest-DD plateau)
+input double InpRiskAccPct      = 1.0;      // % balance risked/trade - swept (S6b lowest-DD plateau)
 input double InpRiskUsd         = 180.0;    // used only when InpRiskUnit!=0
 input double InpMaxLot          = 0.0;      // 0 = broker VOLUME_MAX
 input int    InpDeviationPoints = 200;
 input bool   InpSkipIfMinLotOverRisk = false;
 
 input group "===== Risk-management limiters ====="
-input double InpMaxDailyDDPct   = 10.0;     // daily-DD cap (predictive) — swept (S6b); plateau 8/10/12
+input double InpMaxDailyDDPct   = 10.0;     // daily-DD cap (predictive) - swept (S6b); plateau 8/10/12
 input double InpDailyDDCooldownHrs = 12.0;  // cooldown armed on a daily-DD breach
 input double InpMaxPeakDDPct    = 0.0;      // peak-DD halt OFF (curve-fits the train peak)
 input double InpSoftBlockDDPct  = 0.0;      // soft-block OFF
 input double InpSoftBlockLotMult= 0.55;
-input int    InpLossStreakCount = 0;        // OFF — swept (S6b): streak limiter hurts PF
+input int    InpLossStreakCount = 0;        // OFF - swept (S6b): streak limiter hurts PF
 input double InpLossStreakCooldownHrs = 4.0;
 
 input group "===== Safety / volatility ====="

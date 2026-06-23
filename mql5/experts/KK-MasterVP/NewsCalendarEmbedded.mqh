@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //|                                       NewsCalendarEmbedded.mqh    |
-//|     KK-Common — GENERATED. High-impact USD news calendar embedded |
+//|     KK-Common - GENERATED. High-impact USD news calendar embedded |
 //|     as a string so the .ex5 is self-contained (MQL5 Market rule)  |
 //|     even when no CSV is present in MQL5/Files/.                    |
 //|                                                                   |
