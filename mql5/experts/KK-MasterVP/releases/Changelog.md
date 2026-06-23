@@ -1,5 +1,12 @@
 # KK-MasterVP — Changelog
 
+## 1.04 — 2026-06-23
+
+- Built `2026-06-23T06:47:10Z` · commit `3aa14e1` on `reliableBaseline`
+- EA: `KK-MasterVP-1.04.ex5` (locked build of `KK-MasterVP.mq5`)
+- Marketplace validation fix: skip entries when free margin is insufficient (no more No-money/not-enough-money failures on tiny-deposit validator runs)
+- Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop`
+
 ## 1.03 — 2026-06-23
 
 - Built `2026-06-23T06:33:17Z` · commit `0ddfc64` on `reliableBaseline`

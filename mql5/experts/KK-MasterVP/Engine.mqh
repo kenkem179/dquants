@@ -311,6 +311,12 @@ void OnNewBar()
                              MvpOpenVolume(sig.is_long));
    if(lot<=0.0) return;
    sl=NormalizeDouble(sl,_Digits); tp=NormalizeDouble(tp,_Digits);
+   // Affordability guard: never send an order the account can't cover (prevents
+   // "not enough money / No money" failures on tiny-deposit / high-margin runs).
+   ENUM_ORDER_TYPE otype=sig.is_long?ORDER_TYPE_BUY:ORDER_TYPE_SELL;
+   double marginReq=0.0;
+   if(!OrderCalcMargin(otype,_Symbol,lot,entry,marginReq)) return;   // can't price margin -> skip
+   if(marginReq>AccountInfoDouble(ACCOUNT_MARGIN_FREE)) return;      // not enough free margin -> skip
    bool ok=sig.is_long?mvpTrade.Buy(lot,_Symbol,0.0,sl,tp,sig.reason):mvpTrade.Sell(lot,_Symbol,0.0,sl,tp,sig.reason);
    if(ok){
       g_tp1Done=false; g_best=entry; g_effTrail=effTrail; SN_OnFill();
