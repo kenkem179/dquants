@@ -40,8 +40,8 @@ input double InpTp1ClosePct     = 0.0;      // % of the position to bank at the 
 input bool   InpBeAfterTp1      = true;     // Move stop to break-even once the first target is reached
 
 input group "===== Trading hours to avoid ====="
-input int    InpBrokerGMTOffset = 10;       // Hours your broker server-time is ahead of UTC (align so blocked hours match)
-input string InpBlockedHoursStr = "2,3,14"; // Server-time hours to skip, e.g. "8,16" or "9-11" (blank = trade all hours)
+input int    InpBrokerGMTOffset = 10;       // Analysis reference tz (UTC + this) the sessions/blocked-hours were tuned in. NOT your broker clock — that is auto-detected (TimeTradeServer-TimeGMT), so this works unchanged on any broker. Keep 10 for XAUUSD, 0 for BTCUSD; do NOT set it to your broker's offset.
+input string InpBlockedHoursStr = "2,3,14"; // Hours to skip, expressed in the reference tz above (10 => these are UTC 16,17,04). Blank = trade all hours.
 
 input group "===== News filter ====="
 input bool   InpAvoidNews       = false;    // Block new entries around high-impact news releases
@@ -146,6 +146,28 @@ int    InpTrailBrk        = -1;
 int    InpTrailRev        = -1;
 int    InpTrailImp        = -1;
 int    InpTrailXRev       = -1;
+
+// ----- Profit manager (BE / progressive-trail / giveback / TP-extension / partial; all OFF in the lock) -----
+bool   InpPmBeProtect       = false;
+double InpPmBeTriggerR      = 1.0;
+double InpPmBeBufferR       = 0.0;
+bool   InpPmProgTrail       = false;
+double InpPmProgTriggerR    = 1.0;
+double InpPmProgIncrementR  = 0.5;
+double InpPmProgStepR       = 0.10;
+bool   InpPmGiveback        = false;
+double InpPmGivebackArmR    = 2.0;
+double InpPmGivebackCapFrac = 0.30;
+bool   InpPmTpExtension     = false;
+double InpPmTpExtProgress   = 0.90;
+double InpPmTpExtAtrMult    = 1.0;
+int    InpPmTpExtMax        = 5;
+bool   InpPmPreBeStructure  = false;
+double InpPmPreBeTriggerR   = 0.5;
+double InpPmPreBeBuffer     = 0.0;
+bool   InpPmPartialTp       = false;
+double InpPmPartialTriggerR = 1.0;
+double InpPmPartialFrac     = 0.5;
 
 // ----- Risk-management limiters (extras; OFF) -----
 double InpSoftBlockDDPct  = 0.0;

@@ -1,21 +1,10 @@
-;==========================================================================================
-; KK-KenKem — XAUUSD M1 (D5-E4Long lock) — FundedNext Stellar-2 $100K MIXED-PORTFOLIO leg (run w/ MasterVP M5)
-; Account limits: max daily DD 5% / max account DD 10%. KenKem measures DD on the SHARED account balance,
-; so caps act JOINTLY with MasterVP. KenKem is the GENTLE diversifier (corr ~0.08 w/ MasterVP despite
-; both XAUUSD). Validated combined book: worst day -2.9%, max account DD -7.7%, ~3.1%/mo.
-;   COMMON_MAX_RISK_PER_TRADE          0.01 -> 0.002   (secondary leg)
-;   MAX_DAILY_LOSS_RATIO               0.035            (daily halt, joint w/ MasterVP)
-;   ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN 0.05             (slow down at 5% account DD)
-;   ACCOUNT_DD_RATIO_TO_SOFT_BLOCK     0.08             (micro-lots at 8% — KenKem has no hard halt)
-; ONLY risk/DD keys changed vs the validated lock KK-KenKem-XAUUSD-M1-D5-E4Long.set; strategy untouched.
-;==========================================================================================
 MY_STANDARD_LOT_SIZE=0.15
 MAX_HIGH_RISK_TRADES_PER_SESSION=5
 MAX_SLTP_COUNT_PER_SESSION=7
 MAX_SESSION_LOSSES=4
-MAX_DAILY_LOSS_RATIO=0.035
-ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN=0.05
-ACCOUNT_DD_RATIO_TO_SOFT_BLOCK=0.08
+MAX_DAILY_LOSS_RATIO=0.044
+ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN=0.07
+ACCOUNT_DD_RATIO_TO_SOFT_BLOCK=0.09
 SOFT_BLOCK_LOT_MULTIPLIER=0.3
 ENABLE_E1_ENTRIES=true
 ENABLE_E2_ENTRIES=true
@@ -23,7 +12,7 @@ ENABLE_E3_ENTRIES=false
 ENABLE_E4_ENTRIES=true
 E4_LONG_ONLY=true
 ENABLE_E5_ENTRIES=false
-COMMON_MAX_RISK_PER_TRADE=0.002
+COMMON_MAX_RISK_PER_TRADE=0.01
 INCREASE_LOT_SIZE_BASED_ON_PROFIT=true
 VOL_LOT_ADJ_E1=false
 VOL_LOT_ADJ_E2=false

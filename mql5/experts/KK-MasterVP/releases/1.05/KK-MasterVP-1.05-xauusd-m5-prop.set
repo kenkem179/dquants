@@ -1,14 +1,3 @@
-;==========================================================================================
-; KK-MasterVP — XAUUSD M5 — FundedNext Stellar-2 $100K MIXED-PORTFOLIO leg  (run w/ KK-KenKem M1)
-; Account limits: max daily DD 5% / max account DD 10%. Both EAs measure DD on the SHARED account
-; equity, so the caps act JOINTLY (not additive). Validated combined book (MT5 streams, 2025-03..2026-05,
-; unhalted worst case): worst single day -2.9%, max account DD -7.7%, ~3.1%/mo — comfortable margin.
-;   InpRiskAccPct   1.0 -> 0.08   (cut ~12x from the validated solo lock for the 10% account cap)
-;   InpMaxDailyDDPct      3.5      (predictive daily halt; backstop under the 5% hard limit)
-;   InpMaxPeakDDPct       8.0      (HARD account halt; backstop under the 10% hard limit)
-;   InpSoftBlockDDPct 5.0 / LotMult 0.4   (cut lots once account DD >= 5% — tail brake)
-; ONLY risk/DD keys changed vs the validated lock KK-MasterVP-XAUUSD-M5.set; strategy params untouched.
-;==========================================================================================
 ; KK-MasterVP — XAUUSD M5 preset (dedicated M5 sweep 2026-06-20). Attach EA to an M5 XAUUSD chart.
 ; Master VP=432 bars (36h on M5) = InpVpLookback=108 x InpMasterMult=4. Swept break_buf 0.85 / sl 1.2 / trail 2.5.
 ; OOS PF 1.327 / dd 10.3% / win 58.6% (vs M3 lock OOS PF 1.114 / dd 17.5%). Same-bars indicators (ema24/194 atr14).
@@ -44,7 +33,6 @@ InpEmaSepAtr=0.25
 InpEmaSlow=194
 InpEnableBreakout=true
 InpEnableReversion=true
-InpExportParity=true
 InpForceCloseSessNews=false
 InpLdnSess=07:00-13:00
 InpLossStreakCooldownHrs=4.0
@@ -52,9 +40,9 @@ InpLossStreakCount=0
 InpMVPMagic=5252510
 InpMasterMult=4
 InpMaxAtrPct=0.0
-InpMaxDailyDDPct=3.5
+InpMaxDailyDDPct=4.4
 InpMaxLot=0.0
-InpMaxPeakDDPct=8.0
+InpMaxPeakDDPct=9.0
 InpMaxSpreadPips=0.0
 InpMaxSpreadTp1Frac=0.0
 InpMaxTradesPerSession=4
@@ -70,7 +58,7 @@ InpNodeSaturation=4.0
 InpNodeTouchAtr=0.05
 InpNySess=13:00-21:00
 InpRetestAtr=0.1
-InpRiskAccPct=0.08
+InpRiskAccPct=0.5
 InpRiskUnit=0
 InpRiskUsd=180.0
 InpRrBrk=1.8
@@ -82,8 +70,8 @@ InpSfpFlowMin=0.15
 InpSkipIfMinLotOverRisk=false
 InpSlAtrBrk=1.2
 InpSlAtrRev=1.5
-InpSoftBlockDDPct=5.0
-InpSoftBlockLotMult=0.4
+InpSoftBlockDDPct=0.0
+InpSoftBlockLotMult=0.55
 InpTp1ClosePct=0.0
 InpTp1R=0.8
 InpTrailAtrMult=2.5
@@ -95,3 +83,4 @@ InpUsePriorBarVP=false
 InpVaPct=70.0
 InpVpBins=30
 InpVpLookback=108
+InpExportParity=true

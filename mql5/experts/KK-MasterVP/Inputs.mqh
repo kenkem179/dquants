@@ -170,7 +170,7 @@ input double InpRsiMidline      = 50.0;
 input int    InpRsiLen          = 14;
 
 input group "===== Sessions (chart-tz = UTC + offset; offset 10 matches the TV calibration) ====="
-input int    InpBrokerGMTOffset = 10;       // hours ADDED to UTC to reach the session reference tz
+input int    InpBrokerGMTOffset = 10;       // reference tz = UTC + this (NOT the broker clock; broker offset is auto-detected). XAU=10, BTC=0; keep as-is per symbol
 input string InpAsiaSess        = "00:00-07:00";
 input string InpLdnSess         = "07:00-13:00";
 input string InpNySess          = "13:00-21:00";

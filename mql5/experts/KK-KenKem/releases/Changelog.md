@@ -1,5 +1,12 @@
 # KK-KenKem — Changelog
 
+## 1.03 — 2026-06-23
+
+- Built `2026-06-23T10:16:18Z` · commit `51b63e6` on `reliableBaseline`
+- EA: `KK-KenKem-1.03.ex5` (locked build of `KK-KenKem.mq5`)
+- Add Mixed-Portfolio FN-Stellar2 00K variant (xauusd-m1-mixed-fn); disable heavy per-bar trace on all deployment variants (trade journal stays on)
+- Variants: `xauusd-m1` `xauusd-m1-prop` `xauusd-m1-mixed-fn`
+
 ## 1.02 — 2026-06-23
 
 - Built `2026-06-23T08:25:37Z` · commit `2c02a55` on `reliableBaseline`

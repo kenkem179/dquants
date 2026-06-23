@@ -1,5 +1,12 @@
 # KK-MasterVP — Changelog
 
+## 1.05 — 2026-06-23
+
+- Built `2026-06-23T10:22:16Z` · commit `51b63e6` on `reliableBaseline`
+- EA: `KK-MasterVP-1.05.ex5` (locked build of `KK-MasterVP.mq5`)
+- Add Mixed-Portfolio FN-Stellar2 $100K variant + per-trade CSV on all variants; fix MQL5-Market edition (missing ProfitManager InpPm* decls in Inputs.release.mqh)
+- Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
+
 ## 1.04 — 2026-06-23
 
 - Built `2026-06-23T06:47:10Z` · commit `3aa14e1` on `reliableBaseline`
