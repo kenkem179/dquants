@@ -1,5 +1,12 @@
 # KK-KenKem — Changelog
 
+## 1.02 — 2026-06-23
+
+- Built `2026-06-23T08:25:37Z` · commit `2c02a55` on `reliableBaseline`
+- EA: `KK-KenKem-1.02.ex5` (locked build of `KK-KenKem.mq5`)
+- MQL5-Market edition: whitelist-strip + lock-bake (D5-E4Long). Dialog exposes only 21 safe knobs (E1/E2 toggles, risk, daily-DD, RR, trades/session, news blackout, prop mode); all strategy internals hidden + frozen at the validated lock.
+- Variants: `xauusd-m1` `xauusd-m1-prop`
+
 ## 1.01 — 2026-06-23
 
 - Built `2026-06-23T07:23:14Z` · commit `7bcbe35` on `reliableBaseline`

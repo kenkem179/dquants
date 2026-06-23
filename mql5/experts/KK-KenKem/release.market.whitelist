@@ -1,0 +1,48 @@
+# KK-KenKem - MQL5 Market edition: dialog-visible inputs whitelist.
+#
+# Consumed by scripts/make_release.sh [market] step. Every `input` parameter
+# whose KEY is NOT listed below is stripped to a fixed compiled-in global so it
+# is HIDDEN from the MT5 Inputs dialog (the strategy internals stay our secret).
+# Only the user-adjustable knobs below remain editable.
+#
+# The compiled-in defaults for the HIDDEN params are baked from the validated
+# lock named here, so the Market build runs the exact D5-E4Long config out of
+# the box no matter what a buyer does with the visible knobs.
+# bake_defaults_from: KK-KenKem-XAUUSD-M1-D5-E4Long.set
+#
+# --- Entry selection (only the two core trend engines users should toggle) --
+ENABLE_E1_ENTRIES
+ENABLE_E2_ENTRIES
+#
+# --- Risk per trade / lot sizing --------------------------------------------
+MY_STANDARD_LOT_SIZE
+COMMON_MAX_RISK_PER_TRADE
+#
+# --- Customized reward (TP) levels: reward-to-risk per engine ---------------
+E1_RR
+E2_RR
+#
+# --- Account protection / daily drawdown ------------------------------------
+MAX_DAILY_LOSS_RATIO
+ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN
+ACCOUNT_DD_RATIO_TO_SOFT_BLOCK
+ENABLE_PROFIT_PROTECTION
+#
+# --- Trade frequency caps (per session/day) ---------------------------------
+MAX_HIGH_RISK_TRADES_PER_SESSION
+MAX_SLTP_COUNT_PER_SESSION
+MAX_SESSION_LOSSES
+#
+# --- Times to avoid trading (news blackout) + end-of-session close ----------
+ENABLE_NEWS_FILTER
+AVOID_HIGH_IMPACT_NEWS
+NEWS_MINUTES_BEFORE
+NEWS_MINUTES_AFTER
+CLOSE_ALL_TRADES_AT_SESSION_END
+#
+# --- Execution safety -------------------------------------------------------
+MAX_SPREAD_PIPS
+#
+# --- Prop-firm mode + basic visual ------------------------------------------
+MADE_FOR_PROP_TRADING
+showDebug

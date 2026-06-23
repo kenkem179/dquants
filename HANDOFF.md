@@ -1,5 +1,27 @@
 # HANDOFF — read me first, update me last
 
+## 🏪 KK-KenKem MQL5-MARKET EDITION + GUIDES SHIPPED (2026-06-23)
+User: revise the KK-KenKem release to expose only safe knobs (like KK-MasterVP / the original
+kenkem marketplace build), hide all secrets; then write internal + marketplace guides. **DONE.**
+- **`scripts/make_release.sh` now supports a 2nd hide-internals path (approach B):** a per-EA
+  `release.market.whitelist` lists the dialog-visible KEYs; a single type-aware `awk` pass (a) BAKES the
+  validated lock's primitive defaults in (`bake_defaults_from:` directive), (b) strips `input` from every
+  non-whitelisted param → fixed global (hidden), (c) drops childless `input group`s. Dev source is
+  backed up + trap-restored → working tree byte-identical after a release (verified). MasterVP's
+  `Inputs.release.mqh` swap (approach A) is untouched. ⚠️ BSD sed can't do `(a|b)` alternation → the
+  type filter lives in awk, not sed.
+- **`KK-KenKem/release.market.whitelist`** = 21 visible keys: E1/E2 enables, MY_STANDARD_LOT_SIZE +
+  COMMON_MAX_RISK_PER_TRADE, E1_RR/E2_RR, daily-DD trio + profit-protection, 3 session/day trade caps,
+  news blackout (4) + close-at-session-end, MAX_SPREAD_PIPS, MADE_FOR_PROP_TRADING, showDebug. Everything
+  else (ATR/ADX/conviction/Ichimoku/EMA/TF internals, E3/E4/E5) HIDDEN + frozen at D5-E4Long.
+- **Released KK-KenKem 1.02** (was 1.01): `releases/1.02/` normal full build + `releases/1.02/market/`
+  hidden build (`KK-KenKem-Market-1.02.ex5`, compiles 0/0). Market `.set` filtered to the 21 keys
+  (personal + prop). **Upload to MQL5 Market = `releases/1.02/market/KK-KenKem-Market-1.02.ex5`.**
+- **Guides:** `docs/guides/KK-KenKem-EA-User-Guide.md` (internal/full, all groups) +
+  `KK-KenKem-EA-MQL5-Marketplace-Description.md` (product page, 21-knob, no-financial-advice tone).
+- NEXT: await MQL5 Market validation of the new build; if errors arrive, reuse the volume-limit / stops /
+  free-margin guard pattern already in BrokerHelpers/entry path.
+
 ## 📦 MIXED-PORTFOLIO .SET FILES SHIPPED — MasterVP M5 + KenKem M1, FundedNext Stellar-2 $100K (2026-06-23)
 User asked for concrete prop-account presets for the MasterVP+KenKem book. **DONE** in
 `mql5/experts/Presets/Mixed-Portfolio/` (+ README): `KK-MasterVP-XAUUSD-M5-FN-Stellar2-100k.set`
