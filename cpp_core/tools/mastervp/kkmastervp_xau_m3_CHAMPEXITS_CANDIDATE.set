@@ -1,0 +1,89 @@
+; ============================================================================
+; KK-MasterVP — XAUUSD M3 "champion-exits" CANDIDATE  (2026-06-24)  *** NOT A LOCK ***
+; ----------------------------------------------------------------------------
+; Follow-up to the MTF-confluence study (which REJECTED the M5-value-area gate). The user's
+; underlying instinct — "M5-only entry is too late, act on M3" — is RIGHT; the gate was just the
+; wrong harvesting mechanism. This config harvests it via a DIFFERENT route:
+;   base = the OLD Pine-faithful M3 lock (kkmastervp_xau_m3_LOCKED.set), PLUS the champion's
+;   already-WF-validated improvements the M3 lock never received:
+;     InpTp1ClosePct  20 -> 0     (T3 exit sweep: don't bank the partial; let the runner ride)
+;     InpTrailAtrMult 2.0 -> 2.5  (wider chandelier trail)
+;     InpEnableReversion true     (T3: balance-regime fade, additive dd-smoothing)
+;     InpBlockedHoursStr 2,3,14   (T2 hour-block: lunch lull + late-London chop -> fixed killer fold F3)
+;     InpMaxPeakDDPct 18.0        (peak-DD limiter: the one risk rule M3's rougher curve needs;
+;                                  plateau 15-18 both clear T1, 12 over-truncates, 20 just misses)
+; 6-fold WF (XAU, slice_ticks_by_fold) vs the deployed M5 champion (KK-MasterVP-XAUUSD-M5.set):
+;   THIS: PF 1.398 / net 30,252 / maxDD 7.5% / 6-of-6 folds PF>1 / worst-fold PF 1.106
+;   M5  : PF 1.318 / net 21,312 / maxDD 7.6% / 6-of-6 folds PF>1 / worst-fold PF 1.094
+;   => BEATS the champion on EVERY axis: +42% net, +0.08 PF, equal DD, higher worst-fold PF.
+; Overfitting gate (research/stats/gate.py, n_trials=22, sr_trial_std=0.01532):
+;   DSR 0.995 (PASS, >=0.95), PSR-vs-0 1.000, MinTRL 241 vs 1332 trades -> sample-sufficient.
+; *** STILL REQUIRES THE MT5 A/B BEFORE IT CAN BE LOCKED ***  The C++ engine is a RANKING proxy that
+; over-credits trailed runners; this config leans hard on runners (tp1=0/trail2.5) AND fires ~40% more
+; trades than the M5 champion, so the +42% net is exactly where proxy inflation lives. Promote to
+; kkmastervp_xau_m3_LOCKED only after MT5 confirms it beats the M5 champion on recent OOS.
+; Provenance: research/mastervp_parity/m3_champ_exits_2026-06-24.py + m3_champ_c5dd_2026-06-24.py
+;            + m3_champ_gate_2026-06-24.py ; findings MTF_CONFLUENCE_FINDINGS_2026-06-24.md (§Follow-up).
+; ============================================================================
+InpVpLookback=120
+InpVpBins=30
+InpVaPct=70.0
+InpMasterMult=4
+InpNodeTouchAtr=0.05
+InpNodeDecay=0.94
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpAtrLen=14
+InpAtrMt5Mode=false
+InpEmaFast=24
+InpEmaSlow=194
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpDiSpreadMin=8.0
+InpEmaSepAtr=0.25
+InpNodeGateEnabled=false
+InpUsePriorBarVP=false
+InpBrkRequireFlow=false
+InpSfpFlowMin=0.15
+InpEnableBreakout=true
+InpBreakBufAtr=0.7
+InpBreakMaxAtr=1000000
+InpRrBrk=1.8
+InpSlAtrBrk=1.0
+InpBrkVetoSfp=false
+InpEnableReversion=true
+InpRetestAtr=0.1
+InpBodyPctMin=0.6
+InpRrRev=1.2
+InpSlAtrRev=1.5
+InpTp1R=0.8
+InpTp1ClosePct=0.0
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpTrailRunner=true
+InpRiskUnit=0
+InpRiskAccPct=1.0
+InpMaxDailyDDPct=10.0
+InpMaxPeakDDPct=18.0
+InpSoftBlockDDPct=0.0
+InpLossStreakCount=0
+InpSkipIfMinLotOverRisk=false
+InpMinAtrPct=0.0
+InpMaxAtrPct=0.0
+InpMinAtrTicks=40
+InpMaxTradesPerSession=4
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+InpEnableVolRR=false
+InpUseMtfAgree=false
+InpUseAtrPctlGate=false
+InpUseMomVeto=false
+InpBrokerGMTOffset=10
+InpAsiaSess=00:00-07:00
+InpLdnSess=07:00-13:00
+InpNySess=13:00-21:00
+InpBlockedHoursStr=2,3,14
+InpForceCloseSessNews=false
+InpAvoidNews=false
+InpTrailAtrMult=2.5
+InpRunnerRr=10.0

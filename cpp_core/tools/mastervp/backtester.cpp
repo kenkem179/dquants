@@ -22,7 +22,7 @@
 #include "kk/common/signal_journal.hpp"
 
 int main(int argc, char** argv) {
-    std::string bars_path, bars_m1_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
+    std::string bars_path, bars_m1_path, bars_m5_path, ticks_path, out_path = "tools/trades_cpp.csv", set_path;
     std::string signals_path;   // edge-autopsy: pre-gate raw signal stream (empty = off)
     std::string flow_path;      // Step-0: per-bar flow path while a position is open (empty = off)
     int64_t trade_from_ms = 0;
@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
         auto next = [&]() { return (i + 1 < argc) ? std::string(argv[++i]) : std::string(); };
         if      (a == "--bars")  bars_path  = next();
         else if (a == "--bars-m1") bars_m1_path = next();   // Monster: M1 series for impulse M1-net
+        else if (a == "--bars-m5") bars_m5_path = next();   // MTF: M5 overlay series (confluence gate)
         else if (a == "--ticks") ticks_path = next();
         else if (a == "--out")   out_path   = next();
         else if (a == "--signals-out") signals_path = next();   // pre-gate signal CSV (edge autopsy)
@@ -79,6 +80,12 @@ int main(int argc, char** argv) {
     if (const char* df = std::getenv("KKVP_DBG_FROM")) {
         const char* dt = std::getenv("KKVP_DBG_TO");
         eng.set_debug_window(std::stoll(df), dt ? std::stoll(dt) : std::stoll(df) + 86400000LL);
+    }
+    if (!bars_m5_path.empty()) {
+        const auto m5 = kk::load_bars_csv(bars_m5_path);
+        std::fprintf(stderr, "[bt] loaded %zu M5 bars from %s (MTF overlay)\n",
+                     m5.size(), bars_m5_path.c_str());
+        eng.set_m5_bars(m5);   // must precede load_bars (precompute_ reads it)
     }
     if (!bars_m1_path.empty()) {
         const auto m1 = kk::load_bars_csv(bars_m1_path);

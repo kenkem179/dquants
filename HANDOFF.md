@@ -1,5 +1,52 @@
 # HANDOFF — read me first, update me last
 
+## 🏆 M3-CHAMPION-EXITS — NEW LEAD XAU CANDIDATE (DSR-PASS, pending MT5 A/B) (2026-06-24, UNCOMMITTED)
+**This REVERSES the MTF "keep M5-only" verdict for the broader idea.** The user's thesis ("M5 entry is too
+late, act on M3") is VINDICATED — just not via a confluence gate. Follow-up the user approved: M3 cadence +
+the champion's already-WF-validated EXITS the old M3 lock never got + a peak-DD limiter.
+- **Winner `C5+peakDD18`** = M3 lock + `InpTp1ClosePct=0` + `InpTrailAtrMult=2.5` + `InpEnableReversion=true`
+  + `InpBlockedHoursStr=2,3,14` + `InpMaxPeakDDPct=18`. 6-fold XAU vs M5 champion (1.318/21,312/dd7.6%/6-6/
+  worstPF1.094): **PF 1.398 / net 30,252 (+42%) / dd 7.5% / 6-6 folds / worstPF 1.106** → BEATS champion on
+  EVERY axis. The T2 blocked-hours lock is what fixes the killer fold F3 (−4,002→+1,310); the peakDD limiter
+  lifts worstPF over the champion. Plateau: peakDD 15 & 18 both clear T1; 12 over-truncates, 20 just misses.
+- **Overfitting gate PASS:** DSR **0.995** (n_trials=22, sr_trial_std=0.01532), PSR-vs-0 1.000, MinTRL 241 vs
+  1332 trades. (`research/stats/gate.py`.)
+- **⚠️ STILL NOT A LOCK — needs the MT5 A/B.** Engine over-credits trailed runners; this leans hard on
+  runners (tp1=0/trail2.5) & fires ~40% more trades → that's where proxy inflation lives. Promote to
+  `kkmastervp_xau_m3_LOCKED` / a kenkem Preset ONLY after MT5 confirms it beats the M5 champion on recent OOS.
+- **Candidate set:** `cpp_core/tools/mastervp/kkmastervp_xau_m3_CHAMPEXITS_CANDIDATE.set` (documented header).
+  Harnesses: `research/mastervp_parity/m3_champ_exits_2026-06-24.py` (Stage1/2),
+  `m3_champ_c5dd_2026-06-24.py` (Stage3 DD sweep), `m3_champ_gate_2026-06-24.py` (deflation).
+  Findings: `MTF_CONFLUENCE_FINDINGS_2026-06-24.md` §FOLLOW-UP.
+- **▶ NEXT ACTION:** user runs the MT5 A/B of the candidate .set vs the M5 champion on recent OOS. If it
+  holds → port exits+limiter to MQL5 + promote the lock. **ALL UNCOMMITTED per "do not commit unless I tell".**
+
+## 🧭 MTF (M5+M3) CONFLUENCE GATE — BUILT, SWEPT → REJECTED (2026-06-24, UNCOMMITTED)
+(The *gate* mechanism is rejected; the M3-cadence idea won via the exits route above.)
+User research task: "M5-only entry timing is too late — try multi-timeframe confluence." Rules: (0) M5
+master-VP value area = breakout/reversion context, but trigger on the M3 close; (1) M3 close drives net-vol
++ master-VP trigger + ATR entry; (2) M5 for the ATR/structure SL; (3) early exit on extreme opposite M3
+near-price net volume, sweep net% 25–55%. **Ran full hypothesis→engine→6-fold WF→conclusion.**
+- **⚠️ FIRST fixed a build-breaker the pulled merge `e916e34` introduced:** it dropped `broker_gmt_offset`
+  (field + `InpBrokerGMTOffset` parse) from `cpp_core/include/kk/common/config.hpp` → engine didn't compile.
+  Restored both lines; `make test` green again (37+240+13). **(uncommitted, needed by everyone.)**
+- **Implemented default-OFF (base byte-identical — golden parity + determinism green; MTF-off WITH the M5
+  overlay attached = byte-identical, verified empirically).** New params `InpEnableMtfConfluence /
+  MtfHtfSeconds / MtfGateBufAtr / MtfSlFromHtf / MtfRevTouchAtr / EnableMtfExit / MtfExitNetMin /
+  MtfExitArmR` (config.hpp); engine = main bars M3 + M5 overlay master-VP gate + M5-ATR SL + M3 near-price
+  net early-exit (tick_engine.hpp `build_mtf_overlay_`); `detect_signal` gained trailing `atr_sl=-1`
+  (−1⇒M3 atr1⇒identical); backtester `--bars-m5`. Harness `research/mastervp_parity/mtf_confluence_sweep_2026-06-24.py`.
+- **VERDICT = REJECTED. Keep the M5-only champion (`KK-MasterVP-XAUUSD-M5.set`, MT5 +62,732/PF1.402).**
+  6-fold XAU (slices regenerated to `cpp_core/tools/fold_slices/`): champion PF **1.318/net21,312/dd7.6%/
+  6-6 folds/worstPF1.094**. Pure-M3 (act earlier) = higher NET 25,162 (+18%) BUT rough (dd13.7%, 4/6 folds,
+  worstPF0.732). The **M5 confluence gate destroys the net** (drops ~20% of signals — the profitable fast
+  breakouts — net→14,944) while keeping the roughness; **M5-ATR SL hurts more**; the **M3 early-exit is
+  inert→negative across the whole 25–55% band** (worstPF 0.732 untouched; killer fold F3 −$4k unchanged).
+  Nothing clears T1 (beat champion AND not degrade worst-fold). NOT ported to MQL5, NO lock change.
+- Docs: `MTF_CONFLUENCE_SPEC_2026-06-24.md` + `MTF_CONFLUENCE_FINDINGS_2026-06-24.md`. Honest read: the
+  user's "M5 is too late" is right on raw net, but MTF confluence is the wrong fix (trades net for nothing).
+- **▶ ALL UNCOMMITTED per user ("do not commit unless I tell"). Feature stays default-OFF infra.**
+
 ## 🔐 PER-ACCOUNT LOCKED BUILDS — shared guard + release script (2026-06-23, THIS SESSION)
 **User ask:** a release script that takes a local file of MT5 account IDs (1/line) and builds 1 EA per
 account; account-lock is a hidden EA param (empty default); ALL EAs share ONE valid-account-check module;

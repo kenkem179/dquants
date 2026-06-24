@@ -24,7 +24,8 @@ inline Signal detect_signal(const Params& p,
                             const VPResult& local_cur, const RegimeState& regime,
                             const SignalBar& s,
                             const NodeState& ns_vah, const NodeState& ns_val,
-                            const NodeState& ns_px, double rr_scale = 1.0) {
+                            const NodeState& ns_px, double rr_scale = 1.0,
+                            double atr_sl = -1.0) {
     Signal out;
     if (!master_cur.valid || !regime.valid) return out;
     if (s.c <= 0 || s.o <= 0 || s.h <= 0 || s.l <= 0 || s.h < s.l) return out;
@@ -89,10 +90,14 @@ inline Signal detect_signal(const Params& p,
     out.is_long = enterLong;
     out.entry = s.entry_close;
 
+    // SL ATR source: M3 atr1 by default; MTF mode passes the M5 ATR here so the stop is sized off the
+    // higher-TF structure (rule 2) while buffers/diagnostics stay on the M3 atr. atr_sl <= 0 => atr1.
+    const double atrSL = (atr_sl > 0.0) ? atr_sl : s.atr1;
+
     if (enterLong) {
         const bool isRev = longRev;
         const double slAtrUse = isRev ? p.sl_atr_rev : p.sl_atr_brk;
-        double sl = s.entry_close - std::max(slAtrUse * s.atr1, 8.0 * p.pip_size);
+        double sl = s.entry_close - std::max(slAtrUse * atrSL, 8.0 * p.pip_size);
         if (isRev && local_cur.valid) sl = std::min(sl, local_cur.lo - 4.0 * p.pip_size);
         const double risk = s.entry_close - sl;
         const double rr = (isRev ? p.rr_rev : p.rr_brk) * rr_scale;
@@ -109,7 +114,7 @@ inline Signal detect_signal(const Params& p,
     } else {
         const bool isRev = shortRev;
         const double slAtrUse = isRev ? p.sl_atr_rev : p.sl_atr_brk;
-        double sl = s.entry_close + std::max(slAtrUse * s.atr1, 8.0 * p.pip_size);
+        double sl = s.entry_close + std::max(slAtrUse * atrSL, 8.0 * p.pip_size);
         if (isRev && local_cur.valid) sl = std::max(sl, local_cur.hi + 4.0 * p.pip_size);
         const double risk = sl - s.entry_close;
         const double rr = (isRev ? p.rr_rev : p.rr_brk) * rr_scale;

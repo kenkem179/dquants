@@ -173,6 +173,20 @@ struct Params {
     bool   enable_defer_entry   = false;
     double defer_pullback_atr   = 0.5;
     int    defer_bars           = 3;
+    // ---- multi-timeframe (M5+M3) confluence — default OFF (inert / base byte-identical) ----
+    // User idea: M5-only entry timing is late. Run detection at M3 cadence (main bars = M3) but gate
+    // every M3 signal on the M5 master-VP value area, size the SL off M5 ATR, and allow an M3
+    // near-price net-volume early exit. ALL of this is engine-side and requires an M5 overlay series
+    // (set_m5_bars / --bars-m5); with enable_mtf_confluence=false NOTHING below runs => byte-identical.
+    // See research/mastervp_parity/MTF_CONFLUENCE_SPEC_2026-06-24.md.
+    bool   enable_mtf_confluence = false;  // master switch (M5 value-area gate + opt M5-ATR SL)
+    int    mtf_htf_seconds       = 300;    // overlay TF seconds (M5): VP window + ATR + bar mapping
+    double mtf_gate_buf_atr      = 0.0;    // breakout: require M3 entry beyond the M5 edge by buf*M5ATR
+    bool   mtf_sl_from_htf       = true;   // within MTF: SL ATR term uses M5 ATR instead of M3 ATR
+    double mtf_rev_touch_atr     = 0.5;    // reversion: M3 entry within touch*M5ATR of the M5 edge faded
+    bool   enable_mtf_exit       = false;  // M3 near-price opposite-net early exit
+    double mtf_exit_net_min      = 0.40;   // |M3 near-price net| against the trade >= this -> close
+    double mtf_exit_arm_r        = 0.0;    // only arm the early exit after MFE >= this R (0 = always)
     // ---- shared ProfitManager toggles (kk::common, default OFF/inert) ----
     common::PMConfig pm;
     // ---- risk ----
@@ -214,6 +228,7 @@ struct Params {
     int    rsi_len            = 14;
     double rsi_midline        = 50.0;
     // ---- sessions / news ----
+    int    broker_gmt_offset  = 0;
     std::string asia_sess     = "00:00-06:00";
     std::string ldn_sess      = "07:00-11:00";
     std::string ny_sess       = "12:30-16:30";
@@ -392,6 +407,15 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpEnableDeferEntry") p.enable_defer_entry = to_bool(val);
     else if (key == "InpDeferPullbackAtr") p.defer_pullback_atr = D();
     else if (key == "InpDeferBars") p.defer_bars = I();
+    // ---- multi-timeframe (M5+M3) confluence ----
+    else if (key == "InpEnableMtfConfluence") p.enable_mtf_confluence = to_bool(val);
+    else if (key == "InpMtfHtfSeconds") p.mtf_htf_seconds = I();
+    else if (key == "InpMtfGateBufAtr") p.mtf_gate_buf_atr = D();
+    else if (key == "InpMtfSlFromHtf") p.mtf_sl_from_htf = to_bool(val);
+    else if (key == "InpMtfRevTouchAtr") p.mtf_rev_touch_atr = D();
+    else if (key == "InpEnableMtfExit") p.enable_mtf_exit = to_bool(val);
+    else if (key == "InpMtfExitNetMin") p.mtf_exit_net_min = D();
+    else if (key == "InpMtfExitArmR") p.mtf_exit_arm_r = D();
     // ---- shared ProfitManager toggles ----
     else if (key == "InpPmBeProtect") p.pm.be_protect = to_bool(val);
     else if (key == "InpPmBeTriggerR") p.pm.be_trigger_r = D();
@@ -441,6 +465,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpUseMomVeto") p.use_mom_veto = to_bool(val);
     else if (key == "InpRsiLen") p.rsi_len = I();
     else if (key == "InpRsiMidline") p.rsi_midline = D();
+    else if (key == "InpBrokerGMTOffset") p.broker_gmt_offset = I();
     else if (key == "InpAsiaSess") p.asia_sess = val;
     else if (key == "InpLdnSess") p.ldn_sess = val;
     else if (key == "InpNySess") p.ny_sess = val;

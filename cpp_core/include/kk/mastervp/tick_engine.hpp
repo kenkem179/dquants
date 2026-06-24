@@ -68,6 +68,10 @@ public:
         load_bars(bars, trade_from_ts_ms);
     }
 
+    // MTF: supply the M5 overlay series BEFORE load_bars (precompute_ reads it). Empty (default) =>
+    // the M5 master-VP confluence gate has no data and is inert even if enable_mtf_confluence is on.
+    void set_m5_bars(const std::vector<Bar>& m5_bars) { m5_bars_ = m5_bars; }
+
     void load_bars(const std::vector<Bar>& bars, int64_t trade_from_ts_ms = 0) {
         bars_ = bars;
         precompute_();
@@ -188,6 +192,8 @@ private:
         if (p_.enable_impulse && !m1_bars_.empty())
             m1_series_ = build_tf_series(m1_bars_, p_.atr_len, 60);
 
+        build_mtf_overlay_();   // MTF: M5 master-VP overlay + M3 near-price net (inert unless enabled)
+
         const int master_len = p_.master_len();
         const int local_len  = p_.vp_lookback;
         NodeEngine node;
@@ -279,9 +285,13 @@ private:
                                                           closesAbove, closesBelow, agedShort, agedLong,
                                                           nsVah, nsVal, nsPx);
                     }
+                    // MTF rule 2: size the SL off the M5 ATR (atr_sl > 0); -1 => M3 atr1 (byte-identical).
+                    const double mtf_atr_sl =
+                        (p_.enable_mtf_confluence && p_.mtf_sl_from_htf && m5_atr_[i] > 0.0)
+                            ? m5_atr_[i] : -1.0;
                     ev.sig = xs.valid ? xs
                            : kk::detect_signal(p_, masterCur, masterCur, localCur, regime,
-                                               s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0);
+                                               s, nsVah, nsVal, nsPx, /*rr_scale=*/1.0, mtf_atr_sl);
                 }
                 // Feature #3: re-anchor the breakout stop just beyond the most recent significant
                 // FVG (3-bar imbalance) between entry and the value edge. Default OFF => no-op.
@@ -294,6 +304,25 @@ private:
                     ev.sig.tp2 = node.structural_tp(ev.sig.is_long, ev.sig.entry, ev.sig.risk,
                                                     ev.sig.tp1, atr_[i], masterCur.vah, masterCur.val,
                                                     ev.sig.tp2, p_);
+                }
+                // MTF rule 0: confluence gate — the M3 signal must agree with the M5 master value area.
+                // Breakout: M3 entry beyond the M5 edge (+buf). Reversion: M3 entry at the M5 edge it
+                // fades (within touch). Drop the signal otherwise. No-lookahead (last closed M5 bar).
+                if (p_.enable_mtf_confluence && ev.sig.valid) {
+                    const double m5vah = m5_vah_[i], m5val = m5_val_[i];
+                    const double m5a = (m5_atr_[i] > 0.0) ? m5_atr_[i] : atr_[i];
+                    bool ok = (m5vah > 0.0 && m5val > 0.0);
+                    if (ok) {
+                        const double ec = ev.sig.entry;
+                        if (ev.sig.is_rev) {
+                            const double tch = p_.mtf_rev_touch_atr * m5a;
+                            ok = ev.sig.is_long ? (ec <= m5val + tch) : (ec >= m5vah - tch);
+                        } else {
+                            const double buf = p_.mtf_gate_buf_atr * m5a;
+                            ok = ev.sig.is_long ? (ec > m5vah + buf) : (ec < m5val - buf);
+                        }
+                    }
+                    if (!ok) ev.sig = Signal{};
                 }
                 ev.valid = true;
                 if (ev.sig.valid) {
@@ -327,6 +356,49 @@ private:
         }
         m15_emaF_ = kk::ind::ema(m15_close_, p_.ema_fast);
         m15_emaS_ = kk::ind::ema(m15_close_, p_.ema_slow);
+    }
+
+    // MTF (M5+M3) overlay. Fills, per M3 main bar: the M5 master-VP edges (m5_vah_/m5_val_) + M5 ATR
+    // for the confluence gate / M5-ATR SL, and the M3 near-price tick-net fraction for the early exit.
+    // Fully inert (all-zero, returns early) unless the matching toggle is on => base byte-identical.
+    void build_mtf_overlay_() {
+        m5_vah_.assign(N_, 0.0); m5_val_.assign(N_, 0.0); m5_atr_.assign(N_, 0.0);
+        m3_near_net_.assign(N_, 0.0);
+        if (N_ == 0) return;
+
+        // M3 near-price net (rule 3 early exit): tf-net over the MAIN bars themselves.
+        if (p_.enable_mtf_exit) {
+            TfSeries m3 = build_tf_series(bars_, p_.atr_len, 180);
+            for (int i = 0; i < N_; ++i) {
+                bool ok = false;
+                const int shift = N_ - 1 - i;
+                const double v = tf_net_near_at(m3, shift, p_.tf_net_look, p_.tf_net_win_atr, p_.mintick, ok);
+                m3_near_net_[i] = ok ? v : 0.0;
+            }
+        }
+
+        // M5 master-VP overlay (rule 0 confluence gate + rule 2 M5-ATR SL).
+        if (!p_.enable_mtf_confluence || m5_bars_.empty()) return;
+        const int M = static_cast<int>(m5_bars_.size());
+        std::vector<double> m5h(M), m5l(M), m5c(M);
+        for (int j = 0; j < M; ++j) { m5h[j] = m5_bars_[j].high; m5l[j] = m5_bars_[j].low; m5c[j] = m5_bars_[j].close; }
+        const std::vector<double> m5atr = p_.atr_mt5_mode ? kk::ind::atr_mt5(m5h, m5l, m5c, p_.atr_len)
+                                                          : kk::ind::atr(m5h, m5l, m5c, p_.atr_len);
+        const int mlen = p_.master_len();
+        std::vector<double> m5vah(M, 0.0), m5val(M, 0.0);
+        for (int j = mlen - 1; j < M; ++j) {
+            const VPResult vp = kk::vp::compute_vp_bars(&m5_bars_[j - mlen + 1], mlen, p_.vp_bins, p_.va_pct);
+            if (vp.valid) { m5vah[j] = vp.vah; m5val[j] = vp.val; }
+        }
+        // Map each M3 bar -> the last fully-closed M5 bar at the entry instant (next M3 open). The M5
+        // bar j is closed when m5_open[j] + htf_ms <= decisionT. Monotone advance; no lookahead.
+        const int64_t htf_ms = static_cast<int64_t>(p_.mtf_htf_seconds) * 1000;
+        int j = -1;
+        for (int i = 0; i < N_; ++i) {
+            const int64_t decisionT = (i + 1 < N_) ? bars_[i + 1].ts_ms : bars_[i].ts_ms + 180000;
+            while (j + 1 < M && m5_bars_[j + 1].ts_ms + htf_ms <= decisionT) ++j;
+            if (j >= 0) { m5_vah_[i] = m5vah[j]; m5_val_[i] = m5val[j]; m5_atr_[i] = m5atr[j]; }
+        }
     }
 
     // Per-bar net flow (feature #1): volume-weighted directional body ratio in ~[-3,3].
@@ -447,6 +519,15 @@ private:
             && net_against_n_(pos_.is_long(), sig_bar, p_.net_flip_bars, p_.net_flip_min)) {
             pos_.force_close(t.bid, t.ask);
             finalize_trade_(t.ts_ms);
+        }
+
+        // MTF rule 3: early exit when extreme OPPOSITE near-price net volume prints on the M3 bar that
+        // just closed (and the trade has run >= arm_r). m3_near_net_ is a signed fraction in [-1,1].
+        if (p_.enable_mtf_exit && pos_.open() && pos_.mfe_r() >= p_.mtf_exit_arm_r) {
+            const double nn = m3_near_net_[sig_bar];
+            const bool against = pos_.is_long() ? (nn <= -p_.mtf_exit_net_min)
+                                                : (nn >=  p_.mtf_exit_net_min);
+            if (against) { pos_.force_close(t.bid, t.ask); finalize_trade_(t.ts_ms); }
         }
 
         // Conviction-protect (TP1 redesign): a winner that has run (MFE >= arm_r) AND whose near-price
@@ -591,6 +672,9 @@ private:
     std::vector<double>  node_net_close_;  // near-price VP node-net at each bar's close (conviction-protect)
     std::vector<Bar>     m1_bars_;    // Monster: M1 bars (impulse M1 near-price net)
     TfSeries             m1_series_;  // Monster: built from m1_bars_ once in precompute_
+    std::vector<Bar>     m5_bars_;    // MTF: M5 overlay bars (oldest..newest, ts = bar open)
+    std::vector<double>  m5_vah_, m5_val_, m5_atr_;  // per-M3-bar M5 master VP edges + M5 ATR (MTF gate/SL)
+    std::vector<double>  m3_near_net_;               // per-M3-bar near-price tick-net fraction [-1,1] (MTF exit)
     std::vector<int64_t> m15_start_;
     std::vector<double>  m15_close_, m15_emaF_, m15_emaS_;
 
