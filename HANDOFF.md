@@ -24,7 +24,7 @@ Pure planning this session — **no source touched** (safe alongside the paralle
   append-immediate CSV. **▶ NEXT:** implement when the user greenlights the build (D1 math should be factored
   into a unit-testable header). Prop-firm facts grounded from FTMO/FundedNext docs (in the plan).
 
-## 🏆 MasterVP XAU M5 FINAL LOCK = RR4.0 / Trail2.75 / BeBuf0.02 — MT5 + DSR PASS (2026-06-25) — UNCOMMITTED
+## 🏆 MasterVP XAU M5 FINAL LOCK = RR4.0 / Trail2.75 / BeBuf0.02 — MT5 + DSR PASS (2026-06-25) — ✅ COMMITTED+PUSHED `17189ef`
 **Lock: net +87,836 (final bal 97,836) / PF 1.413 / 1,423 tr / maxDD(close-to-close) 21.1%** (XAU M5,
 2025.06.01–2026.05.29, $10k every-tick). Both years +PF (2025 1.367 / 2026 1.437). Memory
 [[mastervp-runner5-bebuf-lock]]. Run: `research/mastervp_parity/mt5_runs/2026-06-25_xau_m5_RR4_T2.75_confirm/`.
@@ -41,8 +41,9 @@ Pure planning this session — **no source touched** (safe alongside the paralle
 - **DONE:** `KK-MasterVP-XAUUSD-M5.set` + engine `kkmastervp_xau_m5_LOCKED.set` → RR4.0/Trail2.75/BeBuf0.02
   (+ rewritten headers). Inputs.mqh defaults ALREADY 4.0/2.75 (no drift) → EA recompiled 0/0. Temp OPT/CONFIRM
   .set removed. Memory + best-experts table updated. **LESSON (user was right): finer step = anti-overfit.**
-- **▶ NEXT (user choice):** (a) commit this lock + earlier marketplace/account-build refactor (uncommitted);
-  (b) version bump? `make release STRATEGY=KK-MasterVP` — ask Y/N (default N) only AFTER user satisfied.
+- **▶ NEXT (user choice):** lock is committed+pushed (`17189ef`); BRK-POC gate study committed (`e2c6316`,
+  REJECTED). Research has CONVERGED — no open MasterVP research lever. Remaining work is **D1–D3 deployment
+  infra** (top section, awaiting greenlight) or a release bump `make release STRATEGY=KK-MasterVP` (Y/N, default N).
 
 ## 🕐 (history) MasterVP SESSION-TIME migration → pure UTC DONE + MT5-CONFIRMED (2026-06-24, commits `749bb6a`+`7bb9a95`)
 **Status:** COMPLETE. Sessions/blocked-hours pure UTC in BOTH engine + EA; user configures session windows
