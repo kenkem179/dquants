@@ -38,6 +38,29 @@ What remains genuinely open:
     feed runs optimistic → **MT5-confirm before trusting** any BTC lock ([[mastervp-t3-reversion-lock]]).
     Ship `kkmastervp_btc_m3_LOCKED.set` + EA preset only on DSR-PASS.
 
+- [ ] **H8 — Drop session windows, trade 24h-minus-blocked (BTC-first).** Hypothesis (user): ignore the
+  Asia/London/NY session gating entirely and let entries fire **any hour except `InpBlockedHoursStr`**. Rationale:
+  BTCUSD has no session character and runs 24/7, so the session windows may be needlessly throwing away trades.
+  - **Build:** mostly a **config ablation** (no code expected) — set session windows to full-day (24h) while
+    keeping the blocked-hours list, on a candidate `.set`. ⚠️ **Impl check first:** confirm whether the
+    engine/EA currently excludes **weekends** and whether a `weekend-enable` toggle exists; "BTC 24/7" only
+    holds if weekend bars are actually tradable in both engine and EA (add a minimal flag if not).
+  - **Blocked hours are ALREADY per-symbol** — `InpBlockedHoursStr` is a per-EA-instance input (each chart =
+    one symbol = its own `.set`), so there is no shared/global list. The validated `4,16,17` UTC hours are
+    **XAU-specific** microstructure (Asian-lunch lull + late-London chop on gold) and must **NOT** be inherited
+    by BTC. H8 must **derive BTC's own blocked hours empirically** (per-hour ATR/PF decomp via `hour_atr_decomp.py`;
+    candidate causes: low-liquidity windows, the Exness daily break ~UTC 21–22) — independent of gold's.
+  - ⚠️ **Cost realism is load-bearing here** — weekend BTC on the Exness feed has wider spreads / thinner
+    liquidity / gaps ([[btcusd-data-quirks]]). Test with **realistic weekend spread+commission** (pairs with
+    **T5**), else the 24/7 result reads optimistic. An uncosted 24/7 win is not a real win.
+  - **Expect XAU to REJECT (control, not target).** XAU's session/hour structure is a *measured* edge — T2
+    hour-block lock improved pooled PF ([[mastervp-m5-t2-hour-block-lock]]) and the UTC-21 study showed adding
+    blocks helped/widening hurt. Run XAU as a control; the real candidate is BTC (M5 + M3).
+  - **Validate:** per-symbol/TF A/B (session-gated vs 24h-minus-blocked) → **per-fold** 6-fold WF
+    (decompose, do NOT pool — pooled gains hid recent harm in the T1 gate-sweep [[mastervp-m5-gate-sweep-lock]])
+    → MC → overfitting gate. BTC locks MT5-confirm before trust ([[mastervp-t3-reversion-lock]]). Combine with
+    **H7** (BTC-M3 re-sweep) — hours are part of that config space.
+
 - [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
   on XAU; re-confirm MasterVP M5 XAU edge).
 
