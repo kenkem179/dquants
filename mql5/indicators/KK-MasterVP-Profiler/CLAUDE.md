@@ -51,7 +51,7 @@ off by default (`InpVizShowLocalPOC`), labelled "rev-only". Not a driver.
 
 Master VAH/VAL/POC at the EA's length (buffers) · regime EMA fast/slow · entry
 markers E/SL/TP1/TP2 with WON/LOST/BE verdict · SL→BE→trail stop path · gray
-background over blocked trading hours (`InpBlockedHoursStr` via `SN_RefTime`) ·
+background over blocked UTC trading hours (`InpBlockedHoursStr`) ·
 compact status panel (master length, WON/LOST/BE tally, hit%, blocked hrs).
 
 ## Compile (Makefile does NOT cover Indicators)

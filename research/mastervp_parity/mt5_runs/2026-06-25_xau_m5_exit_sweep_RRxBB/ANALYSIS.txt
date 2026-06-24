@@ -1,0 +1,16 @@
+KK-MasterVP XAUUSD M5 — EXIT SWEEP (RunnerRr x BeBuf), 105-pass exhaustive MT5 optimization
+Period 2025.06.01-2026.05.29, every-tick real ticks, $10k, FundedNext-Server2.
+Axes: InpRunnerRr 3.0..8.0 step 0.25 (21) x InpBeBufAtr 0.01..0.05 step 0.01 (5) = 105.
+
+VERDICT: KEEP current lock RR=5.0 / BB=0.02. Sweep CONFIRMS it is on the optimum (not a drift accident).
+  - Global net max  = RR5.0/BB0.03 = 81,770 (PF 1.410, DD 13.90).
+  - Current lock    = RR5.0/BB0.02 = 80,874 (PF 1.408, DD 13.95) -> #2 of 105, within 1.1% of max.
+  - BB 0.02 vs 0.03 = noise (<1% net, identical PF/DD); not worth re-locking (peak-chasing).
+PF PLATEAU: edge quality flat ~1.38-1.41 across RunnerRr 4.0..6.5 (robust; 5.0 is just net-max tip).
+BeBuf: 0.02-0.03 plateau; 0.05 (old lock) WORST cell. 0.05->0.02 move fully justified.
+DD CAVEAT: 13.9% DD is a KNIFE-EDGE (bimodal grid: ~14% at BB<=0.03 for some RR rows, ~24% elsewhere).
+  Path-dependent fat-tail avoidance, NOT a stable property. Size for ~22-25% (MC true full-yr 27.7%).
+GATE (sweep-deflated): per-trade SR 0.1029, PSR-vs-0 1.000, MinTRL 211<1403,
+  n_trials=105, sr_trial_std~0.0063 (gate units; MT5-Sharpe std 0.5508 x k=0.011435),
+  E[max SR] 0.0160 -> DSR 1.000 PASS. Edge ~6.4x the multiple-testing noise floor.
+NOT YET SWEPT: InpTrailAtrMult (3rd exit axis) — OPT set built at -OPT-exit.set (RR x BB x Trail, 1155).

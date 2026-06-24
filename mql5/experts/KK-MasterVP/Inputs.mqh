@@ -9,21 +9,22 @@
 #define KKMVP_INPUTS_MQH
 
 input group "===== Risk sizing ====="
-input int    InpRiskUnit        = 0;        // 0=%acct,1=USD,2=min,3=max
-input double InpRiskAccPct      = 1.0;      // % balance risked/trade - swept (S6b lowest-DD plateau)
-input double InpRiskUsd         = 180.0;    // used only when InpRiskUnit!=0
-input double InpMaxLot          = 0.0;      // 0 = broker VOLUME_MAX
+input int    InpRiskUnit        = 0;        // Risk basis: 0=% balance, 1=fixed USD, 2=min lot, 3=max lot
+input double InpRiskAccPct      = 1.0;      // Risk per trade (% of balance) - used when Risk basis=0
+input double InpRiskUsd         = 180.0;    // Risk per trade in USD - used when Risk basis=1
+input double InpMaxLot          = 0.0;      // Lot-size cap (0 = broker maximum)
 int    InpDeviationPoints = 200;
-input bool   InpSkipIfMinLotOverRisk = false;
+input bool   InpSkipIfMinLotOverRisk = false; // Skip trade if even the min lot exceeds the risk limit
 
 input group "===== Risk-management limiters ====="
-input double InpMaxDailyDDPct   = 10.0;     // daily-DD cap (predictive) - swept (S6b); plateau 8/10/12
-input double InpDailyDDCooldownHrs = 12.0;  // cooldown armed on a daily-DD breach
-input double InpMaxPeakDDPct    = 0.0;      // peak-DD halt OFF (curve-fits the train peak)
-input double InpSoftBlockDDPct  = 0.0;      // soft-block OFF
-input double InpSoftBlockLotMult= 0.55;
-input int    InpLossStreakCount = 0;        // OFF - swept (S6b): streak limiter hurts PF
-input double InpLossStreakCooldownHrs = 4.0;
+input double InpMaxDailyDDPct   = 10.0;     // Daily drawdown % that pauses trading (0 = off)
+input double InpDailyDDCooldownHrs = 12.0;  // Pause length (hours) after a daily-DD hit
+input double InpSoftBlockDDPct  = 0.0;      // Account DD % to start trading smaller (0 = off)
+input double InpMaxPeakDDPct    = 0.0;      // Account DD % that halts trading (0 = off)
+input double InpSoftBlockLotMult= 0.55;     // Lot multiplier while trading smaller (e.g. 0.55 = 55%)
+input int    InpLossStreakCount = 0;        // Consecutive losses that pause trading (0 = off)
+input double InpLossStreakCooldownHrs = 4.0;// Pause length (hours) after a loss streak
+
 
 // Sessions are configured + evaluated in UTC. The EA auto-detects the broker/VPS
 // offset internally, so these UTC windows trade the same wall-clock hours on any
@@ -31,20 +32,24 @@ input double InpLossStreakCooldownHrs = 4.0;
 //   Asia   : UTC 21:00-03:00  (JST 06:00-12:00 next day)
 //   Europe : UTC 03:00-11:00  (JST 12:00-20:00)
 //   US     : UTC 14:00-21:00  (JST 23:00-06:00 next day)   -> dead-zone UTC 11:00-14:00
-input group "===== Sessions (UTC) ====="
-input string InpAsiaSess        = "21:00-03:00";  // Asia session, UTC (JST 06:00-12:00 next day)
-input string InpLdnSess         = "03:00-11:00";  // Europe session, UTC (JST 12:00-20:00)
-input string InpNySess          = "14:00-21:00";  // US session, UTC (JST 23:00-06:00 next day)
-input string InpBlockedHoursStr = "4,16,17";      // low-liquidity veto, UTC hours (validated T2 lock: 04 Asian-lunch lull, 16/17 late-US chop). Format: "8,16" or "9-11"
-input bool   InpForceCloseSessNews = false; // Pine never force-closes on session exit
+input group "===== Trading Time Settings ====="
+string InpAsiaSess        = "21:00-03:00";  // Asia session, UTC (JST 06:00-12:00 next day)
+string InpLdnSess         = "03:00-11:00";  // Europe session, UTC (JST 12:00-20:00)
+string InpNySess          = "14:00-21:00";  // US session, UTC (JST 23:00-06:00 next day)
+input string InpBlockedHoursStr = "4,16,17";      // No-trade UTC hours, e.g. "4,16,17" or "8,9-11" (empty = none)
+input bool   InpForceCloseSessNews = false; // Close open trades at session end / before news
+input bool   InpAvoidNews       = false;    // Block new entries around high-impact news
+input int    InpNewsMinsBefore  = 15;       // News blackout: minutes before the event
+input int    InpNewsMinsAfter   = 15;       // News blackout: minutes after the event
+bool   InpUseEmbeddedNews = true;     // fall back to the compiled-in calendar if no CSV
 
-input group "===== VP core ====="
-input int    InpVpLookback     = 108;     // local VP window (bars) - swept (S8b); long-window OOS plateau
-input int    InpVpBins         = 30;
-input double InpVaPct          = 70.0;
-input double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 432 bars (XAUUSD M5 lock)
-input int    InpAtrLen         = 14;
-input bool   InpAtrMt5Mode     = false;   // false = textbook Wilder ATR (Pine ta.atr = RMA)
+//input group "===== Master Volume Profile Settings ====="
+int    InpVpLookback     = 108;     // Local VP window (bars)
+int    InpVpBins         = 30;
+double InpVaPct          = 70.0;
+double InpMasterMult     = 4.0;     // master VP = round(lookback*mult) = 432 bars (XAUUSD M5 lock)
+int    InpAtrLen         = 14;
+bool   InpAtrMt5Mode     = false;   // false = textbook Wilder ATR (Pine ta.atr = RMA)
 
 //input group "===== Node engine ====="
 double InpNodeTouchAtr   = 0.05;
@@ -73,7 +78,7 @@ double InpSlAtrBrk          = 1.2;    // swept (S4)
 bool   InpBrkVetoSfp        = false;
 
 input group "===== Reversion ====="
-input bool   InpEnableReversion = true;
+input bool   InpEnableReversion = true;     // Enable mean-reversion entries
 double InpRetestAtr         = 0.1;
 double InpBodyPctMin        = 0.6;
 double InpRrRev             = 1.2;
@@ -120,13 +125,14 @@ bool   InpXRevTpMpoc          = false;// XRev TP = master POC (full bank, humble
 bool   InpRevTpMpoc           = false;// base reversion TP = master POC instead of rr_rev multiple
 
 input group "===== Exit ====="
-input double InpTp1R            = 0.8;
-input double InpTp1ClosePct     = 0.0;
-input bool   InpBeAfterTp1      = true;
-input double InpBeBufAtr        = 0.05;
-input bool   InpTrailRunner     = true;     // ATR chandelier trail on runner (GLOBAL default)
-input double InpRunnerRr        = 10.0;     // runner TP cap (effectively trail-to-exit)
-input double InpTrailAtrMult    = 2.5;      // swept (S4)
+input double InpTp1R            = 0.8;    // First target distance (x risk)
+input double InpTp1ClosePct     = 0.0;    // % of position to bank at first target (0=off, e.g. 20=close 20%)
+input bool   InpBeAfterTp1      = true;   // Move stop to break-even after the first target
+input double InpBeBufAtr        = 0.02;   // Break-even buffer (x ATR; lower=tighter)
+input bool   InpTrailRunner     = true;   // Trail the runner to ride trends
+input double InpRunnerRr        = 4.0;    // Runner take-profit cap (x risk)
+input double InpTrailAtrMult    = 2.75;    // Trail distance (x ATR; lower=tighter)
+
 // Per-entry-type trail override (tri-state: -1 inherit InpTrailRunner / 0 fixed-TP no-trail / 1 force trail).
 // Lets reversion/XRev bank a fixed TP (e.g. mPOC via InpRevTpMpoc/InpXRevTpMpoc) while breakout keeps
 // trailing. Default -1 everywhere => identical to the global flag => base byte-identical.
@@ -135,66 +141,61 @@ int    InpTrailRev        = -1;       // base reversion
 int    InpTrailImp        = -1;       // impulse-thrust path (active only when InpEnableImpulse)
 int    InpTrailXRev       = -1;       // extreme reversion (XRev)
 
-input group "===== Profit-lock ladder (ProfitManager; default OFF) ====="
+//input group "===== Profit-lock ladder (ProfitManager; default OFF) ====="
 // 1:1 mirror of cpp_core kk::common::pm_evaluate. Every toggle OFF => MvpProfitManager() returns the stop
 // unchanged => the EA is byte-identical to its pre-ProfitManager behaviour. R is measured against the
 // ORIGINAL risk captured at fill (g_riskOpen), NOT the moving stop. Composes tighten-only with BE+chandelier.
 // (1) be_protect: at >= trigger_r CURRENT gain, move SL to entry + buffer_r*risk.
-input bool   InpPmBeProtect       = false;
-input double InpPmBeTriggerR      = 1.0;
-input double InpPmBeBufferR       = 0.0;
+bool   InpPmBeProtect       = false;
+double InpPmBeTriggerR      = 1.0;
+double InpPmBeBufferR       = 0.0;
 // (2) prog_trail: SL->entry at trigger_r, then advance step_r per increment_r of EXTRA gain (smooth ratchet
 //     that fills the 0.8R..chandelier dead zone — the "trail SL nicely to bank profit" behaviour).
-input bool   InpPmProgTrail       = false;
-input double InpPmProgTriggerR    = 1.0;
-input double InpPmProgIncrementR  = 0.5;
-input double InpPmProgStepR       = 0.10;
+bool   InpPmProgTrail       = false;
+double InpPmProgTriggerR    = 1.0;
+double InpPmProgIncrementR  = 0.5;
+double InpPmProgStepR       = 0.10;
 // (3) giveback: once PEAK gain (MFE) >= arm_r, keep >= (1-cap_frac) of peak locked as SL. Hard profit floor.
-input bool   InpPmGiveback        = false;
-input double InpPmGivebackArmR    = 2.0;
-input double InpPmGivebackCapFrac = 0.30;
+bool   InpPmGiveback        = false;
+double InpPmGivebackArmR    = 2.0;
+double InpPmGivebackCapFrac = 0.30;
 // (4) tp_extension: push final TP further while price nears it (needs trend signal; inert here = engine).
-input bool   InpPmTpExtension     = false;
-input double InpPmTpExtProgress   = 0.90;
-input double InpPmTpExtAtrMult    = 1.0;
-input int    InpPmTpExtMax        = 5;
+bool   InpPmTpExtension     = false;
+double InpPmTpExtProgress   = 0.90;
+double InpPmTpExtAtrMult    = 1.0;
+int    InpPmTpExtMax        = 5;
 // (5) pre_be_structure: tighten to a prior swing before BE (needs structure level; inert here = engine).
-input bool   InpPmPreBeStructure  = false;
-input double InpPmPreBeTriggerR   = 0.5;
-input double InpPmPreBeBuffer     = 0.0;
+bool   InpPmPreBeStructure  = false;
+double InpPmPreBeTriggerR   = 0.5;
+double InpPmPreBeBuffer     = 0.0;
 // (6) partial_tp: one-shot fractional close once CURRENT gain >= trigger_r.
-input bool   InpPmPartialTp       = false;
-input double InpPmPartialTriggerR = 1.0;
-input double InpPmPartialFrac     = 0.5;
+bool   InpPmPartialTp       = false;
+double InpPmPartialTriggerR = 1.0;
+double InpPmPartialFrac     = 0.5;
 
 
 input group "===== Safety / volatility ====="
-input double InpMinAtrPct       = 0.0;      // ATR% band OFF
-input double InpMaxAtrPct        = 0.0;
-input double InpMinAtrTicks      = 40.0;    // Pine atrTicks floor (atr/mintick >= this)
-input int    InpMaxTradesPerSession = 4;
-input double InpMaxSpreadPips    = 0.0;     // spread gate OFF (0 = off)
-input double InpMaxSpreadTp1Frac = 0.0;     // TP1 cost-clearance OFF
-
-input group "===== Quality gates (Pine has NEITHER) ====="
-input bool   InpUseMtfAgree     = false;    // MTF EMA agreement gate OFF
-input bool   InpMtfHardVeto     = true;     // (semantics when MTF on; inert while off)
-input bool   InpUseMomVeto      = false;    // RSI momentum veto OFF
-input double InpRsiMidline      = 50.0;
-input int    InpRsiLen          = 14;
+double InpMinAtrPct       = 0.0;      // ATR% band OFF
+double InpMaxAtrPct        = 0.0;
+double InpMinAtrTicks      = 40.0;    // Pine atrTicks floor (atr/mintick >= this)
+double InpMaxSpreadTp1Frac = 0.0;     // TP1 cost-clearance OFF
+input int    InpMaxTradesPerSession = 4; // Max trades per session
+input double InpMaxSpreadPips    = 0.0;     // Max spread (pips) allowed to enter (0 = off)
 
 
-input group "===== News avoidance (live-safety overlay; CSV of UTC release times) ====="
-input bool   InpAvoidNews       = false;    // ON = block NEW entries in the blackout window
-input int    InpNewsMinsBefore  = 15;       // blackout starts N min before each high-impact event
-input int    InpNewsMinsAfter   = 15;       // blackout ends N min after
-input bool   InpUseEmbeddedNews = true;     // fall back to the compiled-in calendar if no CSV
+//input group "===== Quality gates (Pine has NEITHER) ====="
+bool   InpUseMtfAgree     = false;    // MTF EMA agreement gate OFF
+bool   InpMtfHardVeto     = true;     // (semantics when MTF on; inert while off)
+bool   InpUseMomVeto      = false;    // RSI momentum veto OFF
+double InpRsiMidline      = 50.0;
+int    InpRsiLen          = 14;
+
 
 //input group "===== Misc ====="
 ulong  InpMVPMagic        = 5252510;
 
-input group "===== Parity (trade-level CSV vs C++ engine; OFF in live) ====="
-input bool   InpExportParity    = false;    // ON in the MT5 tester to emit trades_<sym>_<tf>.csv for parity_diff.py
+input group "===== Log Trade Details to CSV  ====="
+input bool   InpExportParity    = false;    // Log each closed trade to a CSV file
 
 // ----- Account lock (hidden internals; NOT inputs) -----
 // Empty by default = runs on any account. The per-account release script bakes

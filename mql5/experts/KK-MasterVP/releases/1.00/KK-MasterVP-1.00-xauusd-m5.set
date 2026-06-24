@@ -24,7 +24,6 @@ InpBreakBufAtr=0.85
 InpBreakMaxAtr=1000000
 InpBrkRequireFlow=false
 InpBrkVetoSfp=false
-InpBrokerGMTOffset=10
 InpDailyDDCooldownHrs=12.0
 InpDeviationPoints=200
 InpDiSpreadMin=8.0

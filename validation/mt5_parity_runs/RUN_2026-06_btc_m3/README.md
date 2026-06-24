@@ -13,7 +13,7 @@ reproduces MT5 "Every tick based on real ticks" before scaling.
 - Params:      **LOAD preset KK-MasterVP-parity-btc** (== cpp_core/tools/btc_ref_run.set).
                Do NOT use code defaults — the C++ engine runs this exact set, so params must match.
                It already has InpMaxSpreadPips=0 (defaults=40 blocks ALL BTC entries -> 0 trades)
-               and InpAvoidNews=false. Override only InpBrokerGMTOffset if broker server != UTC.
+               and InpAvoidNews=false. Sessions are evaluated in fixed UTC.
 
 ## LIVE terminal data folder (portable mode, origin = C:\Program Files\MetaTrader 5)
   /Users/tokyotechies/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5

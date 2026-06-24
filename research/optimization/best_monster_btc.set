@@ -41,7 +41,6 @@ InpRrAtrHighMul=1.1
 InpUseMtfAgree=false
 InpHtfChoice=2
 InpMtfHardVeto=true
-InpBrokerGMTOffset=0
 InpAsiaSess=00:00-06:00
 InpLdnSess=07:00-11:00
 InpNySess=12:30-16:30

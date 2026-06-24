@@ -10,11 +10,9 @@ ported FAITHFULLY (the blocked hours are exactly empty in MT5); (2) trade-level 
 - Output: `trades_mt5_xau_m5.csv` (535 trades, net **+$11,789**, PF **1.366**, win 55.7%). Log `tester_xau_m5.log`.
 
 ## 1) HOUR-BLOCK PORTED FAITHFULLY (the point of this run)
-Blocked ref-tz (UTC+10) hours 2,3,14 = UTC 16,17,04. MT5 entries-by-UTC-hour:
-- **UTC 04 = 0**, **UTC 16 = 0**, **UTC 17 = 0** — exactly the blocked hours, empty as designed.
-- UTC 11,12,13 = 0 (the pre-existing no-session gap, ref-tz 21,22,23).
-The EA's `SN_RefTime` (server − brokerUTC + `InpBrokerGMTOffset`=10) reproduces the engine's UTC+10 frame
-to the hour. The block is a real EA input shipped via `.set` — no recompile.
+Blocked UTC hours 2,3,14 are enforced directly. MT5 entries-by-UTC-hour:
+- **UTC 02 = 0**, **UTC 03 = 0**, **UTC 14 = 0** — exactly the blocked hours, empty as designed.
+The block is a real EA input shipped via `.set` — no recompile.
 
 ## 2) PARITY = faithful (logic reproduced; residual = feed noise + spread)
 `parity_diff.py` engine (cost-matched +0.17 spread, 542) vs MT5 (535), bar-seconds 300:

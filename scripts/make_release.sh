@@ -60,6 +60,8 @@ die()  { echo -e "${RED}✗ $*${NC}" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EXPERTS_DIR="$PROJECT_ROOT/mql5/experts"
+# shellcheck source=lib/market_edition.sh
+. "$SCRIPT_DIR/lib/market_edition.sh"
 
 STRATEGY="${1:-}"
 [ -n "$STRATEGY" ] || die "usage: make_release.sh <STRATEGY> [--no-compile] [--major|--minor] [--set-version X.Y]"
@@ -143,25 +145,19 @@ if [ "$VERSION" != "$DEV_VER" ]; then
 fi
 
 # Marketplace-edition plumbing (used in the optional [market] step at the end).
-# If a release-only inputs file (Inputs.release.mqh) exists, the script also
-# emits a second, MQL5-Market-ready build where the technical strategy params
-# are hidden (fixed). That build is produced by transiently swapping this file
-# in for the compile; the DEV Inputs.mqh is backed up and restored via a trap,
-# so `make release` NEVER mutates the committed source. The NORMAL release below
-# (full EA + personal/prop sets) is unaffected and exposes every input.
-# Two ways to produce the hidden-internals build (whichever the EA provides):
-#   A. Inputs.release.mqh  -> a hand-written, fully-replaced inputs file that is
-#      transiently swapped in for the compile (used by KK-MasterVP).
-#   B. release.market.whitelist -> a list of dialog-visible KEYs; everything else
-#      in the dev input source(s) is stripped to a fixed global in place, with the
-#      validated lock optionally baked in as the defaults (used by KK-KenKem).
-# Either way the dev source is backed up and restored via the trap, so a release
-# NEVER mutates committed source.
-PUBLIC_INPUTS="$EA_DIR/Inputs.release.mqh"
-MKT_WHITELIST="$EA_DIR/release.market.whitelist"
-DEV_INPUTS="$EA_DIR/Inputs.mqh"
-MKT_BACKUPS=()                          # <file>.devbak list to restore
-backup_file() { cp -f "$1" "$1.devbak"; MKT_BACKUPS+=("$1.devbak"); }
+# The hidden-internals build + visible-key logic now lives in the shared lib
+# scripts/lib/market_edition.sh (sourced above), so this script and
+# make_account_releases.sh produce the SAME marketplace binary. Two mechanisms,
+# auto-detected per EA (see the lib header):
+#   A. SINGLE-SOURCE  (KK-MasterVP) — Inputs.mqh is hand-curated; the `input`
+#      keyword IS the visibility control, so the dev build already IS the market
+#      build. No transform; no source mutation.
+#   B. WHITELIST-STRIP (KK-KenKem) — release.market.whitelist names the visible
+#      KEYs; the rest are stripped to fixed globals + locked defaults baked. This
+#      mutates dev source in place; backups are restored via the trap below.
+# Either way `make release` NEVER leaves the committed source mutated. The NORMAL
+# release (full EA + personal/prop sets) above is unaffected and exposes every input.
+MKT_BACKUPS=()                          # <file>.devbak list to restore (approach B)
 restore_inputs() {
   local b f
   for b in "${MKT_BACKUPS[@]:-}"; do
@@ -210,99 +206,12 @@ apply_overrides() {
   done
 }
 
-# Allowlist of dialog-visible input keys (lines beginning `input <type> Inp...`)
-# taken from the market inputs file (Inputs.release.mqh). Used ONLY by the
-# marketplace edition below to strip hidden-internal keys from its .set files so
-# they are never leaked in the shipped preset text. The NORMAL .set files above
-# are NOT filtered. Empty (no filtering) if Inputs.release.mqh is absent.
-VISIBLE_KEYS=""
-if [ -f "$PUBLIC_INPUTS" ]; then
-  VISIBLE_KEYS="$(grep -oE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' "$PUBLIC_INPUTS" \
-                  | awk '{print $NF}' || true)"
-elif [ -f "$MKT_WHITELIST" ]; then
-  # whitelist file = one bare KEY per line; '#'/blank lines are comments/directives
-  VISIBLE_KEYS="$(grep -vE '^[[:space:]]*(#|$)' "$MKT_WHITELIST" | sed -E 's/[[:space:]]//g' || true)"
-fi
-
-# build_market_whitelist : transform the dev input source(s) IN PLACE for the
-# market build (approach B). 1) optionally bake a locked .set's values in as the
-# new compiled-in defaults so HIDDEN params are frozen at the validated lock
-# (not dev defaults); 2) strip the `input` keyword from every NON-whitelisted
-# parameter (-> fixed global, hidden from the dialog) and drop the now-empty
-# `input group` separators. Every file touched is backed up first (trap-restored).
-build_market_whitelist() {
-  [ -f "$MKT_WHITELIST" ] || die "no $MKT_WHITELIST"
-  local bake_set
-  bake_set="$(grep -E '^[[:space:]]*#[[:space:]]*bake_defaults_from:' "$MKT_WHITELIST" \
-              | head -1 | sed -E 's/.*bake_defaults_from:[[:space:]]*//' | tr -d '[:space:]' || true)"
-  local wlkeys; wlkeys="$(mktemp)"
-  grep -vE '^[[:space:]]*(#|$)' "$MKT_WHITELIST" | sed -E 's/[[:space:]]//g' > "$wlkeys"
-  # every input-declaring source under the EA dir (relative paths, no spaces)
-  local files; files="$(cd "$EA_DIR" && grep -rlE '^[[:space:]]*input[[:space:]]' \
-                        --include=*.mqh --include=*.mq5 --exclude-dir=releases . | sed 's|^\./||' | sort)"
-  local f tgt
-  for f in $files; do backup_file "$EA_DIR/$f"; done
-
-  # Locked defaults to bake, as KEY<TAB>VAL. The awk below applies a bake value
-  # ONLY on a PRIMITIVE numeric/bool declaration, so enum-typed params (whose
-  # .set value is an integer index) and `string` params (empty / unquoted in the
-  # .set) are never rewritten -> they keep their dev defaults, which already match
-  # the lock. This avoids `= ;` and invalid int-to-enum initialisers.
-  local bk; bk="$(mktemp)"
-  if [ -n "$bake_set" ]; then
-    [ -f "$EA_DIR/$bake_set" ] || die "bake_defaults_from set not found: $EA_DIR/$bake_set"
-    info "baking locked defaults from $bake_set"
-    local key val
-    while IFS='=' read -r key val || [ -n "$key" ]; do
-      case "$key" in ''|\#*|\;*) continue ;; esac
-      key="$(printf '%s' "$key" | tr -d '[:space:][:cntrl:]')"
-      val="$(printf '%s' "$val" | tr -d '[:cntrl:]' | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
-      [ -n "$key" ] && [ -n "$val" ] || continue
-      printf '%s\t%s\n' "$key" "$val" >> "$bk"
-    done < "$EA_DIR/$bake_set"
-  fi
-
-  # Single pass per file: (1) bake primitive defaults from BK; (2) keep `input`
-  # only on whitelisted KEYs (others -> fixed global = hidden); (3) drop childless
-  # `input group` separators. awk reads the type token directly, so the bake is
-  # type-aware with no fragile regex alternation (BSD sed chokes on that).
-  for f in $files; do
-    tgt="$EA_DIR/$f"
-    awk -v WL="$wlkeys" -v BK="$bk" '
-      BEGIN {
-        while ((getline k < WL) > 0) { gsub(/[ \t\r]/,"",k); if (k!="") wl[k]=1 }
-        while ((getline b < BK) > 0) {
-          ti=index(b,"\t"); if (ti==0) continue
-          bkk=substr(b,1,ti-1); bkv=substr(b,ti+1)
-          gsub(/[ \t\r]/,"",bkk); sub(/[\r]+$/,"",bkv)
-          if (bkk!="") bake[bkk]=bkv
-        }
-        np=split("double float int uint long ulong short ushort char uchar bool",pp," ")
-        for (i=1;i<=np;i++) prim[pp[i]]=1
-      }
-      /^[ \t]*input[ \t]+group[ \t]/ { pg=$0; hg=1; next }
-      {
-        if (match($0, /^[ \t]*(input[ \t]+)?[A-Za-z_][A-Za-z0-9_]*[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/)) {
-          lead=$0; sub(/[^ \t].*$/,"",lead)
-          rest=substr($0,length(lead)+1)
-          if (rest ~ /^input[ \t]+/) sub(/^input[ \t]+/,"",rest)
-          split(rest,tk,/[ \t]+/); type=tk[1]; name=tk[2]
-          eq=index(rest,"="); semi=index(rest,";")
-          if (semi==0) { print $0; next }
-          pre=substr(rest,1,eq); tail=substr(rest,semi)
-          curval=substr(rest,eq+1,semi-eq-1); newval=curval
-          if ((type in prim) && (name in bake)) newval=" " bake[name]
-          vis=(name in wl)
-          if (vis && hg) { print pg; hg=0 }
-          print lead (vis ? "input " : "") pre newval tail
-          next
-        }
-        print $0
-      }
-    ' "$tgt" > "$tgt.bk" && mv -f "$tgt.bk" "$tgt"
-  done
-  rm -f "$wlkeys" "$bk"
-}
+# Dialog-visible input keys for the marketplace .set filter (lib-resolved):
+# approach B -> the whitelist; approach A -> whatever still carries `input` in
+# the live source. Used ONLY by the marketplace edition below to strip hidden
+# keys from its .set files so internals are never leaked in the shipped preset
+# text. The NORMAL .set files above are NOT filtered. Empty => no filtering.
+VISIBLE_KEYS="$(mkt_visible_keys "$EA_DIR")"
 
 # filter_set_to_visible <set-file> : drop every line whose key is not a visible
 # input (and all comment/blank lines); prepend a clean header.
@@ -430,32 +339,33 @@ rm -f "$ENTRY"
 info "Changelog.md (${VERSION} entry on top)"
 
 # --- Marketplace edition (internals hidden) ---------------------------------
-# A SECOND build off the same source for the MQL5 Market: technical strategy
-# params are hidden (fixed) by swapping in Inputs.release.mqh for the compile,
-# and its .set files are filtered to the user-facing keys only. The dev source
-# is restored immediately after (trap-guarded). Variants come from
-# release.market.conf (falls back to release.conf). Skipped if there is no
-# Inputs.release.mqh or when --no-compile is given (needs a fresh hidden build).
-if [ "$DO_COMPILE" -eq 1 ] && { [ -f "$PUBLIC_INPUTS" ] || [ -f "$MKT_WHITELIST" ]; }; then
+# A SECOND build for the MQL5 Market: strategy internals are hidden (fixed) and
+# the .set files are filtered to the user-facing keys only. Mechanism is auto-
+# detected by the shared lib (approach A single-source vs B whitelist-strip).
+# Variants come from release.market.conf (falls back to release.conf). Skipped
+# if the EA ships no marketplace edition or when --no-compile is given.
+if [ "$DO_COMPILE" -eq 1 ] && mkt_has_edition "$EA_DIR"; then
   step "[market] Building MQL5-Market edition (internals hidden)..."
   MKT_DIR="$REL_DIR/market"
   mkdir -p "$MKT_DIR"
-
-  # hide internals (A: swap a full release inputs file; B: whitelist-strip in
-  # place + bake the lock), compile, capture the .ex5, then restore dev source
-  if [ -f "$PUBLIC_INPUTS" ]; then
-    backup_file "$DEV_INPUTS"
-    cp -f "$PUBLIC_INPUTS" "$DEV_INPUTS"
-  else
-    build_market_whitelist
-  fi
-  "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" || die "market compile failed — fix errors first"
   MKT_EX5="$MKT_DIR/$STRATEGY-Market-$VERSION.ex5"
-  cp -f "$EX5_FILE" "$MKT_EX5"
-  info "$STRATEGY-Market-$VERSION.ex5  (internals hidden)"
-  restore_inputs                                   # dev Inputs.mqh back in place
-  "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" >/dev/null 2>&1 || true   # dev .ex5 back
-  info "dev source restored + dev .ex5 rebuilt (working tree unchanged)"
+
+  if mkt_uses_whitelist "$EA_DIR"; then
+    # approach B: strip non-whitelisted inputs + bake the lock, compile, capture,
+    # then restore the dev source (trap-guarded) and rebuild the dev .ex5.
+    mkt_apply_hiding "$EA_DIR" MKT_BACKUPS || die "market hiding failed"
+    "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" || die "market compile failed — fix errors first"
+    cp -f "$EX5_FILE" "$MKT_EX5"
+    info "$STRATEGY-Market-$VERSION.ex5  (internals hidden via whitelist)"
+    restore_inputs                                   # dev source back in place
+    "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" >/dev/null 2>&1 || true   # dev .ex5 back
+    info "dev source restored + dev .ex5 rebuilt (working tree unchanged)"
+  else
+    # approach A: the dev source is already curated -> the dev build (step 2) IS
+    # the market build. No transform, no recompile; just capture it.
+    cp -f "$EX5_FILE" "$MKT_EX5"
+    info "$STRATEGY-Market-$VERSION.ex5  (single-source: dev build is the market build)"
+  fi
 
   # filtered .set variants for the market edition
   MKT_CONF="$EA_DIR/release.market.conf"; [ -f "$MKT_CONF" ] || MKT_CONF="$CONF"
@@ -490,7 +400,13 @@ if [ "$DO_COMPILE" -eq 1 ] && { [ -f "$PUBLIC_INPUTS" ] || [ -f "$MKT_WHITELIST"
     echo "- EA: \`$STRATEGY-Market-$VERSION.ex5\` — strategy internals are HIDDEN (fixed);"
     echo "  only the user-facing inputs (risk, profit-taking, trading hours, news, basic"
     echo "  execution safety) appear in the dialog."
-    echo "- Compiled by swapping \`Inputs.release.mqh\` in for the build; dev source untouched."
+    if [ -f "$EA_DIR/release.market.whitelist" ]; then
+      echo "- Internals hidden via \`release.market.whitelist\` (non-whitelisted inputs stripped"
+      echo "  to fixed globals + locked defaults baked in); dev source restored after build."
+    else
+      echo "- Single-source: \`Inputs.mqh\` is hand-curated, so the \`input\` keyword in the live"
+      echo "  source is the visibility control — the dev build IS the market build."
+    fi
     echo "- \`.set\` files are stripped to the user-facing keys only (no internal params leaked)."
     echo
     echo "## User-facing parameter sets"

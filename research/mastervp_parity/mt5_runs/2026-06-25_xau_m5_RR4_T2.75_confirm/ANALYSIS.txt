@@ -1,0 +1,14 @@
+KK-MasterVP XAUUSD M5 — NEW LOCK confirm: RunnerRr 4.0 / TrailAtrMult 2.75 / BeBufAtr 0.02
+MT5 every-tick 2025.06.01-2026.05.29, $10k. Final balance 97,836 (net +87,836 compounded).
+Flat-risk stream: net 83,227 / PF 1.413 / 1,423 tr / WR 52.6% / maxDD(close-to-close) 21.1%.
+Gate (deflated n_trials=336): per-trade SR 0.108, PSR 1.000, MinTRL 198<1423, DSR 1.000 PASS.
+Years: PF 2025 1.367 / 2026 1.437. Tail: top-20 trades = 74% of net.
+
+CHOSEN over 2 alternatives via fine MT5 optimization (NOT engine — engine over-credits runners):
+  - prior lock RR5.0/T2.5 : net 77,237 / PF 1.389 / DD 20.4% / top20 88% / yrs 1.412,1.378
+  - RR3.2/T2.75 (rejected): net 91,996 / PF 1.357 / DD 23.6% / top20 66% / yrs 1.428,1.321 (2026 weakening)
+  - RR4.0/T2.75 (LOCK)    : net 83,227 / PF 1.413 / DD 21.1% / top20 74% / yrs 1.367,1.437
+RR4.0/T2.75 beats prior lock on net (+7.8%) AND PF AND tail-reliance AND recent-year. RR3.2 = net-max
+chasing into the low-PF corner. Trail 2.75>2.5 is the robust win (231-pass RRxTrail marginal: +12% net,
++0.023 PF, -4.3pp DD); old step-1.0 grid (2.5 vs 3.5) could not see 2.75. Sweeps archived in sibling
+folders 2026-06-25_xau_m5_exit_sweep_RRxBB and _RRxTrail.

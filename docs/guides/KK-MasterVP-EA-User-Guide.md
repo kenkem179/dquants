@@ -190,11 +190,8 @@ These add confirmation the original study did not have. They are off by default;
 
 ### Sessions — when it is allowed to trade
 
-The session reference timezone is UTC plus an offset.
-
-- **InpBrokerGMTOffset** — hours added to UTC to reach the session reference timezone. The default (10) matches the calibration used in testing; if your broker's server time differs you may need to adjust this so sessions line up.
-- **InpAsiaSess / InpLdnSess / InpNySess** — the Asia, London, and New York session windows, in the reference timezone.
-- **InpBlockedHoursStr** — specific low‑liquidity hours to skip, e.g. `"8,16"` or `"9-11"`, in the reference timezone.
+- **InpAsiaSess / InpLdnSess / InpNySess** — the Asia, London, and New York session windows, expressed in UTC.
+- **InpBlockedHoursStr** — specific low‑liquidity hours to skip, e.g. `"8,16"` or `"9-11"`, expressed in UTC.
 - **InpForceCloseSessNews** — force‑close open trades when a session ends. Off by default.
 
 ### News avoidance — a live‑safety overlay
@@ -228,7 +225,7 @@ The goal is clarity and discipline, never urgency. A tool like this is most usef
 
 **Position sizes look wrong.** Review the Risk sizing group: confirm `InpRiskUnit` and `InpRiskAccPct` (or `InpRiskUsd`) are what you intend, and check the broker's minimum lot and your account currency.
 
-**Sessions or blocked hours seem off.** The session timezone is UTC plus `InpBrokerGMTOffset`. If your broker's server time differs from the calibration, adjust the offset so the windows line up.
+**Sessions or blocked hours seem off.** Check the configured UTC windows and blocked UTC hours directly. The EA evaluates them in fixed UTC, not broker time.
 
 **Results differ from the backtest, or from another broker.** Expected. Spread, commission, slippage, feed quality, and server time all vary between brokers, and live differs from any test. **Past and tested results do not guarantee future or live results.**
 

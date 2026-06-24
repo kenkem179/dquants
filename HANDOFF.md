@@ -24,23 +24,25 @@ Pure planning this session — **no source touched** (safe alongside the paralle
   append-immediate CSV. **▶ NEXT:** implement when the user greenlights the build (D1 math should be factored
   into a unit-testable header). Prop-firm facts grounded from FTMO/FundedNext docs (in the plan).
 
-## 🏆 MasterVP XAU M5 LOCK = 5R runner + BB0.02 — SWEEP-CONFIRMED + DSR PASS (2026-06-25) — UNCOMMITTED
-**Lock RR5.0/BB0.02: +80,874 / PF 1.408 / 1,404 tr / DD 13.9%(path-dep) / R-on-DD 8.34** (XAU M5,
-2025.06.01–2026.05.29, $10k every-tick). Memory [[mastervp-runner5-bebuf-lock]].
-- **✅ SWEEP-CONFIRMED (was a drift, now proven optimal).** 105-pass exhaustive MT5 opt (`InpRunnerRr`
-  3-8/0.25 × `InpBeBufAtr` 0.01-0.05/0.01). Lock = **#2 of 105**, within 1.1% of net-max RR5/BB0.03(81,770).
-  **PF plateau 1.38-1.41 across RR 4.0-6.5** (edge robust). BeBuf **0.05=worst cell** (old lock justified-out).
-  KEPT BB0.02 over the 0.03 net-max (noise, not peak-chasing). Run + grids:
-  `research/mastervp_parity/mt5_runs/2026-06-25_xau_m5_exit_sweep_RRxBB/` (XML + ANALYSIS.txt).
-- **✅ Gate sweep-deflated PASS:** per-trade SR 0.1029, PSR-0 1.000, MinTRL 211<1403, n_trials=105,
-  sr_trial_std≈0.0063 gate-units, E[maxSR] 0.0160 → **DSR 1.000** (edge ≈6.4× search noise floor).
-- **⚠️ 13.9% DD is a path-dependent KNIFE-EDGE** (DD grid bimodal ~14%↔~24%). Size for ~22-25% (MC 27.7%).
-- **DONE this session:** edited `KK-MasterVP-XAUUSD-M5.set` header w/ sweep-confirm note; built+synced
-  `KK-MasterVP-XAUUSD-M5-OPT-exit.set` (3-axis RR×BB×Trail, 1155). .set value UNCHANGED (5R/0.02).
-- **▶ NEXT (user choice):** (a) **trail axis still UN-SWEPT** — run `-OPT-exit.set` (1155, ~1h/8-core) or
-  trail-only fine sweep to close the exit cluster; (b) commit this lock + earlier marketplace/account-build
-  refactor (uncommitted); (c) version bump? `make release STRATEGY=KK-MasterVP` — ask Y/N (default N) only
-  AFTER user satisfied.
+## 🏆 MasterVP XAU M5 FINAL LOCK = RR4.0 / Trail2.75 / BeBuf0.02 — MT5 + DSR PASS (2026-06-25) — UNCOMMITTED
+**Lock: net +87,836 (final bal 97,836) / PF 1.413 / 1,423 tr / maxDD(close-to-close) 21.1%** (XAU M5,
+2025.06.01–2026.05.29, $10k every-tick). Both years +PF (2025 1.367 / 2026 1.437). Memory
+[[mastervp-runner5-bebuf-lock]]. Run: `research/mastervp_parity/mt5_runs/2026-06-25_xau_m5_RR4_T2.75_confirm/`.
+- **DECISIVE = TRAIL fine sweep.** 231-pass MT5 opt (`InpRunnerRr` 3-8/0.25 × `InpTrailAtrMult` 1.5-4.0/0.25)
+  → **Trail 2.75 robustly dominates 2.5** (marginal: +12% net, +0.023 PF, -4.3pp DD). Old step-1.0 grid (saw
+  only 2.5 vs 3.5) was BLIND to 2.75. At Trail 2.75 the PF sweet-spot shifts to RR~4.0 (study-best PF).
+  Sweeps: `…_exit_sweep_RRxBB/` (105) + `…_exit_sweep_RRxTrail/` (231).
+- **✅ Beats prior RR5/T2.5 lock on EVERY quality axis:** net +7.8% (83.2k vs 77.2k flat-stream), PF 1.413 vs
+  1.389, per-trade SR 0.108 vs 0.103, LESS tail-reliant (top20 74% vs 88%), DD ~tied.
+- **❌ REJECTED RR3.2/T2.75** (user ran it first): higher raw net 92k but PF 1.357 + weakening 2026 (1.321) =
+  net-max chasing into the low-PF corner. Locked on PF/robustness, not peak net.
+- **✅ Gate (deflated n=336):** per-trade SR 0.108, PSR 1.000, MinTRL 198<1423, **DSR 1.000 PASS**.
+- **⚠️ MT5 equity-DD ~14.5% is path-dependent KNIFE-EDGE; size ~22-25% (MC 27.7%).**
+- **DONE:** `KK-MasterVP-XAUUSD-M5.set` + engine `kkmastervp_xau_m5_LOCKED.set` → RR4.0/Trail2.75/BeBuf0.02
+  (+ rewritten headers). Inputs.mqh defaults ALREADY 4.0/2.75 (no drift) → EA recompiled 0/0. Temp OPT/CONFIRM
+  .set removed. Memory + best-experts table updated. **LESSON (user was right): finer step = anti-overfit.**
+- **▶ NEXT (user choice):** (a) commit this lock + earlier marketplace/account-build refactor (uncommitted);
+  (b) version bump? `make release STRATEGY=KK-MasterVP` — ask Y/N (default N) only AFTER user satisfied.
 
 ## 🕐 (history) MasterVP SESSION-TIME migration → pure UTC DONE + MT5-CONFIRMED (2026-06-24, commits `749bb6a`+`7bb9a95`)
 **Status:** COMPLETE. Sessions/blocked-hours pure UTC in BOTH engine + EA; user configures session windows

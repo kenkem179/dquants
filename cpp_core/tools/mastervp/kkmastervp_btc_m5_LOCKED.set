@@ -98,10 +98,9 @@ InpUseMtfAgree=false
 InpUseAtrPctlGate=false
 InpUseMomVeto=false
 
-; ---- sessions (Pine chart-tz = UTC+10: Asia 0000-0700 / London 0700-1300 / NY 1300-2100) ----
-; The TV log's hour fingerprint proves sessions were evaluated in UTC+10 (Asia-open 00:00 -> 14:00 UTC,
-; the biggest activity spike; no-session gap 21:00-24:00 -> 11:00-13:00 UTC, the empty hours).
-InpBrokerGMTOffset=0
+; ---- sessions (fixed UTC) ----
+; Session windows below are evaluated directly in UTC.
+;
 InpAsiaSess=00:00-08:00
 InpLdnSess=08:00-16:00
 InpNySess=16:00-24:00

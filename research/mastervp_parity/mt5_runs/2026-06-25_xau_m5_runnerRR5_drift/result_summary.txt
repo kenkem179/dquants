@@ -1,0 +1,2 @@
+CS	0	00:51:50.831	Tester	finalbalance90873.90 USD
+CS	0	00:51:50.841	Tester	XAUUSD-Exness-KK,M5:94173877 ticks,70302 barsgenerated.Testpassedin0:00:24.206(includingtickspreprocessing0:00:05.646).

@@ -2,7 +2,19 @@
 # dquants per-account EA builder (account-locked releases)
 # ----------------------------------------------------------------------------
 # Builds ONE compiled EA per MT5 account, each hard-locked to that account so
-# it refuses to run anywhere else. The lock is enforced by the shared guard
+# it refuses to run anywhere else.
+#
+# IMPORTANT: per-account builds are the MQL5-MARKET EDITION, never a fully-
+# exposed dev EA. Before baking the account, the same internals-hiding transform
+# used by make_release.sh is applied (shared lib scripts/lib/market_edition.sh):
+#   - KK-MasterVP: single-source — Inputs.mqh is hand-curated, so the dev source
+#     already IS the market edition (no transform).
+#   - KK-KenKem:   whitelist-strip — release.market.whitelist hides non-visible
+#     inputs + bakes the locked defaults.
+# So every account-locked .ex5 shows ONLY the user-facing knobs, exactly like the
+# marketplace build, plus the account lock. Order: hide -> bake account -> compile.
+#
+# The lock is enforced by the shared guard
 # mql5/experts/KK-Common/AccountLock.mqh: every KK EA carries two HIDDEN
 # compiled-in strings (not dialog inputs), empty by default:
 #
@@ -54,6 +66,8 @@ die()  { echo -e "${RED}✗ $*${NC}" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EXPERTS_DIR="$PROJECT_ROOT/mql5/experts"
+# shellcheck source=lib/market_edition.sh
+. "$SCRIPT_DIR/lib/market_edition.sh"
 
 STRATEGY="${1:-}"
 [ -n "$STRATEGY" ] || die "usage: make_account_releases.sh <STRATEGY> [--accounts FILE] [--out DIR]"
@@ -135,21 +149,54 @@ grep -qE '^[[:space:]]*string[[:space:]]+ALLOWED_ACCOUNT_SERVER[[:space:]]*=' "$
   || die "$LOCK_FILE declares ALLOWED_ACCOUNT_ID but not ALLOWED_ACCOUNT_SERVER"
 info "lock source: ${LOCK_FILE#$PROJECT_ROOT/}"
 
-# 3) Prepare output dir + restore trap ---------------------------------------
-step "[3/5] Preparing output..."
+# 3) Prepare output + apply market-hiding + set up restore trap --------------
+step "[3/5] Preparing output + marketplace hiding..."
 [ -n "$OUT_DIR" ] || OUT_DIR="$EA_DIR/releases/$VERSION/accounts"
 mkdir -p "$OUT_DIR"
 info "out: ${OUT_DIR#$PROJECT_ROOT/}"
 
-cp -f "$LOCK_FILE" "$LOCK_FILE.acctbak"
-restore_lock() { [ -f "$LOCK_FILE.acctbak" ] && mv -f "$LOCK_FILE.acctbak" "$LOCK_FILE"; }
-trap restore_lock EXIT INT TERM
+# Files mutated here (input sources for whitelist EAs + the account-lock file)
+# are backed up to <file>.devbak; the trap restores them ALL so the working tree
+# is left byte-identical. acctbase = the hidden, account-EMPTY baseline that each
+# per-account bake starts from (removed on exit).
+MKT_BACKUPS=()
+restore_all() {
+  local b f
+  for b in "${MKT_BACKUPS[@]:-}"; do
+    [ -n "$b" ] && [ -f "$b" ] || continue
+    f="${b%.devbak}"; mv -f "$b" "$f"
+  done
+  MKT_BACKUPS=()
+  rm -f "$LOCK_FILE.acctbase"
+}
+trap restore_all EXIT INT TERM
+
+# 3a) Hide internals -> the working source becomes the marketplace edition
+#     (no-op for single-source EAs like KK-MasterVP; whitelist-strip for KK-KenKem).
+if mkt_has_edition "$EA_DIR"; then
+  if mkt_uses_whitelist "$EA_DIR"; then
+    info "hiding internals via release.market.whitelist"
+  else
+    info "single-source: Inputs.mqh already curated (no transform)"
+  fi
+  mkt_apply_hiding "$EA_DIR" MKT_BACKUPS || die "market hiding failed"
+else
+  echo -e "${YELLOW}  ! no marketplace edition for $STRATEGY — building from full dev source${NC}"
+fi
+
+# 3b) Ensure the lock file has a pristine backup for the final restore. If the
+#     hiding step already backed it up (KenKem: it's an input source) its .devbak
+#     is pristine — don't clobber it.
+[ -f "$LOCK_FILE.devbak" ] || _mkt_push_backup MKT_BACKUPS "$LOCK_FILE"
+
+# 3c) Snapshot the hidden, account-empty lock file as the per-account bake base.
+cp -f "$LOCK_FILE" "$LOCK_FILE.acctbase"
 
 # bake one (id, server) pair into the hidden globals (idempotent: always reads
-# from the pristine backup, so re-runs never stack)
+# from the hidden baseline, so re-runs never stack)
 bake_account() {
   local id="$1" srv="$2"
-  cp -f "$LOCK_FILE.acctbak" "$LOCK_FILE"
+  cp -f "$LOCK_FILE.acctbase" "$LOCK_FILE"
   # -E (ERE) for portable BSD/GNU sed; \+ is unsupported in BSD BRE
   sed -E \
       -e "s|^([[:space:]]*string[[:space:]]+ALLOWED_ACCOUNT_ID[[:space:]]*=[[:space:]]*)\"[^\"]*\"|\1\"$id\"|" \
@@ -179,9 +226,9 @@ for i in "${!ACCT_IDS[@]}"; do
   fi
 done
 
-restore_lock; trap - EXIT INT TERM
-# rebuild the dev .ex5 from the restored (unlocked) source so the working tree
-# is left exactly as before
+restore_all; trap - EXIT INT TERM
+# rebuild the dev .ex5 from the restored (unlocked, full-dev) source so the
+# working tree is left exactly as before
 "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" >/dev/null 2>&1 || true
 [ "$BUILT" -gt 0 ] || die "no per-account EAs built"
 

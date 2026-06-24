@@ -153,3 +153,24 @@ trade CSV is **append-immediately on close** (not hourly-batched).
     `discord.com`/`discordapp.com` whitelisted in *Tools → Options → Expert Advisors → Allow WebRequest*; (2)
     Email needs SMTP set in *Tools → Options → Email*; (3) `WebRequest`/`SendMail` are **blocked in
     Tester/Optimization** — guard with `MQL_TESTER` so backtests don't spam (and don't stall).
+
+- [ ] **D4 — Trial-expiry deadline on account-locked marketplace builds.** Every per-account MARKET edition
+  ([[ea-marketplace-and-account-builds]] — the hidden `ALLOWED_ACCOUNT_ID`/`ALLOWED_ACCOUNT_SERVER` bake)
+  also gets a **free-trial deadline, default 15 days from build time**. After it passes, the EA stops trading
+  and shows the alert: **`Free Trial Access Expired. Please purchase the bot from https://kenkem.biz`**.
+  - **Mechanism:** the per-account release script bakes a **hidden compile-time constant** (NOT a user input —
+    same rationale as the account lock; an input would let the user just extend it), e.g.
+    `datetime TRIAL_EXPIRY_TS = <build_time + 15 days>;` next to `ALLOWED_ACCOUNT_ID`. Empty/0 sentinel = **no
+    deadline** (the normal, non-trial paid build). The 15-day window is a build-script parameter so a longer/
+    shorter trial can be issued per customer without touching code.
+  - **Check:** in `OnInit` and once per new bar, `if(TRIAL_EXPIRY_TS>0 && TimeCurrent() > TRIAL_EXPIRY_TS)` →
+    fire `Alert(...)` once (de-dupe so it doesn't spam every tick) + **stop opening new trades**. Use
+    **`TimeCurrent()` (broker server time)**, not `TimeLocal()` — the broker clock is far harder to spoof by
+    rolling back the PC clock. Pairs naturally with the D3 notifier (also DM the expiry once).
+  - ⚠️ **Confirm with user at impl time:** behaviour for **already-open positions** at expiry — recommended
+    **let existing trades manage out to their own SL/TP, only block new entries** (flattening someone's live
+    position on a trial boundary is hostile and can realise a loss); the alert + new-entry block is the lock.
+    Also confirm whether expiry should also hard-disable on the *next* `OnInit` (so a restart after expiry won't
+    trade at all).
+  - **Live-only / safety:** skip the whole check under `MQL_TESTER|MQL_OPTIMIZATION` (don't let a trial deadline
+    break the user's own backtests); the deadline only governs the live marketplace build.

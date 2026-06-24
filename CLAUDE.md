@@ -81,6 +81,8 @@ Deflate every lock for multiple testing. Any config chosen by searching N candid
 
 A strategy is production-eligible only after the full chain in docs/KENKEM_QUANT_OS.md §7 passes(costs → sensitivity → walk-forward → Monte Carlo → overfitting gate [DSR/PSR/MinTRL] → C++ tests →MQL5 parity → demo forward-test).
 
+Optimization objective is **costed PF / expectancy** (penalize maxDD); a candidate is eligible only after the full chain above. The optimization loop is **fully autonomous in C++** — no mid-run MT5 pauses; a single MT5 confirmation run on the *final* winner only. **Use the tick engine for any P&L / parity claim** — the bar engine has a P&L sign defect (see [[bar-engine-systemic-defect]]). The **ATR-regime filter is a profitability lever — sweep it, never delete it.**
+
 ## Project Skills (the 10-phase SOP)
 
 Each phase of the SOP is a slash-command skill in .claude/skills/. Invoke in order; each consumes theprior phase’s output:

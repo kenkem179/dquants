@@ -23,7 +23,7 @@ The multi-TF net engine lives only in **KK-MasterVP-Monster** (`Core/NetVolume.m
 ## 1. Runtime shape
 
 - **Symbol/TF:** XAUUSD (also BTCUSD), chart TF **M1 or M3** (`g_tf`). All session times **UTC**
-  (`InpBrokerGMTOffset` calibrates server→UTC; our tick data is already UTC).
+  (the strategy evaluates session windows directly in UTC; our tick data is already UTC).
 - **One position at a time** (netting, no pyramiding/hedging). Magic `88200531`.
 - **Decision cadence:** all signal/VP/node work runs **once per just-closed bar**; position management
   (TP1/BE/trail) runs **every tick**. Entry fills next tick after the signal bar closes. No lookahead.

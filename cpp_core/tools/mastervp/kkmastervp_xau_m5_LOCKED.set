@@ -80,7 +80,7 @@ InpSlAtrRev=1.5            ; Pine slAtrRev
 InpTp1R=0.8
 InpTp1ClosePct=0.0
 InpBeAfterTp1=true
-InpBeBufAtr=0.05
+InpBeBufAtr=0.02       ; 2026-06-25 lock: tighter BE (sweep-confirmed: 0.02-0.03 plateau, 0.05 worst)
 InpTrailRunner=true       ; Pine has NO chandelier trail; runner exits at fixed TP2 or BE stop
 
 ; ---- risk sizing (Pine: 2% of (initial_capital + closed netprofit)) ----
@@ -119,5 +119,5 @@ InpNySess=14:00-21:00
 InpBlockedHoursStr=4,16,17    ; T2 LOCK (2026-06-20): block UTC hrs 4,16,17 (validated T2 lock: 04 Asian-lunch, 16/17 late-London)
 InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
 InpAvoidNews=false
-InpTrailAtrMult=2.5        
-InpRunnerRr=10.0
+InpTrailAtrMult=2.75  ; 2026-06-25 lock: fine trail sweep found 2.75 > 2.5 (marginal +12% net/+0.023 PF/-tail)
+InpRunnerRr=4.0       ; 2026-06-25 lock: RR4/Trail2.75 = study-best PF (1.413), +7.8% net vs RR5/T2.5, less tail-reliant

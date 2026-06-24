@@ -15,8 +15,8 @@ the Python reference harness `cpp_core/tools/validate_parity_py.py`.
 flag agrees **100%**.
 
 **Setup that makes it match (all confirmed from baseline.set, defaults hold):**
-- Bars are **bid-based** M3 built from ticks; `barTimeUTC` = server time and `InpBrokerGMTOffset=0`,
-  so it aligns directly to our tick `ts` (no offset). Master VP = 150 bars (VpLookback 50 ×
+- Bars are **bid-based** M3 built from ticks; `barTimeUTC` = server time,
+  so it aligns directly to our tick `ts`. Master VP = 150 bars (VpLookback 50 ×
   MasterMult 3), 30 bins, VA 70%, **bar-feed** (`InpVpFeedMode=0`, weight = per-bar tick count),
   startShift 1 (window = the 150 bars ending at the row's timestamp inclusive).
 

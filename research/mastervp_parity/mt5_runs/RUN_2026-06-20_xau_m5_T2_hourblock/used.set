@@ -96,14 +96,13 @@ InpUseMtfAgree=false
 InpUseAtrPctlGate=false
 InpUseMomVeto=false
 
-; ---- sessions (Pine chart-tz = UTC+10: Asia 0000-0700 / London 0700-1300 / NY 1300-2100) ----
-; The TV log's hour fingerprint proves sessions were evaluated in UTC+10 (Asia-open 00:00 -> 14:00 UTC,
-; the biggest activity spike; no-session gap 21:00-24:00 -> 11:00-13:00 UTC, the empty hours).
-InpBrokerGMTOffset=10
+; ---- sessions (fixed UTC) ----
+; Session windows below are evaluated directly in UTC.
+;
 InpAsiaSess=00:00-07:00
 InpLdnSess=07:00-13:00
 InpNySess=13:00-21:00
-InpBlockedHoursStr=2,3,14    ; T2 LOCK (2026-06-20): block ref-tz(UTC+10) hrs 14=UTC04 Asian-lunch lull, 2,3=UTC16,17 late-London chop
+InpBlockedHoursStr=2,3,14    ; T2 LOCK (2026-06-20): block UTC hrs 2,3,14
 InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
 InpAvoidNews=false
 InpTrailAtrMult=2.5        
