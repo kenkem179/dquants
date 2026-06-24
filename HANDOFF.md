@@ -1,5 +1,58 @@
 # HANDOFF — read me first, update me last
 
+## 🕐 MasterVP SESSION-TIME migration → pure UTC DONE + MT5-CONFIRMED (2026-06-24, commits `749bb6a`+`7bb9a95`)
+**Status:** COMPLETE. Sessions/blocked-hours pure UTC in BOTH engine + EA; user configures session windows
+in UTC+0, EA auto-detects broker/VPS offset (`SN_UtcTime`=`TimeTradeServer-TimeGMT`) internally → same UTC
+wall-clock on any broker. Day/daily-DD accounting rolls at **UTC 00:00** (the user's clean KenKem model);
+force-close-at-session-end toggle (`InpForceCloseSessNews`, default false=lock) correctly gated on UTC
+`sessionId==0`. `make test` green, EA compiles 0/0. **Both commits NOT pushed yet.**
+- **VALIDATED LOCK is now +59,364 / PF ~1.40 / 1,365 trades** (MT5, XAU M5, 2025.06.01–2026.05.29, 10k).
+  The old +62,732 was inflated by the +10 quirk rolling the accounting day at UTC 14:00; pure-UTC rolls at
+  UTC 00:00 → 2 extra thin-window losers (2026.02.13 21:55 −1,300; 2026.04.15 20:55 −759) + sizing cascade =
+  −3,367. Trading HOURS reproduce exactly (1,363 trades byte-identical; dead-zone 11-13; blocked 4/16/17).
+  This −5.4% is the honest cost of true-UTC day accounting; NOT chased (would re-introduce the artifact).
+- **Diagnosis trail:** run-1 dropped to +25,292 (windows still on the old +10 frame → active window slid 10h);
+  fixed in `7bb9a95` by setting windows to validated true-UTC hours (Asia 21:00-03:00 / Europe[InpLdnSess]
+  03:00-11:00 / US[InpNySess] 14:00-21:00) + engine `in_win()` midnight-wrap support.
+- **UTC-21 thin-window study → REJECT (keep blocked `4,16,17`).** Exness XAU has a daily break UTC 21-22
+  (JST 06-07): only 1,536 bars vs ~4,356 normal. User asked to test blocking it. 6-fold WF
+  (`block21_study`): blocking 21 HURTS (PF 1.344→1.303, net 23,098→19,784, dd 7.8→8.7%); +22 ≈ neutral but
+  degrades worst-fold (1.223→1.166); +21,22 worse. Baseline 4,16,17 ranks #1 on robustness → no change, no
+  gate needed (candidate fails the engine WF outright). The thin-window trades (8/yr @ 21:55) are sparse +
+  net-positive in backtest; execution-quality at the break is a live-safety note, not a backtest edge.
+- **▶ NO open research action.** Optional: `git push`; update best-experts table XAU-M5 number → +59,364.
+
+### (history) original migration note:
+Codex migrated sessions/blocked-hours from the old UTC+10 chart-tz frame (`InpBrokerGMTOffset=10` +
+`SN_RefTime`, both removed) to **pure UTC** — in the EA AND the C++ engine. The refactor was correct in
+spirit (real-UTC labels: Asia=UTC00) BUT left the locked **blocked-hours string at `2,3,14`**, which in the
+old +10 frame meant UTC **{4,16,17}** (the MT5-validated T2 lock: 04 Asian-lunch lull + 16/17 late-London
+chop) and now literally meant the WRONG hours UTC {2,3,14}. Proven via entry-hour histogram + clean engine
+rebuild (blocked 2,3,14 → PF 1.096/dd 22.6%/5-of-6; corrected → better).
+- **USER DECISION: keep real-UTC sessions, make blocked hours UTC-based, re-validate in MT5.**
+- **FIXED:** `InpBlockedHoursStr` `2,3,14` → **`4,16,17`** in EA defaults (`Inputs.mqh` + `Inputs.release.mqh`),
+  ALL active XAU-M5 `.set` (deploy + A/B + BASE) and the engine sweep set `kkmastervp_xau_m5_LOCKED.set`.
+  Sessions kept at real UTC (Asia 00-07 / Ldn 07-13 / NY 13-21). EA compiles 0/0; engine now blocks UTC
+  4,16,17 (verified). `releases/*` frozen sets LEFT as `2,3,14` (correct for their bundled old +10 `.ex5`).
+  BTC unaffected (was offset 0, blocked empty). Engine WF corrected config: PF 1.145/net 9.9k/dd 17%/6-of-6.
+- **⚠️ This is a NEW config** (real-UTC sessions move the no-trade dead-zone UTC 11-13 → 21-23) → NOT the
+  byte-identical validated lock. **▶ NEXT (user MT5):** re-run XAU M5 `KK-MasterVP-XAUUSD-M5.set`,
+  2025.06.01–2026.05.29 every-tick deposit 10k, confirm it's still ≈ the old +62,732/PF 1.40 lock before
+  trusting live. Changes are UNCOMMITTED (intermingled with Codex's broader session refactor — review before commit).
+
+## ✅ MasterVP reversion LOCAL-vs-MASTER VP — TESTED → REJECT for lock (2026-06-23, commit e916e34)
+Closed the **last open MasterVP research lever** (the user's standing "reversion should fade LOCAL not
+MASTER VP" assumption). Built default-OFF `InpRevEntryLocal`/`InpRevTpLocal` (config.hpp+strategy.hpp;
+golden parity green, base byte-identical). XAU M3 6-fold WF: **local-fade beats master-fade on every axis**
+(net $6,998→$9,280, dd 31.6→22.4%, folds+ 4→5) → **assumption directionally CORRECT.** BUT reversion is
+negative-expectancy in all 5 forms (revNet −431..−1,189) and baseline breakout-only beats them all on net
+($11,642) AND PF (1.108) → **keep reversion OFF, no lock.** Prior "rev @ mPOC trims DD 17.5→13.5%" master
+candidate was survivorship (WF master-form dd 31.6%). Study `research/mastervp_parity/
+REVERSION_LOCAL_VP_STUDY_2026-06-23.md`; memory [[reversion-local-vp-assumption]]; build-plan ticked.
+**▶ NO open MasterVP research action** — VP-length, FVG-SL, TP1-partial, move-SL, conviction-protect,
+flow-exit, local-reversion ALL tested→rejected. The breakout trend-runner is the edge; the deployed locks
+stand. Remaining MasterVP items are deploy-time toggles (BTC M5 Ladder) + user MT5/account work below.
+
 ## 🔐 PER-ACCOUNT LOCKED BUILDS — shared guard + release script (2026-06-23, THIS SESSION)
 **User ask:** a release script that takes a local file of MT5 account IDs (1/line) and builds 1 EA per
 account; account-lock is a hidden EA param (empty default); ALL EAs share ONE valid-account-check module;
@@ -370,15 +423,15 @@ Indicator compiles **0 errors / 0 warnings** after every change.
 6-fold WF with PER-FOLD recent-regime decomposition (the T1 discipline). New diag
 `research/mastervp_parity/hour_atr_decomp.py` (per-broker-hour net/PF + per-fold split).
 - **MasterVP (XAU M5) — WIN, LOCKED `InpBlockedHoursStr=2,3,14`** (ref-tz UTC+10 = block UTC04 Asian-lunch
-  lull + UTC16,17 late-London chop). Pooled PF 1.243→**1.296**, net +16.6%, maxDD 12.5→**10.0%**, worst-fold
+  lull + UTC16,17 late-London chop; now enforced directly in UTC). Pooled PF 1.243→**1.296**, net +16.6%, maxDD 12.5→**10.0%**, worst-fold
   1.102→**1.196**; 5/6 folds improve, BOTH recent folds rise (F5 +533, F6 +640) → passes recent-regime check.
   MC(20k): P(profit)99.9%, PF 5th-pctile 1.158, maxDD median 22.2%/95th 34.7% (all better than baseline lock).
   REJECTED: news hr0 (net-harmful — post-data hr has continuation winners), Asia hr10 + hr18 (over-block),
   ATR upper-band `InpMaxAtrPct` (non-monotonic curve-fit noise, costs net). `InpBlockedHoursStr` is a REAL EA
-  input (same UTC+10 frame via `SN_RefTime`) → ships via `.set`, NO recompile. Engine lock + EA preset
+  input (fixed UTC) → ships via `.set`, NO recompile. Engine lock + EA preset
   `KK-MasterVP-XAUUSD-M5.set` updated + redeployed (kenkem Presets + MT5 Tester Presets). **✅ MT5 CONFIRMED**
   (`mt5_runs/RUN_2026-06-20_xau_m5_T2_hourblock`): blocked hours UTC04/16/17 EXACTLY empty in MT5 (block
-  ported faithfully via `SN_RefTime`); PF 1.370 engine vs 1.366 MT5 (0.3%), lag 3.2%, 468/535 matched.
+  ported faithfully in UTC); PF 1.370 engine vs 1.366 MT5 (0.3%), lag 3.2%, 468/535 matched.
   net Δ 9.2% = known feed-noise (strict-gate FAIL only). On this window block lifted PF 1.339→1.370. CLEARED for demo.
 - **Monster (BTC M3) — NO CHANGE (re-validated).** T2 was already done in its lock (`8,10,11,16` + best_btc
   cluster sessions + active ATR band 0.158). Top pooled candidate `8,9,10,11,16` (PF→1.231) is ANOTHER T1
@@ -520,9 +573,8 @@ preserved below (📌 PAUSED) — not abandoned.
   + `backtester --set-all` (applies ALL keys incl. MQL non-inputs). Built `research/mastervp_parity/diff_tv.py`
   (regroups TV TP1+TP2 portions → positions; distributional compare). **Entry model is FAITHFUL:** over
   2025-06-19..2026-05-29, engine 2610 positions vs TV 2445 (1.07×), win 56.4 vs 57.8%, hours aligned, TP1-rate
-  aligned, %long ±4. **Two fixes found:** (a) `broker_gmt_offset` was DEAD — wired it; the TV hour fingerprint
-  proves Pine sessions ran in **UTC+10** (Asia-open 00:00→14:00 UTC spike; gap 21-24→11-13 UTC empty); set
-  offset=10. (b) added `min_atr_ticks` floor (Pine=40), default 0/off so golden test intact.
+  aligned, %long ±4. **Two fixes found:** (a) the old offset-based session model was a dead path; sessions are now
+  evaluated directly in UTC. (b) added `min_atr_ticks` floor (Pine=40), default 0/off so golden test intact.
 - **🔑 KEY FINDING — residual PF gap is FEED-DRIVEN, not a bug:** baseline PF 1.01 vs TV 1.25 at MATCHING win
   rate. BE on/off experiment proved it: on OANDA a break that reaches 0.8R continues to 1.8R **94%** of the
   time; on our **MT5/Exness feed only ~45%** (it round-trips). So the TV edge leans on OANDA's smooth
