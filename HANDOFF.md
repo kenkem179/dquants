@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-## 🏆 M3-CHAMPION-EXITS — NEW LEAD XAU CANDIDATE (DSR-PASS, pending MT5 A/B) (2026-06-24, UNCOMMITTED)
+## 🏆 M3-CHAMPION-EXITS — NEW LEAD XAU CANDIDATE (DSR-PASS, pending MT5 A/B) (2026-06-24, COMMITTED+PUSHED 670f2f5 on hypo-MTFConfluence)
 **This REVERSES the MTF "keep M5-only" verdict for the broader idea.** The user's thesis ("M5 entry is too
 late, act on M3") is VINDICATED — just not via a confluence gate. Follow-up the user approved: M3 cadence +
 the champion's already-WF-validated EXITS the old M3 lock never got + a peak-DD limiter.
@@ -19,9 +19,10 @@ the champion's already-WF-validated EXITS the old M3 lock never got + a peak-DD 
   `m3_champ_c5dd_2026-06-24.py` (Stage3 DD sweep), `m3_champ_gate_2026-06-24.py` (deflation).
   Findings: `MTF_CONFLUENCE_FINDINGS_2026-06-24.md` §FOLLOW-UP.
 - **▶ NEXT ACTION:** user runs the MT5 A/B of the candidate .set vs the M5 champion on recent OOS. If it
-  holds → port exits+limiter to MQL5 + promote the lock. **ALL UNCOMMITTED per "do not commit unless I tell".**
+  holds → port exits+limiter to MQL5 + promote the lock. **Committed+pushed as 670f2f5 (branch
+  hypo-MTFConfluence); no PR opened yet.**
 
-## 🧭 MTF (M5+M3) CONFLUENCE GATE — BUILT, SWEPT → REJECTED (2026-06-24, UNCOMMITTED)
+## 🧭 MTF (M5+M3) CONFLUENCE GATE — BUILT, SWEPT → REJECTED (2026-06-24, COMMITTED 670f2f5)
 (The *gate* mechanism is rejected; the M3-cadence idea won via the exits route above.)
 User research task: "M5-only entry timing is too late — try multi-timeframe confluence." Rules: (0) M5
 master-VP value area = breakout/reversion context, but trigger on the M3 close; (1) M3 close drives net-vol
