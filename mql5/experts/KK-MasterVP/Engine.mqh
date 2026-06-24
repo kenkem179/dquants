@@ -182,13 +182,12 @@ void ArmCooldown(double hours){
 void OnNewBar()
 {
    double eq=AccountInfoDouble(ACCOUNT_EQUITY);
-   // Session/day context in the reference tz (UTC + InpBrokerGMTOffset), as the C++ engine does.
+   // Session/day context in UTC.
    datetime barServer=iTime(_Symbol,PERIOD_CURRENT,1);
-   datetime ref=SN_RefTime(barServer);
    datetime utc=SN_UtcTime(barServer);
-   MqlDateTime rdt; TimeToStruct(ref,rdt);
+   MqlDateTime rdt; TimeToStruct(utc,rdt);
    int dayKey=rdt.year*10000+rdt.mon*100+rdt.day;
-   int sessionId=SN_UpdateSession(ref);
+   int sessionId=SN_UpdateSession(utc);
    if(g_dayStartEquity<=0.0 || dayKey!=g_lastDayKey){ g_dayStartEquity=eq; g_lastDayKey=dayKey; }
    // arm the daily-DD cooldown the moment realized daily DD breaches the cap (no extra risk).
    if(InpDailyDDCooldownHrs>0.0 && IsDailyDDHit(eq,0.0)) ArmCooldown(InpDailyDDCooldownHrs);
@@ -280,7 +279,7 @@ void OnNewBar()
    double atrPct=(price>0)?AtrAt(1)/price*100.0:0.0;
    double hf=KKBuf(hHtfEmaF,0,1), hs=KKBuf(hHtfEmaS,0,1), rsiQ=KKBuf(hRsi,0,1);
    if(!MVP_DeterministicGatesPass(sig,sessionId,atrPct,AtrAt(1),g_mintick,
-                                  SN_IsBlockedHour(ref),SN_InNewsWindow(utc),hf,hs,rsiQ,isImpulse)) return;
+                                  SN_IsBlockedHour(utc),SN_InNewsWindow(utc),hf,hs,rsiQ,isImpulse)) return;
 
    // (2) LIVE / STATEFUL gates - EA-only (account equity, open position, fire-tick
    //     spread). An indicator has none of these; in the locked config they are
@@ -341,6 +340,23 @@ void OnNewBar()
    }
 }
 
+// Guarded SL/TP modify. A broker rejects a modify whose requested SL/TP equal the
+// position's CURRENT SL/TP with "invalid stops"; without this guard the manager
+// re-sends that same no-op every tick (log spam + wasted requests, e.g. after the
+// recomputed level rounds back onto the existing one). Skipping a no-op is
+// behaviour-neutral -- the position is already at those levels -- so engine parity
+// is unaffected. Returns true when nothing needs sending.
+bool MvpSafeModify(ulong tk,double newSL,double newTP)
+{
+   newSL=NormalizeDouble(newSL,_Digits);
+   newTP=NormalizeDouble(newTP,_Digits);
+   double curSL=NormalizeDouble(mvpPos.StopLoss(),_Digits);
+   double curTP=NormalizeDouble(mvpPos.TakeProfit(),_Digits);
+   if(MathAbs(newSL-curSL)<=_Point && MathAbs(newTP-curTP)<=_Point)
+      return true;   // already at target -> skip the broker round-trip
+   return mvpTrade.PositionModify(tk,newSL,newTP);
+}
+
 // Per-tick: TP1 partial -> BE, then ATR chandelier trail (tighten-only).
 void MvpManage()
 {
@@ -367,7 +383,7 @@ void MvpManage()
             if(InpBeAfterTp1){
                double be=isLong?entry+InpBeBufAtr*AtrAt(1):entry-InpBeBufAtr*AtrAt(1); be=NormalizeDouble(be,_Digits);
                bool okSide=(isLong&&be>sl)||(!isLong&&be<sl), okDist=(isLong?(price-be>=minDist):(be-price>=minDist));
-               if(okSide&&okDist) mvpTrade.PositionModify(tk,be,tp);
+               if(okSide&&okDist) MvpSafeModify(tk,be,tp);
             }
          }
       }
@@ -377,7 +393,7 @@ void MvpManage()
          double trail=isLong?g_best-InpTrailAtrMult*atr1:g_best+InpTrailAtrMult*atr1; trail=NormalizeDouble(trail,_Digits);
          double cur=mvpPos.StopLoss();
          bool okSide=(isLong&&trail>cur)||(!isLong&&trail<cur), okDist=(isLong?(price-trail>=minDist):(trail-price>=minDist));
-         if(okSide&&okDist) mvpTrade.PositionModify(tk,trail,mvpPos.TakeProfit());
+         if(okSide&&okDist) MvpSafeModify(tk,trail,mvpPos.TakeProfit());
       }
       // ProfitManager profit-lock ladder (mirrors cpp on_tick step 4: pm_evaluate merged tighten-only SL /
       // extend-only TP / one-shot partial). Runs every tick, independent of TP1/BE/trail, against the
@@ -393,9 +409,14 @@ void MvpManage()
             && (isLong?(price-act.sl>=minDist):(act.sl-price>=minDist))){
             newSL=NormalizeDouble(act.sl,_Digits); changed=true;
          }
-         // TP: extend-only (further from price).
-         if(isLong?(act.tp>curTP):(act.tp<curTP)){ newTP=NormalizeDouble(act.tp,_Digits); g_pmTpExt++; changed=true; }
-         if(changed) mvpTrade.PositionModify(tk,newSL,newTP);
+         // TP: extend-only (further from price) AND must clear the broker stop
+         // distance, else the broker rejects it ("invalid stops") and we'd re-send
+         // every tick. Leave it for a later tick when price has moved away.
+         if((isLong?(act.tp>curTP):(act.tp<curTP))
+            && (isLong?(act.tp-price>=minDist):(price-act.tp>=minDist))){
+            newTP=NormalizeDouble(act.tp,_Digits); g_pmTpExt++; changed=true;
+         }
+         if(changed) MvpSafeModify(tk,newSL,newTP);
          // one-shot partial close
          if(act.partial_frac>0.0 && !g_pmPartialDone){
             double step=SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP), mn=SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN);

@@ -1,7 +1,8 @@
 // Sessions + time/volatility/spread filters — port of Utils/SessionManager.mqh. Pure + headless.
-// All times are UTC (the EA applies InpBrokerGMTOffset=0, so server == UTC == our tick ts).
+// All times are UTC.
 //
-// Sessions (minute-of-day, UTC):  Asia 1 = [0,360)  London 2 = [420,660)  NY 3 = [750,990).
+// Session windows are config-driven (parse_window of asia_sess/ldn_sess/ny_sess), evaluated in UTC
+// minute-of-day. Current defaults: Asia 1 = [0,420)  London 2 = [420,780)  NY 3 = [780,1260).
 // SessionId 0 = no session (entries blocked + open positions force-closed).
 // Blocked hours veto NEW entries during the listed UTC hours ("8,10,11,16", ranges like "9-11" ok).
 // Max trades/session: counter increments on fill, resets when the sessionId changes.

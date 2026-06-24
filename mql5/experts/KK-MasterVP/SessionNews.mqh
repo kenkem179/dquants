@@ -4,13 +4,12 @@
 //|  NewsFilter (CSV calendar + embedded fallback). No external        |
 //|  framework deps - include AFTER Inputs.mqh.                        |
 //|                                                                    |
-//|  TIME MODEL (load-bearing): the C++ engine evaluates sessions on   |
-//|  UTC tick time + InpBrokerGMTOffset (=10, the TV chart tz). MT5     |
-//|  gives BROKER-SERVER time, so we auto-detect the broker's UTC      |
-//|  offset (TimeTradeServer - TimeGMT) to first recover UTC, then add |
-//|  InpBrokerGMTOffset to reach the session reference tz. This makes  |
-//|  the EA trade the SAME wall-clock UTC hours as the backtest on any |
-//|  broker, regardless of its server timezone.                        |
+//|  TIME MODEL (load-bearing): sessions and blocked hours are fixed   |
+//|  in UTC. MT5 gives BROKER-SERVER time, so we auto-detect the       |
+//|  broker's UTC offset (TimeTradeServer - TimeGMT) to recover UTC    |
+//|  first, then evaluate the configured session windows directly in   |
+//|  that UTC clock. This makes the EA trade the same UTC wall-clock   |
+//|  hours on any broker, regardless of its server timezone.           |
 //+------------------------------------------------------------------+
 #ifndef KKMVP_SESSIONNEWS_MQH
 #define KKMVP_SESSIONNEWS_MQH
@@ -71,14 +70,10 @@ void SN_Init(){
    SN_ParseBlocked(InpBlockedHoursStr);
    SN_DetectBrokerOffset();
    g_curSessionId=-1; g_tradesThisSession=0;
-   PrintFormat("[KK-MasterVP] sessions: brokerUTC=%+d refOffset=%+d Asia[%d-%d] Ldn[%d-%d] NY[%d-%d]",
-      g_brokerToUtcHrs,InpBrokerGMTOffset,g_asiaLo,g_asiaHi,g_ldnLo,g_ldnHi,g_nyLo,g_nyHi);
+   PrintFormat("[KK-MasterVP] sessions: brokerUTC=%+d utc-fixed Asia[%d-%d] Ldn[%d-%d] NY[%d-%d]",
+      g_brokerToUtcHrs,g_asiaLo,g_asiaHi,g_ldnLo,g_ldnHi,g_nyLo,g_nyHi);
 }
 
-// Server bar time -> session REFERENCE time (UTC + InpBrokerGMTOffset).
-datetime SN_RefTime(datetime serverBarTime){
-   return serverBarTime - (datetime)(g_brokerToUtcHrs*3600) + (datetime)(InpBrokerGMTOffset*3600);
-}
 // Server bar time -> pure UTC (for the news calendar, which is in UTC).
 datetime SN_UtcTime(datetime serverBarTime){
    return serverBarTime - (datetime)(g_brokerToUtcHrs*3600);
@@ -90,7 +85,7 @@ bool SN_InWin(int cur,int lo,int hi){
    if(lo<hi) return (cur>=lo && cur<hi);
    return (cur>=lo || cur<hi);
 }
-// 1 Asia / 2 London / 3 NY / 0 none, at a reference-tz datetime.
+// 1 Asia / 2 London / 3 NY / 0 none, at a UTC datetime.
 int SN_SessionId(datetime ref){
    MqlDateTime dt; TimeToStruct(ref,dt); int cur=dt.hour*60+dt.min;
    if(SN_InWin(cur,g_asiaLo,g_asiaHi)) return 1;

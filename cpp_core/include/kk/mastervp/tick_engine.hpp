@@ -414,10 +414,8 @@ private:
     void on_bar_closed_(int sig_bar, const Tick& t) {
         if (sig_bar < 0) return;
         const BarEval& ev = evals_[sig_bar];
-        // Session/day/hour context is evaluated in BROKER/CHART time (UTC + broker_gmt_offset),
-        // exactly as the Pine `time(tf, session)` uses the chart timezone. Tick prices stay UTC.
-        const int64_t off_ms = static_cast<int64_t>(p_.broker_gmt_offset) * 3600000LL;
-        const UtcParts u = utc_parts(bars_[sig_bar].ts_ms + off_ms);   // SignalBarUtc = shift-1 bar time
+        // Session/day/hour context is evaluated in fixed UTC.
+        const UtcParts u = utc_parts(bars_[sig_bar].ts_ms);   // SignalBarUtc = shift-1 bar time
 
         // Step-0 flow-path dump (before any exit logic on this bar, so the bar an exit fires on is
         // still captured). One row per open trade per closed bar; unbiased price/flow geometry only.

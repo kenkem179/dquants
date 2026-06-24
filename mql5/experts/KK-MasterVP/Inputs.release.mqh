@@ -40,8 +40,7 @@ input double InpTp1ClosePct     = 0.0;      // % of the position to bank at the 
 input bool   InpBeAfterTp1      = true;     // Move stop to break-even once the first target is reached
 
 input group "===== Trading hours to avoid ====="
-input int    InpBrokerGMTOffset = 10;       // Analysis reference tz (UTC + this) the sessions/blocked-hours were tuned in. NOT your broker clock — that is auto-detected (TimeTradeServer-TimeGMT), so this works unchanged on any broker. Keep 10 for XAUUSD, 0 for BTCUSD; do NOT set it to your broker's offset.
-input string InpBlockedHoursStr = "2,3,14"; // Hours to skip, expressed in the reference tz above (10 => these are UTC 16,17,04). Blank = trade all hours.
+input string InpBlockedHoursStr = "4,16,17"; // Hours to skip, expressed in UTC. Blank = trade all hours.
 
 input group "===== News filter ====="
 input bool   InpAvoidNews       = false;    // Block new entries around high-impact news releases
@@ -188,7 +187,7 @@ bool   InpUseMomVeto      = false;
 double InpRsiMidline      = 50.0;
 int    InpRsiLen          = 14;
 
-// ----- Sessions (reference tz = UTC + InpBrokerGMTOffset) -----
+// ----- Sessions (fixed UTC) -----
 string InpAsiaSess        = "00:00-07:00";
 string InpLdnSess         = "07:00-13:00";
 string InpNySess          = "13:00-21:00";
