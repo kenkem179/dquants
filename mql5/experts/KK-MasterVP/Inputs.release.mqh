@@ -187,10 +187,13 @@ bool   InpUseMomVeto      = false;
 double InpRsiMidline      = 50.0;
 int    InpRsiLen          = 14;
 
-// ----- Sessions (fixed UTC) -----
-string InpAsiaSess        = "00:00-07:00";
-string InpLdnSess         = "07:00-13:00";
-string InpNySess          = "13:00-21:00";
+// ----- Sessions (fixed UTC; JST for reference) -----
+//   Asia   : UTC 21:00-03:00  (JST 06:00-12:00 next day)
+//   Europe : UTC 03:00-11:00  (JST 12:00-20:00)
+//   US     : UTC 14:00-21:00  (JST 23:00-06:00 next day)
+string InpAsiaSess        = "21:00-03:00";  // Asia session, UTC
+string InpLdnSess         = "03:00-11:00";  // Europe session, UTC
+string InpNySess          = "14:00-21:00";  // US session, UTC
 bool   InpForceCloseSessNews = false;
 
 // ----- Parity (dev only) -----

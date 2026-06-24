@@ -69,7 +69,12 @@ public:
 
 private:
     struct Win { int lo = 0, hi = 0; bool valid = false; };
-    static bool in_win(int m, const Win& w) { return w.valid && m >= w.lo && m < w.hi; }
+    // half-open [lo,hi); lo>hi wraps past midnight (e.g. 21:00-03:00). Mirrors EA SN_InWin.
+    static bool in_win(int m, const Win& w) {
+        if (!w.valid || w.lo == w.hi) return false;
+        if (w.lo < w.hi) return m >= w.lo && m < w.hi;
+        return m >= w.lo || m < w.hi;
+    }
 
     static Win parse_window(const std::string& s) {
         Win w; const auto dash = s.find('-');

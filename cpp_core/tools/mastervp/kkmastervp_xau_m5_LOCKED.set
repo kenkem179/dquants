@@ -113,9 +113,9 @@ InpUseMomVeto=false
 ; ---- sessions (fixed UTC) ----
 ; Session windows below are evaluated directly in UTC.
 ;
-InpAsiaSess=00:00-07:00
-InpLdnSess=07:00-13:00
-InpNySess=13:00-21:00
+InpAsiaSess=21:00-03:00
+InpLdnSess=03:00-11:00
+InpNySess=14:00-21:00
 InpBlockedHoursStr=4,16,17    ; T2 LOCK (2026-06-20): block UTC hrs 4,16,17 (validated T2 lock: 04 Asian-lunch, 16/17 late-London)
 InpForceCloseSessNews=false ; Pine never force-closes on session exit; positions ride to SL/TP
 InpAvoidNews=false

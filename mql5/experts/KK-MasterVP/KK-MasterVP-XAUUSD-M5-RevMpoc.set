@@ -4,7 +4,7 @@
 ;
 InpAdxLen=14
 InpAdxTrendMin=22.0
-InpAsiaSess=00:00-07:00
+InpAsiaSess=21:00-03:00
 InpAtrLen=14
 InpAtrMt5Mode=false
 InpAvoidNews=false
@@ -24,7 +24,7 @@ InpEmaSepAtr=0.25
 InpEmaSlow=194
 InpEnableBreakout=true
 InpForceCloseSessNews=false
-InpLdnSess=07:00-13:00
+InpLdnSess=03:00-11:00
 InpLossStreakCooldownHrs=4.0
 InpLossStreakCount=0
 InpMVPMagic=5252510
@@ -46,7 +46,7 @@ InpNodeGateEnabled=false
 InpNodeNeutralBand=0.15
 InpNodeSaturation=4.0
 InpNodeTouchAtr=0.05
-InpNySess=13:00-21:00
+InpNySess=14:00-21:00
 InpRetestAtr=0.1
 InpRiskAccPct=1.0
 InpRiskUnit=0

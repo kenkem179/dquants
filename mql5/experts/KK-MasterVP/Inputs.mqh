@@ -25,11 +25,17 @@ input double InpSoftBlockLotMult= 0.55;
 input int    InpLossStreakCount = 0;        // OFF - swept (S6b): streak limiter hurts PF
 input double InpLossStreakCooldownHrs = 4.0;
 
-input group "===== Sessions ====="
-input string InpAsiaSess        = "00:00-07:00";
-input string InpLdnSess         = "07:00-13:00";
-input string InpNySess          = "13:00-21:00";
-input string InpBlockedHoursStr = "4,16,17";      // low-liquidity veto, UTC hours (validated T2 lock: 04 Asian-lunch lull, 16/17 late-London chop). Format: "8,16" or "9-11"
+// Sessions are configured + evaluated in UTC. The EA auto-detects the broker/VPS
+// offset internally, so these UTC windows trade the same wall-clock hours on any
+// broker. Windows below are the validated XAU-M5 lock (UTC, JST for reference):
+//   Asia   : UTC 21:00-03:00  (JST 06:00-12:00 next day)
+//   Europe : UTC 03:00-11:00  (JST 12:00-20:00)
+//   US     : UTC 14:00-21:00  (JST 23:00-06:00 next day)   -> dead-zone UTC 11:00-14:00
+input group "===== Sessions (UTC) ====="
+input string InpAsiaSess        = "21:00-03:00";  // Asia session, UTC (JST 06:00-12:00 next day)
+input string InpLdnSess         = "03:00-11:00";  // Europe session, UTC (JST 12:00-20:00)
+input string InpNySess          = "14:00-21:00";  // US session, UTC (JST 23:00-06:00 next day)
+input string InpBlockedHoursStr = "4,16,17";      // low-liquidity veto, UTC hours (validated T2 lock: 04 Asian-lunch lull, 16/17 late-US chop). Format: "8,16" or "9-11"
 input bool   InpForceCloseSessNews = false; // Pine never force-closes on session exit
 
 input group "===== VP core ====="
