@@ -219,6 +219,8 @@ struct Params {
     std::string ny_sess       = "12:30-16:30";
     std::string blocked_hours = "8,10,11,16";
     bool   force_close_sess_news = true;
+    int    day_reset_hour     = 0;       // UTC hour the trading day rolls (daily-DD reset); 0 = midnight
+    bool   force_close_on_day_reset = false;  // flatten open positions at the day-reset hour (default OFF = parity)
     bool   avoid_news         = true;
     int    news_mins_before   = 15;
     int    news_mins_after    = 15;
@@ -446,6 +448,8 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpNySess") p.ny_sess = val;
     else if (key == "InpBlockedHoursStr") p.blocked_hours = val;
     else if (key == "InpForceCloseSessNews") p.force_close_sess_news = to_bool(val);
+    else if (key == "InpDayResetHourUTC") p.day_reset_hour = I();
+    else if (key == "InpForceCloseOnDayReset") p.force_close_on_day_reset = to_bool(val);
     else if (key == "InpAvoidNews") p.avoid_news = to_bool(val);
     else if (key == "InpNewsMinsBefore") p.news_mins_before = I();
     else if (key == "InpNewsMinsAfter") p.news_mins_after = I();

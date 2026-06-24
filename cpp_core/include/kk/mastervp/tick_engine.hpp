@@ -430,7 +430,20 @@ private:
 
         // Session/day context (counter resets on session change inside update()).
         const int sessionId = sess_.update(u.min_of_day);
-        rm_.seed_day_if_new(u.day_key, equity_);
+        // Day/daily-DD accounting rolls at day_reset_hour (UTC); 0 = midnight. The "trading day" is
+        // [reset_hour, reset_hour+24h). Optionally flatten the book at that boundary (default OFF =
+        // byte-identical to the no-reset-hour lock). force_close happens BEFORE re-seeding so the
+        // closed P&L lands in the prior day and the new day starts flat.
+        const int reset_day_key = (p_.day_reset_hour == 0)
+            ? u.day_key
+            : utc_parts(bars_[sig_bar].ts_ms - static_cast<int64_t>(p_.day_reset_hour) * 3600000LL).day_key;
+        if (p_.force_close_on_day_reset && last_reset_day_key_ != -1
+            && reset_day_key != last_reset_day_key_ && pos_.open()) {
+            pos_.force_close(t.bid, t.ask);
+            finalize_trade_(t.ts_ms);
+        }
+        last_reset_day_key_ = reset_day_key;
+        rm_.seed_day_if_new(reset_day_key, equity_);
         // Latch the 12h daily-DD cooldown the moment realized daily DD breaches the cap.
         rm_.maybe_arm_daily_dd_cooldown(t.ts_ms, equity_);
 
@@ -599,6 +612,7 @@ private:
     int     cur_forming_ = -1;
     double  equity_ = 0.0;
     int     raw_signals_ = 0;
+    int     last_reset_day_key_ = -1;   // prior trading-day key (for day-reset flatten edge-detect)
     int64_t dbg_from_ = 0, dbg_to_ = 0;
     int64_t trade_to_ms_ = 0;
     double  extra_spread_ = 0.0;
