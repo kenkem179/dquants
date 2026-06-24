@@ -1,6 +1,48 @@
 # HANDOFF — read me first, update me last
 
-## 🕐 MasterVP SESSION-TIME migration → pure UTC DONE + MT5-CONFIRMED (2026-06-24, commits `749bb6a`+`7bb9a95`)
+## 🛰️ BUILD-PLAN: DEPLOYMENT & OPS INFRA section added (2026-06-25) — PLAN ONLY, no code
+**What:** new **🛰️ DEPLOYMENT & OPS INFRASTRUCTURE** section in `docs/BUILD-PLAN.md` (items **D1–D3**),
+cross-EA Layer-4 (live-MT5) work, explicitly **out of scope for parity/backtest** (no C++ engine analog).
+Pure planning this session — **no source touched** (safe alongside the parallel session). Committed BUILD-PLAN
++ this handoff note only.
+- **D1 — Account Risk Guardian (broker-agnostic, cross-EA).** Key insight: `AccountInfoDouble(BALANCE|EQUITY)`
+  is already **account-wide** → live numbers need no sharing; only the **derived anchors** (start-of-day
+  equity/balance, running peak) need sharing+persistence. Mechanism: shared `AccountGuardian.mqh` in `KK-Common`,
+  state in **terminal GlobalVariables keyed by account login**, atomic `GlobalVariableSetOnCondition`,
+  `GlobalVariablesFlush`. Day boundary = **broker SERVER time** (`TimeCurrent`, auto-DST) — deliberately
+  separate from the strategy's UTC session logic. Equity-based, flatten at a buffer BEFORE the line. Configurable
+  knobs (generic/conservative defaults; per-firm FTMO-vs-FundedNext table in the user guide). **Mid-day
+  cold-start anchor** = reconstruct `balance_at_reset` from deal history (`HistorySelect` + Σ deals since reset);
+  `InpManualDayStartAnchor` override for the rare position-spans-reset + equity-anchor case.
+- **D2 — Per-EA trade CSV: append-immediately-on-close** (user agreed over hourly-batch), per-EA file, OnDeinit
+  flush, live-only (skip tester).
+- **D3 — Minimal notifications for KK-MasterVP (+Monster).** ⚠️ KK-KenKem ALREADY has the full suite — don't
+  touch it. Build a small shared `Notifier.mqh` in `KK-Common`; channel enum 0–7 (7=All three), mode
+  Full/Simplified-prop, Discord webhook + Telegram token/chatId + Email via `SendMail`. Op-notes: WebRequest
+  whitelist + SMTP + blocked-in-tester.
+- **Decisions captured (2026-06-25):** one terminal per account (→ GlobalVariables); both/generic defaults;
+  append-immediate CSV. **▶ NEXT:** implement when the user greenlights the build (D1 math should be factored
+  into a unit-testable header). Prop-firm facts grounded from FTMO/FundedNext docs (in the plan).
+
+## 🏆 MasterVP XAU M5 LOCK = 5R runner + BB0.02 — SWEEP-CONFIRMED + DSR PASS (2026-06-25) — UNCOMMITTED
+**Lock RR5.0/BB0.02: +80,874 / PF 1.408 / 1,404 tr / DD 13.9%(path-dep) / R-on-DD 8.34** (XAU M5,
+2025.06.01–2026.05.29, $10k every-tick). Memory [[mastervp-runner5-bebuf-lock]].
+- **✅ SWEEP-CONFIRMED (was a drift, now proven optimal).** 105-pass exhaustive MT5 opt (`InpRunnerRr`
+  3-8/0.25 × `InpBeBufAtr` 0.01-0.05/0.01). Lock = **#2 of 105**, within 1.1% of net-max RR5/BB0.03(81,770).
+  **PF plateau 1.38-1.41 across RR 4.0-6.5** (edge robust). BeBuf **0.05=worst cell** (old lock justified-out).
+  KEPT BB0.02 over the 0.03 net-max (noise, not peak-chasing). Run + grids:
+  `research/mastervp_parity/mt5_runs/2026-06-25_xau_m5_exit_sweep_RRxBB/` (XML + ANALYSIS.txt).
+- **✅ Gate sweep-deflated PASS:** per-trade SR 0.1029, PSR-0 1.000, MinTRL 211<1403, n_trials=105,
+  sr_trial_std≈0.0063 gate-units, E[maxSR] 0.0160 → **DSR 1.000** (edge ≈6.4× search noise floor).
+- **⚠️ 13.9% DD is a path-dependent KNIFE-EDGE** (DD grid bimodal ~14%↔~24%). Size for ~22-25% (MC 27.7%).
+- **DONE this session:** edited `KK-MasterVP-XAUUSD-M5.set` header w/ sweep-confirm note; built+synced
+  `KK-MasterVP-XAUUSD-M5-OPT-exit.set` (3-axis RR×BB×Trail, 1155). .set value UNCHANGED (5R/0.02).
+- **▶ NEXT (user choice):** (a) **trail axis still UN-SWEPT** — run `-OPT-exit.set` (1155, ~1h/8-core) or
+  trail-only fine sweep to close the exit cluster; (b) commit this lock + earlier marketplace/account-build
+  refactor (uncommitted); (c) version bump? `make release STRATEGY=KK-MasterVP` — ask Y/N (default N) only
+  AFTER user satisfied.
+
+## 🕐 (history) MasterVP SESSION-TIME migration → pure UTC DONE + MT5-CONFIRMED (2026-06-24, commits `749bb6a`+`7bb9a95`)
 **Status:** COMPLETE. Sessions/blocked-hours pure UTC in BOTH engine + EA; user configures session windows
 in UTC+0, EA auto-detects broker/VPS offset (`SN_UtcTime`=`TimeTradeServer-TimeGMT`) internally → same UTC
 wall-clock on any broker. Day/daily-DD accounting rolls at **UTC 00:00** (the user's clean KenKem model);
@@ -64,19 +106,25 @@ on mismatch show `Alert("Invalid Account ID")` and stop all EA logic (no detect/
   mismatch `Alert("Invalid Account ID")` + returns false. Both EAs then `return INIT_FAILED` in OnInit →
   MT5 never ticks the EA (no detection/execution).
 - **Wired into BOTH EAs:** KK-KenKem (refactored its old inline Print/INIT_FAILED check to the shared
-  module; added `ALLOWED_ACCOUNT_SERVER` in `Config/InputParams.mqh`) + KK-MasterVP (added both hidden
-  globals to `Inputs.mqh` + `Inputs.release.mqh`, include in `Engine.mqh`, guard at top of OnInit).
-  Both globals are plain (NOT `input`) → hidden. Both compile **0/0**.
-- **Release script `scripts/make_account_releases.sh <STRATEGY> [--accounts FILE] [--out DIR]`** — bakes
-  each (id,server) into the hidden globals, compiles, emits `releases/<VER>/accounts/<STRATEGY>-<VER>_<id>.ex5`
-  + `ACCOUNTS.md` manifest. Auto-detects the lock-source file per EA. **Dev source + dev .ex5 restored
-  byte-identical after the run** (trap-guarded — verified). Uses `sed -E` (BSD sed can't do `\+` in BRE).
+  module; added `ALLOWED_ACCOUNT_SERVER` in `Config/InputParams.mqh`) + KK-MasterVP (both hidden globals
+  in `Inputs.mqh`, include in `Engine.mqh`, guard at top of OnInit). Both globals are plain (NOT `input`)
+  → hidden. Both compile **0/0**.
+- **⭐ UPDATED 2026-06-25 — account builds now produce the MARKET edition (hide→bake→compile).** Shared
+  lib `scripts/lib/market_edition.sh` (sourced by `make_release.sh` AND `make_account_releases.sh`) so
+  account-locked `.ex5` are the marketplace (internals-hidden) build, never a full dev EA. MasterVP =
+  SINGLE-SOURCE (`Inputs.mqh` hand-curated; `input` keyword = visibility; `Inputs.release.mqh` RETIRED/
+  deleted); KenKem = whitelist-strip (`release.market.whitelist`). STANDING RULE: never expose a param/
+  comment a user can't understand. (`input` is MT5-only — C++ engine still sweeps every param.)
+- **Release script `scripts/make_account_releases.sh <STRATEGY> [--accounts FILE] [--out DIR]`** (or
+  `make account-releases STRATEGY=<name>`) — applies market-hiding, bakes each (id,server), compiles,
+  emits `releases/<VER>/accounts/<STRATEGY>-<VER>_<id>.ex5` + `ACCOUNTS.md`. **Dev source + dev .ex5
+  restored byte-identical** (trap-guarded). **Re-tested end-to-end 2026-06-25: MasterVP + KenKem both
+  build clean, source diff empty, no stray backups.**
 - **Accounts file (gitignored — holds live numbers):** default `scripts/deployment_accounts.txt`, or
   per-strategy `scripts/deployment_accounts.<STRATEGY>.txt` (auto-detected). Template committed:
-  `scripts/deployment_accounts.txt.example`. Run e.g. `scripts/make_account_releases.sh KK-KenKem`.
-- **Tested:** MasterVP built 3 locked EAs, KenKem built 1 — both restored clean, manifests correct.
-- **▶ NEXT (user):** drop real account IDs+servers in `scripts/deployment_accounts.txt` and run the script
-  per EA. Optional: commit decision pending (source changes staged-ready).
+  `scripts/deployment_accounts.txt.example`.
+- **▶ NEXT (user):** drop real account IDs+servers in `scripts/deployment_accounts.txt` and run per EA.
+  Optional: commit decision pending (source changes + script refactor uncommitted).
 
 ## ✅ KK-MasterVP PROFIT-LOCK A/B — MT5 VERDICT IN (2026-06-23, commit b1d419d) — DONE
 **Result: XAU KEEP BASE (profit-lock OFF); BTC Ladder helps but edge marginal.** 10 MT5 every-tick runs
