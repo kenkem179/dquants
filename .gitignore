@@ -76,3 +76,6 @@ scripts/deployment_accounts.*.txt
 
 # Per-account locked builds: customer-specific .ex5 + ACCOUNTS.md login manifest — never commit
 mql5/**/releases/*/accounts/
+
+# Per-account delivery bundles (client logins + rebuildable .ex5/.set/.zip) — never commit
+mql5/experts/accounts/

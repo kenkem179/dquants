@@ -32,9 +32,15 @@ out) · EAs **stop new trades but keep managing open positions** · separate acc
 - **Per-account builds:** `make account-releases STRATEGY=<name>` → gitignored `releases/<ver>/accounts/`
   (`.ex5` + `ACCOUNTS.md`). **3 client accounts** in the gitignored `deployment_accounts.{KK-MasterVP,
   KK-MasterVP-Profiler}.txt` lists, expiring ~2026.08.26. `norm_expiry()` accepts single-digit month/day.
-- **🔒 Security:** `mql5/**/releases/*/accounts/` gitignored (logins never commit); ALWAYS leak-scan before
-  commit (`git diff --cached -G'<login>'`). ⚠️ Client logins still live in OLD pushed history (commit
-  `17189ef`'s `1.05/accounts/ACCOUNTS.md`) — `git filter-repo` scrub offered, user has NOT requested it.
+- **📦 Per-account DELIVERY BUNDLES:** `make account-bundles` (`scripts/make_account_bundles.sh`) → builds
+  the locked .ex5 then assembles `mql5/experts/accounts/<id>/` with the EA + Profiler locked .ex5 + all 5
+  deploy .set (clean-named) + Profiler .set + README, and a `<id>.zip` per account to send. `--no-build`
+  reuses existing .ex5; `--no-zip` skips zips. (Presets/ is a real folder of relative SYMLINKS to canonical
+  .set; bundles are real COPIES so they zip/travel.)
+- **🔒 Security:** `mql5/**/releases/*/accounts/` AND `mql5/experts/accounts/` gitignored (logins + rebuildable
+  artifacts never commit); ALWAYS leak-scan before commit (`git diff --cached -G'<login>'`). ⚠️ Client logins
+  still live in OLD pushed history (commit `17189ef`'s `1.05/accounts/ACCOUNTS.md`) — `git filter-repo` scrub
+  offered, user has NOT requested it.
 - **▶ NEXT (USER):** demo-verify "Expired Access" by baking a past date; ship the account `.ex5` from
   `releases/<ver>/accounts/`. ⚠️ kenkem.biz URL is fine for direct/account-locked distribution; **strip it from
   `#property description` if uploading the PUBLIC build to the MQL5 Market** (`#property link` is allowed there).
