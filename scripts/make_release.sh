@@ -350,18 +350,18 @@ if [ "$DO_COMPILE" -eq 1 ] && mkt_has_edition "$EA_DIR"; then
   mkdir -p "$MKT_DIR"
   MKT_EX5="$MKT_DIR/$STRATEGY-Market-$VERSION.ex5"
 
-  if mkt_uses_whitelist "$EA_DIR"; then
-    # approach B: strip non-whitelisted inputs + bake the lock, compile, capture,
+  if mkt_needs_transform "$EA_DIR"; then
+    # whitelist strip and/or force-hide: mutate dev source, compile, capture,
     # then restore the dev source (trap-guarded) and rebuild the dev .ex5.
     mkt_apply_hiding "$EA_DIR" MKT_BACKUPS || die "market hiding failed"
     "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" || die "market compile failed — fix errors first"
     cp -f "$EX5_FILE" "$MKT_EX5"
-    info "$STRATEGY-Market-$VERSION.ex5  (internals hidden via whitelist)"
+    info "$STRATEGY-Market-$VERSION.ex5  (internals hidden)"
     restore_inputs                                   # dev source back in place
     "$SCRIPT_DIR/compile_mql5.sh" "$MQ5_FILE" >/dev/null 2>&1 || true   # dev .ex5 back
     info "dev source restored + dev .ex5 rebuilt (working tree unchanged)"
   else
-    # approach A: the dev source is already curated -> the dev build (step 2) IS
+    # pure single-source (no whitelist, no force-hide): the dev build (step 2) IS
     # the market build. No transform, no recompile; just capture it.
     cp -f "$EX5_FILE" "$MKT_EX5"
     info "$STRATEGY-Market-$VERSION.ex5  (single-source: dev build is the market build)"

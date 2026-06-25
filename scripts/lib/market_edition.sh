@@ -40,16 +40,42 @@ mkt_has_edition() {
 # mkt_uses_whitelist <EA_DIR> -> 0 if approach B (whitelist present), else 1
 mkt_uses_whitelist() { [ -f "$1/release.market.whitelist" ]; }
 
+# mkt_has_forcehide <EA_DIR> -> 0 if the EA ships a release.market.forcehide list
+#   (single-source targeted "hide-and-hard-code" of specific keys for the market
+#   edition ONLY — e.g. force InpNotifyMode=2 so marketplace users can't resell
+#   full SL/TP signals, while the dev/personal build keeps the key configurable).
+mkt_has_forcehide() { [ -f "$1/release.market.forcehide" ]; }
+
+# mkt_needs_transform <EA_DIR> -> 0 if the market build must mutate+recompile dev
+#   source (whitelist strip OR force-hide), vs a pure single-source copy.
+mkt_needs_transform() { mkt_uses_whitelist "$1" || mkt_has_forcehide "$1"; }
+
+# _mkt_forcehide_keys <EA_DIR> -> print the force-hidden keys, one per line.
+_mkt_forcehide_keys() {
+  local fh="$1/release.market.forcehide"
+  [ -f "$fh" ] || return 0
+  sed -E 's/#.*//' "$fh" | grep -E '=' | sed -E 's/=.*//; s/[[:space:]]//g' | grep -v '^$' || true
+}
+
 # mkt_visible_keys <EA_DIR> -> print the dialog-visible Inp* keys, one per line
 #   approach B: the whitelist entries; approach A: whatever still carries `input`
-#   in the live dev source (the user's hand-curated visibility).
+#   in the live dev source (the user's hand-curated visibility), MINUS any keys
+#   force-hidden for the marketplace (so they are also dropped from the .set).
 mkt_visible_keys() {
   local ea="$1" wl="$1/release.market.whitelist"
   if [ -f "$wl" ]; then
     grep -vE '^[[:space:]]*(#|$)' "$wl" | sed -E 's/[[:space:]]//g' || true
   else
-    grep -rhoE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' \
-      "$ea"/*.mqh "$ea"/*.mq5 2>/dev/null | awk '{print $NF}' || true
+    local keys; keys="$(grep -rhoE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' \
+      "$ea"/*.mqh "$ea"/*.mq5 2>/dev/null | awk '{print $NF}' || true)"
+    if mkt_has_forcehide "$ea"; then
+      local hidef; hidef="$(mktemp)"
+      _mkt_forcehide_keys "$ea" > "$hidef"
+      printf '%s\n' "$keys" | grep -vxF -f "$hidef" || true   # empty hidef -> keeps all
+      rm -f "$hidef"
+    else
+      printf '%s\n' "$keys"
+    fi
   fi
 }
 
@@ -62,12 +88,85 @@ _mkt_push_backup() {
 }
 
 # mkt_apply_hiding <EA_DIR> <backup_array_name>
-#   Approach A (single-source): no-op — the dev source is already the product.
-#   Approach B (whitelist): strip non-whitelisted `input`s to fixed globals in
-#   place + bake the locked .set defaults. Backups pushed to the named array.
+#   Mutates dev source in place for the marketplace build; backups pushed to the
+#   named array (caller restores via its trap). Two composable transforms:
+#     - whitelist (approach B): strip non-whitelisted `input`s + bake the lock.
+#     - force-hide (approach A or B): strip `input` from listed keys + hard-code
+#       their value (release.market.forcehide). Applied last so it always wins.
+#   A pure single-source EA with neither file is a no-op.
 mkt_apply_hiding() {
   local ea="$1" arr="$2"
-  mkt_uses_whitelist "$ea" || return 0          # single-source: nothing to transform
+  if mkt_uses_whitelist "$ea"; then
+    _mkt_apply_whitelist "$ea" "$arr" || return 1
+  fi
+  _mkt_apply_forcehide "$ea" "$arr" || return 1
+  return 0
+}
+
+# _mkt_apply_forcehide <EA_DIR> <backup_array_name>
+#   For every "KEY=VAL" in release.market.forcehide: find the file declaring
+#   `input <type> KEY = ...;`, back it up, then rewrite that line WITHOUT `input`
+#   (=> hidden compiled-in global) and with VAL as the baked value. The key stays
+#   `input` (visible + configurable) in the unmodified dev/personal build.
+_mkt_apply_forcehide() {
+  local ea="$1" arr="$2"
+  local fh="$ea/release.market.forcehide"
+  [ -f "$fh" ] || return 0
+
+  local map; map="$(mktemp)"
+  local line key val
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%%#*}"                                  # strip inline comment
+    line="$(printf '%s' "$line" | tr -d '[:space:][:cntrl:]')"
+    [ -z "$line" ] && continue
+    case "$line" in *=*) ;; *) continue ;; esac
+    key="${line%%=*}"; val="${line#*=}"
+    [ -n "$key" ] && [ -n "$val" ] && printf '%s\t%s\n' "$key" "$val" >> "$map"
+  done < "$fh"
+  [ -s "$map" ] || { rm -f "$map"; return 0; }
+
+  local keyre; keyre="$(cut -f1 "$map" | paste -sd'|' -)"
+  local files f tgt
+  files="$(cd "$ea" && grep -rlE "^[[:space:]]*input[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]+($keyre)[[:space:]]*=" \
+            --include=*.mqh --include=*.mq5 --exclude-dir=releases . 2>/dev/null | sed 's|^\./||' | sort -u || true)"
+  for f in $files; do
+    tgt="$ea/$f"
+    _mkt_push_backup "$arr" "$tgt"
+    awk -v MAP="$map" '
+      BEGIN {
+        while ((getline m < MAP) > 0) {
+          ti=index(m,"\t"); if (ti==0) continue
+          k=substr(m,1,ti-1); v=substr(m,ti+1)
+          gsub(/[ \t\r]/,"",k); sub(/[\r]+$/,"",v)
+          if (k!="") force[k]=v
+        }
+      }
+      {
+        if (match($0, /^[ \t]*input[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*=/)) {
+          lead=$0; sub(/[^ \t].*$/,"",lead)
+          rest=substr($0,length(lead)+1)
+          sub(/^input[ \t]+/,"",rest)
+          split(rest,tk,/[ \t]+/); name=tk[2]
+          if (name in force) {
+            eq=index(rest,"="); semi=index(rest,";")
+            if (semi>0) {
+              pre=substr(rest,1,eq); tail=substr(rest,semi)
+              print lead pre " " force[name] tail          # no "input " => hidden, value baked
+              next
+            }
+          }
+        }
+        print $0
+      }
+    ' "$tgt" > "$tgt.bk" && mv -f "$tgt.bk" "$tgt"
+  done
+  rm -f "$map"
+}
+
+# _mkt_apply_whitelist <EA_DIR> <backup_array_name> : approach B (strip non-
+#   whitelisted `input`s to fixed globals + bake the locked .set defaults).
+_mkt_apply_whitelist() {
+  local ea="$1" arr="$2"
   local wl="$ea/release.market.whitelist"
 
   # optional "# bake_defaults_from: <set>" directive -> freeze hidden params at

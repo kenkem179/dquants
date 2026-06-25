@@ -172,10 +172,13 @@ restore_all() {
 trap restore_all EXIT INT TERM
 
 # 3a) Hide internals -> the working source becomes the marketplace edition
-#     (no-op for single-source EAs like KK-MasterVP; whitelist-strip for KK-KenKem).
+#     (single-source EAs like KK-MasterVP curate via Inputs.mqh; KK-KenKem strips
+#     via whitelist; release.market.forcehide hides+hard-codes specific keys).
 if mkt_has_edition "$EA_DIR"; then
   if mkt_uses_whitelist "$EA_DIR"; then
     info "hiding internals via release.market.whitelist"
+  elif mkt_has_forcehide "$EA_DIR"; then
+    info "single-source + force-hiding keys via release.market.forcehide"
   else
     info "single-source: Inputs.mqh already curated (no transform)"
   fi

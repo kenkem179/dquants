@@ -1,0 +1,16 @@
+# KK-MasterVP — MQL5-Market "force hide + hard-code" list.
+# Consumed by scripts/lib/market_edition.sh during the [market] build step.
+#
+# Each "InpKey=VALUE" line: in the MARKETPLACE edition ONLY, that input is
+# stripped of its `input` keyword (-> hidden, fixed compiled-in global) and its
+# value is hard-coded to VALUE. The DEV / personal build keeps the key fully
+# visible + configurable (this file never touches the dev source permanently —
+# the change is applied to a backup copy at build time and restored after).
+#
+# Format: <InpKey>=<value>     (# comments allowed; values are primitive only)
+#
+# Why InpNotifyMode=2: force Simplified (prop-safe) notifications in the
+# marketplace build. Simplified sends only symbol + action + win/loss, NEVER the
+# full entry/SL/TP1/TP2 detail. This prevents end users from reselling the EA's
+# alerts as a tradable signal feed. Hidden so they can't switch it back to Full.
+InpNotifyMode=2

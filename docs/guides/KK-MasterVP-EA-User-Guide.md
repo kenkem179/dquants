@@ -228,7 +228,7 @@ A separate safety layer for funded / prop‑firm accounts. It watches your **acc
 Optional trade alerts to Discord, Telegram, and/or Email. Off by default; **skipped in the Strategy Tester** so backtests never send anything.
 
 - **InpNotifyChannel** — where alerts go: `0` none, `1` Email, `2` Discord, `3` Telegram, `4` Email + Discord, `5` Email + Telegram, `6` Discord + Telegram, `7` all three.
-- **InpNotifyMode** — `1` Full (symbol, action, size, entry/stop/target, net result) or `2` Simplified (symbol + action + win/loss only — a prop‑safe format that hides exact levels).
+- **InpNotifyMode** — `1` Full (symbol, action, size, entry/stop/target, net result) or `2` Simplified (symbol + action + win/loss only — a prop‑safe format that hides exact levels). **Note:** the MQL5 Market edition fixes this to **Simplified** and hides the setting (so alerts can't be redistributed as a full‑detail signal feed); the personal build lets you choose.
 - **InpDiscordWebhookUrl** — your Discord channel webhook URL (Discord → channel settings → Integrations → Webhooks).
 - **InpTelegramBotToken** — your Telegram bot token (from @BotFather).
 - **InpTelegramChatId** — the Telegram chat or group ID to send to (group IDs are negative numbers).
