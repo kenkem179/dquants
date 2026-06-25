@@ -16,7 +16,14 @@
 //|  the broker tick history is not available.                       |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, KenKem MasterVP Indicator"
-#property version   "1.00"
+#property link      "https://kenkem.biz"
+#property version   "1.01"
+#property description "KK-MasterVP Profiler - display-only volume-profile cockpit."
+#property description "Shows master/local POC & value area, a net-flow histogram, EMA"
+#property description "trend context and historical breakout setup markers (WON/LOST)."
+#property description "Draws context only - it places no orders and gives no signals."
+#property description "Educational tool only - not financial advice. Trading carries risk."
+#property description "For more details, visit https://kenkem.biz"
 #property indicator_chart_window
 #property indicator_buffers 11
 #property indicator_plots   9
@@ -60,22 +67,26 @@
 #property indicator_color9  C'0,100,45',C'110,28,28'
 #property indicator_width9  1
 
+// Shared KK access guard (account lock + expiry). Same module the EAs use; the
+// per-account release script bakes the hidden globals below. See AccountLock.mqh.
+#include "../../experts/KK-Common/AccountLock.mqh"
+
 //+------------------------------------------------------------------+
 //| Inputs - defaults mirror KK-MasterVP-Monster.pine                |
 //+------------------------------------------------------------------+
 input group "Trade Setups (breakout)"
-input bool   InpSetShow        = true;  // Detect + draw breakout setups: Entry/SL/TP1/TP2 lines with WON/LOST history
-input int    InpSetLookback    = 1800;   // Bars scanned back for historical setups (must be <= trail bars)
-input int    InpSetKeep        = 12;    // Max setups kept on the chart (oldest dropped first)
+input bool   InpSetShow        = true;  // Show past breakout setups (Entry/SL/TP1/TP2 + WON/LOST history)
+input int    InpSetLookback    = 1800;   // How many bars back to scan for past setups
+input int    InpSetKeep        = 12;    // Max setups shown at once (oldest removed first)
 double InpSetEntryBufAtr = 0.85;  // LOCK: confirmed close must clear master VAH/VAL by this x ATR (EA InpBreakBufAtr=0.85)
 double InpSetNetMin      = 0.80;  // LOCK: min same-direction near-price net at the signal bar (the EA trades 0.80)
 double InpSetSlAtrMult   = 1.2;   // LOCK: SL = close -/+ this x ATR (EA InpSlAtrBrk=1.2)
-input double InpSetTp1R        = 0.8;   // TP1 distance in R; TP1 touch before SL = WON
-input double InpSetTp2R        = 1.8;   // TP2 distance in R
-input double InpSetRiskPct     = 1.0;   // risk this % of balance for the E-label lot (display-only; broker min/step/max applied)
-input bool   InpSetShowRejects = false; // Mark edge-cross triggers that were filtered out, with a short reason tag
-input bool   InpSetBeRatchet   = false; // Break-even ratchet: stop jumps to entry +/- the BE buffer once a setup reaches trigger profit (KenKem twin; OFF = pure breakout TP1-vs-SL history)
-input bool   InpSetEmaFilter     = false; // Optional EMA-alignment filter for drawn setups (OFF by default)
+input double InpSetTp1R        = 0.8;   // First target distance, in risk units (R). Reaching it before SL = WON
+input double InpSetTp2R        = 1.8;   // Second target distance, in risk units (R)
+input double InpSetRiskPct     = 1.0;   // Risk % used to show an example lot on the entry label (display only - places no trades)
+input bool   InpSetShowRejects = false; // Also mark setups that were skipped, with a short reason
+input bool   InpSetBeRatchet   = false; // Illustrate the stop moving to break-even once a setup is in profit (OFF = plain TP1-vs-SL)
+input bool   InpSetEmaFilter     = false; // Only show setups that agree with the EMA trend
 //--- hidden (fixed): lock mirrors (anti-chase off, pure close-based SL) + BE/reject fine knobs ---
 double InpSetMaxDistAtr  = 0.0;   // Anti-chase cap (x ATR); 0 = off - matches the lock (EA InpBreakMaxAtr huge = no cap)
 double InpSetSlBufAtr    = 0.0;   // Edge-anchor SL term; 0 = pure close-based SL like the EA
@@ -121,21 +132,22 @@ int    InpMaxHvnLines    = 4;     // Max HVN rays drawn (strongest first)
 double InpBiasBalanced   = 0.15;  // |bias score| below which the projection is "rotation back to POC"
 double InpPocStableAtr   = 0.2;   // Predicted-vs-current master-POC gap (x ATR) at/under which the POC is STABLE
 
-input group "Execution Health"
-input bool   InpShowExecRow   = true;  // Panel row: CURRENT spread + tape speed vs their averages over the master VP window (100% = average conditions)
+// input group "Execution Health"
+bool   InpShowExecRow   = true;  // Panel row: CURRENT spread + tape speed vs their averages over the master VP window (100% = average conditions)
 //--- hidden (fixed): warn/alarm thresholds ---
 int    InpExecWindowSec  = 60;    // Seconds of recent ticks behind the CURRENT spread/speed reads
 int    InpExecWarnPct    = 140;   // Ratio percent at/over which a reading colors orange (elevated)
 int    InpExecAlarmPct   = 250;   // Ratio percent at/over which a reading colors red (hostile fills likely)
 
 input group "Visuals"
-input bool   InpShowMasterLines = true;  // Master POC/VAH/VAL rays + state tags
-input bool   InpShowLocalLines  = true;  // Local POC/VAH/VAL rays + state tags
-input bool   InpShowHistogram   = true;  // Master histogram (net-colored rows, gray remainder)
-input bool   InpHistFront       = true;  // Draw the VP histogram in front of candles instead of behind them
-input bool   InpShowPredictedPoc = true; // Predicted master POC line (age-out preview)
-input bool   InpShowPanel       = true;  // Compact top-right telemetry card: feed, net M1/chart/M5/M15, ATR%/slope, POC stability, bias
-input bool   InpShowVerdict     = true;  // Near-price verdict tag above the histogram
+input int    InpVpLookback   = 100;   // Volume-profile window (bars); the master profile covers this x the multiplier
+input bool   InpShowMasterLines = true;  // Show master profile levels: POC + value-area high/low (mPOC/mVAH/mVAL)
+input bool   InpShowLocalLines  = true;  // Show local (recent) profile levels (lPOC/lVAH/lVAL)
+input bool   InpShowHistogram   = true;  // Show the volume histogram (green/red = recent buy/sell lean)
+input bool   InpHistFront       = true;  // Draw the histogram in front of the candles (OFF = behind them)
+bool   InpShowPredictedPoc = true; // Predicted master POC line (age-out preview)
+bool   InpShowPanel       = true;  // Compact top-right telemetry card: feed, net M1/chart/M5/M15, ATR%/slope, POC stability, bias
+bool   InpShowVerdict     = true;  // Near-price verdict tag above the histogram
 double InpAtrRulerMult    = 1.0;   // Guide lines at live price +/- this x ATR; 0 = hidden
 //--- hidden (fixed): histogram layout / trail history ---
 int    InpHistShiftBars  = 70;    // Bars LEFT of the current candle the histogram zone starts (keeps the live price area clear)
@@ -143,14 +155,13 @@ int    InpHistWidthBars  = 25;    // Max histogram row length (bars, growing rig
 int    InpVerdLabelGapBars = 6;   // Gap (bars) left of the histogram baseline for the Net Vol / over / under labels
 int    InpTrailBars      = 1500;  // How many recent bars get the POC/VAH/VAL trail plots (history cost cap)
 
-input group "Volume Profile Core"
-input int    InpVpLookback   = 100;   // Local window (bars); master = this x mult
+// input group "Master Volume Profile Core"
 int    InpVpBins       = 75;    // LOCK: node bins for POC/VAH/VAL + node-state math (EA InpVpBins=30)
-input double InpMasterMult   = 3.0;   // Master window = round(local x this)
-input bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 (bar-feed), no CopyTicksRange flicker. ON: real broker tick stream (higher-res but the large master window can fail to fetch and flip resolution)
-input bool   InpHistTickDelta = true;  // HYBRID (when InpUseRealTicks=OFF): bar-feed structure (stable rows) + REAL tick-rule signed-delta tint on the recent window; bins beyond coverage fall back to bar-direction net
-input bool   InpHistRecency  = true;  // ON: weight ticks by the node decay per bar of age (TV twin look - RECENT flow dominates); OFF: classic undecayed volume profile
-input bool   InpHistNetScale = true;  // ON: green/red slice scaled by the strongest bin imbalance (visible on any TF); OFF: raw delta share (near-invisible on high TFs)
+double InpMasterMult   = 4.0;   // Master window = round(local x this)
+bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 (bar-feed), no CopyTicksRange flicker. ON: real broker tick stream (higher-res but the large master window can fail to fetch and flip resolution)
+bool   InpHistTickDelta = true;  // HYBRID (when InpUseRealTicks=OFF): bar-feed structure (stable rows) + REAL tick-rule signed-delta tint on the recent window; bins beyond coverage fall back to bar-direction net
+bool   InpHistRecency  = true;  // ON: weight ticks by the node decay per bar of age (TV twin look - RECENT flow dominates); OFF: classic undecayed volume profile
+bool   InpHistNetScale = true;  // ON: green/red slice scaled by the strongest bin imbalance (visible on any TF); OFF: raw delta share (near-invisible on high TFs)
 //--- hidden (fixed): display resolution / tick-delta internals ---
 int    InpHistBins       = 240;   // Display bins - resolution of the drawn histogram rows (higher = thinner/finer rows)
 int    InpHistTickBars   = 200;   // Hybrid tick-delta lookback cap (bars) - kept short so the fetch stays reliable
@@ -159,16 +170,16 @@ int    InpDwellCapSec    = 120;   // Cap (seconds) on the per-tick dwell credit 
 double InpVaPct        = 70.0;  // Value-area percent of total volume around the POC
 int    InpPredictBars  = 10;    // Predicted-POC age-out (bars): drop the oldest N bars to preview the next master POC/VAH/VAL; 0 = off
 
-input group "EMA Overlay (SuperBros twin)"
-input bool   InpShowEmas = true;  // Master switch: draw the four EMA lines (colors/widths match the Pine SuperBros plots)
-input int    InpEma1Len  = 24;    // Fast EMA
-input int    InpEma2Len  = 72;    // Middle EMA
+input group "EMA Overlay"
+input bool   InpShowEmas = true;  // Show the four EMA trend lines
+input int    InpEma1Len  = 24;    // Fast EMA period
+input int    InpEma2Len  = 72;    // Medium EMA period
 int    InpEma3Len  = 96;   // EMA 3 period (sky blue) - visual only, no EA equivalent
-input int    InpEma4Len  = 194;   // Slow EMA
-input bool   InpShowEmaZone = true; // Thin green/red ribbon between EMA 1 and 2 while the full stack is aligned (buy/sell zone, Pine bgcolor twin)
+input int    InpEma4Len  = 194;   // Slow EMA period
+input bool   InpShowEmaZone = true; // Shade a buy/sell zone between the fast & medium EMA when all EMAs line up
 
 input group "Chart Theme"
-input bool   InpApplyTheme = true;  // Apply the eye-friendly dark theme on attach (TV-style teal/red candles, soft background, dim grid); OFF = leave chart colors alone
+input bool   InpApplyTheme = true;  // Apply a dark, easy-to-read chart theme on attach (OFF = keep your own colors)
 
 //+------------------------------------------------------------------+
 //| Types + globals                                                  |
@@ -185,6 +196,18 @@ struct NodeState {
 };
 
 #define OBJPFX "KKVPP_"
+
+// ----- Access lock (hidden internals; NOT inputs) -----
+// All empty by default = runs on any account, never expires. The per-account
+// release script bakes these in: ALLOWED_ACCOUNT_ID/SERVER lock the indicator to
+// one login@server; ACCESS_EXPIRY ("YYYY.MM.DD 23:59:59") time-limits it. On a
+// wrong account OnInit aborts; on expiry OnCalculate/OnTimer stop ALL calculation
+// (clear levels/objects) and Alert "Expired Access". Enforced on broker server time.
+string ALLOWED_ACCOUNT_ID     = "";  // Internal: empty=any account
+string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server
+string ACCESS_EXPIRY          = "";  // Internal: empty=perpetual; baked per-account
+bool   g_blocked        = false;     // true once access is denied/expired -> no calculation
+bool   g_expiredAlerted = false;     // Alert("Expired Access") fired once
 
 double BufMPoc[], BufMVah[], BufMVal[], BufLPoc[];
 double BufEma1[], BufEma2[], BufEma3[], BufEma4[];
@@ -1099,7 +1122,41 @@ void UpdateLiveTicks() {
 //+------------------------------------------------------------------+
 //| Init / deinit                                                    |
 //+------------------------------------------------------------------+
+// Stop ALL calculation: alert once, wipe every plotted level + drawn object,
+// and leave an on-chart notice. Idempotent (safe to call every calc/timer).
+void VizBlock() {
+   if(!g_blocked) {
+      Print("KK-MasterVP-Profiler: access expired (", ACCESS_EXPIRY, ") - calculation stopped.");
+      ObjectsDeleteAll(0, OBJPFX);
+   }
+   g_blocked = true;
+   if(!g_expiredAlerted) { Alert("Expired Access"); g_expiredAlerted = true; }
+   if(ArraySize(BufMPoc) > 0) {
+      ArrayInitialize(BufMPoc, EMPTY_VALUE); ArrayInitialize(BufMVah, EMPTY_VALUE);
+      ArrayInitialize(BufMVal, EMPTY_VALUE); ArrayInitialize(BufLPoc, EMPTY_VALUE);
+      ArrayInitialize(BufEma1, EMPTY_VALUE); ArrayInitialize(BufEma2, EMPTY_VALUE);
+      ArrayInitialize(BufEma3, EMPTY_VALUE); ArrayInitialize(BufEma4, EMPTY_VALUE);
+      ArrayInitialize(BufZoneA, EMPTY_VALUE); ArrayInitialize(BufZoneB, EMPTY_VALUE);
+   }
+   Comment("KK-MasterVP-Profiler: Expired Access");
+   ChartRedraw();
+}
+
 int OnInit() {
+   // ----- access guard (account lock + expiry) -----
+   // Wrong account can never become valid -> remove the indicator. Expiry is
+   // time-based -> stay loaded but blocked so the on-chart notice persists and
+   // OnCalculate/OnTimer no-op (and keep re-checking is moot once expired).
+   if(!KK_AccountAuthorized(ALLOWED_ACCOUNT_ID, ALLOWED_ACCOUNT_SERVER))
+      return INIT_FAILED;
+   if(KK_AccessExpired(ACCESS_EXPIRY)) {
+      g_blocked = true; g_expiredAlerted = true;
+      Alert("Expired Access");
+      Comment("KK-MasterVP-Profiler: Expired Access");
+      Print("KK-MasterVP-Profiler: access expired (", ACCESS_EXPIRY, ") - calculation disabled.");
+      return INIT_SUCCEEDED;
+   }
+
    g_tf = (ENUM_TIMEFRAMES)_Period;
    g_mintick = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
    if(g_mintick <= 0.0) g_mintick = _Point;
@@ -1221,6 +1278,7 @@ int OnInit() {
 
 void OnDeinit(const int reason) {
    EventKillTimer();
+   Comment("");
    ObjectsDeleteAll(0, OBJPFX);
    if(g_hAtrM15 != INVALID_HANDLE && g_hAtrM15 != g_hAtrChart) IndicatorRelease(g_hAtrM15);
    if(g_hAtrM5  != INVALID_HANDLE && g_hAtrM5  != g_hAtrChart) IndicatorRelease(g_hAtrM5);
@@ -2071,6 +2129,9 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 const datetime &time[], const double &open[],
                 const double &high[], const double &low[], const double &close[],
                 const long &tick_volume[], const long &volume[], const int &spread[]) {
+   // Access expiry (server-time): stop ALL calculation once past the baked date.
+   if(g_blocked) return rates_total;
+   if(KK_AccessExpired(ACCESS_EXPIRY)) { VizBlock(); return rates_total; }
    g_rt = rates_total;
    if(rates_total < g_masterLen + InpAtrLen + 5) return rates_total;
 
@@ -2136,6 +2197,9 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 }
 
 void OnTimer() {
+   // Access expiry: in a quiet market OnCalculate may not fire, so enforce here too.
+   if(g_blocked) return;
+   if(KK_AccessExpired(ACCESS_EXPIRY)) { VizBlock(); return; }
    // Right after attach the broker tick history may still be syncing and the
    // first CopyTicksRange comes back empty, dropping the build onto the bar
    // fallback until the NEXT bar. Retry the full rebuild until the tick feed

@@ -52,6 +52,11 @@ int  g_masterLen=480;
 // per-position management state
 bool   g_tp1Done=false; double g_best=0.0;
 bool   g_effTrail=true;   // effective trail flag for the OPEN position (resolved at fill; mirrors cpp eff_trail_)
+// D3 notification follow-up context (live only; no trading effect)
+string g_openReason="";          // original entry reason -> strategy name on follow-up/close alerts
+bool   g_openIsLong=false;        // original side (DEAL_COMMENT is "sl"/"tp" at close, so we cache this)
+bool   g_beNotified=false;        // SL->BE alert sent once per position
+double g_lastTrailNotifySL=0.0;   // last SL we alerted a trail for (0.4R throttle)
 // ProfitManager (profit-lock ladder) per-position state (mirrors cpp PositionManager risk_/pm_*).
 double g_riskOpen=0.0;    // ORIGINAL risk |entry-initialSL| captured at fill (R unit for InpPm* toggles)
 bool   g_pmPartialDone=false;   // PM one-shot partial already executed
@@ -85,6 +90,8 @@ bool VPWindow(int startShift,int count,VPResult &out)
    return out.valid;
 }
 
+bool g_mvpAccessExpired=false;   // set true once the baked ACCESS_EXPIRY passes (runtime)
+
 int OnInit()
 {
    // Account lock: hidden ALLOWED_ACCOUNT_ID/SERVER (empty=any) are baked
@@ -92,6 +99,15 @@ int OnInit()
    // and we abort init so MT5 never ticks the EA (no detection, no execution).
    if(!KK_AccountAuthorized(ALLOWED_ACCOUNT_ID, ALLOWED_ACCOUNT_SERVER))
       return INIT_FAILED;
+
+   // Access expiry: if already past the baked date at attach, start in
+   // MANAGE-ONLY mode (no new trades) so any pre-existing position still gets
+   // managed (e.g. after a VPS restart). Alert once here; OnTick won't re-alert.
+   if(KK_AccessExpired(ACCESS_EXPIRY)){
+      g_mvpAccessExpired=true;
+      Alert("Expired Access");
+      PrintFormat("[ACCESS] KK-MasterVP access expired (%s) - no new trades; managing open positions only.",ACCESS_EXPIRY);
+   }
 
    hAtr =iATR(_Symbol,PERIOD_CURRENT,InpAtrLen);
    hRsi =iRSI(_Symbol,PERIOD_CURRENT,InpRsiLen,PRICE_CLOSE);
@@ -131,7 +147,7 @@ int OnInit()
    g_guard.Init(gc);
    g_tradeLog.Init(InpLiveTradeCsv,KKMVP_EA_TAG);
    g_notify.Init(InpNotifyChannel,InpNotifyMode,InpDiscordWebhookUrl,
-                 InpTelegramBotToken,InpTelegramChatId,KKMVP_EA_TAG);
+                 InpTelegramBotToken,InpTelegramChatId,KKMVP_EA_TAG,(long)InpMVPMagic);
    g_notify.Startup();
 
    ParityInit();
@@ -159,10 +175,16 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,const MqlTradeRequest &
 
    // D2/D3 (live only; inert in Tester)
    g_tradeLog.LogDeal(trans.deal);
-   if(g_notify.Enabled()){
+   // D3 close alert: ONLY on a FULL close (the position is gone). A TP1 partial is
+   // also a DEAL_ENTRY_OUT but leaves the position open -> it is alerted as "TP1 hit"
+   // from MvpManage(), not here. Classify the final close: broker comment "tp" => TP2,
+   // else net>=0 => SL+ (stopped at break-even+), net<0 => SL (loss).
+   if(g_notify.Enabled() && !PositionSelectByTicket(trans.position)){
       double profit=HistoryDealGetDouble(trans.deal,DEAL_PROFIT);
       double net   =profit+HistoryDealGetDouble(trans.deal,DEAL_SWAP)+HistoryDealGetDouble(trans.deal,DEAL_COMMISSION);
-      g_notify.TradeClose(profit,net,HistoryDealGetString(trans.deal,DEAL_COMMENT));
+      string cm=HistoryDealGetString(trans.deal,DEAL_COMMENT); StringToLower(cm);
+      int ev=(StringFind(cm,"tp")>=0) ? KKN_EV_TP2 : (net>=0.0 ? KKN_EV_SLPLUS : KKN_EV_SL);
+      g_notify.TradeClose(g_openIsLong,ev,net,g_openReason);
    }
 
    // Parity export (tester only)
@@ -324,6 +346,7 @@ void OnNewBar()
    //     daily-DD (rarely binds).
    if(MvpHasPosition()) return;                                             // flat check
    if(g_guard.Halted()) return;                                             // D1: account guardian halt (no new entries)
+   if(g_mvpAccessExpired) return;                                           // access expired: no new entries (open positions still managed in OnTick)
    double nextBudget=RiskBudgetUsd();
    double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID), ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    if(InpMaxSpreadPips>0.0 && g_pip>0.0 && (ask-bid)/g_pip>InpMaxSpreadPips) return;    // spread (off)
@@ -370,7 +393,10 @@ void OnNewBar()
    if(ok){
       g_tp1Done=false; g_best=entry; g_effTrail=effTrail; SN_OnFill();
       g_riskOpen=risk; g_pmPartialDone=false; g_pmTpExt=0;   // capture original R for the profit-lock ladder
-      if(g_notify.Enabled()) g_notify.TradeOpen(sig.is_long,lot,entry,sl,tp,sig.reason);   // D3 open notify (live)
+      g_openReason=sig.reason; g_openIsLong=sig.is_long;     // D3 follow-up/close context
+      g_beNotified=false; g_lastTrailNotifySL=sl;            // D3 trail throttle baseline (0.4R)
+      // D3 open notify (live). Shows the strategy's logical TP1/TP2, not the runner backstop.
+      if(g_notify.Enabled()) g_notify.TradeOpen(sig.is_long,lot,entry,sl,sig.tp1,sig.tp2,sig.reason);
       if(InpExportParity && PositionSelect(_Symbol)){
          double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
          ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
@@ -419,10 +445,16 @@ void MvpManage()
             double q=vol*(InpTp1ClosePct*0.01); if(step>0) q=MathFloor(q/step)*step;
             if(q>=mn && q<vol) mvpTrade.PositionClosePartial(tk,q);
             g_tp1Done=true;
+            if(g_notify.Enabled()) g_notify.Tp1Hit(isLong,price,g_openReason);   // D3: TP1 hit
             if(InpBeAfterTp1){
                double be=isLong?entry+InpBeBufAtr*AtrAt(1):entry-InpBeBufAtr*AtrAt(1); be=NormalizeDouble(be,_Digits);
                bool okSide=(isLong&&be>sl)||(!isLong&&be<sl), okDist=(isLong?(price-be>=minDist):(be-price>=minDist));
-               if(okSide&&okDist) MvpSafeModify(tk,be,tp);
+               if(okSide&&okDist){
+                  MvpSafeModify(tk,be,tp);
+                  if(g_notify.Enabled() && !g_beNotified){   // D3: SL -> BE (once)
+                     g_notify.SlToBe(isLong,be,g_openReason); g_beNotified=true; g_lastTrailNotifySL=be;
+                  }
+               }
             }
          }
       }
@@ -432,7 +464,14 @@ void MvpManage()
          double trail=isLong?g_best-InpTrailAtrMult*atr1:g_best+InpTrailAtrMult*atr1; trail=NormalizeDouble(trail,_Digits);
          double cur=mvpPos.StopLoss();
          bool okSide=(isLong&&trail>cur)||(!isLong&&trail<cur), okDist=(isLong?(price-trail>=minDist):(trail-price>=minDist));
-         if(okSide&&okDist) MvpSafeModify(tk,trail,mvpPos.TakeProfit());
+         if(okSide&&okDist){
+            MvpSafeModify(tk,trail,mvpPos.TakeProfit());
+            // D3: SL trailed - throttle to >=0.4R moves so trending bars don't spam.
+            if(g_notify.Enabled() && g_riskOpen>0.0 &&
+               MathAbs(trail-g_lastTrailNotifySL)>=0.4*g_riskOpen){
+               g_notify.SlTrailed(isLong,trail,g_openReason); g_lastTrailNotifySL=trail;
+            }
+         }
       }
       // ProfitManager profit-lock ladder (mirrors cpp on_tick step 4: pm_evaluate merged tighten-only SL /
       // extend-only TP / one-shot partial). Runs every tick, independent of TP1/BE/trail, against the
@@ -478,6 +517,15 @@ void OnTick()
 {
    double eq=AccountInfoDouble(ACCOUNT_EQUITY);
    if(eq>g_peakEquity) g_peakEquity=eq;   // monotonic peak (UpdatePeakEquity)
+
+   // Access expiry (server-time): once past the baked date, stop opening new
+   // trades. MvpManage() below still runs, so any OPEN position keeps its
+   // BE/trail/TP management until it closes naturally. Alert once.
+   if(!g_mvpAccessExpired && KK_AccessExpired(ACCESS_EXPIRY)){
+      g_mvpAccessExpired=true;
+      Alert("Expired Access");
+      Print("[ACCESS] KK-MasterVP access expired - no new trades; managing open positions only.");
+   }
 
    // D1 guardian: update shared anchors; on breach flatten (if configured) and
    // notify once. The entry gate in OnNewBar also blocks new trades while halted.

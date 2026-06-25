@@ -1,5 +1,41 @@
 # HANDOFF — read me first, update me last
 
+## ⏳ EXPIRY-LOCK (per-account access end-date) — BUILT + all 3 products compile 0/0 (2026-06-25) — ▶ uncommitted; awaiting USER sign-off
+**User ask:** extend the marketplace Account-Lock so Master-Volume-Profiler **indicator** + KK-MasterVP EA +
+KK-KenKem EA can be licensed to given accounts **until an exact expiry date**; on expiry auto-detect → Alert
+**"Expired Access"** + stop calculation. **DONE, end-to-end tested.** Decisions (locked via AskUserQuestion):
+per-account dates · **broker server time** (`TimeTradeServer`, fail-OPEN if time unknown — never falsely lock
+out) · EAs **stop new trades but keep managing open positions** · separate account list **for the Profiler only**.
+- **Shared guard `KK-Common/AccountLock.mqh`** += `KK_ServerNow()` (TimeTradeServer→TimeCurrent fallback),
+  `KK_ParseExpiry()` (StringToTime; 0=perpetual/unparseable), `KK_AccessExpired(expiry)` (empty/0 → never
+  expire; server-time unknown → fail OPEN). Baked global `ACCESS_EXPIRY=""` added beside `ALLOWED_ACCOUNT_*`.
+- **KK-MasterVP EA + KK-KenKem EA:** expiry checked in OnInit + re-checked OnTick → set `g_*AccessExpired`,
+  `Alert("Expired Access")` once. **MANAGE-ONLY on expiry** (NOT INIT_FAILED — so a position open across a VPS
+  restart is still trailed/closed); entry choke-points gated (MasterVP `OnNewBar` early-return; KenKem
+  `EnterOrSkipTrade` → isEntering=false). Both compile **0/0**.
+- **Profiler indicator** (`mql5/indicators/KK-MasterVP-Profiler.mq5`): now includes the shared guard +
+  baked `ALLOWED_ACCOUNT_*`/`ACCESS_EXPIRY`. Account mismatch → INIT_FAILED; **expiry → stays loaded, clears
+  all objects/buffers, `Comment("…Expired Access")`, blocks OnCalculate/OnTimer.** Compiles 0/0.
+- **Builder `scripts/make_account_releases.sh`** += `--expiry YYYY.MM.DD` default + **per-line `id, server,
+  expiry`** (comma form; whitespace form = perpetual). `norm_expiry()` validates real calendar dates (BSD
+  `date -j -f` / GNU fallback) → "YYYY.MM.DD 23:59:59"; invalid date skips that account. Resolves source from
+  experts/ OR indicators/ (indicator = display-only, **no marketplace hiding**). Bakes ACCESS_EXPIRY per
+  account; ACCOUNTS.md gained an "expires" column. `make account-releases … EXPIRY=YYYY.MM.DD` forwards it.
+- **Separate Profiler list:** `scripts/deployment_accounts.KK-MasterVP-Profiler.txt` (gitignored) created;
+  `.example` + script header docs updated for the 3-field format. **Source restored byte-identical** (shasum)
+  across all lock files in every build path; backward-compatible with existing 2-field / whitespace lists.
+- **✅ RELEASED + version-bumped (2026-06-25):** KK-MasterVP EA **1.05→1.06** (`make release` + `make
+  account-releases`; normal/market/account builds), KK-MasterVP-Profiler indicator **1.00→1.01** (`make
+  account-releases`). Both got chart-attach `#property description` + `#property link "https://kenkem.biz"`
+  ("For more details, visit …"). One client account baked (Exness trial), expires **2026.08.25** — real
+  login lives only in the gitignored `deployment_accounts.*` lists. `norm_expiry()` hardened to accept
+  single-digit month/day (the list used a single-digit month).
+  Per-account `releases/*/accounts/` dirs (`.ex5` + `ACCOUNTS.md` login manifest) now **gitignored**.
+- **▶ NEXT (USER):** demo-verify "Expired Access" by baking a past date; ship the account `.ex5` from
+  `mql5/{experts/KK-MasterVP,indicators/KK-MasterVP-Profiler}/releases/<ver>/accounts/`. ⚠️ kenkem.biz URL is
+  fine for direct/account-locked distribution; **strip it from `#property description` if uploading the public
+  build to the MQL5 Market** (Market forbids external links in descriptions; `#property link` is allowed).
+
 ## 🛰️ DEPLOYMENT & OPS — D1/D2/D3 BUILT + compile 0/0 (2026-06-25) — ▶ awaiting USER demo validation
 **What:** user greenlit "build all D1–D3 in sequence + a drag-drop test EA; can't release/bump MasterVP until
 this is validated." DONE. All Layer-4 (live MT5), no C++ analog, default OFF/empty → **KK-MasterVP byte-identical

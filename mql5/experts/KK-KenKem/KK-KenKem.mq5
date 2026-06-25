@@ -67,12 +67,23 @@ int g_atrM1Handle = INVALID_HANDLE;
 int g_atrM3Handle = INVALID_HANDLE;  // M3 ATR (E4 cloud + E5 multi-TF sideway)
 int g_atrM5Handle = INVALID_HANDLE;  // E5: M5 ATR for multi-TF sideway scoring
 
+bool g_kkAccessExpired = false;   // set true once the baked ACCESS_EXPIRY passes (runtime)
+
 int OnInit() {
     // Account lock: hidden ALLOWED_ACCOUNT_ID (empty=any) is baked per-account
     // by the release script. On mismatch the shared guard Alerts and we abort
     // init so MT5 never ticks the EA (no detection, no execution).
     if (!KK_AccountAuthorized(ALLOWED_ACCOUNT_ID, ALLOWED_ACCOUNT_SERVER))
         return INIT_FAILED;
+
+    // Access expiry: if already past the baked date at attach, start in
+    // MANAGE-ONLY mode (no new trades) so any pre-existing position still gets
+    // managed (e.g. after a VPS restart). Alert once here; OnTick won't re-alert.
+    if (KK_AccessExpired(ACCESS_EXPIRY)) {
+        g_kkAccessExpired = true;
+        Alert("Expired Access");
+        Print("[ACCESS] KK-KenKem access expired (", ACCESS_EXPIRY, ") - no new trades; managing open positions only.");
+    }
 
     // Auto-detect account leverage from broker (overrides fallback value in InputParams.mqh)
     int detectedLeverage = (int)AccountInfoInteger(ACCOUNT_LEVERAGE);
@@ -571,7 +582,16 @@ void EnterOrSkipTrade(Trade &detectedTrade, bool isEntering, string reasonMsg) {
         Print("[ALERT BLOCKED] EnterOrSkipTrade called but detectedTrade.type is EMPTY! Reason: ", reasonMsg);
         return; // No trade to process
     }
-    
+
+    // Access expiry: never OPEN a new trade once expired. This is the single
+    // entry choke point (ProcessNewEntry runs only in the isEntering branch
+    // below), so flipping isEntering here blocks every entry path while leaving
+    // open-position management untouched.
+    if (g_kkAccessExpired && isEntering) {
+        isEntering = false;
+        reasonMsg  = "Expired Access";
+    }
+
     Print("[ALERT] EnterOrSkipTrade: isEntering=", isEntering, " type=", detectedTrade.type, " reason=", reasonMsg);
     
     // Calculate trade details for logging
@@ -2431,6 +2451,15 @@ void OnTick() {
     // Initialize EA start time on first tick
     if(eaStartTime == 0) {
         eaStartTime = TimeCurrent();
+    }
+
+    // Access expiry (server-time): once past the baked date, stop opening new
+    // trades (the entry choke point EnterOrSkipTrade converts every entry into a
+    // skip). Open positions keep being managed below. Alert once.
+    if(!g_kkAccessExpired && KK_AccessExpired(ACCESS_EXPIRY)) {
+        g_kkAccessExpired = true;
+        Alert("Expired Access");
+        Print("[ACCESS] KK-KenKem access expired - no new trades; managing open positions only.");
     }
     
     // Update dynamic TP extension parameters based on volatility

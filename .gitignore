@@ -73,3 +73,6 @@ compile_commands.json
 scripts/deployment_accounts.txt
 scripts/deployment_accounts.*.txt
 !scripts/deployment_accounts.txt.example
+
+# Per-account locked builds: customer-specific .ex5 + ACCOUNTS.md login manifest — never commit
+mql5/**/releases/*/accounts/

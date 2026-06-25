@@ -227,4 +227,11 @@ input string InpTelegramChatId       = "";    // Telegram chat ID (group IDs are
 string ALLOWED_ACCOUNT_ID     = "";  // Internal: empty=any account
 string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server
 
+// ----- Access expiry (hidden internals; NOT an input) -----
+// Empty = never expires. The per-account release script bakes a date
+// ("YYYY.MM.DD 23:59:59") in to time-limit a build. Enforced on broker SERVER
+// time (KK_AccessExpired in KK-Common/AccountLock.mqh): once past, the EA stops
+// opening new trades and Alerts "Expired Access" (open positions stay managed).
+string ACCESS_EXPIRY          = "";  // Internal: empty=perpetual; baked per-account
+
 #endif // KKMVP_INPUTS_MQH

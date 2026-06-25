@@ -1,5 +1,12 @@
 # KK-MasterVP — Changelog
 
+## 1.06 — 2026-06-25
+
+- Built `2026-06-25T11:12:41Z` · commit `d133a83` on `UTC-time-fix`
+- EA: `KK-MasterVP-1.06.ex5` (locked build of `KK-MasterVP.mq5`)
+- Add chart-attach description + kenkem.biz link; expiry/account-lock support
+- Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
+
 ## 1.05 — 2026-06-23
 
 - Built `2026-06-23T10:22:16Z` · commit `51b63e6` on `reliableBaseline`

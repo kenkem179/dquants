@@ -156,9 +156,9 @@ Optional break‑even ratchet markers and a few related toggles exist for the cu
 
 ## 9. Settings, in plain language
 
-You only need to touch a handful of switches. The settings window is grouped; here are the ones most people use. (Many fine‑tuning knobs are kept out of the way on purpose, so the list stays short.)
+You only need to touch a handful of switches. The settings window has four groups; here is what each one does. (Many fine‑tuning knobs are kept internal on purpose, so the list stays short and the panel, verdict tag and other readouts always show.)
 
-Trade Setups
+Trade Setups (breakout)
 
 Show setups — draw the historical E/SL/TP1/TP2 markers (on by default).
 
@@ -166,19 +166,15 @@ Show rejects — also mark setups that were filtered out, with a reason (off by 
 
 EMA filter — when on, a setup is only shown if the trend lines agree with it.
 
-Volume Profile Core
-
-Show / hide profiles — turn the master and local lines and the histogram on or off.
-
-Use real ticks — off by default (steadier picture). On uses the detailed tick stream for a finer look, when available.
+Plus how far back to scan, how many markers to keep, the two target distances (TP1/TP2 in R) and a display‑only example‑risk figure.
 
 Visuals
 
-Individual on/off switches for the master lines, local lines, histogram, predicted line, panel, verdict tag, and the spread/speed row — so you can keep only what you find useful.
+The volume‑profile window length, and individual on/off switches for the master lines, the local lines, the histogram, and whether the histogram draws in front of or behind the candles — so you can keep only what you find useful.
 
 EMA Overlay
 
-Show EMAs and the ribbon switch, plus the four lengths if you like to customize the look.
+Show EMAs and the zone‑ribbon switch, plus the three editable lengths (fast / medium / slow) if you like to customize the look.
 
 Chart Theme
 
@@ -264,42 +260,28 @@ sensible whether the market is quiet or busy.
 - **InpSetBeRatchet** — break‑even ratchet for how the drawn marker’s stop is illustrated. *Example:* OFF shows pure TP1‑vs‑SL history; ON shows the stop stepping to break‑even after some progress.
 - **InpSetEmaFilter** — an optional trend‑agreement filter for the drawn setups. *Example:* ON only shows setups that line up with the EMA stack; OFF shows all of them.
 
-### Execution Health
-
-- **InpShowExecRow** — the panel row comparing current spread and tape speed with their own recent averages (about 100% = normal). *Example:* ON to notice when conditions are rougher than usual; this is a conditions check, not a signal.
-
 ### Visuals
 
-- **InpShowMasterLines** — the master POC/VAH/VAL lines.
-- **InpShowLocalLines** — the local (recent) POC/VAH/VAL lines.
-- **InpShowHistogram** — the side histogram of activity by price.
+- **InpVpLookback** — the length, in bars, of the volume‑profile window. The master profile covers this many bars times an internal multiplier. *Example:* a larger number summarizes a longer stretch of trading.
+- **InpShowMasterLines** — the master profile levels: POC plus the value‑area high/low (mPOC/mVAH/mVAL).
+- **InpShowLocalLines** — the local (recent) profile levels (lPOC/lVAH/lVAL).
+- **InpShowHistogram** — the side histogram of activity by price (green/red = recent buy/sell lean).
 - **InpHistFront** — draw the histogram in front of the candles instead of behind them.
-- **InpShowPredictedPoc** — the predicted‑POC preview line.
-- **InpShowPanel** — the compact top‑right telemetry card.
-- **InpShowVerdict** — the near‑price verdict tag.
-
-### Volume Profile Core
-
-- **InpVpLookback** — the length, in bars, of the local (recent) profile window. *Example:* a larger number summarizes a longer stretch of trading.
-- **InpMasterMult** — the master window is the local window multiplied by this. *Example:* with a local window of 108 and a multiplier of 4, the master profile covers 432 bars.
-- **InpUseRealTicks** — OFF (default) uses a steadier bar feed; ON uses the detailed real‑tick stream for a finer look when it’s available.
-- **InpHistTickDelta** — adds a recent‑flow tint to the histogram from signed tick activity, on top of the stable rows. *Example:* ON for a sense of who has been more active lately.
-- **InpHistRecency** — weights recent activity more heavily than older activity. *Example:* ON makes the picture lean toward what just happened.
-- **InpHistNetScale** — scales the green/red slice to the strongest imbalance so it stays visible on any timeframe.
 
 ### EMA Overlay
 
 - **InpShowEmas** — draw the four moving‑average lines.
-- **InpEma1Len / InpEma2Len / InpEma4Len** — the periods of the fast, middle, and slow lines. *Example:* shorter numbers react faster but wobble more; longer numbers are smoother but slower.
-- **InpShowEmaZone** — the thin shaded ribbon between the two fastest lines when the stack is cleanly aligned.
+- **InpEma1Len / InpEma2Len / InpEma4Len** — the periods of the fast, medium, and slow lines. *Example:* shorter numbers react faster but wobble more; longer numbers are smoother but slower.
+- **InpShowEmaZone** — the thin shaded buy/sell ribbon between the fast and medium lines when the whole stack is cleanly aligned.
 
 ### Chart Theme
 
 - **InpApplyTheme** — apply the clean dark color scheme on attach. *Example:* OFF keeps your own chart colors untouched.
 
-A handful of deeper fine‑tuning values are kept internal on purpose, so this
-list stays short and the chart stays easy to read. You don’t need them to use
-the Profiler well.
+The telemetry panel, the near‑price verdict tag, the predicted‑POC line and the
+spread/speed (execution‑health) row are always shown, and a number of deeper
+fine‑tuning values are kept internal on purpose — so this list stays short and
+the chart stays easy to read. You don’t need any of them to use the Profiler well.
 
 ## 14. Full disclaimer
 
