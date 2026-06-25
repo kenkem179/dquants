@@ -19,8 +19,13 @@ to the lock** (compiles 0/0; engine + `make test` untouched). New shared headers
 - **Test EA** `KK-Common-Tests/TestDeployOps.mq5` (drag-drop, like the KenKem Discord validator): runs D1 math
   asserts (PASS/FAIL), sends REAL test msgs per channel, writes sample CSV, self-removes. In MT5 via `dq`
   symlink → `Experts\dq\KK-Common-Tests\TestDeployOps.ex5`. Both EAs compile 0/0.
-- **Guide** `docs/guides/KK-MasterVP-EA-User-Guide.md` §5 += Account-Guardian / Live-CSV / Notifications +
-  validator-EA step (English, plain-language).
+- **Guide** BOTH MasterVP EA guides updated (English): `KK-MasterVP-EA-User-Guide.md` §5 += Account-Guardian /
+  Live-CSV / Notifications + validator-EA step; `KK-MasterVP-EA-MQL5-Marketplace-Description.md` += same
+  features (Simplified-only alerts) and fixed stale Broker-GMT-offset → UTC blocked hours.
+- **Marketplace force-hide (commit `b80242a`):** new `release.market.forcehide` in `scripts/lib/
+  market_edition.sh` strips a key's `input` + hard-codes its value in the **MQL5 Market build only** (dev build
+  keeps it configurable, trap-restored byte-identical). KK-MasterVP forces `InpNotifyMode=2` (Simplified) so
+  buyers can't resell full SL/TP signals. Validated: market edition compiles 0/0, dev source restored clean.
 - **▶ NEXT (USER, live — can't run headless):** (1) drag `TestDeployOps` on a demo chart, paste webhook/token,
   confirm msgs arrive + PASS; (2) demo-run KK-MasterVP `InpGuardEnable=true` on 2 charts (ideally + KenKem) →
   confirm shared anchor/peak + joint flatten. THEN MasterVP release/bump is unblocked. (3) D4 trial-expiry still

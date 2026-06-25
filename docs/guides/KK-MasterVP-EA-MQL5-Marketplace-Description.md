@@ -20,7 +20,8 @@ The defaults ship tuned to our flagship configuration — **XAUUSD on M5** — s
 - **Tuned out of the box.** Default settings reflect the configuration that performed best across our extensive historical testing on XAUUSD M5. Nothing to optimize before you start.
 - **Built around volume‑profile structure.** Decisions are anchored to where real activity has concentrated — not a stack of lagging oscillators.
 - **You control risk, the EA controls strategy.** The complex internals are pre‑set and locked; you only touch the handful of inputs that should be yours — risk per trade, profit‑taking, trading hours, news, and execution safety.
-- **Prop‑firm friendly.** Built‑in daily‑loss and total‑drawdown caps with cooldowns, plus a tighter “prop” preset, make it straightforward to respect firm limits.
+- **Prop‑firm friendly.** Built‑in daily‑loss and total‑drawdown caps with cooldowns, plus a tighter “prop” preset, make it straightforward to respect firm limits. An optional **Account Guardian** can watch your whole account’s equity and stop trading *before* a daily‑loss or max‑drawdown line is crossed — and it’s shared across every KK EA on the terminal, so they respect one common limit.
+- **Stay informed.** Optional trade alerts to **Discord, Telegram or Email**, plus an optional per‑trade **CSV log** for your own records.
 - **No dangerous tricks.** No martingale, no grid, no hidden recovery mode that blows the account to hide a losing streak.
 
 ---
@@ -70,8 +71,8 @@ KK‑MasterVP keeps the dialog short on purpose. The strategy’s technical engi
 - *Break‑even after TP1* — move the stop to break‑even once the first target is reached.
 
 **Trading hours to avoid**
-- *Broker GMT offset* — align the EA’s clock with your broker’s server time.
-- *Blocked hours* — skip specific low‑liquidity hours (e.g. `2,3,14` or `9‑11`).
+- *Blocked hours* — skip specific low‑liquidity hours of the day, set in **UTC** (e.g. `4,16,17` or `9‑11`). The EA works in fixed UTC and auto‑detects your broker’s server offset, so the same hours apply on any broker.
+- *Close at session end* — optionally flatten open trades when a session closes.
 
 **News filter**
 - *Avoid news* — pause new entries around high‑impact releases.
@@ -81,6 +82,21 @@ KK‑MasterVP keeps the dialog short on purpose. The strategy’s technical engi
 **Execution safety**
 - *Max spread* — refuse entries when the spread is wider than you allow.
 - *Max trades per session* — cap how many new trades open per session.
+
+**Account Guardian** *(optional — for funded / prop accounts)*
+- *Enable guardian* — turn on a separate safety layer that watches your account equity.
+- *Daily loss limit (%) / Max drawdown limit (%)* — the lines it protects.
+- *Safety buffer (%)* — act this far *before* each line, not on it.
+- *On breach* — close open trades, or simply block new ones.
+- Shared across every KK EA on the same terminal and measured on broker server time, so multiple EAs respect one common daily/overall limit. Off by default — set the percentages to your firm’s rules.
+
+**Notifications** *(optional)*
+- *Channel* — send trade alerts to Discord, Telegram, Email, or a combination.
+- *Discord webhook / Telegram token & chat ID* — your destinations.
+- Alerts are **simplified for safety** — symbol, action and win/loss only, never the exact entry/stop/target — so they can’t be passed off as a tradable signal feed. Off by default.
+
+**Trade log** *(optional)*
+- *Log trades to CSV* — append every closed trade to a CSV file in your terminal’s Files folder for your own record‑keeping.
 
 **Misc**
 - *Magic number* — set a unique value if you run more than one instance.
