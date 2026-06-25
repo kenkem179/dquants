@@ -93,7 +93,7 @@ These are the inputs most people adjust, with their shipped **default** and a fe
 | On breach (`InpGuardFlatten`) | `true` (close all) | `true` closes open trades at the line · `false` only blocks new entries |
 | Log trades to CSV (`InpLiveTradeCsv`) | `false` | `true` writes every closed trade to a CSV file in MQL5/Files |
 | Notification channel (`InpNotifyChannel`) | `0` (none) | `2` Discord · `3` Telegram · `4` Email+Discord · `7` all three |
-| Notification detail (`InpNotifyMode`) | `1` (Full) | `2` Simplified — symbol + action + win/loss only. *The MQL5 Market edition is locked to `2`.* |
+| Notification detail (`InpNotifyMode`) | `2` (Simplified) | `2` Simplified — symbol + action + size + magic + strategy + event, **no exact prices** · `1` Full adds the exact entry/stop/target for your own records |
 
 ### VP core — how the structure is measured
 
@@ -268,16 +268,41 @@ A separate safety layer for funded / prop‑firm accounts. It watches your **acc
 Optional trade alerts to Discord, Telegram, and/or Email. Off by default; **skipped in the Strategy Tester** so backtests never send anything.
 
 - **InpNotifyChannel** — where alerts go: `0` none, `1` Email, `2` Discord, `3` Telegram, `4` Email + Discord, `5` Email + Telegram, `6` Discord + Telegram, `7` all three.
-- **InpNotifyMode** — `1` Full (symbol, action, size, entry/stop/target, net result) or `2` Simplified (symbol + action + win/loss only — a prop‑safe format that hides exact levels). **Note:** the MQL5 Market edition fixes this to **Simplified** and hides the setting (so alerts can't be redistributed as a full‑detail signal feed); the personal build lets you choose.
+- **InpNotifyMode** — `2` Simplified (default) or `1` Full. Simplified is a privacy‑conscious format that omits exact prices (see below); Full adds the entry/stop/target for your own records.
 - **InpDiscordWebhookUrl** — your Discord channel webhook URL (Discord → channel settings → Integrations → Webhooks).
 - **InpTelegramBotToken** — your Telegram bot token (from @BotFather).
 - **InpTelegramChatId** — the Telegram chat or group ID to send to (group IDs are negative numbers).
+
+#### What the alerts look like
+
+The EA notifies you across a trade's whole life: when it **opens**, when **TP1** is reached, when the stop moves to **break‑even**, when the stop **trails**, and when the trade **closes** (at a loss, at break‑even+, or at full take‑profit). Each message ends with the strategy that fired it — one of **MasterVP‑BreakOut**, **MasterVP‑MeanReversion**, **MasterVP‑Impulse**, or **MasterVP‑XReversion** — and the position's magic number (`#…`), so you can match it to the exact trade in your terminal.
+
+**Simplified mode (the default)** — symbol, side, lot size, magic number, the event, and the strategy. It deliberately **does not include the entry price, stop‑loss, or take‑profit**:
+
+```
+XAUUSD BUY 0.10 lots #14111850 | Strategy: MasterVP-BreakOut      <- trade opened
+XAUUSD BUY #14111850 | TP1 hit | Strategy: MasterVP-BreakOut       <- first target reached, partial banked
+XAUUSD BUY #14111850 | SL to BE | Strategy: MasterVP-BreakOut      <- stop moved to ~entry (risk removed)
+XAUUSD BUY #14111850 | SL trailed | Strategy: MasterVP-BreakOut    <- stop tightened behind price
+XAUUSD BUY #14111850 | TP2 (full TP) | Strategy: MasterVP-BreakOut <- closed at the full target (win)
+XAUUSD SELL #14111850 | SL+ (BE hit) | Strategy: MasterVP-MeanReversion <- closed at break-even+ (tiny win/scratch)
+XAUUSD SELL #14111850 | SL hit (loss) | Strategy: MasterVP-MeanReversion <- closed at the stop (loss)
+```
+
+Event meanings at a glance: **TP1 hit** = the first profit target was reached and a partial was taken; **SL to BE** = your risk on the trade is now removed (stop at entry); **SL trailed** = the stop is following price to lock in gains; **SL+ (BE hit)** = the break‑even stop was hit, so the trade closed flat or with a tiny gain; **SL hit (loss)** = the original stop was hit; **TP2 (full TP)** = the full take‑profit was reached.
+
+> ⚠️ **Simplified alerts intentionally omit the exact entry, stop, and target prices.** They tell you *that* something happened and *which* trade, not the precise levels. **Always confirm the actual entry price, stop‑loss, take‑profit, and current P&L directly in your MT5 terminal** (the Trade / Toolbox tab), matching by the magic number shown. Treat the alerts as a heads‑up, not as the source of truth.
+
+**Full mode** adds the exact levels and the closed net result for your own records, e.g.
+`XAUUSD BUY 0.10 lots #14111850 | Entry: 1234.56 | SL: 1230.00 | TP1: 1250.00 | TP2: 1270.00 | Strategy: MasterVP-BreakOut`.
 
 > For Discord/Telegram to work you must allow web requests: **Tools → Options → Expert Advisors → Allow WebRequest for listed URL**, and add `https://discord.com` and `https://api.telegram.org`. For Email, set your SMTP details under **Tools → Options → Email**. Test all of this with the validator EA below *before* you rely on it.
 
 ### Validating notifications and the guardian before you deploy
 
-A small helper EA, **`TestDeployOps`**, ships alongside KK‑MasterVP for exactly this. Drag it onto any chart (a demo chart is fine), paste in the same Discord webhook / Telegram token / chat ID you intend to use, and it will: run the guardian's internal maths checks, send a **real** test message to each channel you configured (so you can confirm it actually arrives), and create a sample trade‑CSV row. It prints a `PASS`/`FAIL` summary to the **Experts** log and then removes itself. If a channel shows `FAIL` or nothing arrives, fix the WebRequest/SMTP settings above before going live. Running this once is the recommended last step before deployment.
+A small helper EA, **`TestDeployOps`**, ships alongside KK‑MasterVP for exactly this. **Double‑click it in the Navigator** (or drag it onto any demo chart) so the inputs dialog opens, paste in the same Discord webhook / Telegram token / chat ID you intend to use, and it will: run the guardian's internal maths checks, create a sample trade‑CSV row, and send **real** showcase messages covering **every strategy and every event in both Full and Simplified mode** — so you can see exactly how each alert reads before you rely on it. It prints a `PASS`/`FAIL` summary to the **Experts** log and then removes itself. If a channel shows `FAIL` or nothing arrives, fix the WebRequest/SMTP settings above before going live. Running this once is the recommended last step before deployment.
+
+> If you drag the EA on and it finishes instantly with no dialog, your terminal auto‑confirmed it with empty inputs (so nothing was sent). It removes itself on finish, so there's nothing to right‑click — **double‑click it from the Navigator** to get the inputs dialog and fill in your webhook/token there.
 
 ## 6. A calm way to run it
 

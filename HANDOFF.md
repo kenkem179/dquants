@@ -1,5 +1,23 @@
 # HANDOFF — read me first, update me last
 
+## ✅ MQL5 MARKET VALIDATION FIX — MasterVP modify "close to market" (2026-06-26) — re-cut 1.06, NO bump
+**Error (validator, EURUSD H1):** `failed modify ... [Modification ... close to market]` — repeated on a
+trailing buy. **Cause:** MasterVP `KKMinStopDist` returned `max(stops_level,freeze_level)*pt` with NO
+spread term / NO zero-floor; EURUSD on that broker reports both levels **0** → `minDist=0` → the trail's
+`okDist` guard let an SL ratcheted to within a fraction of market through → broker rejected.
+- **Fix (single choke-point, all 3 modify call-sites route through it):** `MvpSafeModify` in
+  `mql5/experts/KK-MasterVP/Engine.mqh` now computes `effMin = max(stops,freeze,spread)` floored at
+  `10*_Point` and **skips (no-op, retry next tick)** when EITHER current or new SL/TP is within `effMin`
+  of market. Mirrors KenKem's proven `SafeModifyPosition`. Layer-4 only → **no engine-parity impact**;
+  on XAU the validated trails clear this distance easily → **locked result unchanged**. Compiles 0/0.
+- **Re-released 1.06 (no bump, per user):** `./scripts/make_release.sh KK-MasterVP --set-version 1.06`.
+  Upload = `releases/1.06/market/KK-MasterVP-Market-1.06.ex5` (internals-hidden market edition).
+- **📌 NEW SKILL `/mql5-market-release`** (`.claude/skills/mql5-market-release/`) — error→fix catalog +
+  pre-release audit checklist so future validator errors are fixed proactively, not ad-hoc. Memory
+  [[mql5-market-validation-skill]]. Invoke on any release OR pasted validator error.
+- **▶ NEXT (user):** upload the re-cut market .ex5; if a NEW validator error arrives, run
+  `/mql5-market-release` to triage. Uncommitted (Engine.mqh + skill + .set/Changelog) — commit when ready.
+
 ## ✅ EXPIRY-LOCK (per-account access end-date) — SHIPPED + RELEASED (2026-06-25) — versions FROZEN at MasterVP 1.06 / Profiler 1.01
 **User ask:** extend the marketplace Account-Lock so Master-Volume-Profiler **indicator** + KK-MasterVP EA +
 KK-KenKem EA can be licensed to given accounts **until an exact expiry date**; on expiry auto-detect → Alert

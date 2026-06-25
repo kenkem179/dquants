@@ -2,9 +2,9 @@
 
 ## 1.06 — 2026-06-25
 
-- Built `2026-06-25T11:22:42Z` · commit `47f1e6c` on `UTC-time-fix`
+- Built `2026-06-25T15:51:56Z` · commit `71da7fe` on `UTC-time-fix`
 - EA: `KK-MasterVP-1.06.ex5` (locked build of `KK-MasterVP.mq5`)
-- Account+expiry-locked builds; chart description + kenkem.biz link
+- Fix MQL5 Market validation: guard SL/TP modify against broker stop/freeze level (skip when SL/TP within max(stops,freeze,spread); floor 10pt) - prevents 'modification failed ... close to market' on EURUSD and other 0-stops-level symbols. XAU lock unchanged.
 - Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
 
 ## 1.05 — 2026-06-23

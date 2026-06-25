@@ -419,6 +419,29 @@ bool MvpSafeModify(ulong tk,double newSL,double newTP)
    double curTP=NormalizeDouble(mvpPos.TakeProfit(),_Digits);
    if(MathAbs(newSL-curSL)<=_Point && MathAbs(newTP-curTP)<=_Point)
       return true;   // already at target -> skip the broker round-trip
+
+   // Broker freeze/stop guard. A modify is rejected with "...close to market" when
+   // either the EXISTING or the NEW SL/TP sits within the broker's stop/freeze level
+   // of the current market price. stops_level & freeze_level are reported 0 on many
+   // symbols (e.g. EURUSD on some servers) yet the server still enforces a floating
+   // buffer, so fall back to spread, floored at 10 points. Skipping is behaviour-
+   // neutral: the level is simply re-applied on a later tick once price has moved
+   // away. On XAU the validated trails clear this distance easily, so the locked
+   // result is unchanged -- this only suppresses modifies the broker would reject.
+   double stops =SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;
+   double freeze=SymbolInfoInteger(_Symbol,SYMBOL_TRADE_FREEZE_LEVEL)*_Point;
+   double spread=SymbolInfoInteger(_Symbol,SYMBOL_SPREAD)*_Point;
+   double effMin=MathMax(MathMax(stops,freeze),spread);
+   if(effMin<=0) effMin=10*_Point;
+   bool isLong=(mvpPos.PositionType()==POSITION_TYPE_BUY);
+   double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID), ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   // Position already frozen (current SL/TP within the level) -> ANY modify is
+   // rejected; leave it to close naturally at its existing levels.
+   if(curSL>0){ double ref=isLong?bid:ask; if((isLong?(ref-curSL):(curSL-ref))<effMin) return true; }
+   if(curTP>0){ double ref=isLong?ask:bid; if((isLong?(curTP-ref):(ref-curTP))<effMin) return true; }
+   // New levels would be too close to market -> skip, retry on a later tick.
+   if(newSL>0){ double ref=isLong?bid:ask; if((isLong?(ref-newSL):(newSL-ref))<effMin) return true; }
+   if(newTP>0){ double ref=isLong?ask:bid; if((isLong?(newTP-ref):(ref-newTP))<effMin) return true; }
    return mvpTrade.PositionModify(tk,newSL,newTP);
 }
 
