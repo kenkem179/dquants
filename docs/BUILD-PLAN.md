@@ -15,6 +15,16 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · 🔒 = hard gate (canno
 MasterVP's deployed locks stand; every exit/reversion/gate lever has been tested→rejected (see archive).
 What remains genuinely open:
 
+> ⚠️ **USER SKEPTICISM ON THE C++ ENGINE EXIT MODEL (2026-06-25) — read before trusting any sweep verdict.**
+> The user is **more skeptical than ever** about the recent sweeps. The proof: the **runner-RR / trail lock**
+> was wrong, and the user found it **themselves via the MT5 Strategy-Tester optimizer**, NOT the C++ engine —
+> the finer-step MT5 opt revealed Trail 2.75 > 2.5 and RR~4.0, which the engine's step-1.0 view and
+> directionally-unreliable exit accounting had missed (see [[engine-exit-model-untrusted-use-mt5]] — the
+> engine over-credits the trailed runner). **CONSEQUENCE — any EXIT-side lever (laddered/partial TP,
+> profit-lock ladder, BE/trail geometry, giveback) must be (re)validated on the MT5 optimizer, NOT the C++
+> engine.** The engine is a fast RANKING proxy for ENTRY/detection only; for exits, MT5 is the judge. When an
+> exit study's MT5 result disagrees with the engine, **MT5 wins** and the engine verdict is discarded.
+
 - [ ] **H6 — FVG-anchored stop-loss** (structural SL, replaces/augments pure ATR-multiple). Current SL is a
   blind ATR multiple (`strategy.hpp`: long `sl = entry − max(sl_atr_brk·atr1, 8·pip)`). Anchor it just
   **beyond the most significant Fair Value Gap** instead — long → most significant FVG **below VAH**; short
@@ -61,10 +71,45 @@ What remains genuinely open:
     → MC → overfitting gate. BTC locks MT5-confirm before trust ([[mastervp-t3-reversion-lock]]). Combine with
     **H7** (BTC-M3 re-sweep) — hours are part of that config space.
 
+- [ ] **H9 — Re-validate the EXIT cluster on the MT5 optimizer (laddered/partial TP first).** Directly from the
+  skepticism note above: the prior engine-side rejections of partial/laddered TP ([[mastervp-profit-lock-ladder]],
+  TP1-bank, conviction-protect — all "REJECTED" in the archive) were judged by the **C++ exit model the runner-RR
+  miss just proved unreliable**. Re-open them, but this time sweep on the **MT5 Strategy-Tester optimizer**, not
+  the engine.
+  - **Priority:** (1) **laddered TP** — bank fractions at a sequence of R/VP levels and let the rest trail
+    (the user's specific call-out); (2) `InpTp1ClosePct` partial-bank revisit; (3) profit-lock ladder
+    (`InpPm*` — `ProfitManager.mqh` is built + engine-mirrored but only ever MT5-tested as Ladder on BTC); (4)
+    BE buffer × trail interactions around the new RR4.0/Trail2.75 lock.
+  - **Method:** these are all **existing EA inputs / built default-OFF infra → `.set`-only, zero parity risk,
+    no recompile.** Build the candidate `.set` grids, run MT5 `Every tick based on real ticks` optimizer over
+    XAU M5 2025.06.01–2026.05.29 dep 10k, rank by **PF/robustness not peak net** (the RR3.2 trap). Confirm any
+    winner beats the **+87,836 / PF 1.413** lock on every quality axis, then overfitting-gate it before locking.
+  - ⚠️ Engine WF may still be run as a CHEAP pre-filter to prune the grid, but **its sign is not trusted on
+    exits** — no exit lever is locked on an engine number alone. MT5 optimizer result is the verdict.
+
 - [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
   on XAU; re-confirm MasterVP M5 XAU edge).
 
 - [ ] **T5 — Cost realism** (add commission + slippage; current BTC commission=0) before any deploy.
+
+- [ ] **C1 — Dead-code cleanup: prune research features never toggled on in the last ~4 locked versions.**
+  Years of exploratory research left default-OFF features wired into the engine + EAs that **no shipped lock has
+  ever enabled** — they add surface area, slow comprehension, and (worse) are untrustworthy now that the engine
+  exit model is suspect. Audit what the last ~4 locks actually use, then remove the rest.
+  - **Candidates (verify each is OFF in ALL recent locked `.set` before removing):** node-engine gate
+    (`InpNodeGateEnabled`/`InpBrkRequireFlow`/`InpSfpFlowMin`/`InpUsePriorBarVP`), impulse-thrust path
+    (`InpEnableImpulse` + all `InpImpulse*`/`InpTfNet*`/`NetVolume.mqh` — the retired Monster delta), extreme
+    reversion (`InpEnableExtremeReversion` + `InpXRev*`/`ExtremeReversion.mqh`), base reversion if still unused
+    (`InpEnableReversion`/`InpRev*`/`InpRetestAtr`/`InpBodyPctMin`), per-entry-type trail overrides
+    (`InpTrailBrk/Rev/Imp/XRev` if always -1), MTF/momentum quality gates (`InpUseMtfAgree`/`InpUseMomVeto`),
+    FVG-SL (`fvg_sl.hpp`, already WF-rejected, never ported), Kaufman-ER (KenKem `E1_ER_*`, engine-only),
+    and any other default-OFF lab feature.
+  - ⚠️ **Method = safety-net deletion:** the C++ side is the source of truth and is **fully tick-tested** —
+    delete a feature, `make -C cpp_core test` must stay green AND the golden-parity / locked-`.set` runs must
+    stay **byte-identical** (a diff = the feature wasn't truly dead). Mirror the removal in the EA, recompile
+    0/0. Do it **one feature per commit** so any parity break is unambiguously attributable. Keep the research
+    write-ups in `research/` + memory as history (the lesson, not the code). **Confirm scope with the user
+    before deleting reversion** (it's the one with a partial MT5 A/B history) — the rest are clean kills.
 
 ---
 
