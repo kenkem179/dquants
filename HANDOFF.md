@@ -1,6 +1,6 @@
 # HANDOFF — read me first, update me last
 
-## ⏳ EXPIRY-LOCK (per-account access end-date) — BUILT + all 3 products compile 0/0 (2026-06-25) — ▶ uncommitted; awaiting USER sign-off
+## ✅ EXPIRY-LOCK (per-account access end-date) — SHIPPED + RELEASED (2026-06-25) — versions FROZEN at MasterVP 1.06 / Profiler 1.01
 **User ask:** extend the marketplace Account-Lock so Master-Volume-Profiler **indicator** + KK-MasterVP EA +
 KK-KenKem EA can be licensed to given accounts **until an exact expiry date**; on expiry auto-detect → Alert
 **"Expired Access"** + stop calculation. **DONE, end-to-end tested.** Decisions (locked via AskUserQuestion):
@@ -24,17 +24,20 @@ out) · EAs **stop new trades but keep managing open positions** · separate acc
 - **Separate Profiler list:** `scripts/deployment_accounts.KK-MasterVP-Profiler.txt` (gitignored) created;
   `.example` + script header docs updated for the 3-field format. **Source restored byte-identical** (shasum)
   across all lock files in every build path; backward-compatible with existing 2-field / whitespace lists.
-- **✅ RELEASED + version-bumped (2026-06-25):** KK-MasterVP EA **1.05→1.06** (`make release` + `make
-  account-releases`; normal/market/account builds), KK-MasterVP-Profiler indicator **1.00→1.01** (`make
-  account-releases`). Both got chart-attach `#property description` + `#property link "https://kenkem.biz"`
-  ("For more details, visit …"). One client account baked (Exness trial), expires **2026.08.25** — real
-  login lives only in the gitignored `deployment_accounts.*` lists. `norm_expiry()` hardened to accept
-  single-digit month/day (the list used a single-digit month).
-  Per-account `releases/*/accounts/` dirs (`.ex5` + `ACCOUNTS.md` login manifest) now **gitignored**.
+- **✅ RELEASED — versions FROZEN: KK-MasterVP EA `1.06`, Profiler `1.01` (user: do NOT bump; re-release at
+  same version via `make_release.sh … --set-version 1.06`).** Both carry chart-attach `#property description`
+  + `#property link "https://kenkem.biz"` ("For more details, visit …"). Wording fixed — dropped "educational
+  only": EA = "Automated trading software - not financial advice and no profit guarantee. Trading carries risk
+  of loss"; Profiler = "Analysis tool - not financial advice. Trading carries risk of loss".
+- **Per-account builds:** `make account-releases STRATEGY=<name>` → gitignored `releases/<ver>/accounts/`
+  (`.ex5` + `ACCOUNTS.md`). **3 client accounts** in the gitignored `deployment_accounts.{KK-MasterVP,
+  KK-MasterVP-Profiler}.txt` lists, expiring ~2026.08.26. `norm_expiry()` accepts single-digit month/day.
+- **🔒 Security:** `mql5/**/releases/*/accounts/` gitignored (logins never commit); ALWAYS leak-scan before
+  commit (`git diff --cached -G'<login>'`). ⚠️ Client logins still live in OLD pushed history (commit
+  `17189ef`'s `1.05/accounts/ACCOUNTS.md`) — `git filter-repo` scrub offered, user has NOT requested it.
 - **▶ NEXT (USER):** demo-verify "Expired Access" by baking a past date; ship the account `.ex5` from
-  `mql5/{experts/KK-MasterVP,indicators/KK-MasterVP-Profiler}/releases/<ver>/accounts/`. ⚠️ kenkem.biz URL is
-  fine for direct/account-locked distribution; **strip it from `#property description` if uploading the public
-  build to the MQL5 Market** (Market forbids external links in descriptions; `#property link` is allowed).
+  `releases/<ver>/accounts/`. ⚠️ kenkem.biz URL is fine for direct/account-locked distribution; **strip it from
+  `#property description` if uploading the PUBLIC build to the MQL5 Market** (`#property link` is allowed there).
 
 ## 🛰️ DEPLOYMENT & OPS — D1/D2/D3 BUILT + compile 0/0 (2026-06-25) — ▶ awaiting USER demo validation
 **What:** user greenlit "build all D1–D3 in sequence + a drag-drop test EA; can't release/bump MasterVP until

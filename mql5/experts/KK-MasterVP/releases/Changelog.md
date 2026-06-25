@@ -2,9 +2,9 @@
 
 ## 1.06 — 2026-06-25
 
-- Built `2026-06-25T11:19:52Z` · commit `7b3e486` on `UTC-time-fix`
+- Built `2026-06-25T11:22:42Z` · commit `47f1e6c` on `UTC-time-fix`
 - EA: `KK-MasterVP-1.06.ex5` (locked build of `KK-MasterVP.mq5`)
-- Add chart-attach description + kenkem.biz link; expiry/account-lock support
+- Account+expiry-locked builds; chart description + kenkem.biz link
 - Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
 
 ## 1.05 — 2026-06-23
