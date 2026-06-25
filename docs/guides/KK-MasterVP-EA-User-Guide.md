@@ -55,6 +55,46 @@ The inputs are grouped exactly as they appear in the settings window. You do **n
 - **R** ("risk units") means a multiple of the distance from entry to the stop. A target at 1.8R sits 1.8× the stop distance away from entry.
 - **ATR** is a standard measure of how much price typically moves. Many distances are expressed as a multiple of ATR so the strategy adapts sensibly whether the market is quiet or busy.
 
+### Quick reference — example values for the settings you'll actually touch
+
+These are the inputs most people adjust, with their shipped **default** and a few **example values** to show what changing them does. The examples are illustrative to explain the meaning of each setting — **they are not recommendations**, and the defaults are simply where our XAUUSD M5 testing landed. Everything below this table is a deeper explanation of the same settings, group by group.
+
+**Core trading & risk**
+
+| Setting (input) | Default | Example values — what they mean |
+|---|---|---|
+| Risk basis (`InpRiskUnit`) | `0` (% of balance) | `0` size by % of balance · `1` fixed cash amount · `2`/`3` broker min/max lot |
+| Risk per trade % (`InpRiskAccPct`) | `1.0` | `0.5` = risk 0.5% of balance per trade (calmer) · `1.0` = the tested level · `2.0` = roughly double the swings |
+| Fixed risk cash (`InpRiskUsd`) | `180` | only used when Risk basis = `1`; e.g. `100` risks $100 per trade |
+| Max lot (`InpMaxLot`) | `0` (broker max) | `0.50` caps every position at 0.5 lots |
+| First target (`InpTp1R`) | `0.8` | secure/partial at 0.8× the stop distance · `1.0` = one full R out |
+| Bank at first target (`InpTp1ClosePct`) | `0` (keep full runner) | `25` = close 25% at the first target and trail the rest · `0` lets the whole position run |
+| Break-even after TP1 (`InpBeAfterTp1`) | `true` | `true` moves the stop to ~entry after TP1 · `false` keeps the original stop |
+| Break-even buffer (`InpBeBufAtr`) | `0.02` | small cushion past entry, in ATR · `0.10` = a little more breathing room |
+| Runner cap (`InpRunnerRr`) | `4.0` | far take-profit at 4× risk; in practice the trail exits first |
+| Trail distance (`InpTrailAtrMult`) | `2.75` | `2.0` = tighter trail (exits sooner, protects more) · `3.5` = looser (more room to run) |
+| Daily drawdown pause (`InpMaxDailyDDPct`) | `10` | `4.4` to respect a typical prop daily-loss rule · `0` = off |
+| Daily cooldown hrs (`InpDailyDDCooldownHrs`) | `12` | hours paused after a daily-loss hit |
+| Max total drawdown halt (`InpMaxPeakDDPct`) | `0` (off) | `9` halts trading at 9% account drawdown |
+| Max trades/session (`InpMaxTradesPerSession`) | `4` | `2` = at most two new trades per session |
+| Max spread (`InpMaxSpreadPips`) | `0` (off) | `30` = skip entries when the spread is wider than 30 points (worth setting on Gold/BTC) |
+| Blocked hours, UTC (`InpBlockedHoursStr`) | `4,16,17` | `"9-11"` skips 09:00–11:00 UTC · empty = trade every hour |
+| Magic number (`InpMVPMagic`) | `5252510` | give each instance a unique number if you run several |
+
+**Account guardian, logging & notifications** (live only; all off by default)
+
+| Setting (input) | Default | Example values — what they mean |
+|---|---|---|
+| Enable guardian (`InpGuardEnable`) | `false` | `true` turns on the cross-EA account safety layer |
+| Daily loss limit % (`InpGuardDailyLossPct`) | `4.0` | the equity drop that stops trading; e.g. `5.0` for a 5%-daily firm |
+| Max drawdown limit % (`InpGuardOverallDDPct`) | `8.0` | e.g. `10.0` for a 10%-max-drawdown firm |
+| Safety buffer % (`InpGuardBufferPct`) | `0.5` | act 0.5% *before* each line · `1.0` = stop even earlier |
+| Max-DD anchor (`InpGuardDDAnchor`) | `0` (trailing peak) | `0` measure drawdown from the equity high · `1` from the starting balance |
+| On breach (`InpGuardFlatten`) | `true` (close all) | `true` closes open trades at the line · `false` only blocks new entries |
+| Log trades to CSV (`InpLiveTradeCsv`) | `false` | `true` writes every closed trade to a CSV file in MQL5/Files |
+| Notification channel (`InpNotifyChannel`) | `0` (none) | `2` Discord · `3` Telegram · `4` Email+Discord · `7` all three |
+| Notification detail (`InpNotifyMode`) | `1` (Full) | `2` Simplified — symbol + action + win/loss only. *The MQL5 Market edition is locked to `2`.* |
+
 ### VP core — how the structure is measured
 
 - **InpVpLookback** — the length, in bars, of the *local* (recent) volume‑profile window. Larger = a longer, slower picture of recent activity.

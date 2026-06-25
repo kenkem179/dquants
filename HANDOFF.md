@@ -20,8 +20,10 @@ to the lock** (compiles 0/0; engine + `make test` untouched). New shared headers
   asserts (PASS/FAIL), sends REAL test msgs per channel, writes sample CSV, self-removes. In MT5 via `dq`
   symlink → `Experts\dq\KK-Common-Tests\TestDeployOps.ex5`. Both EAs compile 0/0.
 - **Guide** BOTH MasterVP EA guides updated (English): `KK-MasterVP-EA-User-Guide.md` §5 += Account-Guardian /
-  Live-CSV / Notifications + validator-EA step; `KK-MasterVP-EA-MQL5-Marketplace-Description.md` += same
-  features (Simplified-only alerts) and fixed stale Broker-GMT-offset → UTC blocked hours.
+  Live-CSV / Notifications + validator-EA step + a **quick-reference table of example values & meanings** for
+  every user-facing input (default + example values, illustrative not recommended);
+  `KK-MasterVP-EA-MQL5-Marketplace-Description.md` += same features (Simplified-only alerts), example values on
+  risk/protection bullets, and fixed stale Broker-GMT-offset → UTC blocked hours.
 - **Marketplace force-hide (commit `b80242a`):** new `release.market.forcehide` in `scripts/lib/
   market_edition.sh` strips a key's `input` + hard-codes its value in the **MQL5 Market build only** (dev build
   keeps it configurable, trap-restored byte-identical). KK-MasterVP forces `InpNotifyMode=2` (Simplified) so

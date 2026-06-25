@@ -54,17 +54,17 @@ The defaults ship tuned to our flagship configuration — **XAUUSD on M5** — s
 KK‑MasterVP keeps the dialog short on purpose. The strategy’s technical engine is pre‑tuned and fixed; what you adjust is the part that should be yours:
 
 **Risk per trade**
-- *Risk basis* — size by % of balance or a fixed amount.
-- *Risk per trade (%)* — the percentage of balance put at risk on each trade.
-- *Fixed risk (currency)* — used when sizing by a fixed amount.
-- *Max lot* — a hard ceiling on position size.
+- *Risk basis* — size by % of balance or a fixed amount (default: % of balance).
+- *Risk per trade (%)* — the percentage of balance put at risk on each trade. Example: `0.5` is calmer, `1.0` is the default, `2.0` roughly doubles the swings.
+- *Fixed risk (currency)* — used when sizing by a fixed amount (e.g. `100` risks $100 per trade).
+- *Max lot* — a hard ceiling on position size (`0` = the broker’s maximum; `0.50` caps every trade at 0.5 lots).
 - *Skip if min‑lot over risk* — refuse a trade rather than over‑risk when the broker’s minimum lot is too large.
 - *Max slippage (points)* — the most slippage you’ll accept on entry.
 
 **Account protection**
-- *Max daily drawdown (%)* — pause new trades once the day’s loss hits this level.
-- *Daily cooldown (hours)* — how long to stay paused after a daily‑loss breach.
-- *Max total drawdown (%)* — halt trading if overall drawdown reaches this level.
+- *Max daily drawdown (%)* — pause new trades once the day’s loss hits this level (e.g. `4.4` to respect a typical prop daily‑loss rule; `0` turns it off).
+- *Daily cooldown (hours)* — how long to stay paused after a daily‑loss breach (e.g. `12`).
+- *Max total drawdown (%)* — halt trading if overall drawdown reaches this level (e.g. `9`; `0` turns it off).
 
 **Profit taking**
 - *TP1 close (%)* — how much of the position to bank at the first target (set 0 to let the full runner work).
