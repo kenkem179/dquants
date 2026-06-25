@@ -197,6 +197,29 @@ ulong  InpMVPMagic        = 5252510;
 input group "===== Log Trade Details to CSV  ====="
 input bool   InpExportParity    = false;    // Log each closed trade to a CSV file
 
+// ===== DEPLOYMENT / OPS (Layer 4, live MT5 only - inert in Tester) =====
+// These have no C++ engine analog, so they never affect parity or the locked
+// backtest. All default OFF/empty => MasterVP byte-identical to the lock.
+
+input group "===== Account Risk Guardian (D1; cross-EA, live only) ====="
+input bool   InpGuardEnable          = false; // Enable the prop account risk guardian
+input double InpGuardDailyLossPct    = 4.0;   // Daily loss limit (% of day-start equity)
+input double InpGuardOverallDDPct    = 8.0;   // Max overall drawdown limit (%)
+input double InpGuardBufferPct       = 0.5;   // Act this many % BEFORE each line (safety margin)
+input int    InpGuardDDAnchor        = 0;     // Max-DD anchor: 0=trailing peak, 1=initial balance
+input double InpGuardManualDayAnchor = 0.0;   // Manual day-start equity anchor (0 = auto/reconstruct)
+input bool   InpGuardFlatten         = true;  // On breach: true=close all positions, false=block new only
+
+input group "===== Live trade CSV log (D2; live only) ====="
+input bool   InpLiveTradeCsv         = false; // Append each closed trade to KKTrades_<EA>_<symbol>_<login>.csv
+
+input group "===== Notifications (D3; live only) ====="
+input int    InpNotifyChannel        = 0;     // 0 None 1 Email 2 Discord 3 Telegram 4 Email+Disc 5 Email+TG 6 Disc+TG 7 All
+input int    InpNotifyMode           = 1;     // 1 Full, 2 Simplified (prop-safe: symbol+action+result only)
+input string InpDiscordWebhookUrl    = "";    // Discord webhook URL
+input string InpTelegramBotToken     = "";    // Telegram bot token
+input string InpTelegramChatId       = "";    // Telegram chat ID (group IDs are negative)
+
 // ----- Account lock (hidden internals; NOT inputs) -----
 // Empty by default = runs on any account. The per-account release script bakes
 // one (id, server) pair in to lock a build to a single MT5 account. A login

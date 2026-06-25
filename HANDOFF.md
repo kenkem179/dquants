@@ -1,28 +1,30 @@
 # HANDOFF — read me first, update me last
 
-## 🛰️ BUILD-PLAN: DEPLOYMENT & OPS INFRA section added (2026-06-25) — PLAN ONLY, no code
-**What:** new **🛰️ DEPLOYMENT & OPS INFRASTRUCTURE** section in `docs/BUILD-PLAN.md` (items **D1–D3**),
-cross-EA Layer-4 (live-MT5) work, explicitly **out of scope for parity/backtest** (no C++ engine analog).
-Pure planning this session — **no source touched** (safe alongside the parallel session). Committed BUILD-PLAN
-+ this handoff note only.
-- **D1 — Account Risk Guardian (broker-agnostic, cross-EA).** Key insight: `AccountInfoDouble(BALANCE|EQUITY)`
-  is already **account-wide** → live numbers need no sharing; only the **derived anchors** (start-of-day
-  equity/balance, running peak) need sharing+persistence. Mechanism: shared `AccountGuardian.mqh` in `KK-Common`,
-  state in **terminal GlobalVariables keyed by account login**, atomic `GlobalVariableSetOnCondition`,
-  `GlobalVariablesFlush`. Day boundary = **broker SERVER time** (`TimeCurrent`, auto-DST) — deliberately
-  separate from the strategy's UTC session logic. Equity-based, flatten at a buffer BEFORE the line. Configurable
-  knobs (generic/conservative defaults; per-firm FTMO-vs-FundedNext table in the user guide). **Mid-day
-  cold-start anchor** = reconstruct `balance_at_reset` from deal history (`HistorySelect` + Σ deals since reset);
-  `InpManualDayStartAnchor` override for the rare position-spans-reset + equity-anchor case.
-- **D2 — Per-EA trade CSV: append-immediately-on-close** (user agreed over hourly-batch), per-EA file, OnDeinit
-  flush, live-only (skip tester).
-- **D3 — Minimal notifications for KK-MasterVP (+Monster).** ⚠️ KK-KenKem ALREADY has the full suite — don't
-  touch it. Build a small shared `Notifier.mqh` in `KK-Common`; channel enum 0–7 (7=All three), mode
-  Full/Simplified-prop, Discord webhook + Telegram token/chatId + Email via `SendMail`. Op-notes: WebRequest
-  whitelist + SMTP + blocked-in-tester.
-- **Decisions captured (2026-06-25):** one terminal per account (→ GlobalVariables); both/generic defaults;
-  append-immediate CSV. **▶ NEXT:** implement when the user greenlights the build (D1 math should be factored
-  into a unit-testable header). Prop-firm facts grounded from FTMO/FundedNext docs (in the plan).
+## 🛰️ DEPLOYMENT & OPS — D1/D2/D3 BUILT + compile 0/0 (2026-06-25) — ▶ awaiting USER demo validation
+**What:** user greenlit "build all D1–D3 in sequence + a drag-drop test EA; can't release/bump MasterVP until
+this is validated." DONE. All Layer-4 (live MT5), no C++ analog, default OFF/empty → **KK-MasterVP byte-identical
+to the lock** (compiles 0/0; engine + `make test` untouched). New shared headers in `mql5/experts/KK-Common/`.
+- **D1 `AccountGuardian.mqh`** — cross-EA prop guardian. Pure math (`KKG_TriggerLoss/DailyBreached/
+  OverallBreached/DayKey`, no MT5 API → unit-testable) + stateful `KKAccountGuardian` sharing anchors via
+  terminal **GlobalVariables keyed by login** (atomic `GlobalVariableSetOnCondition`+`Flush`). Equity-based,
+  **server-time** day boundary, flatten-before-the-line buffer, deal-history cold-start anchor. Inputs
+  `InpGuardEnable/DailyLossPct(4)/OverallDDPct(8)/BufferPct(0.5)/DDAnchor/ManualDayAnchor/Flatten`. Wired:
+  OnTick Update→flatten+alert-once; entry gate blocks new while halted. ⚠️ Simplified vs full spec (no
+  Equity/Balance-at-reset split, day-reset fixed at server-midnight, no DailyLimitBase) — refine per-firm later.
+- **D2 `TradeLogger.mqh`** — `InpLiveTradeCsv`; append-on-close `KKTrades_MasterVP_<sym>_<login>.csv`, FileFlush/
+  row, live-only, OnDeinit close. Separate from tester-only `InpExportParity`.
+- **D3 `Notifier.mqh`** — standalone (NOT KenKem's 5 files), ASCII-only. `InpNotifyChannel{0..7}`+`InpNotifyMode
+  {Full,Simplified-prop}`+`InpDiscordWebhookUrl/InpTelegramBotToken/InpTelegramChatId`. Startup + open/close +
+  guardian-HALT alerts; tester-guarded.
+- **Test EA** `KK-Common-Tests/TestDeployOps.mq5` (drag-drop, like the KenKem Discord validator): runs D1 math
+  asserts (PASS/FAIL), sends REAL test msgs per channel, writes sample CSV, self-removes. In MT5 via `dq`
+  symlink → `Experts\dq\KK-Common-Tests\TestDeployOps.ex5`. Both EAs compile 0/0.
+- **Guide** `docs/guides/KK-MasterVP-EA-User-Guide.md` §5 += Account-Guardian / Live-CSV / Notifications +
+  validator-EA step (English, plain-language).
+- **▶ NEXT (USER, live — can't run headless):** (1) drag `TestDeployOps` on a demo chart, paste webhook/token,
+  confirm msgs arrive + PASS; (2) demo-run KK-MasterVP `InpGuardEnable=true` on 2 charts (ideally + KenKem) →
+  confirm shared anchor/peak + joint flatten. THEN MasterVP release/bump is unblocked. (3) D4 trial-expiry still
+  open in BUILD-PLAN. Uncommitted? No — committing this session.
 
 ## 🏆 MasterVP XAU M5 FINAL LOCK = RR4.0 / Trail2.75 / BeBuf0.02 — MT5 + DSR PASS (2026-06-25) — ✅ COMMITTED+PUSHED `17189ef`
 **Lock: net +87,836 (final bal 97,836) / PF 1.413 / 1,423 tr / maxDD(close-to-close) 21.1%** (XAU M5,

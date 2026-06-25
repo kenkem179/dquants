@@ -81,78 +81,17 @@ header-only helper so it can be unit-tested headlessly.
 GlobalVariables**; defaults tuned **generic/conservative (equity-based)** with per-firm settings documented;
 trade CSV is **append-immediately on close** (not hourly-batched).
 
-- [ ] **D1 — Account Risk Guardian (broker-agnostic, cross-EA, shared via GlobalVariables).**
-  - **The insight that reframes this:** `AccountInfoDouble(ACCOUNT_BALANCE|ACCOUNT_EQUITY)` is **already
-    account-wide** — every EA on the account reads the *same* live balance/equity instantly. So the live numbers
-    need no sharing. What is NOT shared and what each EA would otherwise recompute (and disagree on) across
-    restarts is the **derived anchors**: *start-of-day equity/balance* (daily-DD reference) and *running peak*
-    (max-DD reference). **That** is the gap.
-  - **Mechanism:** one shared `AccountGuardian.mqh` (put in `KK-Common`, included by every EA). State held in
-    **terminal GlobalVariables keyed by account login**, e.g. `KKACC.<login>.dayStartEq`, `.dayStartBal`,
-    `.dayKey`, `.peakEq`, `.peakBal`. First EA to cross a new day **atomically claims** the anchor via
-    `GlobalVariableSetOnCondition` (compare-and-set → no multi-EA race); the rest read it. `GlobalVariablesFlush()`
-    so anchors survive a crash/restart. (Multi-terminal-per-account is out of scope now → note FILE_COMMON+lock
-    as the future fallback.)
-  - **Mid-day cold-start anchor reconstruction (no API gives "balance at reset" directly).** When the *first*
-    EA of the day launches after the broker already reset (and manual trades happened since), reconstruct from
-    deal history: `balance_at_reset = ACCOUNT_BALANCE − Σ(DEAL_PROFIT+DEAL_SWAP+DEAL_COMMISSION)` over every
-    deal with `DEAL_TIME ≥ reset_time` (`HistorySelect(reset_time, TimeCurrent())`). Exact for the balance
-    anchor (FTMO). For the **equity** anchor, `equity_at_reset = balance_at_reset + floating_at_reset` —
-    floating is 0 unless a position spans the boundary (`POSITION_TIME < reset_time`); common case is flat →
-    `equity_at_reset == balance_at_reset`. Spanning + exactness needed → `InpManualDayStartAnchor` override
-    (paste the firm-dashboard figure once). This path runs **only** on the day's first cold start — otherwise
-    the anchor is already in the shared GlobalVariable and is just read. Seed the max-DD peak conservatively on
-    cold start: `max(equity, balance, initial)`, then ratchet live.
-  - **Day boundary = BROKER SERVER TIME (`TimeCurrent`), not UTC.** Prop firms reset daily DD on *their* server
-    clock, and the MT5 terminal runs on that same broker server, so server time auto-tracks the firm's DST
-    (FTMO 00:00 CE(S)T = GMT+1/+2; FundedNext 00:00 = GMT+2/+3). **This is deliberately separate from the
-    strategy's UTC session/blocked-hour logic** ([[that recent UTC migration]] stays UTC; the Guardian's reset
-    is server-time). Knob: `InpDayResetHourServer` (default 0).
-  - **Equity-based, intraday.** Daily DD must include floating P/L + swaps + commission (both firms measure on
-    equity). So the Guardian checks `equity` every tick and **flattens + blocks new entries at a safety buffer
-    BEFORE the line** (closing-order slippage eats the rest). Knob `InpDailyStopBufferPct` (e.g. flatten at 85%
-    of the limit).
-  - **Configurable knobs (inputs), conservative/generic defaults:**
-    `InpDailyLimitPct` (5.0), `InpDailyAnchor` {EquityAtReset *(default, strict — FundedNext)*, BalanceAtReset
-    *(FTMO)*}, `InpDailyLimitBase` {InitialDeposit *(both firms size the % off initial)*, StartOfDay},
-    `InpMaxDDPct` (10.0), `InpMaxDDMode` {StaticFromInitial *(FTMO)*, TrailingFromPeak, TrailingPeakEOD
-    *(FundedNext trailing)*}, `InpDailyStopBufferPct`, `InpDayResetHourServer`, and an
-    `InpAccountGuardEnabled` master switch (default ON for prop, can be OFF for personal accounts).
-  - **Per-firm doc:** add an "FTMO vs FundedNext exact settings" table to
-    `docs/guides/KK-MasterVP-EA-User-Guide.md` (and KenKem guide) so the user flips knobs per account, not code.
-  - **Validate:** factor the floor/breach math into a testable header → unit test it headlessly; then demo-run
-    **2+ EAs on one account**, confirm they converge on one shared anchor/peak and all flatten together when the
-    shared-equity floor is hit. ⚠️ **Confirm with user**: exact flatten policy at reset (flatten-all vs
-    block-new-only) and whether a position open *across* the reset boundary keeps or loses its floating P/L in
-    the anchor (FTMO balance-anchor drops it; equity-anchor keeps it).
-
-- [ ] **D2 — Per-EA trade CSV log (append-immediately on close).**
-  - Each EA/chart writes **its own** file (no shared writer): key by symbol + account login (+ magic/timeframe
-    if a symbol runs on two charts), e.g. `KKTrades_<EA>_<SYMBOL>_<login>.csv` in the per-terminal Files folder.
-  - **Write each closed trade the instant it closes** (open `FILE_READ|FILE_WRITE`, seek-to-end, append one row,
-    close — or keep a handle and `FileFlush` per row). Cost is microseconds; it does **not** bother tick/entry
-    logic (the hourly-batch idea was rejected — it only risks losing up to an hour of trades on a hard crash for
-    no measurable I/O win). Write the header once if the file is new. **Mandatory `OnDeinit` flush/close.**
-  - **Live-only:** skip writes under `MQLInfoInteger(MQL_TESTER|MQL_OPTIMIZATION)` (engine emits its own
-    `trades_*.csv` for parity — keep the two separate).
-
-- [ ] **D3 — Minimal notifications for KK-MasterVP (and KK-Monster).**
-  - ⚠️ **KK-KenKem already has the full suite** (ported from KenKemExpert — `Alerts/{Common,Discord,Telegram}Alerts.mqh`,
-    enum `NOTIFICATION_MODE`, `MADE_FOR_PROP_TRADING`). **Do not touch / regress it.** The real gap is
-    **KK-MasterVP** (zero notification code today) and KK-Monster.
-  - **Build a small shared `Notifier.mqh` in `KK-Common`** (don't copy-paste KenKem's 5 files) that MasterVP /
-    Monster include. Reuse the proven `WebRequest` call shapes from KenKem's Discord/Telegram senders.
-  - **Inputs (bare-minimum, user's spec + additions):**
-    - `InpNotifyChannel` enum {0 None, 1 Email, 2 Discord, 3 Telegram, 4 Email+Discord, 5 Email+Telegram,
-      6 Discord+Telegram, **7 All three**} — *added 7 for completeness*.
-    - `InpNotifyMode` enum {1 Full, 2 Simplified-for-prop} — simplified = symbol + action + result only, no
-      entry/SL/TP details (matches KenKem's `MADE_FOR_PROP_TRADING`).
-    - `InpDiscordWebhookUrl` (string), `InpTelegramBotToken` + `InpTelegramChatId` (string; group IDs are
-      negative). Email uses MT5 `SendMail()`.
-  - **Operational notes (put in the user guide):** (1) WebRequest needs `api.telegram.org` and
-    `discord.com`/`discordapp.com` whitelisted in *Tools → Options → Expert Advisors → Allow WebRequest*; (2)
-    Email needs SMTP set in *Tools → Options → Email*; (3) `WebRequest`/`SendMail` are **blocked in
-    Tester/Optimization** — guard with `MQL_TESTER` so backtests don't spam (and don't stall).
+- [x] **D1 — Account Risk Guardian** — DONE 2026-06-25 (`KK-Common/AccountGuardian.mqh`, wired into KK-MasterVP,
+  compiles 0/0). Cross-EA via terminal GlobalVariables keyed by login; pure breach/anchor math in unit-testable
+  free functions; server-time day boundary; equity-based flatten-before-the-line; deal-history cold-start anchor.
+  Inputs `InpGuard*`. Simplified vs this spec (no Equity/Balance-at-reset split, no `InpDayResetHourServer`, no
+  `InpDailyLimitBase`) — refine per-firm if the demo needs it. Full record + ▶ user demo-validation step in
+  `BUILD-PLAN-ARCHIVED.md`.
+- [x] **D2 — Per-EA trade CSV** — DONE 2026-06-25 (`KK-Common/TradeLogger.mqh`). Append-on-close, FileFlush/row,
+  live-only, OnDeinit close. Input `InpLiveTradeCsv`. Archived.
+- [x] **D3 — Notifications (Discord/Telegram/Email)** — DONE 2026-06-25 (`KK-Common/Notifier.mqh`, standalone,
+  ASCII-only). Inputs `InpNotifyChannel{0..7}/InpNotifyMode/InpDiscord*/InpTelegram*`. Plus drag-drop validator
+  `KK-Common-Tests/TestDeployOps.mq5` + guide §5 update. Archived.
 
 - [ ] **D4 — Trial-expiry deadline on account-locked marketplace builds.** Every per-account MARKET edition
   ([[ea-marketplace-and-account-builds]] — the hidden `ALLOWED_ACCOUNT_ID`/`ALLOWED_ACCOUNT_SERVER` bake)

@@ -5,6 +5,43 @@ levers don't get re-chased. Newest first.
 
 ---
 
+## 🛰️ DEPLOYMENT & OPS — D1/D2/D3 BUILT + compile 0/0 (2026-06-25) — awaiting user demo validation
+
+Cross-EA Layer-4 (live MT5) infra. Pure additions — all default OFF/empty so KK-MasterVP stays
+**byte-identical to the validated lock** (compiles 0/0; engine + `make test` untouched, no C++ analog).
+Shared headers in `mql5/experts/KK-Common/`, wired into KK-MasterVP `Engine.mqh`/`Inputs.mqh`.
+
+- **D1 — `AccountGuardian.mqh`** (cross-EA prop guardian). Pure math = free functions `KKG_TriggerLoss/
+  KKG_DailyBreached/KKG_OverallBreached/KKG_DayKey` (no MT5 API → unit-testable). Stateful `KKAccountGuardian`:
+  shared anchors in terminal **GlobalVariables keyed by login** (`KKG.<login>.{dayKey,dayStart,peak,staticBal,
+  latch}`), atomic day-roll via `GlobalVariableSetOnCondition`, `GlobalVariablesFlush`. Equity-based, day
+  boundary = **broker server time** (`TimeTradeServer`), flatten-before-the-line via buffer, mid-day cold-start
+  anchor reconstructed from deal history (`HistorySelect` + Σ deals since server-midnight). Inputs:
+  `InpGuardEnable/DailyLossPct(4)/OverallDDPct(8)/BufferPct(0.5)/DDAnchor(0=peak,1=static)/ManualDayAnchor/
+  Flatten`. Wired: OnTick `Update()`→flatten+alert-once; OnNewBar entry gate `Halted()`→block new.
+  - **Simplified vs the full plan spec:** implemented the core; did NOT split EquityAtReset-vs-BalanceAtReset
+    anchor modes, `InpDayResetHourServer` (fixed at server-midnight = the default-0 case), or `InpDailyLimitBase`
+    {InitialDeposit vs StartOfDay}. Refine knobs per-firm later if the demo shows it's needed.
+- **D2 — `TradeLogger.mqh`** (live per-EA CSV). `KKTradeLogger` appends one row the instant a trade closes
+  (`FileFlush` per row), `KKTrades_MasterVP_<symbol>_<login>.csv` in MQL5/Files, header once, `OnDeinit`
+  flush/close, **live-only** (skips `MQL_TESTER|MQL_OPTIMIZATION`). Input `InpLiveTradeCsv`. Wired in
+  `OnTradeTransaction` (DEAL_ENTRY_OUT), kept separate from the tester-only `InpExportParity`.
+- **D3 — `Notifier.mqh`** (Discord/Telegram/Email). Standalone (NOT a copy of KenKem's 5 Trade-coupled files);
+  reuses the proven `WebRequest` shapes, ASCII-only (NON_LATIN-safe). `KKNotifier` routes per
+  `InpNotifyChannel` {0..7} + `InpNotifyMode` {Full, Simplified-prop}; inputs `InpDiscordWebhookUrl/
+  TelegramBotToken/TelegramChatId`. Sends startup + per-trade open/close + guardian-HALT alert; tester-guarded.
+- **Test EA — `KK-Common-Tests/TestDeployOps.mq5`** (drag-and-drop, like the KenKem Discord validator). Runs
+  the D1 math asserts (PASS/FAIL to Experts log), sends a REAL test message to each configured channel,
+  writes a sample CSV row, then `ExpertRemove()`. Visible in MT5 via the `dq` symlink:
+  `Experts\dq\KK-Common-Tests\TestDeployOps.ex5`. Both EAs compile 0/0.
+- **Guide:** `docs/guides/KK-MasterVP-EA-User-Guide.md` §5 gained Account-Guardian / Live-CSV / Notifications
+  subsections + the validator-EA step (English, plain-language).
+- **▶ User validation (live, can't be done headlessly):** drag `TestDeployOps` on a demo chart, paste
+  webhook/token, confirm messages arrive + PASS summary; then demo-run KK-MasterVP with `InpGuardEnable=true`
+  on 2 charts (ideally + KenKem) to confirm shared anchor/peak + joint flatten. THEN release/bump is unblocked.
+
+---
+
 ## MasterVP profitability thrust (2026-06-20 → 2026-06-23) — all levers CLOSED
 
 Both EAs were locked & shipped before this thrust (Monster BTC M3 anti-chase PF 1.20; MasterVP XAU M5

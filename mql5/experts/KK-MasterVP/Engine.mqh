@@ -21,6 +21,9 @@
 #include "../KK-Common/Indicators.mqh"
 #include "../KK-Common/Sizing.mqh"
 #include "../KK-Common/AccountLock.mqh"
+#include "../KK-Common/AccountGuardian.mqh"   // D1 cross-EA prop guardian
+#include "../KK-Common/TradeLogger.mqh"       // D2 live per-EA trade CSV
+#include "../KK-Common/Notifier.mqh"          // D3 Discord/Telegram/Email
 #include "../VP-Common/Types.mqh"
 #include "../VP-Common/VolumeProfile.mqh"
 #include "../VP-Common/Regime.mqh"
@@ -37,6 +40,11 @@
 CTrade        mvpTrade;
 CPositionInfo mvpPos;
 CNodeEngine   g_node;
+// ----- Deployment/ops modules (Layer 4, live only; all inert by default) -----
+KKAccountGuardian g_guard;     // D1
+KKTradeLogger     g_tradeLog;  // D2
+KKNotifier        g_notify;    // D3
+#define KKMVP_EA_TAG "MasterVP"
 int  hAtr,hRsi,hAdx,hEmaF,hEmaS,hHtfEmaF,hHtfEmaS,hAtrM1;   // hAtrM1: impulse M1 near-price-net window ATR
 double g_pip=0.01,g_mintick=0.01,g_vppl=100.0;
 datetime g_mvpLastBar=0;
@@ -110,6 +118,22 @@ int OnInit()
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
    mvpTrade.SetDeviationInPoints(InpDeviationPoints);
+
+   // ----- Deployment/ops modules (live only; self-guard the Tester) -----
+   KKGuardConfig gc;
+   gc.enabled        =InpGuardEnable;
+   gc.dailyLossPct   =InpGuardDailyLossPct;
+   gc.overallDDPct   =InpGuardOverallDDPct;
+   gc.bufferPct      =InpGuardBufferPct;
+   gc.ddAnchorMode   =InpGuardDDAnchor;
+   gc.manualDayAnchor=InpGuardManualDayAnchor;
+   gc.flattenOnBreach=InpGuardFlatten;
+   g_guard.Init(gc);
+   g_tradeLog.Init(InpLiveTradeCsv,KKMVP_EA_TAG);
+   g_notify.Init(InpNotifyChannel,InpNotifyMode,InpDiscordWebhookUrl,
+                 InpTelegramBotToken,InpTelegramChatId,KKMVP_EA_TAG);
+   g_notify.Startup();
+
    ParityInit();
    PrintFormat("[KK-MasterVP] init pip=%.5f vppl=%.2f masterLen=%d (VP %dx%.2f)",
                g_pip,g_vppl,g_masterLen,InpVpLookback,InpMasterMult);
@@ -118,18 +142,31 @@ int OnInit()
 void OnDeinit(const int r){
    IndicatorRelease(hAtr);IndicatorRelease(hRsi);IndicatorRelease(hAdx);IndicatorRelease(hEmaF);IndicatorRelease(hEmaS);
    IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);IndicatorRelease(hAtrM1);
+   g_tradeLog.Deinit();   // D2: flush + close the live trade CSV
    ParityClose();
 }
 
-// Trade-level parity: capture realized P&L + exit reason as each position closes (tester-only).
+// Per-closed-trade hook. Drives BOTH the tester-only parity export AND the
+// live-only deployment ops (D2 CSV + D3 close notification). The modules
+// self-guard their own context (parity = tester, D2/D3 = live), so this single
+// filtered path serves both without interfering.
 void OnTradeTransaction(const MqlTradeTransaction &trans,const MqlTradeRequest &req,const MqlTradeResult &res){
-   if(!InpExportParity) return;
    if(trans.type!=TRADE_TRANSACTION_DEAL_ADD) return;
    if(!HistoryDealSelect(trans.deal)) return;
    if(HistoryDealGetString(trans.deal,DEAL_SYMBOL)!=_Symbol) return;
    if(HistoryDealGetInteger(trans.deal,DEAL_MAGIC)!=(long)InpMVPMagic) return;
    if(HistoryDealGetInteger(trans.deal,DEAL_ENTRY)!=DEAL_ENTRY_OUT) return;
-   ParityOnDealOut(trans.deal,trans.position);
+
+   // D2/D3 (live only; inert in Tester)
+   g_tradeLog.LogDeal(trans.deal);
+   if(g_notify.Enabled()){
+      double profit=HistoryDealGetDouble(trans.deal,DEAL_PROFIT);
+      double net   =profit+HistoryDealGetDouble(trans.deal,DEAL_SWAP)+HistoryDealGetDouble(trans.deal,DEAL_COMMISSION);
+      g_notify.TradeClose(profit,net,HistoryDealGetString(trans.deal,DEAL_COMMENT));
+   }
+
+   // Parity export (tester only)
+   if(InpExportParity) ParityOnDealOut(trans.deal,trans.position);
 }
 
 bool MvpHasPosition(){
@@ -286,6 +323,7 @@ void OnNewBar()
    //     OFF/inert except max-trades (replayed indicator-side) and the predictive
    //     daily-DD (rarely binds).
    if(MvpHasPosition()) return;                                             // flat check
+   if(g_guard.Halted()) return;                                             // D1: account guardian halt (no new entries)
    double nextBudget=RiskBudgetUsd();
    double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID), ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    if(InpMaxSpreadPips>0.0 && g_pip>0.0 && (ask-bid)/g_pip>InpMaxSpreadPips) return;    // spread (off)
@@ -332,6 +370,7 @@ void OnNewBar()
    if(ok){
       g_tp1Done=false; g_best=entry; g_effTrail=effTrail; SN_OnFill();
       g_riskOpen=risk; g_pmPartialDone=false; g_pmTpExt=0;   // capture original R for the profit-lock ladder
+      if(g_notify.Enabled()) g_notify.TradeOpen(sig.is_long,lot,entry,sl,tp,sig.reason);   // D3 open notify (live)
       if(InpExportParity && PositionSelect(_Symbol)){
          double fill=mvpTrade.ResultPrice(); if(fill<=0.0) fill=PositionGetDouble(POSITION_PRICE_OPEN);
          ParityOnFill((ulong)PositionGetInteger(POSITION_IDENTIFIER),utc,sig,sessionId,
@@ -428,10 +467,29 @@ void MvpManage()
    }
 }
 
+// D1: close every MasterVP position (used when the guardian breaches with flatten-on).
+void MvpFlattenAll()
+{
+   for(int i=PositionsTotal()-1;i>=0;i--){ if(!mvpPos.SelectByIndex(i)) continue;
+      if(mvpPos.Symbol()==_Symbol && mvpPos.Magic()==InpMVPMagic) mvpTrade.PositionClose(mvpPos.Ticket()); }
+}
+
 void OnTick()
 {
    double eq=AccountInfoDouble(ACCOUNT_EQUITY);
    if(eq>g_peakEquity) g_peakEquity=eq;   // monotonic peak (UpdatePeakEquity)
+
+   // D1 guardian: update shared anchors; on breach flatten (if configured) and
+   // notify once. The entry gate in OnNewBar also blocks new trades while halted.
+   if(g_guard.Enabled()){
+      static bool s_alerted=false;
+      bool halted=g_guard.Update();
+      if(halted){
+         if(g_guard.ShouldFlatten()) MvpFlattenAll();
+         if(!s_alerted){ g_notify.AlertMsg("account guardian HALT - "+g_guard.Status()); s_alerted=true; }
+      } else s_alerted=false;
+   }
+
    MvpManage();
    datetime t=iTime(_Symbol,PERIOD_CURRENT,0);
    if(t==g_mvpLastBar) return;

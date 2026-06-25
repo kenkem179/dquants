@@ -28,7 +28,7 @@ It also ships with several **optional** entry styles (reversion, impulse‑thrus
 
 ## 3. Installing and attaching
 
-1. Copy `KK-MasterVP.ex5` into your MetaTrader 5 `MQL5/Experts/` folder (or a subfolder you keep EAs in).
+1. Copy `KK-MasterVP.ex5` into your MetaTrader 5 `MQL5/Experts/` folder (or a subfolder you keep EAs in). If you plan to use the live notifications or the account guardian (§5), also copy the small `TestDeployOps.ex5` validator so you can confirm those work before deploying.
 2. Restart MetaTrader 5, or right‑click the Navigator → Expert Advisors list and choose **Refresh**.
 3. Open a chart for the instrument and timeframe you want — for the intended setup, **XAUUSD, M5**.
 4. Drag **KK‑MasterVP** from the Navigator onto the chart, or double‑click it.
@@ -60,7 +60,7 @@ The inputs are grouped exactly as they appear in the settings window. You do **n
 - **InpVpLookback** — the length, in bars, of the *local* (recent) volume‑profile window. Larger = a longer, slower picture of recent activity.
 - **InpVpBins** — how many price buckets the profile is split into. More bins = finer resolution.
 - **InpVaPct** — the percentage of activity that defines the "value area" band around the busiest price (e.g. 70%).
-- **InpMasterMult** — the *master* profile window is the local window multiplied by this. With a local window of 120 and a multiplier of 4, the master profile covers 480 bars. The master window is the big‑picture structure the breakout is measured against.
+- **InpMasterMult** — the *master* profile window is the local window multiplied by this. With the tested local window of 108 and a multiplier of 4, the master profile covers 432 bars. The master window is the big‑picture structure the breakout is measured against.
 - **InpAtrLen** — the lookback length for the ATR volatility measure.
 - **InpAtrMt5Mode** — selects how ATR is averaged. Off uses the textbook (Wilder/RMA) method; on uses MetaTrader's built‑in smoothing. Off is the tested default.
 
@@ -204,6 +204,40 @@ These add confirmation the original study did not have. They are off by default;
 
 - **InpMVPMagic** — the magic number that tags this EA's trades. Give each running instance a unique value if you run more than one.
 - **InpExportParity** — a developer/testing switch that writes a trade CSV in the Strategy Tester for validation against the research engine. Leave **off** for live trading.
+
+### Account Risk Guardian (live only, off by default)
+
+A separate safety layer for funded / prop‑firm accounts. It watches your **account equity** against a daily‑loss line and an overall‑drawdown line and steps in *before* either is breached, so an automated strategy can't quietly trade you past a firm's limit. It is built to be **shared across every KK EA on the same terminal** — if you also run KK‑KenKem on the account, they read one common set of day‑start and peak figures (kept in terminal global variables, keyed by your login), so they agree on where the lines are instead of each guessing. It measures the trading day on your **broker's server time**, which is deliberately independent of the strategy's UTC session windows. It has **no effect in the Strategy Tester** (there is no real account to protect) and is **off by default** — turning it on never changes how the strategy itself trades, only when it is allowed to.
+
+- **InpGuardEnable** — master switch for the guardian. Off by default.
+- **InpGuardDailyLossPct** — the daily‑loss limit, as a percent of the day's starting equity (e.g. 4%).
+- **InpGuardOverallDDPct** — the maximum overall drawdown limit, as a percent (e.g. 8%).
+- **InpGuardBufferPct** — a safety margin: act this many percent *before* each line, so you stop short of the hard limit rather than on it.
+- **InpGuardDDAnchor** — what the overall drawdown is measured from: `0` = the running equity peak (trailing, the stricter choice most firms use), `1` = the initial account balance (static).
+- **InpGuardManualDayAnchor** — optionally pin the day's starting equity by hand (0 = work it out automatically, including reconstructing it from your closed‑trade history on a mid‑day restart).
+- **InpGuardFlatten** — what to do when a line is reached: `true` closes all of this EA's open positions immediately; `false` simply blocks new entries and lets existing trades manage themselves out.
+
+> Set the percentages to match **your** firm's actual rules, and always confirm the behaviour on a demo account first. The defaults (4% / 8%) are generic, conservative placeholders — not a claim about any specific firm.
+
+### Live trade CSV log (live only, off by default)
+
+- **InpLiveTradeCsv** — when on, every time a trade closes the EA appends one row to a plain CSV file in your terminal's `MQL5/Files` folder, named `KKTrades_MasterVP_<symbol>_<login>.csv`. Each row records the close time, volume, price, profit, swap, commission, net result, comment, and resulting balance — handy for your own record‑keeping or a spreadsheet. The row is written the instant the trade closes, so a crash never loses a completed trade. This is **separate** from `InpExportParity` (which is a tester‑only developer file) and is **skipped in the Strategy Tester**.
+
+### Notifications (live only, off by default)
+
+Optional trade alerts to Discord, Telegram, and/or Email. Off by default; **skipped in the Strategy Tester** so backtests never send anything.
+
+- **InpNotifyChannel** — where alerts go: `0` none, `1` Email, `2` Discord, `3` Telegram, `4` Email + Discord, `5` Email + Telegram, `6` Discord + Telegram, `7` all three.
+- **InpNotifyMode** — `1` Full (symbol, action, size, entry/stop/target, net result) or `2` Simplified (symbol + action + win/loss only — a prop‑safe format that hides exact levels).
+- **InpDiscordWebhookUrl** — your Discord channel webhook URL (Discord → channel settings → Integrations → Webhooks).
+- **InpTelegramBotToken** — your Telegram bot token (from @BotFather).
+- **InpTelegramChatId** — the Telegram chat or group ID to send to (group IDs are negative numbers).
+
+> For Discord/Telegram to work you must allow web requests: **Tools → Options → Expert Advisors → Allow WebRequest for listed URL**, and add `https://discord.com` and `https://api.telegram.org`. For Email, set your SMTP details under **Tools → Options → Email**. Test all of this with the validator EA below *before* you rely on it.
+
+### Validating notifications and the guardian before you deploy
+
+A small helper EA, **`TestDeployOps`**, ships alongside KK‑MasterVP for exactly this. Drag it onto any chart (a demo chart is fine), paste in the same Discord webhook / Telegram token / chat ID you intend to use, and it will: run the guardian's internal maths checks, send a **real** test message to each channel you configured (so you can confirm it actually arrives), and create a sample trade‑CSV row. It prints a `PASS`/`FAIL` summary to the **Experts** log and then removes itself. If a channel shows `FAIL` or nothing arrives, fix the WebRequest/SMTP settings above before going live. Running this once is the recommended last step before deployment.
 
 ## 6. A calm way to run it
 
