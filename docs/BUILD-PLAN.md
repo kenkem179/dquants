@@ -71,7 +71,12 @@ What remains genuinely open:
     → MC → overfitting gate. BTC locks MT5-confirm before trust ([[mastervp-t3-reversion-lock]]). Combine with
     **H7** (BTC-M3 re-sweep) — hours are part of that config space.
 
-- [ ] **H9 — Re-validate the EXIT cluster on the MT5 optimizer (laddered/partial TP first).** Directly from the
+- [~] **H9 — Re-validate the EXIT cluster on the MT5 optimizer (laddered/partial TP first).** Directly from the
+  > **PREPPED 2026-06-26 (autopilot):** internal sweep EA `KK-MasterVP-Debug.mq5` ships (KK_IN macro exposes
+  > ALL params; curated EA byte-identical, compiles 0/0). 3 optimizer `.set` ready in `mql5/experts/KK-MasterVP/`
+  > (A=partial-TP InpTp1ClosePct×InpTp1R; B=BeBuf×Trail×RR plateau; C=prog-trail ladder, Debug-only) + plan
+  > `research/mastervp_parity/H9_MT5_OPTIMIZER_PLAN.md`. ▶ user runs them (A→C→B). True discrete multi-rung TP
+  > ladder still needs a default-OFF `pm_ladder` code build (greenlight → Grid D).
   skepticism note above: the prior engine-side rejections of partial/laddered TP ([[mastervp-profit-lock-ladder]],
   TP1-bank, conviction-protect — all "REJECTED" in the archive) were judged by the **C++ exit model the runner-RR
   miss just proved unreliable**. Re-open them, but this time sweep on the **MT5 Strategy-Tester optimizer**, not

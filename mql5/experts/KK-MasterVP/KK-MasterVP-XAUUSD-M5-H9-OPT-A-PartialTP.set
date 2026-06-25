@@ -1,0 +1,103 @@
+; KK-MasterVP XAUUSD M5 — H9 OPTIMIZER GRID A: PARTIAL-TP BANK (2026-06-26)
+; PURPOSE: re-judge "bank a partial at TP1 then let the runner ride" on the MT5 Strategy-Tester
+;   optimizer (NOT the C++ engine — its exit model over-credits the trailed runner and is untrusted).
+; BASE = the XAU M5 FINAL LOCK (RunnerRr 4.0 / TrailAtrMult 2.75 / BeBuf 0.02; MT5 +87,836 / PF 1.413).
+; SWEPT (only these two have ,F=1):
+;   InpTp1ClosePct  0 -> 50 step 10   (% of position banked at TP1; 0 = the lock baseline / control row)
+;   InpTp1R         0.6 -> 1.4 step 0.2 (TP1 distance in R)
+;   => 6 x 5 = 30 passes.
+; RUN: Strategy Tester -> KK-MasterVP, XAUUSD, M5, "Every tick based on real ticks",
+;   2025.06.01 -> 2026.05.29, deposit 10000, optimization = "Slow complete algorithm" (or Fast),
+;   rank by Profit Factor (NOT net profit — the RR3.2 net-chasing trap). A winner must beat the
+;   lock (PF 1.413, net +87,836, maxDD ~21%) on PF AND not worsen DD, then pass research/stats/gate.py.
+; EXPECTATION (prior engine + single-split studies, now to be MT5-confirmed): banking any % likely
+;   caps the runner and HURTS (InpTp1ClosePct=0 wins). If MT5 disagrees with that prior, MT5 wins.
+;
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpAsiaSess=21:00-03:00
+InpAtrLen=14
+InpAtrMt5Mode=false
+InpAvoidNews=false
+InpBeAfterTp1=true
+InpBeBufAtr=0.02
+InpBlockedHoursStr=4,16,17
+InpBodyPctMin=0.6
+InpBreakBufAtr=0.85
+InpBreakMaxAtr=1000000
+InpBrkRequireFlow=false
+InpBrkVetoSfp=false
+InpDailyDDCooldownHrs=12.0
+InpDeviationPoints=200
+InpDiSpreadMin=8.0
+InpEmaFast=24
+InpEmaSepAtr=0.25
+InpEmaSlow=194
+InpEnableBreakout=true
+InpForceCloseSessNews=false
+InpLdnSess=03:00-11:00
+InpLossStreakCooldownHrs=4.0
+InpLossStreakCount=0
+InpMVPMagic=5252510
+InpMasterMult=4
+InpMaxAtrPct=0.0
+InpMaxDailyDDPct=10.0
+InpMaxLot=0.0
+InpMaxPeakDDPct=0.0
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+InpMaxTradesPerSession=4
+InpMinAtrPct=0.0
+InpMinAtrTicks=40
+InpMtfHardVeto=true
+InpNewsMinsAfter=15
+InpNewsMinsBefore=15
+InpNodeDecay=0.94
+InpNodeGateEnabled=false
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpNodeTouchAtr=0.05
+InpNySess=14:00-21:00
+InpRetestAtr=0.1
+InpRiskAccPct=1.0
+InpRiskUnit=0
+InpRiskUsd=180.0
+InpRrBrk=1.8
+InpRrRev=1.2
+InpRsiLen=14
+InpRsiMidline=50.0
+InpRunnerRr=4.0
+InpSfpFlowMin=0.15
+InpSkipIfMinLotOverRisk=false
+InpSlAtrBrk=1.2
+InpSlAtrRev=1.5
+InpSoftBlockDDPct=0.0
+InpSoftBlockLotMult=0.55
+InpTp1ClosePct=0.0
+InpTp1ClosePct,F=1
+InpTp1ClosePct,1=0
+InpTp1ClosePct,2=10
+InpTp1ClosePct,3=50
+InpTp1R=0.8
+InpTp1R,F=1
+InpTp1R,1=0.6
+InpTp1R,2=0.2
+InpTp1R,3=1.4
+InpTrailAtrMult=2.75
+InpTrailRunner=true
+InpUseEmbeddedNews=true
+InpUseMomVeto=false
+InpUseMtfAgree=false
+InpUsePriorBarVP=false
+InpVaPct=70.0
+InpVpBins=30
+InpVpLookback=108
+InpEnableReversion=true
+InpRevTpMpoc=false
+InpTrailRev=-1
+InpTrailBrk=-1
+InpTrailImp=-1
+InpTrailXRev=-1
+InpEnableExtremeReversion=false
+InpXRevTpMpoc=false
+InpExportParity=false

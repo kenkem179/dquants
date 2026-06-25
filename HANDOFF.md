@@ -1,5 +1,31 @@
 # HANDOFF — read me first, update me last
 
+## ⚡ AUTOPILOT 2026-06-26 — H9 EXIT-CLUSTER MT5 sweeps PREPPED + internal Debug EA shipped
+**Context:** user going to sleep, asked for the #1 MT5 item + autopilot. The #1 item = **H9: re-judge the
+EXIT cluster on the MT5 optimizer** (engine exit model untrusted — user found the RR4.0/Trail2.75 lock on
+MT5 themselves). Built the runnable deliverables so it's drop-in when they wake. Branch `2-stabilization`.
+- **🆕 Internal sweep EA `KK-MasterVP-Debug.mq5` (compiles 0/0).** User's idea: keep the curated/marketplace
+  EA exactly as-is (only safe params visible); make a separate Debug/Internal build with **ALL** sweepable
+  params exposed. Implemented single-source via a **`KK_IN` macro** in `Inputs.mqh`: normal build `KK_IN`→
+  nothing (plain hidden global, **byte-identical**, invisible to the market-edition text transform which
+  greps a literal `input`); Debug build `#define KK_DEBUG_EXPOSE_ALL`→`KK_IN`=`input` so every hidden
+  strategy/Pm* param shows in the optimizer. 94 globals KK_IN-prefixed; account-lock/expiry NOT exposed.
+  **Verified:** curated `KK-MasterVP.ex5` recompiles 0/0, literal `input ` count unchanged 51→51 (market
+  surface identical); `make -C cpp_core test` green; Debug EA compiles 0/0 with full surface. NEVER ship Debug.
+- **3 optimizer `.set` (in `mql5/experts/KK-MasterVP/`, load via Tester→Inputs→Load from `dquants/KK-MasterVP/`):**
+  **A** `…-H9-OPT-A-PartialTP.set` (InpTp1ClosePct×InpTp1R, 30 passes, either EA) · **B** `…-H9-OPT-B-BeTrailRr.set`
+  (InpBeBufAtr×InpTrailAtrMult×InpRunnerRr, 80, plateau re-confirm) · **C** `…-H9-OPT-C-ProgTrailLadder.set`
+  (InpPmProgTrail ON + trigger/increment/step, 36, **Debug EA only** — the "ladder/ratchet" idea).
+- **Plan doc `research/mastervp_parity/H9_MT5_OPTIMIZER_PLAN.md`** — exact Strategy-Tester settings (XAUUSD M5,
+  every-tick real ticks, 2025.06.01–2026.05.29, dep 10k, rank by **PF not net**), per-grid ranges, pass bar
+  (beat PF 1.413, both year sub-folds, then gate.py), run order A→C→B.
+- **▶ NEXT (USER, when awake):** run Grid A (then C, then B) on **KK-MasterVP-Debug**, XAUUSD M5. Adopt only a
+  candidate that beats the lock on PF+robustness+both folds, then gate it. ⚠️ A **true discrete multi-rung TP
+  ladder** (bank 1/3 @1R, @2R, trail rest) is NOT built — prog-trail (C) + partial (A) are the closest levers;
+  say the word and I'll build a default-OFF `pm_ladder` (C++ + MQL, golden-parity) + a Grid D.
+- **Also still waiting on you (separate, release-blocker):** D1–D3 deployment demo validation (drag
+  `TestDeployOps`; run KK-MasterVP `InpGuardEnable=true` on 2 charts) — unblocks the MasterVP release/bump.
+
 ## ✅ MQL5 MARKET VALIDATION FIX — MasterVP modify "close to market" (2026-06-26) — re-cut 1.06, NO bump
 **Error (validator, EURUSD H1):** `failed modify ... [Modification ... close to market]` — repeated on a
 trailing buy. **Cause:** MasterVP `KKMinStopDist` returned `max(stops_level,freeze_level)*pt` with NO

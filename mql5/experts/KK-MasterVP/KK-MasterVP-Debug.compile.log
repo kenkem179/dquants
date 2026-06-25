@@ -1,8 +1,8 @@
 
 
-Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP.mq5 : information: compiling Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP.mq5
-Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Inputs.mqh
-Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP-Debug.mq5 : information: compiling Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP-Debug.mq5
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP-Debug.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Inputs.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/experts/KK-MasterVP/KK-MasterVP-Debug.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including C:\Program Files\MetaTrader 5\MQL5\Include\Trade\Trade.mqh
 C:\Program Files\MetaTrader 5\MQL5\Include\Trade\Trade.mqh : information: including C:\Program Files\MetaTrader 5\MQL5\Include\Object.mqh
 C:\Program Files\MetaTrader 5\MQL5\Include\Object.mqh : information: including C:\Program Files\MetaTrader 5\MQL5\Include\StdLibErr.mqh
@@ -63,4 +63,4 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
  : information: generating code 95%
  : information: generating code 100%
  : information: code generated
-Result: 0 errors, 0 warnings, 2135 ms elapsed, cpu='X64 Regular'
+Result: 0 errors, 0 warnings, 2189 ms elapsed, cpu='X64 Regular'
