@@ -22,7 +22,7 @@
 #property description "Shows master/local POC & value area, a net-flow histogram, EMA"
 #property description "trend context and historical breakout setup markers (WON/LOST)."
 #property description "Draws context only - it places no orders and gives no signals."
-#property description "Educational tool only - not financial advice. Trading carries risk."
+#property description "Analysis tool - not financial advice. Trading carries risk of loss."
 #property description "For more details, visit https://kenkem.biz"
 #property indicator_chart_window
 #property indicator_buffers 11

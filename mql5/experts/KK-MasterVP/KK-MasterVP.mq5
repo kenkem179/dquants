@@ -13,7 +13,8 @@
 #property description "Trades confirmed breaks of the master value area with ATR-based"
 #property description "stops, break-even and trailing management, plus a daily/overall"
 #property description "drawdown guard for prop-firm rules."
-#property description "Educational tool only - not financial advice. Trading carries risk."
+#property description "Automated trading software - not financial advice and no profit"
+#property description "guarantee. Trading carries risk of loss; use at your own risk."
 #property description "For more details, visit https://kenkem.biz"
 
 #include "Inputs.mqh"

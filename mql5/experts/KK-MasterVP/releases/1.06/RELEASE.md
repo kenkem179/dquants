@@ -1,7 +1,7 @@
 # KK-MasterVP — release 1.06
 
-- Built: `2026-06-25T11:12:41Z` (UTC)
-- Source commit: `d133a83` on `UTC-time-fix`
+- Built: `2026-06-25T11:19:52Z` (UTC)
+- Source commit: `7b3e486` on `UTC-time-fix`
 - EA: `KK-MasterVP-1.06.ex5` (locked build of `KK-MasterVP.mq5`)
 
 ## Parameter sets
