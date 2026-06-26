@@ -49,6 +49,14 @@ Sweep dispersion (36 passes, for the gate): ExpPayoff mean 53.26 / std 8.60 USD/
 0.045; winner ExpPayoff 63.71. `sr_trial_std` (in gate per-trade units) = std(ExpPayoff)/σ_usd_pertrade —
 σ comes from the winner's `trades_*.csv` (computed once the FULL run is in). n_trials = 36.
 
+VALIDATION PROGRESS:
+- ✅ **Run 1 (FULL) DONE 2026-06-26.** Flat-risk trade stream (`trades_H9C_validate_full.csv`):
+  **net 86,034 / PF 1.4246 / 1423 tr / 52.5% win**, vs lock flat-risk stream (83,227 / PF 1.413) →
+  beats lock on net (+3.4%) AND PF (+0.012). σ_usd/trade = 635.05 → `sr_trial_std` = std(EP)/σ = 8.60/635 = 0.0135.
+- ✅ **GATE PASS.** `gate.py --n-trials 36 --sr-trial-std 0.0135`: per-trade Sharpe 0.109 (lock 0.108),
+  PSR 1.000, MinTRL 192<1423, **DSR 1.000 → PASS**.
+- ⏳ Run 2 + Run 3 (sub-folds) PENDING.
+
 Remaining steps (need MT5 — user action):
 1. **Run the validation `.set` 3×** on KK-MasterVP / XAUUSD / M5 / every-tick real ticks / deposit 10000:
    (a) FULL 2025.06.01→2026.05.29, (b) 2025.06.01→2025.12.31, (c) 2026.01.01→2026.05.29.
