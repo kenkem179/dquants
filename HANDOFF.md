@@ -1,5 +1,36 @@
 # HANDOFF — read me first, update me last
 
+## 🟢 H9 MT5 OPTIMIZER RESULTS IN (2026-06-26 pm) — A=lock holds · B=INVALID · C=WINNER candidate (ProgTrail late-arm)
+User ran Grids A, B, C on the MT5 optimizer (KK-MasterVP-Debug, XAU M5, real ticks, 2025.06.01–2026.05.29,
+10k). MT5 writes no XML to disk except one manual export; results live in binary `Tester/cache/*.opt`. I
+reverse-engineered the `.opt` layout and parse it via **`scripts/parse_mt5_opt.py`** (records at file tail,
+REC=280+8·n_params; validated by reproducing Run A's ReportOptimizer XML exactly). Results +
+CSVs: **`research/mastervp_parity/H9_results/`** (`FINDINGS.md` + per-grid CSV).
+- **A (Partial-TP, 30 passes) → LOCK HOLDS.** Winner = `InpTp1ClosePct=0` (87,838/PF1.436/DD14.5). Banking
+  any % strictly lowers PF. Partial-TP rejected again.
+- **B (BE×Trail×RR, 80 passes) → ⚠️ INVALID, RE-RUN.** Was run with `InpPmProgTrail=true` left ON at the bad
+  default ladder (1.0/0.5/0.1) in the base → every pass had a runner-choking ladder. PROOF: B's lock-coord
+  row `(0.02,4.0,2.75)`=`64386.51/1.3698/1427/DD20.05` is BYTE-IDENTICAL to C's `(1.0/0.5/0.1)` row. B tells
+  us nothing about pure exit geometry. **Re-run B with `InpPmProgTrail=false`** (optional — see C).
+- **C (ProgTrail ladder, 36 passes) → 🟢 WINNER CANDIDATE.** 16/36 beat lock PF. Clean signal: **arm the
+  ladder LATE (Trigger=2.0R)** — all Trig-2.0 passes dominate; Trig-1.0 (early) is worst (the same choke that
+  killed B). Flat plateau (Trig2.0, Inc≥0.5): 8 configs within PF 0.010, net 86.6–91.0k, DD 14.4–14.5, ~1425
+  tr (entries unchanged = pure exit win). Best `2.0/0.75/0.3`=90,097/**1.450**/DD14.4 BEATS lock
+  (87,838/1.436/14.5) on PF + net + DD. Central pick: **Trigger 2.0 / Increment 0.75 / Step 0.2**
+  (90,781/1.448/DD14.5).
+- **✅ VALIDATION PREPPED (2026-06-26 pm, autopilot).** Winner = **Trigger 2.0 / Inc 0.75 / Step 0.2**.
+  Wrote validation `.set` **`KK-MasterVP-XAUUSD-M5-H9C-Validate.set`** (production EA, lock + ONLY the 4
+  ProgTrail keys flipped, `InpExportParity=true`); synced to Presets. Confirmed `ProfitManager.mqh:68`
+  actually implements the ladder + production `Inputs.mqh:168` wires it (NOT a no-op). Sweep dispersion
+  recorded: ExpPayoff std 8.60 USD/tr, n_trials=36.
+- **▶ BLOCKED ON USER MT5 (3 single passes of the validation `.set`):** KK-MasterVP / XAUUSD / M5 /
+  every-tick real ticks / deposit 10000 — (a) FULL 2025.06.01→2026.05.29, (b) 2025.06.01→2025.12.31,
+  (c) 2026.01.01→2026.05.29. Pass bar: beat lock on BOTH sub-folds (2025 PF>1.367, 2026 PF>1.437).
+  Then I: run gate.py on run-(a) `trades_*.csv` (need DSR≥0.95), and if all pass, copy the 4 keys into
+  the lock `.set`, re-lock, update best-experts table, `make release`. UNCOMMITTED (H9 results + this prep).
+- ⚠️ **Collection note:** to hand me an optimization result, either (a) leave the `.opt` in MT5 cache and I
+  parse it, or (b) right-click Optimization Results → Export to XML. The `.opt` parser is the reliable path now.
+
 ## ⚡ AUTOPILOT 2026-06-26 (pm) — "SAFER EA" thrust: release allowlist + H10a/H10b/H11 (commits 8fbb815, e983755)
 **Context:** user doubts the laddered-TP lock + wants a "don't give profit back / no over-trading" safety
 mechanism, and asked me to (1) pin the marketplace param surface so I can sweep freely, then (2) autopilot the
