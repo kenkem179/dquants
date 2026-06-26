@@ -73,7 +73,7 @@ bool KKResolveTrail(const Signal &sig)
    return (ov>=0)?(ov!=0):InpTrailRunner;
 }
 // risk-manager state (port of RiskManager.mqh)
-double   g_peakEquity=0.0, g_dayStartEquity=0.0;
+double   g_peakEquity=0.0, g_dayStartEquity=0.0, g_dayPeakEquity=0.0;   // g_dayPeakEquity: H10c giveback
 int      g_lastDayKey=-1;
 datetime g_cooldownUntil=0;
 
@@ -129,7 +129,7 @@ int OnInit()
    g_vppl=(ts>0)?tv/ts:SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
 
    g_peakEquity=AccountInfoDouble(ACCOUNT_EQUITY);
-   g_dayStartEquity=g_peakEquity; g_lastDayKey=-1; g_cooldownUntil=0;
+   g_dayStartEquity=g_peakEquity; g_dayPeakEquity=g_peakEquity; g_lastDayKey=-1; g_cooldownUntil=0;
 
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
@@ -227,6 +227,16 @@ bool IsDailyDDHit(double eq,double nextRiskBudget){
    double proj=MathMax(0.0,(g_dayStartEquity-eq+nextRiskBudget)/g_dayStartEquity*100.0);
    return proj>=InpMaxDailyDDPct;
 }
+// H10c session-giveback halt: stand down for the rest of the day once the account has handed back
+// >= InpGivebackPct of the day's peak gain. Arms only on a green day (dayPeak>dayStart); evaluated
+// flat at the entry gate so the open runner is never truncated. 0 = OFF.
+bool IsGivebackHalt(double eq){
+   if(InpGivebackPct<=0.0 || g_dayStartEquity<=0.0) return false;
+   double gain=g_dayPeakEquity-g_dayStartEquity;
+   if(gain<=0.0) return false;
+   double givenback=g_dayPeakEquity-eq;
+   return givenback>=InpGivebackPct/100.0*gain;
+}
 bool IsInCooldown(){ return g_cooldownUntil>0 && TimeCurrent()<g_cooldownUntil; }
 void ArmCooldown(double hours){
    if(hours<=0.0) return;
@@ -247,7 +257,7 @@ void OnNewBar()
    MqlDateTime rdt; TimeToStruct(utc,rdt);
    int dayKey=rdt.year*10000+rdt.mon*100+rdt.day;
    int sessionId=SN_UpdateSession(utc);
-   if(g_dayStartEquity<=0.0 || dayKey!=g_lastDayKey){ g_dayStartEquity=eq; g_lastDayKey=dayKey; }
+   if(g_dayStartEquity<=0.0 || dayKey!=g_lastDayKey){ g_dayStartEquity=eq; g_dayPeakEquity=eq; g_lastDayKey=dayKey; }  // H10c: reset giveback peak on new day
    // arm the daily-DD cooldown the moment realized daily DD breaches the cap (no extra risk).
    if(InpDailyDDCooldownHrs>0.0 && IsDailyDDHit(eq,0.0)) ArmCooldown(InpDailyDDCooldownHrs);
 
@@ -351,6 +361,7 @@ void OnNewBar()
    double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID), ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    if(InpMaxSpreadPips>0.0 && g_pip>0.0 && (ask-bid)/g_pip>InpMaxSpreadPips) return;    // spread (off)
    if(!SN_MaxTradesOk()) return;                                            // max trades/session
+   if(IsGivebackHalt(eq)) return;                                           // H10c session giveback halt (off)
    if(IsDailyDDHit(eq,nextBudget)) return;                                  // daily DD (predictive)
    if(IsPeakDDHalt(eq)) return;                                             // peak DD halt (off)
    if(IsInCooldown()) return;                                               // cooldown
@@ -540,6 +551,7 @@ void OnTick()
 {
    double eq=AccountInfoDouble(ACCOUNT_EQUITY);
    if(eq>g_peakEquity) g_peakEquity=eq;   // monotonic peak (UpdatePeakEquity)
+   if(eq>g_dayPeakEquity) g_dayPeakEquity=eq;   // H10c: intraday peak trails within the day
 
    // Access expiry (server-time): once past the baked date, stop opening new
    // trades. MvpManage() below still runs, so any OPEN position keeps its

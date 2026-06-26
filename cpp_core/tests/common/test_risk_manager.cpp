@@ -69,6 +69,36 @@ static void test_daily_dd_predictive_and_reset() {
     KK_CHECK(!rm.is_daily_dd_hit(9500.0, 100.0));    // day-start now 9500
 }
 
+static void test_giveback_halt() {
+    Params p = specs();
+    p.giveback_pct = 50.0;                  // stand down after handing back half the day's gain
+    RiskManager rm; rm.reset(p);
+    rm.seed_day_if_new(20260409, 10000.0);  // day-start = 10000
+    KK_CHECK(!rm.is_giveback_halt(10000.0));         // flat day, no peak gain yet
+    rm.update_peak(10400.0);                          // day went +400 green
+    KK_CHECK(!rm.is_giveback_halt(10300.0));          // gave back 100 of 400 = 25% < 50%
+    KK_CHECK(rm.is_giveback_halt(10200.0));           // gave back 200 of 400 = 50% -> halt
+    KK_CHECK(rm.is_giveback_halt(10000.0));           // gave it all back -> still halted
+    // Threshold trails the peak: a new high lifts the absolute giveback allowed.
+    rm.update_peak(10800.0);                          // gain now 800
+    KK_CHECK(!rm.is_giveback_halt(10500.0));          // gave back 300 of 800 = 37.5% < 50%
+    // New trading day reseeds day-start AND day-peak -> halt clears.
+    rm.seed_day_if_new(20260410, 10500.0);
+    KK_CHECK(!rm.is_giveback_halt(10500.0));
+    // OFF (0) never halts even after a big giveback.
+    p.giveback_pct = 0.0;
+    RiskManager rm2; rm2.reset(p);
+    rm2.seed_day_if_new(20260409, 10000.0);
+    rm2.update_peak(11000.0);
+    KK_CHECK(!rm2.is_giveback_halt(10000.0));
+    // Red day (never green) never arms.
+    p.giveback_pct = 50.0;
+    RiskManager rm3; rm3.reset(p);
+    rm3.seed_day_if_new(20260409, 10000.0);
+    rm3.update_peak(10000.0);                          // no gain
+    KK_CHECK(!rm3.is_giveback_halt(9500.0));           // down on the day -> daily-DD's job, not giveback's
+}
+
 static void test_loss_streak_cooldown() {
     Params p = specs();
     RiskManager rm; rm.reset(p);
@@ -100,6 +130,7 @@ void run_all() {
     KK_RUN(test_peak_dd_halt);
     KK_RUN(test_min_lot_over_risk_guard);
     KK_RUN(test_daily_dd_predictive_and_reset);
+    KK_RUN(test_giveback_halt);
     KK_RUN(test_loss_streak_cooldown);
     KK_RUN(test_cooldown_extend_only);
 }

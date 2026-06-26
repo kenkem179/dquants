@@ -38,6 +38,8 @@ input double InpMaxPeakDDPct    = 0.0;      // Account DD % that halts trading (
 input double InpSoftBlockLotMult= 0.55;     // Lot multiplier while trading smaller (e.g. 0.55 = 55%)
 input int    InpLossStreakCount = 0;        // Consecutive losses that pause trading (0 = off)
 input double InpLossStreakCooldownHrs = 4.0;// Pause length (hours) after a loss streak
+// H10c session-giveback stop (default OFF; KK_IN = hidden in market, exposed in Debug for the optimizer).
+KK_IN double InpGivebackPct     = 0.0;      // Halt new entries after handing back this % of the day's peak gain (0 = off)
 
 
 // Sessions are configured + evaluated in UTC. The EA auto-detects the broker/VPS

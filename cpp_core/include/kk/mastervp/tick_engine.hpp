@@ -502,6 +502,7 @@ private:
         if (!atr_ticks_ok(ev.atr1, p_)) { blk("ATR ticks floor"); return; }
         if (!spread_ok(t.bid, t.ask, p_)) { blk("spread"); return; }
         if (!sess_.max_trades_ok()) { blk("max trades/session"); return; }
+        if (rm_.is_giveback_halt(equity_)) { blk("giveback halt"); return; }
         if (rm_.is_daily_dd_hit(equity_, risk_budget)) { blk("daily DD"); return; }
         if (sess_.is_blocked_hour(u.hour)) { blk("blocked hour"); return; }
         if (rm_.is_peak_dd_halt(equity_)) { blk("peak DD halt"); return; }

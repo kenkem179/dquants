@@ -186,6 +186,10 @@ struct Params {
     int    loss_streak_count  = 3;
     double loss_streak_cooldown_hrs = 4.0;
     double daily_dd_cooldown_hrs    = 12.0;
+    // H10c session-giveback stop: once the day has given back >= this % of its peak gain
+    // (dayPeak - equity)/(dayPeak - dayStart), halt NEW entries for the rest of the day
+    // (never truncates the open runner). 0 = OFF (byte-identical to the lock).
+    double giveback_pct       = 0.0;
     double max_lot            = 0.0;
     int    deviation_points   = 200;
     bool   skip_if_minlot_over_risk = false;
@@ -425,6 +429,7 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpLossStreakCount") p.loss_streak_count = I();
     else if (key == "InpLossStreakCooldownHrs") p.loss_streak_cooldown_hrs = D();
     else if (key == "InpDailyDDCooldownHrs") p.daily_dd_cooldown_hrs = D();
+    else if (key == "InpGivebackPct") p.giveback_pct = D();
     else if (key == "InpMaxLot") p.max_lot = D();
     else if (key == "InpDeviationPoints") p.deviation_points = I();
     else if (key == "InpSkipIfMinLotOverRisk") p.skip_if_minlot_over_risk = to_bool(val);

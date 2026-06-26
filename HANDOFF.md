@@ -1,5 +1,25 @@
 # HANDOFF — read me first, update me last
 
+## 🟢 H10c SESSION-GIVEBACK STOP — BUILT + golden-parity clean (2026-06-26) — ▶ awaiting USER MT5 sweep
+User's standing "MasterVP chases breakouts, gives good trades back to the market" thrust. After H10a (anti-chase
+cap → HURTS) and H10b (giveback is an EXIT not entry problem; localized to *day-already-green*), built the one
+surgical lever left: **`InpGivebackPct`** — halt NEW entries once the day has handed back ≥ X% of its peak GAIN
+`(dayPeak-equity) >= X%·(dayPeak-dayStart)`, arms only on a green day, evaluated FLAT at the entry gate so the
+**open runner is never truncated** (the failure mode that killed every per-trade clip — [[mastervp-flow-exit-rejected]]).
+Resets each trading day (reuses the daily-DD day-roll).
+- **C++:** `Params::giveback_pct` (config.hpp +parse), `RiskManager::is_giveback_halt` + `day_peak_equity_`
+  (risk_manager.hpp), entry gate in `tick_engine.hpp` (after max-trades, before daily-DD). Unit test
+  `test_giveback_halt` (green/red/trailing/reset/OFF). **`make test` 37+240 green.**
+- **MQL5 1:1 port:** `InpGivebackPct` (KK_IN = hidden in market, exposed in Debug), `IsGivebackHalt`/
+  `g_dayPeakEquity` in Engine.mqh; gate after `SN_MaxTradesOk`. Curated EA + Debug EA both compile 0/0.
+- **DEFAULT 0 = OFF → base byte-identical:** trade-diff vs HEAD binary on the locked set = EMPTY; market
+  `input` surface unchanged vs HEAD (KK_IN keeps it hidden). Smoke test ON@50% fires (113→33 trades on a window).
+- **⚠️ ENGINE NOT TRUSTED on this** — giveback is exit-path-dependent; engine over-credits runners. MT5 is judge.
+- **▶ NEXT (USER, MT5 optimizer):** run **`mql5/experts/KK-MasterVP/KK-MasterVP-XAUUSD-M5-H10c-OPT-Giveback.set`**
+  on **KK-MasterVP-Debug**, XAUUSD M5, every-tick real ticks, 2025.06.01–2026.05.29, dep 10k, rank by **PF**
+  (10 passes, InpGivebackPct 0→90; 0=OFF control in-run). Adopt a value ONLY if it beats the lock (PF 1.4246)
+  on PF AND maxDD on BOTH year sub-folds, then gate.py. Uncommitted at handoff write → committing this session.
+
 ## 🟢 H9 MT5 OPTIMIZER RESULTS IN (2026-06-26 pm) — A=lock holds · B=INVALID · C=WINNER candidate (ProgTrail late-arm)
 User ran Grids A, B, C on the MT5 optimizer (KK-MasterVP-Debug, XAU M5, real ticks, 2025.06.01–2026.05.29,
 10k). MT5 writes no XML to disk except one manual export; results live in binary `Tester/cache/*.opt`. I

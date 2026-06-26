@@ -21,6 +21,7 @@ public:
         balance_ = p.start_balance;
         peak_equity_ = balance_;
         day_start_equity_ = balance_;
+        day_peak_equity_ = balance_;
         last_day_key_ = -1;
         cooldown_until_ms_ = 0;
         consecutive_losses_ = 0;
@@ -32,12 +33,15 @@ public:
     // Per-tick: peak equity is monotonic in live equity (matches UpdatePeakEquity every tick).
     void update_peak(double equity) {
         if (equity > 0.0 && (peak_equity_ <= 0.0 || equity > peak_equity_)) peak_equity_ = equity;
+        // H10c: day-peak resets each trading day (in seed_day_if_new) and trails within the day.
+        if (equity > 0.0 && (day_peak_equity_ <= 0.0 || equity > day_peak_equity_)) day_peak_equity_ = equity;
     }
 
     // Per bar: reset day-start equity on a UTC calendar-date change (utc_day_key = yyyymmdd).
     void seed_day_if_new(int utc_day_key, double equity) {
         if (day_start_equity_ <= 0.0 || utc_day_key != last_day_key_) {
             day_start_equity_ = equity;
+            day_peak_equity_ = equity;   // H10c: new trading day -> reset the giveback peak
             last_day_key_ = utc_day_key;
         }
     }
@@ -75,6 +79,18 @@ public:
         const double proj = std::max(0.0,
             (day_start_equity_ - equity + next_risk_budget) / day_start_equity_ * 100.0);
         return proj >= p.max_daily_dd_pct;
+    }
+
+    // H10c session-giveback halt: stand down for the rest of the day once the account has handed back
+    // >= giveback_pct of the day's peak gain. Only arms on a green day (day_peak > day_start); flat at
+    // the entry gate so `equity` is realized — never truncates the open runner. 0 = OFF.
+    bool is_giveback_halt(double equity) const {
+        const Params& p = *p_;
+        if (p.giveback_pct <= 0.0 || day_start_equity_ <= 0.0) return false;
+        const double gain = day_peak_equity_ - day_start_equity_;
+        if (gain <= 0.0) return false;                       // day never went green -> nothing to give back
+        const double givenback = day_peak_equity_ - equity;  // >= 0 once below the day peak
+        return givenback >= p.giveback_pct / 100.0 * gain;
     }
 
     bool is_in_cooldown(int64_t ts_ms) const { return cooldown_until_ms_ > 0 && ts_ms < cooldown_until_ms_; }
@@ -129,7 +145,7 @@ public:
 
 private:
     const Params* p_ = nullptr;
-    double  balance_ = 0.0, peak_equity_ = 0.0, day_start_equity_ = 0.0;
+    double  balance_ = 0.0, peak_equity_ = 0.0, day_start_equity_ = 0.0, day_peak_equity_ = 0.0;
     int     last_day_key_ = -1;
     int64_t cooldown_until_ms_ = 0;
     int     consecutive_losses_ = 0;

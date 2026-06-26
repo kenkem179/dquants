@@ -122,14 +122,18 @@ What remains genuinely open:
     (suspect) and a prior study found clipping per-trade round-trip giveback loses net (runner-truncation cost
     > rescue, [[mastervp-flow-exit-rejected]]) — so H10c must be a SESSION-level new-entry stop (does not
     truncate the live runner) and MT5-judged. Tools: scratchpad `h10b_autopsy.py`, `h10b_lock_trades.csv`.
-  - **H10c — Session trailing-giveback stop + loss-streak/episode counter (default-OFF, MT5-judged).** The
-    surgical form of "don't give it back": *give back at most X% of session-peak equity, then stand down* —
+  - [~] **H10c — Session trailing-giveback stop (default-OFF). BUILT 2026-06-26, awaiting MT5 verdict.** The
+    surgical form of "don't give it back": *give back at most X% of the day's peak GAIN, then stand down* —
     halts only when you're ACTUALLY giving back, not while still winning (strictly better than a hard win
-    count). Existing infra: `InpLossStreakCount`/`InpLossStreakCooldownHrs`, `InpSoftBlockDDPct`/`InpSoftBlockLotMult`,
-    `InpMaxDailyDDPct` are wired into the tick engine (`register_trade_close`, `is_daily_dd_hit`). Add a
-    session-peak trailing-giveback knob if not present. **Validate on the MT5 optimizer** (giveback is
+    count). **Implemented** as `InpGivebackPct` (C++ `giveback_pct`): halt formula `(dayPeak-equity) >=
+    X% * (dayPeak-dayStart)`, arms only on a green day, evaluated FLAT at the entry gate so it never truncates
+    the open runner; resets each trading day. `RiskManager::is_giveback_halt` + `day_peak_equity_` (C++) mirror
+    1:1 to `IsGivebackHalt`/`g_dayPeakEquity` (EA). Default 0 = OFF → **base byte-identical (trade-diff empty
+    vs HEAD), `make test` 37+240 green incl. `test_giveback_halt`, both EAs compile 0/0, market surface
+    unchanged (KK_IN hidden, Debug-exposed).** Optimizer grid `KK-MasterVP-XAUUSD-M5-H10c-OPT-Giveback.set`
+    (InpGivebackPct 0→90 step 10, 0=OFF control). **▶ Validate on the MT5 optimizer** (giveback is
     exit-path-dependent → MT5 is judge, engine is at most a cheap pre-filter); accept only if PF/maxDD improves
-    on BOTH year sub-folds (a stopped clock trivially lowers maxDD — decompose per-fold, never pool).
+    on BOTH year sub-folds (a stopped clock trivially lowers maxDD — decompose per-fold, never pool), then gate.
   - **H10d — RR / trail revisit (= H9 Grid B).** The user's "I trailed too far at RR 3.2–4.0" instinct is the
     H9 BeBuf×Trail×RR plateau — the untrusted-on-engine exit cluster, so it is **NOT settled**. Tightening the
     trail may shrink giveback more cleanly than any trade-count cap. Run as part of H9 on MT5.
