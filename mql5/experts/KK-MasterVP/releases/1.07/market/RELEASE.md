@@ -1,7 +1,7 @@
 # KK-MasterVP (MQL5-Market edition) — release 1.07
 
-- Built: `2026-06-26T14:03:32Z` (UTC)
-- Source commit: `c64a34e` on `2-stabilization`
+- Built: `2026-06-26T14:18:02Z` (UTC)
+- Source commit: `0f985a0` on `2-stabilization`
 - EA: `KK-MasterVP-Market-1.07.ex5` — strategy internals are HIDDEN (fixed);
   only the user-facing inputs (risk, profit-taking, trading hours, news, basic
   execution safety) appear in the dialog.

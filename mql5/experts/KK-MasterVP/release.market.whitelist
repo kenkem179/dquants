@@ -61,6 +61,8 @@ InpBeBufAtr
 InpRunnerRr
 InpTrailRunner
 InpTrailAtrMult
+# Profit-lock trail master TOGGLE only (Trigger/Increment/Step stay baked-hidden).
+InpPmProgTrail
 #
 # --- Prop / account-protection guard -----------------------------------------
 InpGuardEnable

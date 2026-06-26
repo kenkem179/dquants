@@ -63,6 +63,7 @@ KenKem Master Volume Sniper (KK-MasterVP) keeps the dialog short on purpose. The
 **Profit taking**
 - *TP1 close (%)* - how much of the position to bank at the first target (set 0 to let the full runner work).
 - *Break-even after TP1* - move the stop to break-even once the first target is reached.
+- *Profit-lock trail* - on by default: once a trade runs into profit it ratchets the stop up to bank more of a big winner instead of giving it back. Turn it off to let the runner ride purely on the standard trail. Your style, your call.
 
 **Trading hours to avoid**
 - *Blocked hours* - skip specific low-liquidity hours of the day, set in **UTC** (e.g. `4,16,17` or `9-11`). The EA works in fixed UTC and auto-detects your broker's server offset, so the same hours apply on any broker.

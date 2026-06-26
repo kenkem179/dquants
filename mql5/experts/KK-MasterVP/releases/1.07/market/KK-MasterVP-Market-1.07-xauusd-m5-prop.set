@@ -28,3 +28,4 @@ InpTrailAtrMult=2.75
 InpTrailRunner=true
 InpEnableReversion=true
 InpExportParity=true
+InpPmProgTrail=true

@@ -165,9 +165,11 @@ KK_IN double InpPmBeTriggerR      = 1.0;
 KK_IN double InpPmBeBufferR       = 0.0;
 // (2) prog_trail: SL->entry at trigger_r, then advance step_r per increment_r of EXTRA gain (smooth ratchet
 //     that fills the 0.8R..chandelier dead zone — the "trail SL nicely to bank profit" behaviour).
-// LOCKED 2026-06-26 (H9 MT5 optimizer): late-arm ladder ON. These are HIDDEN globals in the production
-// EA (KK_IN empty) so the .set cannot drive them -> the compiled defaults below ARE the deployed lock.
-KK_IN bool   InpPmProgTrail       = true;
+// LOCKED 2026-06-26 (H9 MT5 optimizer): late-arm ladder ON. The master TOGGLE is a real `input` (user-facing
+// in personal + Market builds, whitelisted) so traders can switch the auto profit-banking OFF and let winners
+// run to the runner cap. The 3 tuning params stay HIDDEN KK_IN globals baked at the optimized lock values
+// (Trigger 2.0R / Inc 0.75 / Step 0.2) — advanced internals, not exposed.
+input bool   InpPmProgTrail       = true;   // Profit-lock trail: ratchet the stop up to bank a runner's gains (ON=lock; OFF=let it run to the cap)
 KK_IN double InpPmProgTriggerR    = 2.0;
 KK_IN double InpPmProgIncrementR  = 0.75;
 KK_IN double InpPmProgStepR       = 0.20;

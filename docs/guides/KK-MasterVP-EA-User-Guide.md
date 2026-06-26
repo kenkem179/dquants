@@ -73,6 +73,7 @@ These are the inputs most people adjust, with their shipped **default** and a fe
 | Break-even buffer (`InpBeBufAtr`) | `0.02` | small cushion past entry, in ATR · `0.10` = a little more breathing room |
 | Runner cap (`InpRunnerRr`) | `4.0` | far take-profit at 4× risk; in practice the trail exits first |
 | Trail distance (`InpTrailAtrMult`) | `2.75` | `2.0` = tighter trail (exits sooner, protects more) · `3.5` = looser (more room to run) |
+| Profit-lock trail (`InpPmProgTrail`) | `true` | `true` ratchets the stop up once a trade runs, banking more of a big winner · `false` lets the runner ride on the plain trail to the cap |
 | Daily drawdown pause (`InpMaxDailyDDPct`) | `10` | `4.4` to respect a typical prop daily-loss rule · `0` = off |
 | Daily cooldown hrs (`InpDailyDDCooldownHrs`) | `12` | hours paused after a daily-loss hit |
 | Max total drawdown halt (`InpMaxPeakDDPct`) | `0` (off) | `9` halts trading at 9% account drawdown |
@@ -190,6 +191,7 @@ A failed‑breakout, liquidity‑sweep reversal: price pokes beyond an edge, swe
 - **InpTrailRunner** — trail the remaining position with an ATR "chandelier" trail. On by default (this is what lets a winner run).
 - **InpRunnerRr** — a far reward cap on the runner; in practice the trail decides the exit.
 - **InpTrailAtrMult** — the trailing distance, in ATR. Larger = looser trail (more room, later exit); smaller = tighter.
+- **InpPmProgTrail** — *profit‑lock trail.* On by default. Once a trade has run far enough into profit it switches on a smooth ratchet that walks the stop up step‑by‑step as the gain grows, banking more of a large winner instead of giving it back on a pullback. This is the EA's tested default and works alongside the chandelier trail above (the tighter of the two always wins). Turn it **off** if you'd rather let the runner ride purely on the plain trail out to the runner cap — your choice, your style. (The internal trigger/step values are pre‑tuned and fixed.)
 - **InpTrailBrk / InpTrailRev / InpTrailImp / InpTrailXRev** — per‑entry‑type trail overrides. `-1` inherits the global setting, `0` uses a fixed take‑profit (no trail), `1` forces a trail. All `-1` by default, so each path follows the global flag.
 
 ### Risk sizing — how big each trade is
