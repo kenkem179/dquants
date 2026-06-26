@@ -46,10 +46,10 @@ input double InpLossStreakCooldownHrs = 4.0;// Pause length (hours) after a loss
 //   Asia   : UTC 21:00-03:00  (JST 06:00-12:00 next day)
 //   Europe : UTC 03:00-11:00  (JST 12:00-20:00)
 //   US     : UTC 14:00-21:00  (JST 23:00-06:00 next day)   -> dead-zone UTC 11:00-14:00
-input group "===== Trading Time Settings ====="
 KK_IN string InpAsiaSess        = "21:00-03:00";  // Asia session, UTC (JST 06:00-12:00 next day)
 KK_IN string InpLdnSess         = "03:00-11:00";  // Europe session, UTC (JST 12:00-20:00)
 KK_IN string InpNySess          = "14:00-21:00";  // US session, UTC (JST 23:00-06:00 next day)
+input group "===== Trading Time Settings ====="
 input string InpBlockedHoursStr = "4,16,17";      // No-trade UTC hours, e.g. "4,16,17" or "8,9-11" (empty = none)
 input bool   InpForceCloseSessNews = false; // Close open trades at session end / before news
 input bool   InpAvoidNews       = false;    // Block new entries around high-impact news
@@ -190,11 +190,11 @@ KK_IN double InpPmPartialTriggerR = 1.0;
 KK_IN double InpPmPartialFrac     = 0.5;
 
 
-input group "===== Safety / volatility ====="
 KK_IN double InpMinAtrPct       = 0.0;      // ATR% band OFF
 KK_IN double InpMaxAtrPct        = 0.0;
 KK_IN double InpMinAtrTicks      = 40.0;    // Pine atrTicks floor (atr/mintick >= this)
 KK_IN double InpMaxSpreadTp1Frac = 0.0;     // TP1 cost-clearance OFF
+input group "===== Safety / volatility ====="
 input int    InpMaxTradesPerSession = 4; // Max trades per session
 input double InpMaxSpreadPips    = 0.0;     // Max spread (pips) allowed to enter (0 = off)
 
