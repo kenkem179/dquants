@@ -55,7 +55,16 @@ VALIDATION PROGRESS:
   beats lock on net (+3.4%) AND PF (+0.012). σ_usd/trade = 635.05 → `sr_trial_std` = std(EP)/σ = 8.60/635 = 0.0135.
 - ✅ **GATE PASS.** `gate.py --n-trials 36 --sr-trial-std 0.0135`: per-trade Sharpe 0.109 (lock 0.108),
   PSR 1.000, MinTRL 192<1423, **DSR 1.000 → PASS**.
-- ⏳ Run 2 + Run 3 (sub-folds) PENDING.
+- ⚠️ **Run 2 (2025 H2, 2025.06–12) MARGINAL MISS.** `trades_H9C_validate_2025H2.csv`: 858 tr, net 24,847,
+  **PF 1.3577** vs lock 2025 bar 1.367 → −0.009 (≈0.7% rel). Within window/run noise but does NOT clear the
+  "beat lock on both halves" bar outright. ⇒ pooled win must be carried by 2026; Run 3 is decisive.
+- ✅ **Run 3 (2026.01–05) BEATS.** `trades_H9C_validate_2026.csv`: 559 tr, net 16,280, **PF 1.4511** vs
+  lock 2026 bar 1.437 → +0.014. Win rate 53.3%.
+- **SCORECARD:** pooled 1.4246>1.413 ✅, 2025H2 1.3577<1.367 ⚠️(−0.009), 2026 1.4511>1.437 ✅, gate PASS.
+  Wins pooled + recent year + gate; marginal slip on 2025H2 vs a REMEMBERED bar.
+- ⏳ **TIE-BREAKER PENDING:** run the LOCK (`KK-MasterVP-XAUUSD-M5.set`) on 2025.06.01→2025.12.31 to get the
+  lock's TRUE same-window 2025H2 PF. If lock ≤ 1.3577 → candidate wins everywhere → LOCK C. If lock clearly
+  higher → keep current lock (ladder doesn't earn it). This removes the remembered-bar ambiguity.
 
 Remaining steps (need MT5 — user action):
 1. **Run the validation `.set` 3×** on KK-MasterVP / XAUUSD / M5 / every-tick real ticks / deposit 10000:
