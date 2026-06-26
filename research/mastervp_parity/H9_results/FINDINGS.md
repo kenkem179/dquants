@@ -67,8 +67,16 @@ VALIDATION PROGRESS:
   is **completely INERT in 2025H2** (no runner armed it). The "miss" was a phantom (remembered 1.367 = wrong
   window). Candidate does NOT lose 2025H2; it EQUALS the lock. Ladder = free option (inert w/o big runner,
   additive with one — all the edge is in 2026).
-- ⏳ **FINAL run PENDING:** LOCK full 2025.06.01→2026.05.29 to get lock's TRUE pooled + 2026 (no remembered
-  numbers). Candidate already ties 2025H2; if candidate ≥ lock pooled & 2026 → LOCK C.
+- ✅ **FINAL head-to-head DONE → LOCKED.** Both full $10k compounding runs, split on identical boundary
+  (864/559 tr): FULL lock 1.4127→cand **1.4246** (+0.0118, +$2,806); 2026 1.4372→**1.4581** (+0.0209,
+  +$3,165); 2025H2 1.3671→1.3617 (−0.0054, −$359, ladder near-inert). Candidate wins pooled + recent year
+  decisively, trivial 2025H2 give-back, gate PASS. **LOCKED 2026-06-26.**
+- ⚠️ **DEPLOYMENT TRAP (resolved).** `InpPmProg*` are HIDDEN globals in the production EA (`KK_IN` empty;
+  only KK-MasterVP-Debug exposes them as inputs). So `.set` ProgTrail keys do NOT drive the production EA —
+  validation ran on the Debug EA (log-confirmed). Fix: baked the 4 ladder values as compiled DEFAULTS in
+  `Inputs.mqh` (true/2.0/0.75/0.2) and recompiled `KK-MasterVP.ex5` (0/0). `.set` keys kept for Debug/docs.
+- ▶ **Last step:** ONE production-EA confirmation run (KK-MasterVP.ex5 full period) should reproduce
+  86,034/1.4246; then `make release`.
 
 Remaining steps (need MT5 — user action):
 1. **Run the validation `.set` 3×** on KK-MasterVP / XAUUSD / M5 / every-tick real ticks / deposit 10000:

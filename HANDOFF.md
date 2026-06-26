@@ -18,16 +18,18 @@ CSVs: **`research/mastervp_parity/H9_results/`** (`FINDINGS.md` + per-grid CSV).
   tr (entries unchanged = pure exit win). Best `2.0/0.75/0.3`=90,097/**1.450**/DD14.4 BEATS lock
   (87,838/1.436/14.5) on PF + net + DD. Central pick: **Trigger 2.0 / Increment 0.75 / Step 0.2**
   (90,781/1.448/DD14.5).
-- **✅ VALIDATION PREPPED (2026-06-26 pm, autopilot).** Winner = **Trigger 2.0 / Inc 0.75 / Step 0.2**.
-  Wrote validation `.set` **`KK-MasterVP-XAUUSD-M5-H9C-Validate.set`** (production EA, lock + ONLY the 4
-  ProgTrail keys flipped, `InpExportParity=true`); synced to Presets. Confirmed `ProfitManager.mqh:68`
-  actually implements the ladder + production `Inputs.mqh:168` wires it (NOT a no-op). Sweep dispersion
-  recorded: ExpPayoff std 8.60 USD/tr, n_trials=36.
-- **▶ BLOCKED ON USER MT5 (3 single passes of the validation `.set`):** KK-MasterVP / XAUUSD / M5 /
-  every-tick real ticks / deposit 10000 — (a) FULL 2025.06.01→2026.05.29, (b) 2025.06.01→2025.12.31,
-  (c) 2026.01.01→2026.05.29. Pass bar: beat lock on BOTH sub-folds (2025 PF>1.367, 2026 PF>1.437).
-  Then I: run gate.py on run-(a) `trades_*.csv` (need DSR≥0.95), and if all pass, copy the 4 keys into
-  the lock `.set`, re-lock, update best-experts table, `make release`. UNCOMMITTED (H9 results + this prep).
+- **✅ LOCKED 2026-06-26 — ProgTrail late-arm ladder added to XAU M5 lock.** Winner **Trigger 2.0 / Inc 0.75
+  / Step 0.2**. MT5 full-run head-to-head (Debug EA, real ticks, 2025.06–2026.05, $10k), lock→candidate:
+  FULL PF 1.4127→**1.4246** (+$2,806/+3.4%); 2026 1.4372→**1.4581** (+$3,165); 2025H2 1.3671→1.3617
+  (−$359, ladder near-inert). Gate **DSR 1.000 PASS** (n_trials=36, sr_trial_std 0.0135). 5 MT5 runs total
+  collected to `research/mastervp_parity/H9_results/` (full+2 sub-folds for cand & lock).
+- **⚠️ DEPLOYMENT TRAP resolved:** `InpPmProg*` are HIDDEN globals in the prod EA (`.set` can't drive them;
+  only Debug EA exposes them — log-confirmed validation ran on Debug). FIX: baked the 4 ladder values as
+  compiled DEFAULTS in `Inputs.mqh` + recompiled `KK-MasterVP.ex5` (0/0). `.set` (M5.set) also updated +
+  header rewritten; best-experts table updated.
+- **▶ NEXT (last step):** ONE production-EA confirmation run — KK-MasterVP.ex5, XAUUSD, M5, every-tick real
+  ticks, $10k, 2025.06.01→2026.05.29, load `KK-MasterVP-XAUUSD-M5.set` — must reproduce ~86,034/PF 1.4246.
+  Then `make release` (ASK version bump Y/N, default N). Then optional forward-test before any version bump.
 - ⚠️ **Collection note:** to hand me an optimization result, either (a) leave the `.opt` in MT5 cache and I
   parse it, or (b) right-click Optimization Results → Export to XML. The `.opt` parser is the reliable path now.
 

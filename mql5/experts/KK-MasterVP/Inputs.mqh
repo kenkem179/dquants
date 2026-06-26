@@ -165,10 +165,12 @@ KK_IN double InpPmBeTriggerR      = 1.0;
 KK_IN double InpPmBeBufferR       = 0.0;
 // (2) prog_trail: SL->entry at trigger_r, then advance step_r per increment_r of EXTRA gain (smooth ratchet
 //     that fills the 0.8R..chandelier dead zone — the "trail SL nicely to bank profit" behaviour).
-KK_IN bool   InpPmProgTrail       = false;
-KK_IN double InpPmProgTriggerR    = 1.0;
-KK_IN double InpPmProgIncrementR  = 0.5;
-KK_IN double InpPmProgStepR       = 0.10;
+// LOCKED 2026-06-26 (H9 MT5 optimizer): late-arm ladder ON. These are HIDDEN globals in the production
+// EA (KK_IN empty) so the .set cannot drive them -> the compiled defaults below ARE the deployed lock.
+KK_IN bool   InpPmProgTrail       = true;
+KK_IN double InpPmProgTriggerR    = 2.0;
+KK_IN double InpPmProgIncrementR  = 0.75;
+KK_IN double InpPmProgStepR       = 0.20;
 // (3) giveback: once PEAK gain (MFE) >= arm_r, keep >= (1-cap_frac) of peak locked as SL. Hard profit floor.
 KK_IN bool   InpPmGiveback        = false;
 KK_IN double InpPmGivebackArmR    = 2.0;
