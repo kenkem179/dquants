@@ -1,5 +1,32 @@
 # HANDOFF — read me first, update me last
 
+## ⚡ AUTOPILOT 2026-06-26 (pm) — "SAFER EA" thrust: release allowlist + H10a/H10b/H11 (commits 8fbb815, e983755)
+**Context:** user doubts the laddered-TP lock + wants a "don't give profit back / no over-trading" safety
+mechanism, and asked me to (1) pin the marketplace param surface so I can sweep freely, then (2) autopilot the
+research while they run the #1 MT5 item. Done this session:
+- **Marketplace surface PINNED (commit 8fbb815).** Added `KK-MasterVP/release.market.whitelist` (40 user-facing
+  keys) → release strips any non-listed `input`, so I can now expose ANY param as `input` in dev/Debug without
+  it leaking to the buyer dialog. Fixed 2 latent bugs in `scripts/lib/market_edition.sh` (no-space `name= val`
+  extraction that would've hidden `InpSoftBlockLotMult`; force-hide subtraction in whitelist branch). **Verified
+  market binary stays dialog-identical** (simulated transform diff). Not re-cut yet (avoid disturbing in-flight
+  1.06 upload) — next market re-cut picks it up.
+- **H10a DONE — distance anti-chase stays OFF.** Re-swept `InpBreakMaxAtr` under the CURRENT RR4.0/Trail2.75
+  lock; OFF dominates every axis (PF 1.366/net 30,172/dd 11.6%/Calmar 6.37, monotonic). My earlier "stale verdict"
+  worry didn't change the answer.
+- **H10b DONE — entry trade-count/streak cap REJECTED; giveback is an EXIT problem.** Model-independent `mfeR`
+  autopsy: per-trade edge FLAT across intra-day index, win/loss streak, and distance (far Q = best edge). A
+  ≤3W/≤2L entry cap forfeits ~1.3R/skip. BUT realized USD collapses on already-green days (10.7 vs 60.8) while
+  `mfeR` stays 1.24 → the giveback the user senses is real but exit-side → fix via H10c/H10d, MT5-judged.
+- **H11 DONE — shipped `KK-MasterVP-XAUUSD-M5-Conservative.set`** (lock w/ `InpRiskAccPct` 1.0→0.5; zero-edge-cost
+  DD dial).
+- **▶ NEXT (me, autopilot):** build **H10c** = default-OFF SESSION-level giveback stop (stop NEW entries after
+  giving back X% of day-peak equity; must NOT truncate the live runner — prior per-trade rescue lost net
+  [[mastervp-flow-exit-rejected]]) in C++ tick engine + MQL, golden-parity, then `.set` grids for MT5. Then H10d
+  = RR/trail (= H9 Grid B). Tools: scratchpad `h10a_brkmax.log`, `h10b_autopsy.py`.
+- **▶ USER (the only-you items, ranked):** (1) run **H9 MT5 optimizer grids** A→C→B on `KK-MasterVP-Debug`,
+  XAUUSD M5, every-tick real ticks, 2025.06.01–2026.05.29, dep 10k, rank by PF (settles laddered TP + "trailed
+  too far"); (2) D1–D3 demo validation; (3) upload re-cut 1.06 market `.ex5`.
+
 ## ⚡ AUTOPILOT 2026-06-26 — H9 EXIT-CLUSTER MT5 sweeps PREPPED + internal Debug EA shipped
 **Context:** user going to sleep, asked for the #1 MT5 item + autopilot. The #1 item = **H9: re-judge the
 EXIT cluster on the MT5 optimizer** (engine exit model untrusted — user found the RR4.0/Trail2.75 lock on
