@@ -120,9 +120,6 @@ InpPmPartialTp=false
 InpPmPartialTriggerR=1.0
 InpPmPartialFrac=0.5
 
-; --- H12c node-absorption veto A/B axis (Debug EA only; InpEnableNodeAbsorbVeto is hidden in prod) ---
-; A=false (control=lock), B=true. Optimize this single bool over {false,true}; keep Min at 0 (do NOT sweep).
-; NOTE: an OPTIMIZED bool needs STEP=1 (3rd field). Step 0 = MT5 runs only the start value (1 pass) — the
-; trap that made the first run produce only the OFF/lock pass. Step 1 iterates {false,true} = 2 passes.
-InpEnableNodeAbsorbVeto=false||false||1||true||Y
-InpNodeAbsorbVetoMin=0.0||0.0||0||0.0||N
+; --- H12c node-absorption veto: ON (single backtest, NOT optimization). Compare to the lock (=veto OFF). ---
+InpEnableNodeAbsorbVeto=true
+InpNodeAbsorbVetoMin=0.0
