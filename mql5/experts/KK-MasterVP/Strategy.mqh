@@ -48,9 +48,13 @@ Signal MVP_DetectSignal(const VPResult &master_cur,const VPResult &master_sig,co
    bool brkFlowShortOk=!InpBrkRequireFlow || sellFlowValOk;
    bool brkVetoLongOk =!InpBrkVetoSfp || !(upWick>dnWick && upWick>bodyAbs);
    bool brkVetoShortOk=!InpBrkVetoSfp || !(dnWick>upWick && dnWick>bodyAbs);
+   // H12c node-absorption veto (default OFF): skip the breakout when the decayed VP node-net at the level
+   // being broken (VAH long / VAL short) is AGAINST the trade. along = is_long?ns_vah.net:-ns_val.net.
+   bool brkAbsorbLongOk =!InpEnableNodeAbsorbVeto || ( ns_vah.net>=InpNodeAbsorbVetoMin);
+   bool brkAbsorbShortOk=!InpEnableNodeAbsorbVeto || (-ns_val.net>=InpNodeAbsorbVetoMin);
 
-   bool longBrk =InpEnableBreakout && regime.trend && brkLong  && (regime.plus>regime.minus) && brkLongOk  && brkFlowLongOk  && brkVetoLongOk;
-   bool shortBrk=InpEnableBreakout && regime.trend && brkShort && (regime.minus>regime.plus) && brkShortOk && brkFlowShortOk && brkVetoShortOk;
+   bool longBrk =InpEnableBreakout && regime.trend && brkLong  && (regime.plus>regime.minus) && brkLongOk  && brkFlowLongOk  && brkVetoLongOk  && brkAbsorbLongOk;
+   bool shortBrk=InpEnableBreakout && regime.trend && brkShort && (regime.minus>regime.plus) && brkShortOk && brkFlowShortOk && brkVetoShortOk && brkAbsorbShortOk;
 
    bool nearVal=haveSig && (MathAbs(s.l-sVal)<=touch);
    bool nearVah=haveSig && (MathAbs(s.h-sVah)<=touch);

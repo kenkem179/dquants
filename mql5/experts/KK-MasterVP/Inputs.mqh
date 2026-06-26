@@ -73,6 +73,10 @@ KK_IN double InpNodeDecay      = 0.94;
 KK_IN double InpNodeNeutralBand= 0.15;
 KK_IN double InpNodeSaturation = 4.0;
 KK_IN bool   InpNodeGateEnabled= false;   // OFF = Pine-faithful baseline
+// H12c node-absorption veto (default OFF): skip a breakout when the decayed VP node-net at the level being
+// broken (VAH long / VAL short) is AGAINST the trade. One-sided <Min cut (autopsy PASS; do NOT sweep Min).
+KK_IN bool   InpEnableNodeAbsorbVeto = false;
+KK_IN double InpNodeAbsorbVetoMin    = 0.0;
 KK_IN bool   InpUsePriorBarVP  = false;
 KK_IN bool   InpBrkRequireFlow = false;
 KK_IN double InpSfpFlowMin      = 0.15;

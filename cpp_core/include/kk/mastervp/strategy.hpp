@@ -60,10 +60,18 @@ inline Signal detect_signal(const Params& p,
     const bool brkVetoLongOk  = !p.brk_veto_sfp || !(upWick > dnWick && upWick > bodyAbs);
     const bool brkVetoShortOk = !p.brk_veto_sfp || !(dnWick > upWick && dnWick > bodyAbs);
 
+    // H12c node-absorption veto (default OFF): skip the breakout when the decayed VP node-net at the level
+    // being broken (VAH long / VAL short) is AGAINST the trade — along = is_long ? ns_vah.net : -ns_val.net.
+    // One-sided <node_absorb_veto_min (default 0) cut; see config.hpp / FINDINGS H12c.
+    const bool brkAbsorbLongOk  = !p.enable_node_absorb_veto || ( ns_vah.net >= p.node_absorb_veto_min);
+    const bool brkAbsorbShortOk = !p.enable_node_absorb_veto || (-ns_val.net >= p.node_absorb_veto_min);
+
     const bool longBrk  = p.enable_breakout && regime.trend && brkLong
-                          && (regime.plus > regime.minus) && brkLongOk && brkFlowLongOk && brkVetoLongOk;
+                          && (regime.plus > regime.minus) && brkLongOk && brkFlowLongOk && brkVetoLongOk
+                          && brkAbsorbLongOk;
     const bool shortBrk = p.enable_breakout && regime.trend && brkShort
-                          && (regime.minus > regime.plus) && brkShortOk && brkFlowShortOk && brkVetoShortOk;
+                          && (regime.minus > regime.plus) && brkShortOk && brkFlowShortOk && brkVetoShortOk
+                          && brkAbsorbShortOk;
 
     // reversion (fades the opposite edge; FORBIDS absorbed nodes).
     // Edge source: master VP by default; LOCAL VP when rev_entry_local (the user's near-term-fade idea).

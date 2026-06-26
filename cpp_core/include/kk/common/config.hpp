@@ -136,6 +136,16 @@ struct Params {
     double entry_flow_veto_atr   = 2.4;   // near-price band half-width in ATR (the user's "2.4 ATR distance")
     double entry_flow_veto_min   = 0.0;   // |net| against the trade beyond this -> veto (0 = any against)
     int    entry_flow_look       = 50;    // bars summed for the near-price net (ending at the signal bar)
+    // ---- H12c node-absorption veto — STRUCTURAL exhaustion gate — default OFF (inert) ----
+    // The ONE entry-exhaustion measure that survived the model-free autopsy (H12/H12b rejected). nodeNet =
+    // (buy-sell)/(buy+sell) at the BREAKOUT PRICE from the decayed master-VP node engine: does the level you
+    // are breaking into have a HISTORY of net selling (long) / buying (short)? Signed by direction:
+    // along = is_long ? ns_vah.net : -ns_val.net. Autopsy (2117 lock entries, XAU M5 2025-2026, robust both
+    // years): along<0 (breaking into absorption-against) is worst on every model-free axis. Veto skips the
+    // breakout when along < node_absorb_veto_min. ONE-SIDED <0 cut (default 0.0) — the >=0 side is non-monotone,
+    // so do NOT tune the threshold into a band (overfit). Breakout-only (matches the autopsy population).
+    bool   enable_node_absorb_veto = false;
+    double node_absorb_veto_min   = 0.0;  // veto the breakout when nodeNet-along < this (0 = any against)
     // ---- conviction-protect (TP1 redesign) — default OFF (inert) ----
     // Once a winner has run (MFE >= arm_r) AND the near-price VP node-net flips AGAINST the position
     // (long: net <= -net_min ; short: net >= +net_min — the panel's "Net ▼/over/under" verdict), bank a
@@ -393,6 +403,8 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpEnableEntryFlowVeto") p.enable_entry_flow_veto = to_bool(val);
     else if (key == "InpEntryFlowVetoAtr") p.entry_flow_veto_atr = D();
     else if (key == "InpEntryFlowVetoMin") p.entry_flow_veto_min = D();
+    else if (key == "InpEnableNodeAbsorbVeto") p.enable_node_absorb_veto = to_bool(val);
+    else if (key == "InpNodeAbsorbVetoMin") p.node_absorb_veto_min = D();
     else if (key == "InpEntryFlowLook") p.entry_flow_look = I();
     else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
     else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();
