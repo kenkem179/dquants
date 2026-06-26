@@ -1,5 +1,27 @@
 # HANDOFF — read me first, update me last
 
+## 🔬 H12c nodeNet ABSORPTION VETO — BUILT C+++MQL, DEPLOYABLE, engine A/B FAILS lock bar — ▶ USER MT5 A/B is the tiebreaker (2026-06-27, commit b8df923)
+The session's one autopsy PASS, now built end-to-end and engine-tested. Veto = skip a breakout when the
+decayed VP node-net at the level being broken is AGAINST the trade (`along = is_long?ns_vah.net:-ns_val.net < 0`).
+- **DEPLOYABILITY = ✅ SHIPPABLE** (the open caveat, cleared): the decayed VP node engine is a faithful 1:1
+  port already LIVE in the MQL EA (`VP-Common/NodeEngine.mqh`; `nsVah/nsVal.net` computed in `Engine.mqh`,
+  passed to `MVP_DetectSignal`). Veto ports as a THIN gate, not engine-only.
+- **BUILT default-OFF both engines, byte-identical:** C++ `enable_node_absorb_veto`/`node_absorb_veto_min`
+  (config+strategy.hpp) + MQL `InpEnableNodeAbsorbVeto`/`InpNodeAbsorbVetoMin` (Strategy.mqh + Inputs.mqh
+  KK_IN=hidden-in-prod/exposed-in-Debug). Both EAs compile 0/0; `make test` 37+240+13 green; HEAD-ref vs veto
+  binary trade-diff empty; WF BASELINE==`{false}` n=1400. (Prod market surface unchanged — KK_IN hidden global.)
+- **ENGINE A/B (6-fold WF xau-m5, lock base) → REJECT for engine lock.** OFF: pooled PF **1.330**/net 23,140/
+  dd 6.4%/Calmar 3,616/worstPF **1.279** (n1400). ON: PF 1.329/net 19,285/**dd 4.9%**/**Calmar 3,936**/worstPF
+  1.137 (n1197). Removes 203 against-absorption entries → DD+Calmar IMPROVE but **pooled PF FLAT, net −16.7%,
+  worst-fold PF DEGRADES** (F2 1.32→1.23, F6 1.29→1.14). Fails the T1 rule = a DD-dial at net+robustness cost.
+- **▶ THE OPEN DECISION (user): is it worth ONE MT5 A/B?** The model-free autopsy (trustworthy) says these
+  entries ARE worse; the engine OVER-credits runner P&L (the exact quantity behind the −16.7% net-cost), so MT5
+  could shrink the cost while keeping the DD win. Drop-in shipped: **`KK-MasterVP-XAUUSD-M5-H12c-NodeVeto-AB.set`**
+  (KK-MasterVP-**Debug** EA, XAUUSD M5, every-tick real ticks, 2025.06.01–2026.05.29, dep 10k, rank PF; optimizes
+  `InpEnableNodeAbsorbVeto` over {false,true}, `InpNodeAbsorbVetoMin=0` fixed — do NOT sweep Min). Adopt only if
+  B holds PF≥lock AND improves DD w/o worst-period collapse; else infra stays inert default-OFF (like H12/H12b/H10c).
+  Findings `research/mastervp_parity/node_absorb_veto_2026-06-27/`. [[mastervp-h12-entry-flow-veto-rejected]].
+
 ## 🧨 H7 BTC M3 DEDICATED SWEEP → NO ROBUST EDGE (overfit, OOS-catastrophic) — DONE 2026-06-27
 The genuine BTC-M3 sweep (the old "no edge" run used the BTC-M5 lock on M3 bars). Master length, ADX, trail,
 SL all swept on real M3 bars. TRAIN Aug–Nov 2025 / OOS Jan–Jun 2026, `m3_base_btc.set`, `sweep.py`.
