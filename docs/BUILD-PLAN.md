@@ -165,10 +165,14 @@ What remains genuinely open:
   entries are EQUAL-or-BETTER (mfeR 1.306 vs 1.272, reach1R 46.2% vs 41.8%, smaller maeR) — they mark favorable
   PULLBACK entries, not traps. Holds even on EXTENDED (top-Q brkDist) breakouts. Per CLAUDE.md the autopsy gates
   the sweep → NO sweep spent. Infra stays default-OFF/inert (byte-identical, trade-diff vs HEAD empty).
-  Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`. **Open refinements (DIFFERENT quantities, not
-  this veto):** (a) `nodeNet` VP-node structural absorption — the proxy that flickered (mild-against −26/tr, but
-  weak + non-monotone); (b) FADING ABSOLUTE volume (participation dies out) = a magnitude veto, the literal
-  reading of "volume dies out", untested. Pursue only if user wants — each needs its own autopsy + MT5.
+  Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`.
+  - [x] **H12b — FADING-VOLUME (magnitude) veto. AUTOPSY-REJECTED 2026-06-27** (pure-Python, no engine change).
+    The literal "volume dies out" = skip a breakout with low/declining participation. 3 measures (breakout-bar
+    rel volume, participation slope, near-price partic frac) quartiled: LOW/dying-volume breakouts are
+    EQUAL-or-BETTER (model-free mfeR/reach1R), NOT traps. Faint INVERSE hint (surging volume = climactic = weaker)
+    but weak + exit-model-tinged, not the hypothesis. ⇒ both DIRECTION (H12) and MAGNITUDE (H12b) vetoes reject.
+  - **Remaining refinement (NOT pursued):** `nodeNet` VP-node structural absorption — the only proxy that
+    flickered (mild-against −26/tr, weak + non-monotone). Separate hypothesis; needs its own autopsy + MT5.
 
 - [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
   on XAU; re-confirm MasterVP M5 XAU edge).

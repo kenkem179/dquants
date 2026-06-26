@@ -13,15 +13,18 @@ mechanism does NOT validate — built default-OFF, byte-identical, NOT swept.**
   near-price flow is ~always WITH the breakout (median +0.28; only ~10% against). The against-flow entries are
   EQUAL-or-BETTER (mfeR 1.306 vs 1.272, reach1R 46.2% vs 41.8%, smaller maeR) → they're favorable PULLBACK
   entries, not traps. Holds even on EXTENDED (top-Q brkDist) breakouts. A veto would remove good trades.
-- **The proxy that flickered = a DIFFERENT quantity:** `nodeNet` (VP-node decayed buy/sell at the breakout
-  price, i.e. structural absorption) — mild-against entries were −26/tr w/ lower mfeR, but WEAK + non-monotone
-  (strong-against tail reversed). Separate hypothesis. Also untested: FADING ABSOLUTE volume (the literal
-  "volume dies out" = a magnitude veto, not a direction veto).
+- **H12b FADING-VOLUME (magnitude) veto — ALSO REJECT (2026-06-27, pure-Python no engine change):** the literal
+  "volume dies out" = skip low/declining-participation breakouts. 3 measures quartiled (breakout-bar rel volume,
+  participation slope, near-price partic frac): LOW/dying-volume breakouts are EQUAL-or-BETTER (model-free
+  mfeR/reach1R), NOT traps. Faint INVERSE hint (surging volume=climactic=weaker), weak+exit-model-tinged, not chased.
+  ⇒ BOTH direction (H12) and magnitude (H12b) vetoes reject. Repro `entry_flow_veto_2026-06-27/fading_volume_autopsy.py`.
+- **The proxy that flickered = a DIFFERENT quantity:** `nodeNet` (VP-node structural absorption at the breakout
+  price) — mild-against entries −26/tr w/ lower mfeR, but WEAK + non-monotone. Separate hypothesis, NOT pursued.
 - **Verified:** default OFF → trades byte-identical to the lock (behavioral trade-diff vs HEAD empty; same 2117
   trades/balance); `make test` green; backtester rebuilt. Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`.
-- **▶ DECISION FOR USER:** accept reject of the 2.4×ATR net-delta veto (model-free evidence clear), OR pursue a
-  refinement — (a) nodeNet structural-absorption veto, (b) fading-volume magnitude veto — each needs its own
-  autopsy + MT5. Else next open MasterVP lever stays **H7 (BTC M3, never properly swept)**. Uncommitted→committing.
+- **▶ STATE:** entry-exhaustion intuition tested 2 ways (direction H12 + magnitude H12b) → BOTH reject on XAU.
+  Only `nodeNet` structural-absorption flickered (weak/non-monotone, NOT pursued). Next open MasterVP lever =
+  **H7 (BTC M3, never properly swept)** unless user wants the nodeNet autopsy. Committed this session.
 
 ## ✅ H10c SESSION-GIVEBACK STOP — BUILT + MT5-TESTED → REJECT (2026-06-26) — DONE, no deploy change
 User's standing "MasterVP chases breakouts, gives good trades back to the market" thrust. Built default-OFF
