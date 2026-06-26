@@ -39,14 +39,13 @@ What remains genuinely open:
   - **Validate:** A/B across all 4 cases → 6-fold WF (`wf_mastervp.py`) → MC → overfitting gate
     (`research/stats/gate.py`, record n_trials + sr_trial_std) before any lock. Port to MQL5 only after DSR-PASS.
 
-- [ ] **H7 — BTC M3 re-sweep (never genuinely swept).** The 2026-06-22 re-sweep loaded the **BTC-M5 LOCKED
-  `.set`** verbatim (`resweep_2026-06-22.py:39`) — there is no dedicated BTC-M3 config, so "no edge" is M5
-  params on M3 bars. Sweep, in priority: (1) master VP node length (`InpMasterMult`/master bars), (2) RR
-  (`InpRunnerRr`, `InpTp1R`), (3) SL ATR (`InpSlAtrBrk`), break buffer/ceiling, reversion on/off. Combine
-  with H6 once built (user flags FVG-SL as potentially critical for M3).
-  - **Validate:** dedicated BTC-M3 train/OOS split first (cheap rank), then 6-fold WF + MC + gate. BTC/Exness
-    feed runs optimistic → **MT5-confirm before trusting** any BTC lock ([[mastervp-t3-reversion-lock]]).
-    Ship `kkmastervp_btc_m3_LOCKED.set` + EA preset only on DSR-PASS.
+- [x] **H7 — BTC M3 dedicated sweep. DONE 2026-06-27 → NO ROBUST EDGE (overfit, OOS-catastrophic).** The real
+  sweep (master length, ADX, trail, SL all swept on actual M3 bars — not the old M5-params-on-M3 mistake).
+  Train (Aug–Nov 2025) tunes to PF 1.090 (master6/ADX30/trail8/SL1.5) but that **collapses OOS (Jan–Jun 2026)
+  to PF 0.668 / −$7,980 / 81% DD**; train↑⇒OOS↓ anti-correlated = pure overfit. OOS-direct broad scan (12
+  combos): ZERO PF>1 → not a wrong-region pick, the whole OOS surface is sub-1. **REJECT — do NOT ship a BTC-M3
+  lock.** BTC's only non-dead MasterVP TF is M5 (breakeven-marginal); XAU M5 is the sole validated edge. Results
+  `research/mastervp_parity/btc_m3_sweep_2026-06-27/`. (Sweep only, no code change.) [[mastervp-btc-sweep]]
 
 - [ ] **H8 — Drop session windows, trade 24h-minus-blocked (BTC-first).** Hypothesis (user): ignore the
   Asia/London/NY session gating entirely and let entries fire **any hour except `InpBlockedHoursStr`**. Rationale:

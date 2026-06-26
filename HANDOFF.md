@@ -1,5 +1,20 @@
 # HANDOFF — read me first, update me last
 
+## 🧨 H7 BTC M3 DEDICATED SWEEP → NO ROBUST EDGE (overfit, OOS-catastrophic) — DONE 2026-06-27
+The genuine BTC-M3 sweep (the old "no edge" run used the BTC-M5 lock on M3 bars). Master length, ADX, trail,
+SL all swept on real M3 bars. TRAIN Aug–Nov 2025 / OOS Jan–Jun 2026, `m3_base_btc.set`, `sweep.py`.
+- Baseline = disaster (PF 0.75 train / 0.83 OOS, ~80% DD). S1: best region master **6 (720b/36h)** + ADX≥30
+  (still PF<1). S2: crosses PF>1 only with a VERY WIDE trail → train-best master6/ADX30/**trail8/SL1.5 = PF
+  1.090 / +2,300 / DD18.3%**. But trail8 is near grid-edge (overfit flag).
+- **🧨 OOS = COLLAPSE: train-best → OOS PF 0.668 / −7,980 / 81% DD.** Train↑⇒OOS↓ anti-correlated = pure overfit.
+  OOS-direct broad scan (12 combos master×ADX×trail×SL): **ZERO PF>1** → not a wrong-region pick; the whole OOS
+  surface is sub-1. **REJECT — do NOT ship a BTC-M3 lock.** XAU M5 stays the sole validated MasterVP edge; BTC's
+  only non-dead TF is M5 (breakeven-marginal). Results `research/mastervp_parity/btc_m3_sweep_2026-06-27/`. No code change.
+- **▶ HIGHEST-VALUE OPEN LEVER NOW = the nodeNet structural-absorption veto (H12c — the session's one autopsy
+  PASS):** entries breaking into a net-sold level underperform robustly on BOTH years. Build `enable_node_absorb_veto`
+  (skip when nodeNet-along<0) — BUT first check DEPLOYABILITY (decayed VP node engine must be live in the MQL EA),
+  then engine A/B → per-fold WF → gate → MT5. See [[mastervp-h12-entry-flow-veto-rejected]] (H12c section).
+
 ## 🔬 H12 ENTRY-FLOW EXHAUSTION VETO — BUILT default-OFF + AUTOPSY-REJECTED (2026-06-27)
 User's REAL idea (not the giveback patch): after enough breakouts beyond mVAH/mVAL, flow exhausts → veto a
 geometrically-valid entry when the **near-price net tick-vol delta within ±2.4×ATR** is AGAINST it. Built the
