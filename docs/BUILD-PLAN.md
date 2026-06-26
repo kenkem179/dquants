@@ -107,13 +107,21 @@ What remains genuinely open:
     but this is a *relative* ranking holding exit fixed + monotonic + matches Q2 → high confidence; H9 MT5 runs
     stress it implicitly.) ⚠️ This only kills the ENTRY-DISTANCE cap — the user's TRADE-COUNT / giveback idea is
     a different mechanism, still open in H10b/H10c. Log: scratchpad `h10a_brkmax.log`.
-  - **H10b — Within-episode edge-decay autopsy (decides if a trade-count cap has ANY basis).** The user's
-    idea: cap trades per breakout episode (e.g. ≤3 wins / ≤2 losses). **Quant truth: a win-cap forfeits live
-    +EV unless per-trade edge actually DECAYS as the move ages; a loss-cap is only valid if losses CLUSTER**
-    (we have hour-cluster evidence → plausible). Run a `/quant-6b`-style autopsy: expectancy as a function of
-    trade-index-since-breakout and session running-P&L, using **forward MFE over a fixed horizon as the
-    yardstick — NOT realized R — so the suspect exit model can't bias the answer.** If edge is flat → a
-    win-cap is fat-tail-clipping in disguise (reject). If it decays → build the cap.
+  - [x] **H10b — Within-episode edge-decay autopsy. DONE 2026-06-26 → TRADE-COUNT/STREAK CAP REJECTED; the
+    giveback is an EXIT phenomenon, not an entry one.** Autopsy of the 955 lock trades using **`mfeR` (max
+    favorable excursion in R) — model-independent** (path geometry, not the suspect exit rule). Findings:
+    (1) `mfeR` is FLAT across intra-day trade index (1.43/1.30/1.46/1.18/1.19/1.34 for trades 1..6+) — no
+    edge decay as the day adds trades; (2) FLAT across prior win/loss streak (after ≥2W 1.32, after ≥2L 1.24)
+    — no autocorrelation; (3) quartile-4 FAR breakouts have the BEST edge (`mfeR` 1.46, win 61.9%) — confirms
+    H10a model-free. **⇒ a ≤3W/≤2L or any entry-side trade-count cap forfeits ~1.3R of live edge per skipped
+    trade → REJECT** (it's fat-tail clipping in disguise, exactly the failure mode of the 7 profit-locks).
+    BUT the user's giveback instinct is REAL and now *localized*: when the day is already GREEN, realized
+    USD/trade collapses to 10.7 (vs 60.8 first-trade, 45.6 when red) **while `mfeR` stays 1.24** — i.e. the
+    setups are still good, the EXIT converts them poorly once green. The fix is **exit/management (H10c session
+    giveback stop, H10d trail/RR), NOT entry frequency.** ⚠️ Caveat: realized-USD is exit-model-dependent
+    (suspect) and a prior study found clipping per-trade round-trip giveback loses net (runner-truncation cost
+    > rescue, [[mastervp-flow-exit-rejected]]) — so H10c must be a SESSION-level new-entry stop (does not
+    truncate the live runner) and MT5-judged. Tools: scratchpad `h10b_autopsy.py`, `h10b_lock_trades.csv`.
   - **H10c — Session trailing-giveback stop + loss-streak/episode counter (default-OFF, MT5-judged).** The
     surgical form of "don't give it back": *give back at most X% of session-peak equity, then stand down* —
     halts only when you're ACTUALLY giving back, not while still winning (strictly better than a hard win
@@ -128,7 +136,11 @@ What remains genuinely open:
   - **Gate:** any H10 lock → 6-fold WF (per-fold, not pooled) → MC → `research/stats/gate.py` (record
     n_trials + sr_trial_std) before locking; exit-side levers are MT5-verdict, not engine.
 
-- [ ] **H11 — Honest linear de-risk: ship a "Conservative" 0.5%-risk preset.** The only "safer" lever with
+- [x] **H11 — Honest linear de-risk: "Conservative" 0.5%-risk preset. DONE 2026-06-26.** Shipped
+  `KK-MasterVP-XAUUSD-M5-Conservative.set` = the exact M5 lock with `InpRiskAccPct` 1.0→0.5 (only diff). ~Halves
+  true full-year maxDD (27.7%→~14%) at ~half return, same Sharpe/edge — the only zero-edge-cost safety dial.
+  The release `xauusd-m5-prop` variant (0.5% + firm DD limits) already covers the prop case; this is the plain
+  retail conservative dial. The original H11 rationale:
   ZERO edge cost: halve `InpRiskAccPct` 1.0→0.5 → ~halve the true full-year maxDD (27.7%→~14%) at ~half the
   return, same Sharpe/edge. No sweep, no gate needed (pure linear scaling of the locked config). Ship as a
   documented preset variant alongside the 1.0% lock so users can pick their drawdown tolerance.
