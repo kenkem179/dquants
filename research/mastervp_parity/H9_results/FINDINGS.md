@@ -62,9 +62,13 @@ VALIDATION PROGRESS:
   lock 2026 bar 1.437 → +0.014. Win rate 53.3%.
 - **SCORECARD:** pooled 1.4246>1.413 ✅, 2025H2 1.3577<1.367 ⚠️(−0.009), 2026 1.4511>1.437 ✅, gate PASS.
   Wins pooled + recent year + gate; marginal slip on 2025H2 vs a REMEMBERED bar.
-- ⏳ **TIE-BREAKER PENDING:** run the LOCK (`KK-MasterVP-XAUUSD-M5.set`) on 2025.06.01→2025.12.31 to get the
-  lock's TRUE same-window 2025H2 PF. If lock ≤ 1.3577 → candidate wins everywhere → LOCK C. If lock clearly
-  higher → keep current lock (ladder doesn't earn it). This removes the remembered-bar ambiguity.
+- ✅ **TIE-BREAKER: 2025H2 is an EXACT TIE.** Lock on same window (`trades_LOCK_2025H2.csv`) = PF **1.3577**,
+  858 tr, net **24,846.59** — BYTE-IDENTICAL to the candidate's 2025H2 stream. ⇒ the late-arm ladder (2.0R)
+  is **completely INERT in 2025H2** (no runner armed it). The "miss" was a phantom (remembered 1.367 = wrong
+  window). Candidate does NOT lose 2025H2; it EQUALS the lock. Ladder = free option (inert w/o big runner,
+  additive with one — all the edge is in 2026).
+- ⏳ **FINAL run PENDING:** LOCK full 2025.06.01→2026.05.29 to get lock's TRUE pooled + 2026 (no remembered
+  numbers). Candidate already ties 2025H2; if candidate ≥ lock pooled & 2026 → LOCK C.
 
 Remaining steps (need MT5 — user action):
 1. **Run the validation `.set` 3×** on KK-MasterVP / XAUUSD / M5 / every-tick real ticks / deposit 10000:
