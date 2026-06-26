@@ -27,9 +27,10 @@ CSVs: **`research/mastervp_parity/H9_results/`** (`FINDINGS.md` + per-grid CSV).
   only Debug EA exposes them — log-confirmed validation ran on Debug). FIX: baked the 4 ladder values as
   compiled DEFAULTS in `Inputs.mqh` + recompiled `KK-MasterVP.ex5` (0/0). `.set` (M5.set) also updated +
   header rewritten; best-experts table updated.
-- **▶ NEXT (last step):** ONE production-EA confirmation run — KK-MasterVP.ex5, XAUUSD, M5, every-tick real
-  ticks, $10k, 2025.06.01→2026.05.29, load `KK-MasterVP-XAUUSD-M5.set` — must reproduce ~86,034/PF 1.4246.
-  Then `make release` (ASK version bump Y/N, default N). Then optional forward-test before any version bump.
+- **✅ PROD-EA CONFIRMED + RELEASED 1.07 (commit f881d3b).** Production `KK-MasterVP.ex5` full-run reproduced
+  the lock EXACTLY: 1423 tr / net 86,034.50 / PF 1.4246 (log-confirmed it ran `KK-MasterVP.ex5`, not Debug).
+  `make release` → v1.06→**1.07**, personal + MQL5-Market editions + all .set variants packaged under
+  `releases/1.07/`. **XAU M5 lock = DONE.** Optional follow-up: demo forward-test before promoting 1.07 live.
 - ⚠️ **Collection note:** to hand me an optimization result, either (a) leave the `.opt` in MT5 cache and I
   parse it, or (b) right-click Optimization Results → Export to XML. The `.opt` parser is the reliable path now.
 
