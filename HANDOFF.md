@@ -1,8 +1,30 @@
 # HANDOFF — read me first, update me last
 
-## 🔬 H12c nodeNet ABSORPTION VETO — BUILT C+++MQL, DEPLOYABLE, engine A/B FAILS lock bar — ▶ USER MT5 A/B is the tiebreaker (2026-06-27, commit b8df923)
-The session's one autopsy PASS, now built end-to-end and engine-tested. Veto = skip a breakout when the
-decayed VP node-net at the level being broken is AGAINST the trade (`along = is_long?ns_vah.net:-ns_val.net < 0`).
+## ❌ H12c nodeNet ABSORPTION VETO — MT5 VERDICT = REJECT (catastrophic) + EXPOSED a node-net parity gap — DONE 2026-06-27
+Built C+++MQL, engine A/B failed the lock bar, MT5 A/B settled it: **REJECT, infra stays inert default-OFF.**
+- **MT5 (plain backtest of `…-H12c-NodeVeto-ON.set`, KK-MasterVP-Debug, XAU M5, 2025.06.01–2026.05.29, 10k):**
+  veto ON = **net 4,393 / PF 1.212 / 386 tr / DD 16.7%** vs lock OFF **90,781 / 1.448 / 1425 / 14.5%** →
+  **net −95%, 73% of trades removed, PF down, DD WORSE.** Catastrophic.
+- **It exposed a NODE-NET PARITY GAP.** The MQL veto logic is CORRECT (exported trades: all kept breakouts
+  along≥0; only kept along<0 are reversion, which the veto doesn't touch). But **MT5 flags ~74% of breakouts as
+  along<0** (node-net against) vs the C++ engine's **~15%** — the decayed-VP node-net VALUE at VAH/VAL differs
+  systematically MQL↔C++ even though `(b−s)/max(b+s,1)` is byte-identical. Suspect: EA feeds `iVolume`
+  (MT5 tick-vol) to the node bins vs engine's imported `tick_count` → different decay-window buy/sell weighting.
+  Never caught before: lock runs `node_gate_enabled=false` + no shipped feature ever used the node-net *value*
+  (gate uses absorbed/state; conviction-protect default-OFF). The veto is the FIRST value-consumer → surfaced it.
+- **Decision:** REJECT. NOT worth root-causing the parity gap to rescue the veto — even at perfect parity the
+  engine A/B showed NO pooled-PF edge + worst-fold degradation (ceiling = a DD-dial). ⚠️ **FUTURE RULE: any new
+  feature depending on the node-net VALUE (not just absorbed/state) MUST first prove per-entry MQL↔C++ node-net
+  parity — this run is evidence it does NOT currently hold.** MT5-optimizer note: it won't iterate a 2-point/bool
+  axis (1 pass); use a plain backtest or two single-value `.set` for bool A/Bs.
+- Infra default-OFF, lock byte-identical (confirmed). Commits b8df923 (build), c4f21a0 (step-0 fix+hook),
+  + this verdict. Findings `research/mastervp_parity/node_absorb_veto_2026-06-27/` (+ `mt5_runs/`).
+  [[mastervp-h12-entry-flow-veto-rejected]]. **▶ No open MasterVP research lever** (H7/H10c/H12/H12b/H12c all closed).
+
+<details><summary>(history) H12c pre-MT5 build + engine A/B detail</summary>
+
+Veto = skip a breakout when the decayed VP node-net at the level being broken is AGAINST the trade
+(`along = is_long?ns_vah.net:-ns_val.net < 0`).
 - **DEPLOYABILITY = ✅ SHIPPABLE** (the open caveat, cleared): the decayed VP node engine is a faithful 1:1
   port already LIVE in the MQL EA (`VP-Common/NodeEngine.mqh`; `nsVah/nsVal.net` computed in `Engine.mqh`,
   passed to `MVP_DetectSignal`). Veto ports as a THIN gate, not engine-only.
@@ -21,6 +43,8 @@ decayed VP node-net at the level being broken is AGAINST the trade (`along = is_
   `InpEnableNodeAbsorbVeto` over {false,true}, `InpNodeAbsorbVetoMin=0` fixed — do NOT sweep Min). Adopt only if
   B holds PF≥lock AND improves DD w/o worst-period collapse; else infra stays inert default-OFF (like H12/H12b/H10c).
   Findings `research/mastervp_parity/node_absorb_veto_2026-06-27/`. [[mastervp-h12-entry-flow-veto-rejected]].
+
+</details>
 
 ## 🧨 H7 BTC M3 DEDICATED SWEEP → NO ROBUST EDGE (overfit, OOS-catastrophic) — DONE 2026-06-27
 The genuine BTC-M3 sweep (the old "no edge" run used the BTC-M5 lock on M3 bars). Master length, ADX, trail,

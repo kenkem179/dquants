@@ -54,3 +54,36 @@ DD without worst-period collapse; else infra stays inert default-OFF. Do NOT swe
 
 Repro: `python3 research/mastervp_parity/wf_mvp_generic.py --symbol xau --tf m5 --grid
 '{"InpEnableNodeAbsorbVeto":["false","true"]}' --tag h12c_veto --show-folds`.
+
+## MT5 VERDICT (2026-06-27) → REJECT, and it EXPOSED a node-net parity gap
+User ran the A/B on the MT5 optimizer (KK-MasterVP-Debug, XAUUSD M5, every-tick real ticks,
+2025.06.01–2026.05.29, dep 10k). The optimizer would NOT iterate the bool (1 pass each, an MT5 quirk
+with a 2-point/bool space; the `.set` step-0→1 fix only flipped which single value ran), so the verdict
+came from a **plain single backtest of `…-H12c-NodeVeto-ON.set`** (parity export ON):
+
+| run | Net | PF | Trades | maxDD |
+|---|--:|--:|--:|--:|
+| Lock (veto OFF, control) | **90,781** | **1.448** | 1425 | 14.5% |
+| Veto ON (MT5) | **4,393** | 1.212 | **386** | 16.7% |
+
+**Veto ON is CATASTROPHIC on MT5: net −95%, 73% of trades removed, PF 1.448→1.212, DD WORSE.** REJECT.
+
+**Why it diverges so wildly from the engine A/B (15% trade cut) — a node-net parity gap.** The MQL veto
+logic is CORRECT (verified on the exported trades: all kept breakouts have along≥0; the only kept along<0
+trades are reversion, which the veto doesn't touch). The problem: **MT5 flags ~74% of breakouts as
+along<0** (node-net against) vs the **~15%** the C++ engine flags. So the decayed-VP node-net VALUE at the
+VAH/VAL level is systematically different between the MQL EA and the C++ engine, even though the net
+formula `(b−s)/max(b+s,1)` is byte-identical in both. Most likely source = the volume proxy fed to the node
+bins (EA passes `iVolume`=MT5 tick-volume; engine uses imported per-bar `tick_count`) weighting the
+decay-window buy/sell accumulation differently, and/or sliding-masterVP grid sensitivity near bin edges.
+
+**This was never caught before** because the lock runs with `node_gate_enabled=false` and NO shipped feature
+ever consumed the node-net *value* (the node gate uses `absorbed`/`state`; conviction-protect is default-OFF).
+The veto is the first feature to depend on the precise node-net crossing zero — and it surfaced the gap.
+
+**Decision:** REJECT the veto (fails the engine A/B on PF/worst-fold AND is catastrophic on MT5). Infra stays
+inert default-OFF — lock byte-identical, confirmed. NOT worth root-causing the node-net parity gap to rescue
+the veto: even with perfect parity the engine A/B shows NO pooled-PF edge + worst-fold degradation, so the
+ceiling is a DD-dial at best. ⚠️ FUTURE: any new feature that depends on the node-net VALUE (not just
+absorbed/state) MUST first prove MQL↔C++ node-net parity per-entry — this run is the evidence it does not
+currently hold. Artifacts: `mt5_runs/` (trades_MT5_vetoON_M5.csv, the two .opt, agent log).
