@@ -1,0 +1,83 @@
+# KK-MasterVP — MQL5 Market edition: dialog-visible inputs ALLOWLIST.
+#
+# Consumed by scripts/lib/market_edition.sh (the [market] build step). This file
+# is the AUTHORITATIVE marketplace surface: every `input` parameter whose KEY is
+# NOT listed below is stripped to a fixed compiled-in global -> HIDDEN from the
+# MT5 Inputs dialog. Strategy internals stay our secret regardless of how many
+# params are exposed as `input` in the dev source.
+#
+# WHY THIS EXISTS (2026-06-26): we want to freely expose ANY param as `input` in
+# the dev/Debug build for MT5-optimizer sweeping. Previously visibility was the
+# fragile hand-curated `input` keyword itself (approach A), so a new sweepable
+# `input` would leak straight into the marketplace dialog. With this allowlist
+# the release build is pinned to the CURRENT minimum user-facing set no matter
+# what we expose in dev. (The dquants C++ engine sweeps every param regardless;
+# `input`/hidden is MT5-dialog presentation only.)
+#
+# INVARIANT: this list == the EXACT set of keys currently carrying `input` in the
+# live source, so adding the allowlist is a NO-OP on today's market binary
+# (nothing currently-visible gets stripped). Verified equivalent at commit time.
+#
+# NOTE on InpNotifyMode: it is listed here (so the allowlist keeps it `input` for
+# the force-hide pass to find), but release.market.forcehide strips + hard-codes
+# it to 2 (Simplified) in the market binary -> it is NOT shown in the dialog and
+# NOT shipped in the stripped .set. Keep both files in sync.
+#
+# --- Risk sizing -------------------------------------------------------------
+InpRiskUnit
+InpRiskAccPct
+InpRiskUsd
+InpMaxLot
+InpSkipIfMinLotOverRisk
+#
+# --- Risk-management limiters ------------------------------------------------
+InpMaxDailyDDPct
+InpDailyDDCooldownHrs
+InpSoftBlockDDPct
+InpMaxPeakDDPct
+InpSoftBlockLotMult
+InpLossStreakCount
+InpLossStreakCooldownHrs
+#
+# --- Trading time / sessions / news ------------------------------------------
+InpBlockedHoursStr
+InpForceCloseSessNews
+InpAvoidNews
+InpNewsMinsBefore
+InpNewsMinsAfter
+#
+# --- Execution quality / throttle --------------------------------------------
+InpMaxSpreadPips
+InpMaxTradesPerSession
+#
+# --- Strategy toggle (user-facing) -------------------------------------------
+InpEnableReversion
+#
+# --- Exit management: TP / break-even / trail --------------------------------
+InpTp1R
+InpTp1ClosePct
+InpBeAfterTp1
+InpBeBufAtr
+InpRunnerRr
+InpTrailRunner
+InpTrailAtrMult
+#
+# --- Prop / account-protection guard -----------------------------------------
+InpGuardEnable
+InpGuardDailyLossPct
+InpGuardOverallDDPct
+InpGuardBufferPct
+InpGuardDDAnchor
+InpGuardManualDayAnchor
+InpGuardFlatten
+#
+# --- Notifications (InpNotifyMode force-hidden -> 2; see header) --------------
+InpNotifyMode
+InpNotifyChannel
+InpTelegramBotToken
+InpTelegramChatId
+InpDiscordWebhookUrl
+#
+# --- Diagnostics / CSV export ------------------------------------------------
+InpExportParity
+InpLiveTradeCsv

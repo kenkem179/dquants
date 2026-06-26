@@ -63,19 +63,23 @@ _mkt_forcehide_keys() {
 #   force-hidden for the marketplace (so they are also dropped from the .set).
 mkt_visible_keys() {
   local ea="$1" wl="$1/release.market.whitelist"
+  local keys
   if [ -f "$wl" ]; then
-    grep -vE '^[[:space:]]*(#|$)' "$wl" | sed -E 's/[[:space:]]//g' || true
+    keys="$(grep -vE '^[[:space:]]*(#|$)' "$wl" | sed -E 's/[[:space:]]//g' || true)"
   else
-    local keys; keys="$(grep -rhoE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' \
+    keys="$(grep -rhoE '^[[:space:]]*input[[:space:]]+[A-Za-z_]+[[:space:]]+Inp[A-Za-z0-9_]+' \
       "$ea"/*.mqh "$ea"/*.mq5 2>/dev/null | awk '{print $NF}' || true)"
-    if mkt_has_forcehide "$ea"; then
-      local hidef; hidef="$(mktemp)"
-      _mkt_forcehide_keys "$ea" > "$hidef"
-      printf '%s\n' "$keys" | grep -vxF -f "$hidef" || true   # empty hidef -> keeps all
-      rm -f "$hidef"
-    else
-      printf '%s\n' "$keys"
-    fi
+  fi
+  # Force-hidden keys are never dialog-visible (and must be dropped from the .set)
+  # even when listed in the whitelist (where they appear only so the force-hide
+  # pass can find + bake them). Subtract them in BOTH branches.
+  if mkt_has_forcehide "$ea"; then
+    local hidef; hidef="$(mktemp)"
+    _mkt_forcehide_keys "$ea" > "$hidef"
+    printf '%s\n' "$keys" | grep -vxF -f "$hidef" || true   # empty hidef -> keeps all
+    rm -f "$hidef"
+  else
+    printf '%s\n' "$keys"
   fi
 }
 
@@ -146,7 +150,7 @@ _mkt_apply_forcehide() {
           lead=$0; sub(/[^ \t].*$/,"",lead)
           rest=substr($0,length(lead)+1)
           sub(/^input[ \t]+/,"",rest)
-          split(rest,tk,/[ \t]+/); name=tk[2]
+          split(rest,tk,/[ \t]+/); name=tk[2]; sub(/=.*/,"",name)   # handle "name= val" (no space)
           if (name in force) {
             eq=index(rest,"="); semi=index(rest,";")
             if (semi>0) {
@@ -221,7 +225,7 @@ _mkt_apply_whitelist() {
           lead=$0; sub(/[^ \t].*$/,"",lead)
           rest=substr($0,length(lead)+1)
           if (rest ~ /^input[ \t]+/) sub(/^input[ \t]+/,"",rest)
-          split(rest,tk,/[ \t]+/); type=tk[1]; name=tk[2]
+          split(rest,tk,/[ \t]+/); type=tk[1]; name=tk[2]; sub(/=.*/,"",name)   # handle "name= val" (no space)
           eq=index(rest,"="); semi=index(rest,";")
           if (semi==0) { print $0; next }
           pre=substr(rest,1,eq); tail=substr(rest,semi)

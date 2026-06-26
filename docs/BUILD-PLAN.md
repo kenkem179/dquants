@@ -92,6 +92,47 @@ What remains genuinely open:
   - ⚠️ Engine WF may still be run as a CHEAP pre-filter to prune the grid, but **its sign is not trusted on
     exits** — no exit lever is locked on an engine number alone. MT5 optimizer result is the verdict.
 
+- [ ] **H10 — Giveback / over-trading control (the user's "don't return profit to the market" thrust).**
+  Born from the 2026-06-26 discussion. The goal is a SAFER-yet-profitable EA without clipping the fat right
+  tail (every per-trade-outcome clip — 7 profit-locks, TP1-bank, anti-chase ATR cap — has lost on XAU because
+  the edge IS the tail). The legitimate levers attack *intra-session giveback* and *regime loss-clusters*, not
+  individual winners. Four sub-tasks, ordered:
+  - [x] **H10a — Re-run the `InpBreakMaxAtr` (anti-chase) sweep under the CURRENT exit lock. DONE 2026-06-26 →
+    CAPPING CONFIRMED TO HURT (keep OFF).** Re-swept brkMax ∈ {1.5,2,2.5,3,3.5,4,5,OFF} on the current XAU-M5
+    lock `.set` (RunnerRr 4.0 / Trail 2.75 / BeBuf 0.02), train ticks. **OFF (1e6) dominates monotonically on
+    every axis: PF 1.366, net 30,172, maxDD 11.6%, Calmar 6.37** vs e.g. cap-3.0 (PF 1.194 / net 4,751 / dd
+    13.6% / Calmar 2.16). The far-traveled breakouts both ADD net AND LOWER maxDD% (955 vs 474 trades → smoother
+    curve; runners cushion DD). The original "capping hurts" verdict survives the new exit — the Q2 stale-ness
+    worry did NOT change the conclusion. Distance-cap is genuinely settled OFF. (Engine exit-model still suspect,
+    but this is a *relative* ranking holding exit fixed + monotonic + matches Q2 → high confidence; H9 MT5 runs
+    stress it implicitly.) ⚠️ This only kills the ENTRY-DISTANCE cap — the user's TRADE-COUNT / giveback idea is
+    a different mechanism, still open in H10b/H10c. Log: scratchpad `h10a_brkmax.log`.
+  - **H10b — Within-episode edge-decay autopsy (decides if a trade-count cap has ANY basis).** The user's
+    idea: cap trades per breakout episode (e.g. ≤3 wins / ≤2 losses). **Quant truth: a win-cap forfeits live
+    +EV unless per-trade edge actually DECAYS as the move ages; a loss-cap is only valid if losses CLUSTER**
+    (we have hour-cluster evidence → plausible). Run a `/quant-6b`-style autopsy: expectancy as a function of
+    trade-index-since-breakout and session running-P&L, using **forward MFE over a fixed horizon as the
+    yardstick — NOT realized R — so the suspect exit model can't bias the answer.** If edge is flat → a
+    win-cap is fat-tail-clipping in disguise (reject). If it decays → build the cap.
+  - **H10c — Session trailing-giveback stop + loss-streak/episode counter (default-OFF, MT5-judged).** The
+    surgical form of "don't give it back": *give back at most X% of session-peak equity, then stand down* —
+    halts only when you're ACTUALLY giving back, not while still winning (strictly better than a hard win
+    count). Existing infra: `InpLossStreakCount`/`InpLossStreakCooldownHrs`, `InpSoftBlockDDPct`/`InpSoftBlockLotMult`,
+    `InpMaxDailyDDPct` are wired into the tick engine (`register_trade_close`, `is_daily_dd_hit`). Add a
+    session-peak trailing-giveback knob if not present. **Validate on the MT5 optimizer** (giveback is
+    exit-path-dependent → MT5 is judge, engine is at most a cheap pre-filter); accept only if PF/maxDD improves
+    on BOTH year sub-folds (a stopped clock trivially lowers maxDD — decompose per-fold, never pool).
+  - **H10d — RR / trail revisit (= H9 Grid B).** The user's "I trailed too far at RR 3.2–4.0" instinct is the
+    H9 BeBuf×Trail×RR plateau — the untrusted-on-engine exit cluster, so it is **NOT settled**. Tightening the
+    trail may shrink giveback more cleanly than any trade-count cap. Run as part of H9 on MT5.
+  - **Gate:** any H10 lock → 6-fold WF (per-fold, not pooled) → MC → `research/stats/gate.py` (record
+    n_trials + sr_trial_std) before locking; exit-side levers are MT5-verdict, not engine.
+
+- [ ] **H11 — Honest linear de-risk: ship a "Conservative" 0.5%-risk preset.** The only "safer" lever with
+  ZERO edge cost: halve `InpRiskAccPct` 1.0→0.5 → ~halve the true full-year maxDD (27.7%→~14%) at ~half the
+  return, same Sharpe/edge. No sweep, no gate needed (pure linear scaling of the locked config). Ship as a
+  documented preset variant alongside the 1.0% lock so users can pick their drawdown tolerance.
+
 - [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
   on XAU; re-confirm MasterVP M5 XAU edge).
 
@@ -142,6 +183,24 @@ trade CSV is **append-immediately on close** (not hourly-batched).
 - [x] **D3 — Notifications (Discord/Telegram/Email)** — DONE 2026-06-25 (`KK-Common/Notifier.mqh`, standalone,
   ASCII-only). Inputs `InpNotifyChannel{0..7}/InpNotifyMode/InpDiscord*/InpTelegram*`. Plus drag-drop validator
   `KK-Common-Tests/TestDeployOps.mq5` + guide §5 update. Archived.
+
+- [x] **D-tooling — MasterVP marketplace surface pinned to an explicit allowlist (2026-06-26).** Switched
+  KK-MasterVP from fragile approach-A (the literal `input` keyword = market visibility) to approach-B
+  `release.market.whitelist` (the 40 current user-facing keys; `InpNotifyMode` listed-but-force-hidden→2). Now
+  ANY param can be exposed as `input` in the dev/Debug build for MT5 sweeping **without leaking to the market
+  dialog** — the release build strips everything not on the allowlist. Fixed two latent bugs in
+  `scripts/lib/market_edition.sh` (name-extraction for `name= val` with no space before `=`; force-hide
+  subtraction in the whitelist branch). Verified market binary stays **dialog-identical** to today (40 visible,
+  same group set, `InpSoftBlockLotMult` visible, `InpNotifyMode` hidden+baked=2) — only dialog-neutral group-
+  header repositioning differs. Picked up automatically on the next market re-cut.
+
+- [ ] **D5 — Account-level concurrent-risk cap (portfolio drawdown, not per-strategy).** The 27.7% true maxDD
+  is *per strategy*; with breakout+reversion and/or XAU+BTC running concurrently the account DD is the
+  *correlated sum* and can compound well past it. No total-open-risk ceiling exists across EAs today. Add a
+  cross-EA cap (terminal GlobalVariables, like D1): sum open risk across all KK EAs on the account and block
+  new entries once total simultaneous risk exceeds a ceiling (e.g. 2–3%). Highest-value un-built *safety* item
+  — gives drawdown protection that no per-strategy tuning can. Layer-4 only; pure cap math in a unit-testable
+  helper.
 
 - [ ] **D4 — Trial-expiry deadline on account-locked marketplace builds.** Every per-account MARKET edition
   ([[ea-marketplace-and-account-builds]] — the hidden `ALLOWED_ACCOUNT_ID`/`ALLOWED_ACCOUNT_SERVER` bake)
