@@ -122,7 +122,14 @@ What remains genuinely open:
     (suspect) and a prior study found clipping per-trade round-trip giveback loses net (runner-truncation cost
     > rescue, [[mastervp-flow-exit-rejected]]) — so H10c must be a SESSION-level new-entry stop (does not
     truncate the live runner) and MT5-judged. Tools: scratchpad `h10b_autopsy.py`, `h10b_lock_trades.csv`.
-  - [~] **H10c — Session trailing-giveback stop (default-OFF). BUILT 2026-06-26, awaiting MT5 verdict.** The
+  - [x] **H10c — Session trailing-giveback stop (default-OFF). BUILT + MT5-TESTED 2026-06-26 → REJECT.**
+    MT5 optimizer (XAU M5, 2025.06–2026.05, dep 10k, rank PF), `InpGivebackPct ∈ {0…90}`, 0=OFF control:
+    **OFF wins on EVERY axis** (Net 90,781 / PF 1.448 / DD 14.5%); every giveback value collapses net ~92%
+    (stands the EA down → 1425→322–510 trades, removing the fat-tail days) AND *raises* maxDD to 22–26%.
+    4th independent falsification of "don't give it back" on XAU (after 7 profit-locks, flow-exit, H10b
+    entry-cap) — a giving-back day is indistinguishable in advance from a pausing-then-running day. ONLY
+    ProgTrail late-arm ladder works on XAU. Infra stays default-OFF/inert (byte-identical). Results
+    `research/mastervp_parity/H10c_results/`. The original spec: The
     surgical form of "don't give it back": *give back at most X% of the day's peak GAIN, then stand down* —
     halts only when you're ACTUALLY giving back, not while still winning (strictly better than a hard win
     count). **Implemented** as `InpGivebackPct` (C++ `giveback_pct`): halt formula `(dayPeak-equity) >=

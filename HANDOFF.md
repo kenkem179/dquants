@@ -1,24 +1,22 @@
 # HANDOFF — read me first, update me last
 
-## 🟢 H10c SESSION-GIVEBACK STOP — BUILT + golden-parity clean (2026-06-26) — ▶ awaiting USER MT5 sweep
-User's standing "MasterVP chases breakouts, gives good trades back to the market" thrust. After H10a (anti-chase
-cap → HURTS) and H10b (giveback is an EXIT not entry problem; localized to *day-already-green*), built the one
-surgical lever left: **`InpGivebackPct`** — halt NEW entries once the day has handed back ≥ X% of its peak GAIN
-`(dayPeak-equity) >= X%·(dayPeak-dayStart)`, arms only on a green day, evaluated FLAT at the entry gate so the
-**open runner is never truncated** (the failure mode that killed every per-trade clip — [[mastervp-flow-exit-rejected]]).
-Resets each trading day (reuses the daily-DD day-roll).
-- **C++:** `Params::giveback_pct` (config.hpp +parse), `RiskManager::is_giveback_halt` + `day_peak_equity_`
-  (risk_manager.hpp), entry gate in `tick_engine.hpp` (after max-trades, before daily-DD). Unit test
-  `test_giveback_halt` (green/red/trailing/reset/OFF). **`make test` 37+240 green.**
-- **MQL5 1:1 port:** `InpGivebackPct` (KK_IN = hidden in market, exposed in Debug), `IsGivebackHalt`/
-  `g_dayPeakEquity` in Engine.mqh; gate after `SN_MaxTradesOk`. Curated EA + Debug EA both compile 0/0.
-- **DEFAULT 0 = OFF → base byte-identical:** trade-diff vs HEAD binary on the locked set = EMPTY; market
-  `input` surface unchanged vs HEAD (KK_IN keeps it hidden). Smoke test ON@50% fires (113→33 trades on a window).
-- **⚠️ ENGINE NOT TRUSTED on this** — giveback is exit-path-dependent; engine over-credits runners. MT5 is judge.
-- **▶ NEXT (USER, MT5 optimizer):** run **`mql5/experts/KK-MasterVP/KK-MasterVP-XAUUSD-M5-H10c-OPT-Giveback.set`**
-  on **KK-MasterVP-Debug**, XAUUSD M5, every-tick real ticks, 2025.06.01–2026.05.29, dep 10k, rank by **PF**
-  (10 passes, InpGivebackPct 0→90; 0=OFF control in-run). Adopt a value ONLY if it beats the lock (PF 1.4246)
-  on PF AND maxDD on BOTH year sub-folds, then gate.py. Uncommitted at handoff write → committing this session.
+## ✅ H10c SESSION-GIVEBACK STOP — BUILT + MT5-TESTED → REJECT (2026-06-26) — DONE, no deploy change
+User's standing "MasterVP chases breakouts, gives good trades back to the market" thrust. Built default-OFF
+`InpGivebackPct` (halt NEW entries after handing back ≥X% of the day's peak GAIN, never truncates the open
+runner) → **MT5 optimizer verdict: REJECT.** XAU M5, 2025.06–2026.05, dep 10k, rank PF, `InpGivebackPct ∈
+{0…90}`, 0=OFF control in-run (parsed from `.opt` via `scripts/parse_mt5_opt.py`):
+- **OFF wins on EVERY axis: Net 90,781 / PF 1.448 / 1425 tr / DD 14.5%** (= the ProgTrail lock exactly →
+  parser validated). Every giveback value collapses net **~92%** (~$4–8k): stand-down cuts trades
+  1425→322–510 (removes the fat-tail days) AND *raises* maxDD to **22–26%** — fails even the "stopped clock
+  lowers DD" consolation. No plateau, nothing near the lock.
+- **4th independent falsification of "don't give it back" on XAU** (after 7 profit-locks, flow-exit, H10b
+  entry-cap): a giving-back day is indistinguishable IN ADVANCE from a pausing-then-running day. Only the
+  **ProgTrail late-arm ladder** (already locked, 1.07, +3.4%) works on XAU. Giveback = opportunity cost, not
+  capital risk (BE arm caps downside). Results `research/mastervp_parity/H10c_results/` (FINDINGS + csv + .opt).
+- **Infra stays in tree, default-OFF, byte-identical** (trade-diff vs HEAD empty; `make test` 37+240 green;
+  both EAs compile 0/0; market surface unchanged). May help a mean-reverting instrument; closed on XAU.
+- **▶ NEXT open MasterVP lever: H7 (BTC M3 — never properly swept; old "no edge" run used M5 params on M3
+  bars).** Build detail committed `83bd7aa`; Presets-symlink fix `5685c7d`; verdict commit this session.
 
 ## 🟢 H9 MT5 OPTIMIZER RESULTS IN (2026-06-26 pm) — A=lock holds · B=INVALID · C=WINNER candidate (ProgTrail late-arm)
 User ran Grids A, B, C on the MT5 optimizer (KK-MasterVP-Debug, XAU M5, real ticks, 2025.06.01–2026.05.29,
