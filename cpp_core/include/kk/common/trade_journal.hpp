@@ -33,7 +33,7 @@ inline std::string trade_time_utc(int64_t ts_ms) {
 inline const char* trades_csv_header() {
     return "entryTimeUTC,dir,rev,retest,regimeTrend,session,entry,riskPrice,mfeR,maeR,"
            "realizedUsd,entryReason,brkDistAtr,bodyPct,adx,diSpread,runwayAtr,nodeNet,"
-           "spreadPips,spreadAtr,exitTag\n";
+           "spreadPips,spreadAtr,exitTag,entryFlowNear\n";
 }
 
 inline std::string to_trades_csv(const std::vector<TradeRecord>& trades) {
@@ -41,12 +41,12 @@ inline std::string to_trades_csv(const std::vector<TradeRecord>& trades) {
     char buf[512];
     for (const auto& r : trades) {
         std::snprintf(buf, sizeof(buf),
-            "%s,%s,%d,%d,%d,%d,%.3f,%.3f,%.2f,%.2f,%.2f,%s,%.2f,%.2f,%.1f,%.1f,%.2f,%.2f,%.1f,%.3f,%s\n",
+            "%s,%s,%d,%d,%d,%d,%.3f,%.3f,%.2f,%.2f,%.2f,%s,%.2f,%.2f,%.1f,%.1f,%.2f,%.2f,%.1f,%.3f,%s,%.3f\n",
             trade_time_utc(r.entry_ts_ms).c_str(),
             r.is_long ? "L" : "S", r.is_rev ? 1 : 0, /*retest=*/0, r.regime_trend ? 1 : 0, r.session,
             r.entry, r.risk_price, r.mfe_r, r.mae_r, r.realized_usd, r.reason,
             r.brk_dist_atr, r.body_pct, r.adx, r.di_spread, r.runway_atr, r.node_net,
-            r.spread_pips, r.spread_atr, exit_tag_str(r.exit_tag));
+            r.spread_pips, r.spread_atr, exit_tag_str(r.exit_tag), r.entry_flow_near);
         s += buf;
     }
     return s;

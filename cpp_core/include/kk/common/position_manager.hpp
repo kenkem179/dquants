@@ -50,6 +50,7 @@ struct TradeRecord {
     // entry-context diagnostics (carried from the signal; no effect on management)
     double  brk_dist_atr = 0.0, body_pct = 0.0, adx = 0.0, di_spread = 0.0, runway_atr = 0.0, node_net = 0.0;
     double  spread_pips = 0.0, spread_atr = 0.0;
+    double  entry_flow_near = 0.0;  // H12: near-price net tick-vol delta within N*ATR at entry ([-1,+1])
 };
 
 class PositionManager {
@@ -154,6 +155,7 @@ public:
         rec_.session = session; rec_.entry = entry_; rec_.risk_price = risk_; rec_.reason = sig.reason;
         rec_.brk_dist_atr = sig.f_brk_dist_atr; rec_.body_pct = sig.f_body_pct; rec_.adx = sig.f_adx;
         rec_.di_spread = sig.f_di_spread; rec_.runway_atr = sig.f_runway_atr; rec_.node_net = sig.f_node_net;
+        rec_.entry_flow_near = sig.f_entry_flow_near;
         rec_.spread_pips = (p.pip_size > 0.0) ? entry_spread / p.pip_size : 0.0;
         rec_.spread_atr  = (entry_atr1 > 0.0) ? entry_spread / entry_atr1 : 0.0;
         realized_usd_ = 0.0;

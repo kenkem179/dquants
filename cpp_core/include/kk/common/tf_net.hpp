@@ -91,6 +91,37 @@ inline double tf_net_near_at(const TfSeries& s, int shift, int look, double win_
     return (tot > 0.0) ? (tB - tS) / tot : 0.0;
 }
 
+// Index-based near-price net (same math as tf_net_near_at, but the window ENDS at an absolute bar
+// index endIdx instead of a shift-from-newest). Sums the `look` bars ending at endIdx whose hlc3 sits
+// within win_atr x atr[endIdx] of bars[endIdx].close; returns (buy-sell)/(buy+sell) in [-1,+1]. Reads
+// only bars[..endIdx] -> NO lookahead. This is the base-TF "near-price net volume delta within N*ATR
+// of current price" used by the entry-flow veto (H12). atr[endIdx]<=0 or px<=0 -> 0.
+inline double near_price_net_at(const std::vector<Bar>& bars, const std::vector<double>& atr,
+                                int endIdx, int look, double win_atr, double mintick) {
+    if (endIdx < 0 || endIdx >= (int)bars.size()) return 0.0;
+    const double px = bars[endIdx].close;
+    if (px <= 0.0) return 0.0;
+    const double a = (endIdx < (int)atr.size()) ? atr[endIdx] : 0.0;
+    if (a <= 0.0) return 0.0;
+    const double win = win_atr * a;
+    const int start = std::max(0, endIdx - look + 1);
+    double tB = 0.0, tS = 0.0;
+    for (int i = start; i <= endIdx; i++) {
+        const double hi = bars[i].high, lo = bars[i].low, op = bars[i].open, cl = bars[i].close;
+        if (cl <= 0.0 || hi < lo) continue;
+        const double rng = std::max(hi - lo, mintick);
+        const double dp = (cl - op) / rng;
+        const double p = (hi + lo + cl) / 3.0;
+        if (std::fabs(p - px) <= win) {
+            const double v = bars[i].tick_count > 0 ? (double)bars[i].tick_count : 0.0;
+            tB += v * std::max(dp, 0.0);
+            tS += v * std::max(-dp, 0.0);
+        }
+    }
+    const double tot = tB + tS;
+    return (tot > 0.0) ? (tB - tS) / tot : 0.0;
+}
+
 // Shift of the LAST CLOSED bar of the series at decision time T (ms) — NetLastClosedShift.
 inline int net_last_closed_shift(const TfSeries& s, int64_t decisionT_ms) {
     int n = s.size();

@@ -1,5 +1,28 @@
 # HANDOFF — read me first, update me last
 
+## 🔬 H12 ENTRY-FLOW EXHAUSTION VETO — BUILT default-OFF + AUTOPSY-REJECTED (2026-06-27)
+User's REAL idea (not the giveback patch): after enough breakouts beyond mVAH/mVAL, flow exhausts → veto a
+geometrically-valid entry when the **near-price net tick-vol delta within ±2.4×ATR** is AGAINST it. Built the
+EXACT measure + ran the model-free autopsy gate BEFORE any sweep (CLAUDE.md doctrine). **Verdict: the literal
+mechanism does NOT validate — built default-OFF, byte-identical, NOT swept.**
+- **Measure:** `near_price_net_at()` in `cpp_core/include/kk/common/tf_net.hpp` = (buy−sell)/(buy+sell) of the
+  last `entry_flow_look`(=50) bars whose hlc3 ∈ ±`entry_flow_veto_atr`(=2.4)×ATR of the signal-bar close, [−1,+1],
+  no-lookahead. Params `enable_entry_flow_veto`(OFF)/`entry_flow_veto_atr`/`entry_flow_veto_min`/`entry_flow_look`.
+  Journaled per trade as `entryFlowNear` (new trades-CSV col). Veto sits after net-persist in `tick_engine.hpp`.
+- **Autopsy (2117 lock entries, XAU M5 full 2025–2026, model-free mfeR/reach1R — exit model NOT trusted):**
+  near-price flow is ~always WITH the breakout (median +0.28; only ~10% against). The against-flow entries are
+  EQUAL-or-BETTER (mfeR 1.306 vs 1.272, reach1R 46.2% vs 41.8%, smaller maeR) → they're favorable PULLBACK
+  entries, not traps. Holds even on EXTENDED (top-Q brkDist) breakouts. A veto would remove good trades.
+- **The proxy that flickered = a DIFFERENT quantity:** `nodeNet` (VP-node decayed buy/sell at the breakout
+  price, i.e. structural absorption) — mild-against entries were −26/tr w/ lower mfeR, but WEAK + non-monotone
+  (strong-against tail reversed). Separate hypothesis. Also untested: FADING ABSOLUTE volume (the literal
+  "volume dies out" = a magnitude veto, not a direction veto).
+- **Verified:** default OFF → trades byte-identical to the lock (behavioral trade-diff vs HEAD empty; same 2117
+  trades/balance); `make test` green; backtester rebuilt. Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`.
+- **▶ DECISION FOR USER:** accept reject of the 2.4×ATR net-delta veto (model-free evidence clear), OR pursue a
+  refinement — (a) nodeNet structural-absorption veto, (b) fading-volume magnitude veto — each needs its own
+  autopsy + MT5. Else next open MasterVP lever stays **H7 (BTC M3, never properly swept)**. Uncommitted→committing.
+
 ## ✅ H10c SESSION-GIVEBACK STOP — BUILT + MT5-TESTED → REJECT (2026-06-26) — DONE, no deploy change
 User's standing "MasterVP chases breakouts, gives good trades back to the market" thrust. Built default-OFF
 `InpGivebackPct` (halt NEW entries after handing back ≥X% of the day's peak GAIN, never truncates the open

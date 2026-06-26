@@ -76,6 +76,7 @@ struct Signal {
     double f_di_spread    = 0.0;
     double f_runway_atr   = 0.0;
     double f_node_net     = 0.0;
+    double f_entry_flow_near = 0.0;  // H12: near-price net tick-vol delta within N*ATR at the signal bar
 };
 
 }  // namespace kk

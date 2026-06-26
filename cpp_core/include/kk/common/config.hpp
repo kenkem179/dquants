@@ -126,6 +126,16 @@ struct Params {
     int    net_flip_bars        = 3;
     double net_flip_min         = 0.5;
     int    net_vol_avg_len      = 50;    // rolling tick-count window for the vol weight
+    // ---- H12 entry-flow veto — near-price net-delta exhaustion gate — default OFF (inert) ----
+    // After the breakout move, order flow exhausts: a candidate entry can be beyond mVAH/mVAL by the
+    // required ATR yet be a trap. Compute the near-price net tick-volume delta over `entry_flow_look`
+    // bars whose hlc3 sits within entry_flow_veto_atr*ATR of current price (net = (buy-sell)/(buy+sell),
+    // [-1,+1]); if that net is AGAINST the candidate direction beyond entry_flow_veto_min, SKIP the entry.
+    // entry_flow_near is ALWAYS computed and journaled (diagnostic); the veto only acts when enabled.
+    bool   enable_entry_flow_veto = false;
+    double entry_flow_veto_atr   = 2.4;   // near-price band half-width in ATR (the user's "2.4 ATR distance")
+    double entry_flow_veto_min   = 0.0;   // |net| against the trade beyond this -> veto (0 = any against)
+    int    entry_flow_look       = 50;    // bars summed for the near-price net (ending at the signal bar)
     // ---- conviction-protect (TP1 redesign) — default OFF (inert) ----
     // Once a winner has run (MFE >= arm_r) AND the near-price VP node-net flips AGAINST the position
     // (long: net <= -net_min ; short: net >= +net_min — the panel's "Net ▼/over/under" verdict), bank a
@@ -380,6 +390,10 @@ inline bool apply_kv(Params& p, const std::string& key, const std::string& val) 
     else if (key == "InpConvictionPartialFrac") p.conviction_partial_frac = D();
     else if (key == "InpConvictionLockFrac") p.conviction_lock_frac = D();
     else if (key == "InpNetVolAvgLen") p.net_vol_avg_len = I();
+    else if (key == "InpEnableEntryFlowVeto") p.enable_entry_flow_veto = to_bool(val);
+    else if (key == "InpEntryFlowVetoAtr") p.entry_flow_veto_atr = D();
+    else if (key == "InpEntryFlowVetoMin") p.entry_flow_veto_min = D();
+    else if (key == "InpEntryFlowLook") p.entry_flow_look = I();
     else if (key == "InpEnableStructTp") p.enable_struct_tp = to_bool(val);
     else if (key == "InpStpHvnFrac") p.stp_hvn_frac = D();
     else if (key == "InpStpEdgeOffAtr") p.stp_edge_off_atr = D();

@@ -156,6 +156,20 @@ What remains genuinely open:
   return, same Sharpe/edge. No sweep, no gate needed (pure linear scaling of the locked config). Ship as a
   documented preset variant alongside the 1.0% lock so users can pick their drawdown tolerance.
 
+- [x] **H12 — Entry-flow exhaustion veto (near-price net delta). BUILT default-OFF + AUTOPSY-REJECTED 2026-06-27.**
+  User's idea: after enough breakouts beyond mVAH/mVAL, flow exhausts → veto a geometrically-valid entry when
+  the near-price net tick-vol delta within ±2.4×ATR is AGAINST it. Built the EXACT measure (`near_price_net_at`
+  in tf_net.hpp; `enable_entry_flow_veto`/`entry_flow_veto_atr=2.4`/`_min`/`entry_flow_look=50`), journaled
+  `entryFlowNear` per trade. **Model-free autopsy (2117 lock entries, mfeR/reach1R — exit model NOT trusted):
+  the veto does NOT validate.** Near-price flow is ~always WITH the breakout (median +0.28); the ~10% against-flow
+  entries are EQUAL-or-BETTER (mfeR 1.306 vs 1.272, reach1R 46.2% vs 41.8%, smaller maeR) — they mark favorable
+  PULLBACK entries, not traps. Holds even on EXTENDED (top-Q brkDist) breakouts. Per CLAUDE.md the autopsy gates
+  the sweep → NO sweep spent. Infra stays default-OFF/inert (byte-identical, trade-diff vs HEAD empty).
+  Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`. **Open refinements (DIFFERENT quantities, not
+  this veto):** (a) `nodeNet` VP-node structural absorption — the proxy that flickered (mild-against −26/tr, but
+  weak + non-monotone); (b) FADING ABSOLUTE volume (participation dies out) = a magnitude veto, the literal
+  reading of "volume dies out", untested. Pursue only if user wants — each needs its own autopsy + MT5.
+
 - [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
   on XAU; re-confirm MasterVP M5 XAU edge).
 

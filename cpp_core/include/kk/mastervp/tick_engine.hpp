@@ -477,10 +477,17 @@ private:
         if (trade_to_ms_ > 0 && bars_[sig_bar].ts_ms >= trade_to_ms_) return;
 
         if (!ev.valid || !ev.sig.valid) return;
-        const Signal& sig = ev.sig;
+        Signal sig = ev.sig;   // mutable copy: stamp the entry-flow diagnostic, journaled on fill
         const bool dbg = dbg_from_ && bars_[sig_bar].ts_ms >= dbg_from_ && bars_[sig_bar].ts_ms <= dbg_to_;
         auto blk = [&](const char* why) { if (dbg) std::fprintf(stderr, "[gate] %s %s -> BLOCK: %s\n",
                        trade_dbg_time_(sig_bar).c_str(), sig.is_long ? "L" : "S", why); };
+
+        // H12 entry-flow exhaustion: near-price net tick-vol delta within entry_flow_veto_atr*ATR of the
+        // signal-bar close (always computed for the journal; the veto only acts when enabled). A LONG with
+        // net flow against it (selling dominates near price) — and vice versa — is a likely exhaustion trap.
+        const double efn = near_price_net_at(bars_, atr_, sig_bar, p_.entry_flow_look,
+                                             p_.entry_flow_veto_atr, p_.mintick);
+        sig.f_entry_flow_near = efn;
 
         // Supplementary quality gate (before the main safety gate, as in OnTick).
         const char* qwhy = "quality";
@@ -490,6 +497,13 @@ private:
         if (p_.enable_net_persist
             && !net_persist_n_(sig.is_long, sig_bar, p_.net_persist_bars, p_.net_persist_min)) {
             blk("net persistence"); return;
+        }
+
+        // H12 entry-flow veto: skip when near-price net delta is AGAINST the candidate beyond the threshold
+        // (long: efn <= -min ; short: efn >= +min). Default OFF (enable_entry_flow_veto=false) -> inert.
+        if (p_.enable_entry_flow_veto) {
+            const double along = sig.is_long ? efn : -efn;
+            if (along < -p_.entry_flow_veto_min) { blk("entry flow against"); return; }
         }
 
         // Flat check + main safety gate (order mirrors OnTick / SafetyBlockReason).
