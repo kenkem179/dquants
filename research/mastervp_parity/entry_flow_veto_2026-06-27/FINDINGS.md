@@ -71,4 +71,29 @@ entry-exhaustion intuition has no near-price-volume expression that flags an XAU
 `near_price_net_at()` (tf_net.hpp); engine computes `efn` at the gate, journals `Signal::f_entry_flow_near`
 → `TradeRecord::entry_flow_near` → `entryFlowNear` CSV column; veto sits after net-persist. OFF → trades
 byte-identical to the lock (behavioral trade-diff vs HEAD empty; same 2117 trades / balance). `make test` green.
-</content>
+
+## H12c — nodeNet STRUCTURAL-ABSORPTION veto → AUTOPSY PASS (2026-06-27), build candidate
+The third operationalization, and the ONLY one that survives. `nodeNet` = (buy−sell)/(buy+sell) at the entry
+price from the decayed master-VP node engine — i.e. does the level you're breaking into have a HISTORY of net
+selling (long) / buying (short)? Autopsy on the 2117 lock entries, signed by direction (`along`), model-free:
+
+| quintile of nodeNet-along | n | mfeR | reach1R | maeR | usd/tr |
+|---|--:|--:|--:|--:|--:|
+| Q1 [-1.00, 0.00) AGAINST | 257 | **1.137** | **38.5%** | **0.703** | **−26.0** |
+| Q2 [0.00, 0.12) | 586 | 1.280 | 40.6% | 0.654 | +22.3 |
+| Q3 [0.12, 0.27) | 418 | 1.367 | 45.7% | 0.654 | +29.3 |
+| Q4 [0.27, 0.56) | 430 | 1.278 | 45.3% | 0.672 | −2.2 |
+| Q5 [0.56, 2.00) | 426 | 1.260 | 40.1% | 0.683 | −2.5 |
+
+**Against-absorption (Q1) is worst on EVERY model-free axis.** The damage concentrates in MILD-against
+[-0.10, 0): n=194, mfeR 1.077, −38.5/tr (the strong-against tail is n=5 = noise, ignore). **ROBUST across both
+years independently:** 2025 mild-against mfeR 1.101 / −27.7 vs rest 1.281 / +9.6; 2026 mild-against 1.027 /
+−61.3 vs rest 1.331 / +19.7. Unlike the 2.4×ATR flow (H12) and volume-magnitude (H12b) — which were flat/inverse
+— this separates winners from losers and generalizes.
+
+⇒ **BUILD CANDIDATE:** `enable_node_absorb_veto` — skip entry when nodeNet-along < 0 (skips the 257 net-negative
+Q1 trades; bulk is the mild band). ⚠️ Before locking: (1) DEPLOYABILITY — confirm the decayed VP node engine is
+ported to the MQL EA (conviction-protect uses it engine-side; verify the EA computes node_net live, else this is
+engine-only/non-shippable); (2) full engine A/B → 6-fold WF (per-fold) → MC → gate.py; (3) MT5-confirm. The
+≥0 part of the distribution is non-monotone (Q3>Q4≈Q5) — the veto is a one-sided `<0` cut, NOT a band to tune
+(tuning the tiny tail = overfit). Queued AFTER the BTC M3 (H7) sweep per user.
