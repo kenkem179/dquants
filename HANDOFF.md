@@ -1,14 +1,41 @@
 # HANDOFF — read me first, update me last
 
-## 🔵 NOW ACTIVE (2026-06-27): pivot to KenKem optimization — BTC just CLOSED, MasterVP converged
-User direction this session: MasterVP XAU is locked+released (1.07) and fully converged; BTC revisited and
-**CLOSED** (below); now **pivot to KenKem optimization** — the KK-KenKem XAU M1 D5-E4Long lock (MT5 +1427/PF
-1.428, gate PASS) never got MasterVP's exhaustive lever-sweep, so it's the highest remaining portfolio upside.
-- **▶ NEXT ACTION (me): orient on KenKem state, then propose the lever-sweep plan.** KenKem lock + parity
-  history is in `research/kenkem_parity/` + memories [[kenkem-xau-d3-opt-lock]], [[kenkem-e1-efficiency-ratio-weak]],
-  [[kenkem-e1e2e4e5-sweep-2026-06-21]], [[best-experts-release-table]]. Engine = `cpp_core` (KenKem tools under
-  `cpp_core/tools/kenkem/`). ⚠️ KenKem E4 engine EXITS are fictional (lock is `noE4`/`E4_LONG_ONLY`) — MT5-judge
-  any exit-model change. Goal eventually: pip→ATR-relative ([[goal-pip-to-atr-relative]]) AFTER parity locked.
+## 🔵 NOW ACTIVE (2026-06-27): KenKem — lock edge-autopsy DONE; E5-parity path assessed (HARD), awaiting steer
+User direction this session: MasterVP XAU locked+released (1.07, converged); BTC revisited+**CLOSED** (below);
+pivoted to **KenKem**. Did the pre-sweep edge-autopsy + assessed the user-chosen "add sample via E5 parity" path.
+- **LOCK EDGE-AUTOPSY (commit 4a291e9, `research/kenkem_parity/LOCK_EDGE_AUTOPSY_2026-06-27.md`):** lock repro
+  n=141/net+1,988/PF1.517/maxDD 4.8%. Edge REAL but NARROW: **87% of net from 2025Q4**, tail-heavy (top-10=88%).
+  Weak spot = **2025Q3** (highest-volume quarter yet net LOSER PF 0.83 = over-trades chop). EA-exit −623 leak is
+  CORRECT loss-cutting (mfeR 0.35, never green), ~all E2 stall-outs → exit-tuning is NOT the lever. Both leaks
+  share ONE root: **E2/chop entries that never develop**. ⚠️ **n=141, MinTRL~122 → any sweep that cuts n breaks
+  the gate**; MasterVP-style 40-lever sweep = overfitting machine here. Optimization must be surgical+per-quarter+gated.
+- **E5-PARITY PATH = HARD, stuck at 52.8% recall ceiling** (authoritative: `E5_REALTRACE_FINDINGS.md` +
+  `E5_2026_GATETRACE_FINDINGS.md`). All cheap hypotheses killed (config/limit/pip-tol/ATR/forming-ADX). Residual
+  51 missed = **42 M1 onset BAR-PAIRING** (engine arms @B-2, MT5 effective @B-1; EMA VALUES match exactly). Naive
+  shift REGRESSES (52.8→41.7%, net −617→−1231; arming+fire coupled, B-2 net-best). Correct fix needs EA latch
+  internals (`m_prevBullishAligned`/`m_lastBullishSignal`) → add RealTrace cols (kenkem repo) + **a new user MT5
+  E5-only realtrace run** + precise engine port, regression risk, payoff uncertain (best ~70%, maybe still untrust-
+  worthy). Explore-agent's "sideways-gate missing / pip-tol hypothesis" claims were WRONG (verified in code: line
+  155 `entries.hpp` already gates E5 sideways; pip-tol killed in gatetrace doc). The +466-net missed edge is real.
+- **USER CHOSE option B (instrument EA + MT5 run). ✅ DONE this session — now BLOCKED on the user's MT5 run.**
+  Added 4 onset-latch columns to the EA realtrace (`prev_aligned_bull/bear` = the m_prev*Aligned the onset
+  compared against, captured before the once-per-bar overwrite via PERSISTENT members `m_rtPrevBull/Bear`;
+  `last_bull_signal/bear_signal` = armed-bar index). Files: `kenkem/MQL5/Experts/KenKem/Parity/RealTrace.mqh`
+  + `Entries/Entry5.mqh` (NOT committed in kenkem repo — user manages it; compiled into the live `.ex5`).
+  ⚠️ The realtrace-wired EA is **`KenKemExpert.mq5`** (v1.8.154, includes RealTrace@41) — NOT the `-1.8.154-dev`
+  snapshot (no RealTrace include, won't compile headless). **Compiled 0 errors → `kenkem/MQL5/Experts/KenKem/
+  KenKemExpert.ex5`** (kenkem/MQL5 is the live MT5 data folder, symlinked into the wine MT5 as `Experts/KenKem`).
+  reproduce.set staged + synced: load **`dquants/KK-KenKem/KK-KenKem-E5only-2026H1-RealTrace.set`**.
+- **▶ AWAITING USER MT5 RUN (exact):** EA `KenKemExpert` · XAUUSD · **M1** · every-tick real ticks ·
+  **2026.01.01→2026.06.01** · dep 10k · load the E5only-RealTrace .set (`InpExportRealTrace=true`). MT5 truth =
+  108 E5 / +949. Output `realtrace_<sym>.csv` → I auto-collect (search wine-MT5 Agent Files + `kenkem/Tester/
+  Agent-127.0.0.1-3000/MQL5/Files/KenKem/`). Plan + analysis next-steps: `E5_ONSET_LATCH_INSTRUMENTATION_2026-06-27.md`.
+- **▶ NEXT (me, post-run):** extend `diff_e5_valuediff.py` w/ the 4 cols → pin the EA's exact arm bar per the 42
+  onset misses → port `triggers.hpp` E5 onset to that pairing (NOT a blind shift) → validate 2026 recall UP +
+  2025 stays matched + no overfire blow-up. Win ≈ +466 net (doubles E5 captured edge → enough sample to revisit
+  enabling E5 in the lock). Fallback if regresses: accept 52.8% ceiling, E5 OFF, surgical E2/chop sweep instead.
+  Memories: [[kenkem-e5-onset-trap-fix]], [[kenkem-e5-2026-selection-break]], [[goal-pip-to-atr-relative]],
+  [[mt5-run-autocollect-then-proceed]]. Engine: `cpp_core/tools/kenkem/tick_backtester`; bars `tools/bars_xauusd_2024_2026_m1.csv`.
 
 ## ❌ BTC REVISIT (Monster/BTC) — NO ROBUST EDGE, CLOSED — DONE 2026-06-27
 Revisited whether ANY BTCUSD edge is salvageable (Monster=retired, merged into MasterVP). **Verdict: CLOSE BTC.**
