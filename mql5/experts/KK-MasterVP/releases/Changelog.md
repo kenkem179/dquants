@@ -1,10 +1,10 @@
 # KK-MasterVP — Changelog
 
-## 1.07 — 2026-06-26
+## 1.07 — 2026-06-27
 
-- Built `2026-06-26T14:18:02Z` · commit `0f985a0` on `2-stabilization`
+- Built `2026-06-27T12:21:05Z` · commit `1ac0db1` on `2-stabilization`
 - EA: `KK-MasterVP-1.07.ex5` (locked build of `KK-MasterVP.mq5`)
-- XAU M5 lock: add ProgTrail late-arm ladder (Trigger 2.0R/Inc 0.75/Step 0.2). MT5 full-run PF 1.4127->1.4246 (+3.4% net), 2026 1.4372->1.4581; gate DSR 1.000 PASS. Profit-lock master TOGGLE (InpPmProgTrail) now user-facing in Market edition; tuning baked.
+- Release packaged via make_release.sh (no --notes given).
 - Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
 
 ## 1.06 — 2026-06-25

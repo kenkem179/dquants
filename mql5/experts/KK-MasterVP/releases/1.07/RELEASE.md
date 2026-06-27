@@ -1,7 +1,7 @@
 # KK-MasterVP — release 1.07
 
-- Built: `2026-06-26T14:18:02Z` (UTC)
-- Source commit: `0f985a0` on `2-stabilization`
+- Built: `2026-06-27T12:21:05Z` (UTC)
+- Source commit: `1ac0db1` on `2-stabilization`
 - EA: `KK-MasterVP-1.07.ex5` (locked build of `KK-MasterVP.mq5`)
 
 ## Parameter sets
