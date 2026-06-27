@@ -1,6 +1,21 @@
 # HANDOFF — read me first, update me last
 
-## 🔴 NOW ACTIVE (2026-06-27 pm): KenKem M3 (K1 lever) — TESTED → REJECT. KenKem M1 D5-E4Long stays sole edge.
+## 🔴 NOW ACTIVE (2026-06-27 pm-2): BTC exit-geometry RE-SWEEP — user's catch was RIGHT, BTC still closed (right reason now)
+User correctly flagged the BTC "no edge" verdict used the **abandoned `RunnerRr=10`/wide-trail/no-ladder**
+exit, NOT the proven XAU M5 geometry (capped RR 3.2/4.0 + late-arm ProgTrail ladder). Re-tested with the
+proven exit transplanted onto the SAME BTC entries (`research/mastervp_parity/btc_exit_resweep_2026-06-27/`).
+- **Baseline VALIDATED** (arm A reproduces revisit 1232 tr / −1892 exactly; bugs fixed = needed `--set-all`
+  + `--symbol-btc` + `--trade-from-ms 1735689600000`).
+- **Result: the proven exit HELPS but does NOT rescue.** BTC M5 best = RR3.2/partial0/ladder **PF 0.980 /
+  net −1,223** (improved from −1,892 / 0.952, ~35% less loss + lower DD) — STILL a loser, never PF>1.
+  M3 still −9,981 / 100% DD. **Partial-banking HURTS BTC too** (monotone p0>p20>p33, same as XAU — XAU lock
+  is `InpTp1ClosePct=0`; stability = ladder+capped-RR, NOT partial). **Binding constraint = ENTRY quality**
+  (exit-agnostic mfeR median ~0.85R, 43% reach 1R) — no exit fixes entries that don't run.
+- **▶ BTC stays CLOSED** (now with the exit confound eliminated). No MT5 run warranted (loser in the
+  optimistic engine). XAU M5 (MasterVP) + XAU M1 (KenKem D5-E4Long) remain the only validated edges.
+  Tools: `ab.py` (A/B+mfeR), `sweep2.py` (RR×partial+M3). [[btc-no-robust-edge-closed]].
+
+## 🔴 (prior, 2026-06-27 pm): KenKem M3 (K1 lever) — TESTED → REJECT. KenKem M1 D5-E4Long stays sole edge.
 User asked for a path to a profitable KenKem from E1/E2/E5 + combos, "accept M1 parity is hard, do M3/M5
 instead", thoroughly-swept-and-locked-only. Probed + swept the **K1 M3 lever** end-to-end this session.
 - **Engine constraint found:** kenkem `tick_backtester` is hardwired M1-base (resamples ×3/×5/×15). Feeding
