@@ -62,6 +62,12 @@ enum KKN_Event
    KKN_EV_TP2   = 6    // TP2 (full TP)
 };
 
+// Compliance disclaimer appended to every broadcast trade message. These are a
+// record of what the EA DID on the account, never a recommendation - make that
+// explicit so a signal can never read as financial advice. ASCII only (MQL5
+// Market NON_LATIN rule).
+const string KKN_DISCLAIMER=" | Automated bot logs, not financial advice.";
+
 // ===================================================================
 //  Strategy display name: EA tag + family parsed from the reason tag.
 //  reason tags: L-/S- prefix + family. ORDER MATTERS ("XREV" contains
@@ -216,27 +222,35 @@ private:
       string side  =isLong?"BUY":"SELL";
       string strat =Strategy(reason);
       string mg    ="#"+IntegerToString(m_magic);
+      string line;
 
       if(ev==KKN_EV_OPEN)
       {
          string head=StringFormat("%s %s %.2f lots %s",_Symbol,side,lot,mg);
          if(m_mode==KKN_MODE_SIMPLIFIED)
-            return head+" | Strategy: "+strat;
-         return head+" | Entry: "+P(entry)+" | SL: "+P(sl)+
-                " | TP1: "+P(tp1)+" | TP2: "+P(tp2)+" | Strategy: "+strat;
+            line=head+" | Strategy: "+strat;
+         else
+            line=head+" | Entry: "+P(entry)+" | SL: "+P(sl)+
+                 " | TP1: "+P(tp1)+" | TP2: "+P(tp2)+" | Strategy: "+strat;
+      }
+      else
+      {
+         // follow-up events
+         string head=StringFormat("%s %s %s",_Symbol,side,mg);
+         string label=EventLabel(ev);
+         if(m_mode==KKN_MODE_SIMPLIFIED)
+            line=head+" | "+label+" | Strategy: "+strat;
+         else
+         {
+            // full mode: attach the relevant level / net
+            string detail="";
+            if(ev==KKN_EV_TP1 || ev==KKN_EV_BE || ev==KKN_EV_TRAIL) detail=" @ "+P(price);
+            else                                                    detail=" net "+M(net);   // SL / SL+ / TP2
+            line=head+" | "+label+detail+" | Strategy: "+strat;
+         }
       }
 
-      // follow-up events
-      string head=StringFormat("%s %s %s",_Symbol,side,mg);
-      string label=EventLabel(ev);
-      if(m_mode==KKN_MODE_SIMPLIFIED)
-         return head+" | "+label+" | Strategy: "+strat;
-
-      // full mode: attach the relevant level / net
-      string detail="";
-      if(ev==KKN_EV_TP1 || ev==KKN_EV_BE || ev==KKN_EV_TRAIL) detail=" @ "+P(price);
-      else                                                    detail=" net "+M(net);   // SL / SL+ / TP2
-      return head+" | "+label+detail+" | Strategy: "+strat;
+      return line+KKN_DISCLAIMER;   // compliance: tag every signal as a bot log
    }
 
 public:
@@ -251,6 +265,13 @@ public:
    void SetMode(int mode){ m_mode=mode; }
 
    bool Enabled(){ return m_channel!=KKN_NONE; }
+
+   // Offline formatter accessor: returns the EXACT line that would be broadcast
+   // for this event/mode WITHOUT sending. Used by the deploy-ops compliance test
+   // to assert message content (no advice phrasing / no leaked levels for users).
+   string Preview(int ev,bool isLong,double lot,double entry,double sl,
+                  double tp1,double tp2,double price,double net,string reason)
+   { return Build(ev,isLong,lot,entry,sl,tp1,tp2,price,net,reason); }
 
    // Route one line to every configured channel. subject is for Email only.
    void Send(string subject,string line)

@@ -25,7 +25,7 @@
 #property copyright "KenKem / dquants"
 #property version   "1.10"
 #property strict
-#property description "Validates D1 Account Guardian math + D2 trade CSV + D3 alerts (all strategies x all events x both modes)"
+#property description "Validates D1 Account Guardian math + D2 trade CSV + D3 alerts + D4 signal-compliance (not financial advice)"
 
 #include "../KK-Common/AccountGuardian.mqh"
 #include "../KK-Common/TradeLogger.mqh"
@@ -35,9 +35,11 @@ input group "===== What to run ====="
 input bool   RUN_GUARDIAN_MATH = true;   // D1: run Account Guardian pure-math unit tests
 input bool   RUN_NOTIFY_TEST   = true;   // D3: send REAL test messages to the channels below
 input bool   RUN_CSV_TEST      = true;   // D2: create the live trade CSV + write a sample row
+input bool   RUN_COMPLIANCE_TEST = true; // D4: assert signal text reads as a bot log, NOT financial advice (offline)
 
 input group "===== Notification channels (D3; same as the EA) ====="
-input int    InpNotifyChannel     = 2;   // 0 None 1 Email 2 Discord 3 Telegram 4 E+D 5 E+T 6 D+T 7 All
+input bool   InpAutoChannelFromCreds = true; // auto-route showcase to whichever creds you filled (Telegram and/or Discord), overriding InpNotifyChannel
+input int    InpNotifyChannel     = 2;   // 0 None 1 Email 2 Discord 3 Telegram 4 E+D 5 E+T 6 D+T 7 All (used when auto is OFF / no creds)
 input int    InpNotifyMode        = 2;   // 1 Full (developers), 2 Simplified (default for users)
 input bool   InpSendBothModes     = true;// also send the event showcase in the OTHER mode (see both styles)
 input int    InpSendGapMs         = 700; // pause between messages (ms) - avoids Discord/Telegram rate limits
@@ -51,6 +53,42 @@ void Check(bool cond,string name)
 {
    if(cond){ g_pass++; Print("PASS: ",name); }
    else    { g_fail++; Print("FAIL: ",name); }
+}
+
+// Map (email, discord, telegram) presence flags -> the KKN_Channel enum value.
+int ChannelFromFlags(bool e,bool d,bool t)
+{
+   if(e&&d&&t) return KKN_ALL_THREE;
+   if(d&&t)    return KKN_DISC_TG;
+   if(e&&t)    return KKN_EMAIL_TG;
+   if(e&&d)    return KKN_EMAIL_DISC;
+   if(t)       return KKN_TELEGRAM;
+   if(d)       return KKN_DISCORD;
+   if(e)       return KKN_EMAIL;
+   return KKN_NONE;
+}
+
+// Resolve which channel the showcase should actually use. When auto is on and any
+// webhook/token creds are filled, route to exactly those channels (so "I only set
+// Telegram" sends the whole showcase to Telegram), preserving an Email selection
+// from InpNotifyChannel if one was made. Otherwise fall back to InpNotifyChannel.
+int ResolveShowcaseChannel()
+{
+   bool hasD=(InpDiscordWebhookUrl!="");
+   bool hasT=(InpTelegramBotToken!="" && InpTelegramChatId!="");
+   if(!InpAutoChannelFromCreds || (!hasD && !hasT)) return InpNotifyChannel;
+
+   bool wantEmail=(InpNotifyChannel==KKN_EMAIL||InpNotifyChannel==KKN_EMAIL_DISC||
+                   InpNotifyChannel==KKN_EMAIL_TG||InpNotifyChannel==KKN_ALL_THREE);
+   return ChannelFromFlags(wantEmail,hasD,hasT);
+}
+
+// Case-insensitive substring search (for content compliance scans).
+bool ContainsCI(string haystack,string needle)
+{
+   string h=haystack, n=needle;
+   StringToLower(h); StringToLower(n);
+   return (StringFind(h,n)>=0);
 }
 
 //+------------------------------------------------------------------+
@@ -118,7 +156,10 @@ void TestNotifications()
       Check(KKN_SendTelegram(InpTelegramBotToken,InpTelegramChatId,probe), "Telegram reachable (check your chat)");
    else Print("SKIP: Telegram (no token/chatId set)");
 
-   if(InpNotifyChannel==KKN_NONE){ Print("Channel=None -> showcase skipped."); return; }
+   int showChannel=ResolveShowcaseChannel();
+   if(showChannel==KKN_NONE){ Print("Channel=None -> showcase skipped (fill Telegram and/or Discord creds)."); return; }
+   if(showChannel!=InpNotifyChannel)
+      Print("  > Auto-routing showcase to channel ",showChannel," (derived from the creds you filled).");
 
    // (b) Event-SHAPE showcase: MasterVP BreakOut full lifecycle, in BOTH modes
    //     so you can compare Full vs Simplified for every event.
@@ -130,7 +171,7 @@ void TestNotifications()
       string tag=(modes[m]==KKN_MODE_FULL)?"FULL (developers)":"SIMPLIFIED (users)";
       Print("  > Event showcase in ",tag," mode ...");
       KKNotifier nf;
-      nf.Init(InpNotifyChannel,modes[m],InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
+      nf.Init(showChannel,modes[m],InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
               "MasterVP",14111850);
       Lifecycle(nf,"L-BRK",true,KKN_EV_TP2);   // long breakout, full take-profit
    }
@@ -140,18 +181,90 @@ void TestNotifications()
    Print("  > Strategy-name coverage in primary mode (",
          (InpNotifyMode==KKN_MODE_FULL?"Full":"Simplified"),") ...");
    KKNotifier mvp;
-   mvp.Init(InpNotifyChannel,InpNotifyMode,InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
+   mvp.Init(showChannel,InpNotifyMode,InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
             "MasterVP",14111850);
    OpenClose(mvp,"S-REV", false,KKN_EV_SL);     // MeanReversion (short, stopped out)
    OpenClose(mvp,"L-IMP", true ,KKN_EV_SLPLUS); // Impulse (long, break-even+)
    OpenClose(mvp,"S-XREV",false,KKN_EV_TP2);    // XReversion (short, full TP)
 
    KKNotifier kk;
-   kk.Init(InpNotifyChannel,InpNotifyMode,InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
+   kk.Init(showChannel,InpNotifyMode,InpDiscordWebhookUrl,InpTelegramBotToken,InpTelegramChatId,
            "KenKem",770001);
    OpenClose(kk,"L-E1",true,KKN_EV_SL);         // KenKem E1 mapping (long, stopped out)
 
-   Print("Sent ",g_sent," showcase messages on channel ",InpNotifyChannel," - confirm they arrived.");
+   Print("Sent ",g_sent," showcase messages on channel ",showChannel," - confirm they arrived.");
+}
+
+//+------------------------------------------------------------------+
+//| D4 - signal CONTENT compliance: every broadcast message must read |
+//| as an automated record of what the EA did, NOT financial advice.  |
+//| Pure/offline (uses KKNotifier::Preview, no WebRequest) so it runs  |
+//| anywhere, including Tester. Asserts, for every lifecycle event:    |
+//|   - the "not financial advice" disclaimer is present (both modes)  |
+//|   - no advice/recommendation phrasing leaks in (both modes)        |
+//|   - SIMPLIFIED (the user-facing mode) exposes NO exact entry/SL/TP |
+//|     levels or P&L, so it can't look like a signal-service tip.     |
+//+------------------------------------------------------------------+
+void TestSignalCompliance()
+{
+   Print("--- D4 Signal compliance (not financial advice) ---");
+
+   // Advice/recommendation red-flags (case-insensitive). Deliberately does NOT
+   // include "advice"/"financial advice" - our disclaimer legitimately says
+   // "not financial advice" and must not trip its own check.
+   string banned[]={"recommend","guarantee","you should","you must","buy now",
+                    "sell now","act now","risk-free","risk free","sure profit",
+                    "can't lose","cannot lose","signal to buy","signal to sell",
+                    "should buy","should sell","must buy","must sell"};
+
+   // All seven lifecycle events, exercised long-side with representative levels.
+   int evs[7]={KKN_EV_OPEN,KKN_EV_TP1,KKN_EV_BE,KKN_EV_TRAIL,KKN_EV_SL,KKN_EV_SLPLUS,KKN_EV_TP2};
+
+   KKNotifier nf;
+   nf.Init(KKN_TELEGRAM,KKN_MODE_SIMPLIFIED,"","","","MasterVP",14111850);
+
+   // ---- SIMPLIFIED: the default, user-facing / marketplace-safe mode ----
+   for(int i=0;i<7;i++)
+   {
+      string msg=nf.Preview(evs[i],true,0.10,1234.56,1230.00,1250.00,1270.00,1250.00,120.00,"L-BRK");
+      string tag="SIMPLIFIED ev"+IntegerToString(evs[i]);
+
+      Check(ContainsCI(msg,"not financial advice"), tag+": carries disclaimer");
+
+      bool clean=true;
+      for(int b=0;b<ArraySize(banned);b++)
+         if(ContainsCI(msg,banned[b])){ clean=false; Print("   advice phrase '",banned[b],"' in: ",msg); }
+      Check(clean, tag+": no advice phrasing");
+
+      // No actionable levels for users: no Entry/SL/TP labels, no " @ price", no " net pnl".
+      bool noLevels=(StringFind(msg,"Entry:")<0 && StringFind(msg,"SL:")<0 &&
+                     StringFind(msg,"TP1:")<0  && StringFind(msg,"TP2:")<0 &&
+                     StringFind(msg," @ ")<0   && StringFind(msg," net ")<0);
+      Check(noLevels, tag+": no exact entry/SL/TP/PnL levels exposed");
+   }
+
+   // ---- FULL: developer mode shows levels, but still must not read as advice ----
+   nf.SetMode(KKN_MODE_FULL);
+   for(int i=0;i<7;i++)
+   {
+      string msg=nf.Preview(evs[i],true,0.10,1234.56,1230.00,1250.00,1270.00,1250.00,120.00,"L-BRK");
+      string tag="FULL ev"+IntegerToString(evs[i]);
+
+      Check(ContainsCI(msg,"not financial advice"), tag+": carries disclaimer");
+
+      bool clean=true;
+      for(int b=0;b<ArraySize(banned);b++)
+         if(ContainsCI(msg,banned[b])) clean=false;
+      Check(clean, tag+": no advice phrasing");
+   }
+
+   // Eyeball samples (entry shape in both modes).
+   nf.SetMode(KKN_MODE_SIMPLIFIED);
+   Print("  sample SIMPLIFIED entry: ",
+         nf.Preview(KKN_EV_OPEN,true,0.10,1234.56,1230.00,1250.00,1270.00,0,0,"L-BRK"));
+   nf.SetMode(KKN_MODE_FULL);
+   Print("  sample FULL entry:       ",
+         nf.Preview(KKN_EV_OPEN,true,0.10,1234.56,1230.00,1250.00,1270.00,0,0,"L-BRK"));
 }
 
 //+------------------------------------------------------------------+
@@ -182,9 +295,10 @@ int OnInit()
    Print("KK Deploy-Ops validator (D1/D2/D3)");
    Print("========================================");
 
-   if(RUN_GUARDIAN_MATH) TestGuardianMath(); else Print("[SKIP] D1 guardian math");
-   if(RUN_CSV_TEST)      TestTradeCsv();     else Print("[SKIP] D2 CSV");
-   if(RUN_NOTIFY_TEST)   TestNotifications();else Print("[SKIP] D3 notifications");
+   if(RUN_GUARDIAN_MATH)   TestGuardianMath();     else Print("[SKIP] D1 guardian math");
+   if(RUN_COMPLIANCE_TEST) TestSignalCompliance(); else Print("[SKIP] D4 signal compliance");
+   if(RUN_CSV_TEST)        TestTradeCsv();         else Print("[SKIP] D2 CSV");
+   if(RUN_NOTIFY_TEST)     TestNotifications();    else Print("[SKIP] D3 notifications");
 
    Print("========================================");
    PrintFormat("RESULT: %d passed, %d failed, %d showcase messages sent", g_pass, g_fail, g_sent);
