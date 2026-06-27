@@ -25,6 +25,15 @@ User asked "what to improve per plans" → picked **PF1** (Profiler re-sync to 1
   O(history); (2) **sparse staircase stop-path** — a vertex only when the SL actually moves (BE arm + each
   ladder step), ~200 objects/trade → a handful; (3) **reused VP scratch buffers** (no per-bar allocation).
   Scroll lag was dominated by the per-bar trend objects + the unbounded replay; both gone.
+- **📦 RELEASES (user decided): (a) MasterVP EA RE-CUT 1.07 (no bump) — DONE + committed.** Recompiled to
+  ship the new broadcast **compliance disclaimer** (`Notifier.mqh`: every Telegram/Discord/Email trade msg
+  ends "Automated bot logs, not financial advice."; shared header → KenKem inherits too). Strategy/backtest
+  byte-identical. Personal + Market editions in `releases/1.07/` — ▶ **user: upload `releases/1.07/market/
+  KK-MasterVP-Market-1.07.ex5`**. (b) **Profiler MARKET dialog curation — mechanism BUILT + verified.** The
+  parity include leaked 52 EA `input`s into the dialog; `scripts/make_profiler_market.sh` strips them (52→0,
+  baked at lock defaults, copy+restore Inputs.mqh **byte-identical**) → market `.ex5` shows only the 25
+  display knobs. ▶ **Profiler re-cut still GATED on the MT5 visual spot-check** — verify parity first, THEN
+  run the market builder + package a versioned Profiler release (decide bump then).
 - **▶ NEXT (USER, can't run headless): Step 4(ii) visual spot-check.** Recompiled `.ex5` deployed via the
   `MQL5/Indicators/KK-MasterVP-Profiler` symlink. Attach on **XAU M5 with the EA lock `.set`**; confirm entry
   markers land on the EA backtest's entry candles AND the WON/LOST/BE verdict + stop path match a sample of
