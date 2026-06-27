@@ -78,6 +78,86 @@ The new EA exports trades via its own `Parity.mqh` (toggle `InpExportParity`/Tra
   ([[kenkem-e1-sideways-avg-and-recall-maxed]]); E4 SL cap falls through to E2 bounds (`E4_ATR_SL_*`
   keys are DEAD, [[kenkem-e4-sl-cap-is-e2-not-e4]]); E5 onset reads B-2 faithfully (B-1 regresses).
 
+## Research levers (post-parity — only after P4 confirms M1 parity)
+
+- [x] **K1 — Extend E1/E2/E5 to M3 → TESTED 2026-06-27 → REJECT (XAU).** 3×-clock proxy (M3 base / HTF
+  M9/M15/M45). Sample size fine (217 tr ≫ MinTRL); but RR-rescale is the only lever that moves train PF and
+  it OVERFITS (OOS PF 0.81–0.88 net-neg at every RR; 2026Q1 −534), worse than M1 on the full window too
+  (PF 1.22 vs 1.33, maxDD 1391 vs 512); strict-alignment + gate-recalibration did NOT help. Accept KenKem
+  M1-only. Details `research/kenkem_parity/m3_sweep/M3_SWEEP_FINDINGS_2026-06-27.md`,
+  [[kenkem-m3-sweep-rejected]]. (Original hypothesis spec retained below for the record.)
+- [ ] **K1 (original spec) — Extend E1/E2/E5 to M3 (XAU **and** BTC) via STRICT EMA-alignment + recalibrated trend-quality gate (user idea, 2026-06-27).**
+  Hypothesis (user): the KenKem entries (today M1-only, lock = `D3-noE4`) may work *better* on **M3** if we
+  (a) require **strict EMA alignment** (all of 10/25/71/97/192 cleanly stacked, no marginal/overlapping
+  arming), and (b) **re-tune the entry-quality gate (trend-quality / sideways score) for the M3 bar** so the
+  trade count is **not too rare** and the **target RR stays realistic** (M3 ATR is ~√3× the M1 ATR → a
+  fixed `E1_RR`/dynamic-RR-scaling that's sane on M1 may demand unreachable absolute targets on M3).
+  - **WHY THIS IS PLAUSIBLE, NOT A FISHING TRIP.** The lock edge-autopsy (`LOCK_EDGE_AUTOPSY_2026-06-27.md`)
+    found the M1 lock's two leaks (2025Q3 net-loser, the −623 EA-exit drag) share **one root: E2/chop entries
+    that never develop**. M3 bars are coarser → fewer micro-chop arming events, and **strict EMA alignment +
+    a recalibrated quality gate is exactly a chop filter**. So K1 attacks the *measured* weakness directly,
+    rather than adding an unrelated knob. [[kenkem-e1-efficiency-ratio-weak]] (ER chop-filter was weak on M1)
+    is a caution, not a veto — the lever here is alignment-strictness + gate recalibration, not Kaufman-ER.
+  - 🔒 **PIP-HARDCODE PURGE IS A HARD PREREQUISITE FOR THE BTC ARM (user requirement, 2026-06-27).** The
+    user's explicit guarantee ask: **no pip-denominated hardcoded values**, because `pip_size` differs per
+    symbol (XAU 0.01/0.001 vs BTC 1.0) and a chart switch silently rescales every pip param → the algo dies.
+    This is NOT clean today — `docs/PIP_TO_ATR_INVENTORY.md` catalogs **~12 decision params** (incl. the
+    high-impact `EMA_ALIGNMENT_TOLERANCE_PIPS=23`, `RSI_DIV_MIN_PRICE_DIFF_PIPS`, `SL_EMA_DISTANCE`,
+    `E5_MIN_SL_PIPS`, TP-extension bounds) **plus bare `N*pip_size` literals** (`entries.hpp:225` `5.0*pip_size`)
+    that are pip-scaled. The recurring `pip_size` 0.01-vs-0.001 gold bug ([[kenkem-parity-traps]], 10× wrong EMA
+    tolerance) is this exact failure class. **Strict EMA alignment makes it WORSE**, not better: the strictness
+    knob *is* `ema_align_tol_pips`, the single most pip-sensitive param — sweeping it on XAU then loading on BTC
+    without ATR-normalization produces a meaningless threshold. **So K1-BTC is gated on completing the pip→ATR
+    conversion** ([[goal-pip-to-atr-relative]]) for at least every DECISION param the M3 entries read — convert
+    `param_pips × pip_size` → `param_atr × ATR`, EA-input ↔ engine-field 1:1 so parity holds by construction.
+    Honest sequencing tension (from the inventory doc): **conversion must come AFTER M1 per-entry parity is
+    locked** (converting first destroys the parity reference). Net order: **P4 M1 parity ✅ → pip→ATR purge →
+    THEN K1-BTC**. **K1-XAU can proceed on the existing pip params** (single symbol, pip_size fixed) and serve
+    as the parity anchor while the purge happens. Category-C value-scaling (`pointValue`, lot math) stays
+    pip/point-based by design — do NOT convert those.
+  - 🔒 **PARITY FIRST (Gate 0, non-negotiable).** M1 parity does NOT transfer to M3 — new bars re-open every
+    timeframe-sensitive trap: MTF-EMA read offset ([[kenkem-mtf-ema-off-by-one]]), the E5 onset bar-pairing
+    ([[kenkem-e5-onset-trap-fix]], still at the 52.8% recall ceiling), sideways = 5-bar-avg
+    ([[kenkem-e1-sideways-avg-and-recall-maxed]]), iATR=SMA-of-TR. Before ANY M3 sweep number is trusted, the
+    engine must reproduce an **MT5 M3 reference run** (E1+E2 first; E5 separately) to tolerance via `diff_kk.py`
+    — same doctrine as `/quant-0-parity-baseline` and [[parity-is-gate-0]]. Engine ranks ENTRIES; MT5 judges EXITS.
+  - 🔒 **SAMPLE-SIZE / MinTRL IS THE BINDING CONSTRAINT — the central risk.** The M1 lock is already
+    n=141 / MinTRL≈122 — barely deflatable ([[overfitting-gate-mandatory]]). **M3 ≈ ⅓ the bars → fewer
+    candidate entries, and strict EMA alignment cuts further** → realistic risk of n < MinTRL, at which point
+    **no M3 config can pass the gate regardless of PF.** The user's "not too rare" tuning of the quality gate
+    is precisely the counterweight, but it is in **direct tension** with "strict alignment" — loosen the gate
+    to recover n, you re-admit the chop you came to remove. The whole lever lives or dies on resolving that
+    tension: target a quality threshold that **keeps n ≥ MinTRL on a multi-year window while net/PF stays
+    above the M1 lock**, and report n + MinTRL on EVERY candidate, not just PF. If the alignment-strict
+    surface can't clear MinTRL, **K1 is REJECTED — accept M1-only** (don't loosen-to-pass).
+  - **BUILD (no MT5 mid-run; engine is the sweep harness):**
+    1. Generate **M3 bars for BOTH symbols** (engine currently has only `tools/bars_xauusd_2024_2026_m1.csv`) —
+       resample from the same imported ticks so the tick source stays the proven-exact one
+       ([[tick-source-parity-proven-exact]]); BTC ticks per [[btcusd-data-quirks]] (flat-spread years, weekend gaps).
+    2. Get one **MT5 M3 reference run per symbol** (user-executed, exact ask per
+       [[mt5-run-instructions-must-be-exact]]) to satisfy Gate 0 before trusting the engine on M3.
+    3. **Surgical sweep only** (NOT a MasterVP-style 40-lever grid — that's an overfitting machine at this n):
+       sweep **(i) EMA-alignment strictness**, **(ii) the trend-quality / sideways gate threshold**, and
+       **(iii) the RR target / dynamic-RR-scaling** — the three the user named, nothing else held loose.
+       Objective = costed PF/expectancy with maxDD penalty (CLAUDE.md), per-quarter decomposition (the M1
+       lock was 87% one quarter — do NOT lock a pooled win that hides a dead quarter, cf.
+       [[mastervp-m5-gate-sweep-lock]]).
+  - **VALIDATE (per symbol, independently — do NOT pool XAU+BTC):** per-quarter + 6-fold WF (do not pool) →
+    MC → **overfitting gate with the sweep context** (`research/stats/gate.py`, record `n_trials` +
+    `sr_trial_std`) → only a **DSR-PASS + n≥MinTRL** config is a candidate → **single MT5 confirmation run on
+    the final winner** before any lock/`.set`. BTC especially **must MT5-confirm** — engine wins on BTC have
+    repeatedly proven fictional ([[mastervp-t3-reversion-lock]], the just-closed BTC revisit
+    [[btc-no-robust-edge-closed]]); treat a BTC engine win as a hypothesis, not a result. E5 on M3 inherits the
+    unresolved onset recall ceiling — **scope K1 to E1+E2 first**, fold E5 in only if/when the onset-latch
+    instrumentation (top of HANDOFF) lands and M3 E5 parity is shown.
+  - **DECISION RULE (per symbol):** adopt an M3 lock for a symbol only if it **beats that symbol's M1 baseline
+    (XAU = `D3-noE4`; BTC has no validated KenKem baseline → must clear standalone PF/robustness bars) on PF AND
+    robustness (per-fold, per-quarter) AND clears n≥MinTRL with DSR-PASS AND MT5-confirms**. Symbols are judged
+    separately: XAU-M3 can lock while BTC-M3 rejects, or vice-versa. Otherwise M1 stays the XAU KenKem edge and
+    the failing arm is logged tested→rejected. ⚠️ **Reality check on BTC:** every BTCUSD edge across MasterVP
+    has just been closed for no robust edge on any TF — KenKem-on-BTC starts from that prior; the bar to ship
+    BTC is correspondingly high.
+
 ## Status
 - **P0: ✅** (old killed; plan written; committed `9de0342`).
 - **APPROACH PIVOT → FAITHFUL FULL CLONE (supersedes the surgical-module plan above).** Reason: Alerts

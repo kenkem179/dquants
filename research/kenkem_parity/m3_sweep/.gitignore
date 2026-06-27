@@ -1,0 +1,3 @@
+# per-cell intermediate trade CSVs (regenerable via sweep.py / validate.py)
+tr_*.csv
+v_*.csv
