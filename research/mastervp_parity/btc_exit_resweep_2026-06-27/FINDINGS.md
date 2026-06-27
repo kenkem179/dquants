@@ -40,7 +40,29 @@ Exit geometry irrelevant — M3 is hopeless.
    Losses concentrate in 2025 H1 (unconditioned down-grind) — the revisit autopsy already showed no regime
    filter rescues it.
 
-## Verdict
-BTC stays **CLOSED** — now confirmed for the RIGHT reason (weak entries), exit-geometry confound eliminated.
-The XAU M5 exit (ladder + capped RR) is a genuine improvement *mechanism*, but BTC's entries can't support it.
-Repro: `ab.py` (A/B + mfeR), `sweep2.py` (RR×partial + M3), `*_results.csv`.
+## Verdict (revised after the production reconciliation below)
+NOT "dead". The XAU M5 exit (ladder + capped RR) is a genuine improvement *mechanism* but doesn't flip the
+FULL window positive; however the full-window loss is a **single regime**, not a flat absence of edge.
+
+## PRODUCTION RECONCILIATION (2026-06-27 — user reported BTC profitable live; backtest AGREES)
+Deployed config = `mql5/experts/.../releases/1.07/KK-MasterVP-1.07-btcusd-m5.set` — key params byte-identical
+to the engine lock I tested (MasterMult30/RunnerRr10/Trail6/BeAfterTp1=true/Reversion=false) → arm A IS the
+production config. Period breakdown of THAT config (`recent.py`):
+| period | net | PF | n |
+|---|--:|--:|--:|
+| 2025 H1 | **−3,986** | 0.76 | 490 |
+| 2025 H2 | +375 | 1.04 | 386 |
+| 2026 | **+1,718** | 1.14 | 356 |
+| full | −1,892 | 0.952 | 1232 |
+**Only 2025 H1 loses; since mid-2025 BTC is net +2,093.** The user's live profit is REAL and matches the
+backtest for the period they've run it. The "closed/no-edge" framing was OVER-ABSOLUTE — correct statement:
+**BTC has a regime-dependent edge** (works trending/recovery, bleeds in the 2025-H1 down-grind).
+
+**BE-after-TP1 is ESSENTIAL (user was right):** BASE (BE on) −1,892 vs BASE_noBE −2,679 = **+787 net**;
+SL-WIN 228→682 (BE triples protected winners); it FLIPS 2025 H2 positive (+375 vs −337). BE was `true` in
+EVERY tested config — correctly tested. (Distinct from partial-banking, which hurts — partial=close-% at
+TP1; BE=move-SL-to-BE at TP1.) Ladder Trigger=1.0 is WORSE than BASE (−2,363, early-arm choke — late-arm
+2.0R is better, consistent with XAU). Caveat: engine over-credits BTC → live thinner than +1,718.
+
+**Open lever (constructive):** a regime / equity-drawdown stand-down guard to survive 2025-H1-type bleeds
+while staying live in trending regimes — turns the real recent edge into a deployable one. Repro `recent.py`.

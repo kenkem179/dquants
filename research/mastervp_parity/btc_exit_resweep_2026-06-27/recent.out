@@ -1,0 +1,10 @@
+
+        config     n     PF     net  maxDD |           2025H1           2025H2             2026
+ deployed_BASE  1232  0.952   -1892   5021 | -3986(0.76,n490)  +375(1.04,n386) +1718(1.14,n356)
+   Ladder_T1.0  1457  0.951   -2363   4825 | -4147(0.78,n564)  +776(1.06,n464) +1008(1.07,n429)
+     BASE_noBE   941  0.941   -2679   5466 | -3630(0.82,n364)  -337(0.97,n305) +1287(1.10,n272)
+
+exit-tag distribution (BE-protected exits visible here):
+  deployed_BASE: {'SL-WIN': 682, 'SL-LOSS': 530, 'TP': 20}
+  Ladder_T1.0: {'SL-WIN': 797, 'SL-LOSS': 649, 'TP': 11}
+  BASE_noBE: {'SL-WIN': 228, 'SL-LOSS': 688, 'TP': 25}

@@ -1,3 +1,4 @@
 # per-cell intermediate trade CSVs (regenerable via ab.py / sweep2.py)
 trades_btc_*.csv
 s2_*.csv
+rec_*.csv

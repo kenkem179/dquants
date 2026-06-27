@@ -1,6 +1,21 @@
 # HANDOFF — read me first, update me last
 
-## 🔴 NOW ACTIVE (2026-06-27 pm-2): BTC exit-geometry RE-SWEEP — user's catch was RIGHT, BTC still closed (right reason now)
+## 🟡 NOW ACTIVE (2026-06-27 pm-3): BTC RECONCILED — NOT dead, REGIME-DEPENDENT edge (user's production was right)
+User reported BTC profitable in live deployment + emphasized BE-after-TP1. Both verified TRUE.
+- **Deployed config (`releases/1.07/KK-MasterVP-1.07-btcusd-m5.set`) = byte-identical key params to the
+  engine lock I tested** → my arm A IS production. Period breakdown (`recent.py`): **2025H1 −3,986/PF0.76
+  (the ONLY losing stretch); 2025H2 +375/1.04; 2026 +1,718/1.14 → +2,093 since mid-2025.** Live profit is
+  REAL and matches backtest. The "CLOSE BTC, no edge" framing was OVER-ABSOLUTE — it's a regime-dependent
+  edge (works trending/recovery, bleeds in 2025-H1 down-grind), not dead.
+- **BE-after-TP1 ESSENTIAL (user right):** BASE −1,892 vs BE-off −2,679 = **+787 net**, SL-WIN 228→682,
+  FLIPS 2025H2 positive. Was `true` in every tested config (tested correctly). Distinct from partial-banking
+  (close-% at TP1) which DOES hurt. Ladder Trigger=1.0 worse than BASE (early-arm choke; late-arm 2.0R better).
+- **▶ OPEN LEVER (constructive, offered to user): a regime / equity-drawdown STAND-DOWN guard** to sit out
+  2025-H1-type bleeds while staying live in trending regimes — turns the real recent edge into a deployable
+  one. NOT more param sweeps (exhausted). ⚠️ engine over-credits BTC → live thinner than +1,718.
+  Repro `research/mastervp_parity/btc_exit_resweep_2026-06-27/` (`recent.py`, FINDINGS). [[btc-no-robust-edge-closed]].
+
+## 🔴 (prior pm-2): BTC exit-geometry RE-SWEEP — XAU exit helps M5 (−1892→−1223) but full-window still <PF1
 User correctly flagged the BTC "no edge" verdict used the **abandoned `RunnerRr=10`/wide-trail/no-ladder**
 exit, NOT the proven XAU M5 geometry (capped RR 3.2/4.0 + late-arm ProgTrail ladder). Re-tested with the
 proven exit transplanted onto the SAME BTC entries (`research/mastervp_parity/btc_exit_resweep_2026-06-27/`).
