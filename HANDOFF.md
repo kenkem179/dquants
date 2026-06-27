@@ -1,5 +1,27 @@
 # HANDOFF — read me first, update me last
 
+## 🔵 NOW ACTIVE (2026-06-27): pivot to KenKem optimization — BTC just CLOSED, MasterVP converged
+User direction this session: MasterVP XAU is locked+released (1.07) and fully converged; BTC revisited and
+**CLOSED** (below); now **pivot to KenKem optimization** — the KK-KenKem XAU M1 D5-E4Long lock (MT5 +1427/PF
+1.428, gate PASS) never got MasterVP's exhaustive lever-sweep, so it's the highest remaining portfolio upside.
+- **▶ NEXT ACTION (me): orient on KenKem state, then propose the lever-sweep plan.** KenKem lock + parity
+  history is in `research/kenkem_parity/` + memories [[kenkem-xau-d3-opt-lock]], [[kenkem-e1-efficiency-ratio-weak]],
+  [[kenkem-e1e2e4e5-sweep-2026-06-21]], [[best-experts-release-table]]. Engine = `cpp_core` (KenKem tools under
+  `cpp_core/tools/kenkem/`). ⚠️ KenKem E4 engine EXITS are fictional (lock is `noE4`/`E4_LONG_ONLY`) — MT5-judge
+  any exit-model change. Goal eventually: pip→ATR-relative ([[goal-pip-to-atr-relative]]) AFTER parity locked.
+
+## ❌ BTC REVISIT (Monster/BTC) — NO ROBUST EDGE, CLOSED — DONE 2026-06-27
+Revisited whether ANY BTCUSD edge is salvageable (Monster=retired, merged into MasterVP). **Verdict: CLOSE BTC.**
+- **M3 dead** (H7: overfit, OOS-catastrophic). **M5 = full-window LOSER** (Jan25–Jun26 net −1,892, bal 8,107),
+  MT5-disconfirms (engine 1.293 vs MT5 **1.058**), WF 3/6 folds+ (alternating −+−++−, MOST-RECENT fold negative).
+- **Per-trade regime autopsy (n=1232, pre-registered vars)**: ADX/diSpread/brkDistAtr/spreadAtr all NON-monotone;
+  2025 (H1) negative across every cell — the losing periods are unconditioned variance, not a tradeable regime.
+  Only `runwayAtr` is monotone (low-runway better) but economically BACKWARDS for a trend-runner, leaves the
+  recent fold negative, rescues only 2025H1, and BTC engine P&L MT5-erases → does NOT graduate to a build.
+- No code change; BTC presets stay as research history (header already says not release-grade). Findings +
+  repro `research/mastervp_parity/btc_revisit_2026-06-27/` (`FINDINGS.md`, `btc_m5_regime_autopsy.py`).
+  **▶ No open BTC lever.** Updated [[best-experts-release-table]] (BTC rows → CLOSED).
+
 ## ❌ H12c nodeNet ABSORPTION VETO — MT5 VERDICT = REJECT (catastrophic) + EXPOSED a node-net parity gap — DONE 2026-06-27
 Built C+++MQL, engine A/B failed the lock bar, MT5 A/B settled it: **REJECT, infra stays inert default-OFF.**
 - **MT5 (plain backtest of `…-H12c-NodeVeto-ON.set`, KK-MasterVP-Debug, XAU M5, 2025.06.01–2026.05.29, 10k):**
