@@ -1,6 +1,37 @@
 # HANDOFF — read me first, update me last
 
-## 🟡 NOW ACTIVE (2026-06-27 pm-3): BTC RECONCILED — NOT dead, REGIME-DEPENDENT edge (user's production was right)
+## 🟢 NOW ACTIVE (2026-06-27 pm-4): PF1 Profiler↔EA PARITY REBUILT — indicator-only, EA untouched, 0/0 → ▶ user MT5 visual check
+User asked "what to improve per plans" → picked **PF1** (Profiler re-sync to 100% EA parity), then chose
+**option 1: graft shared EA logic onto the rich shell, touch ONLY the Master-Volume-Profiler indicator.**
+- **AUDIT (Step 1) overturned the plan's premise:** the single-source EA-twin (commits a5e2f66/9d4ea91) was
+  **deliberately reverted** at `32cea71` ("restore standalone original") for visual reasons → the released
+  **Profiler 1.01 was the loose STANDALONE SCOUT** (only `AccountLock.mqh`; stateless `RescanSetups`;
+  breakout-only; simplified exit; **NO ProgTrail ladder**). So BOTH entry AND exit diverged from the EA, not
+  just the exit. Memory [[mastervp-profiler-indicator-parity]] + BUILD-PLAN PF1 were stale on "entries already
+  route through Decision.mqh." Full delta: `research/mastervp_parity/profiler_parity_2026-06-27/DELTA_AUDIT.md`.
+- **FIX (Steps 2–3) DONE in `mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5`:** renamed the
+  standalone's clashing symbols → `Viz*`/`InpViz*`, included the EA stack, and **rewrote `RescanSetups` as the
+  EA-exact replay** (MVP_DetectSignal + MVP_DeterministicGatesPass + pure-UTC SN_* gates + one-position +
+  max-trades; Engine.mqh shift map). Exit now faithful to the lock: TP1→BE→ATR-trail 2.75→**ProgTrail ladder
+  2.0R/0.75/0.2**→runner cap 4.0; verdict by **realized exit R** (fixes the twin's stale WON-at-TP1-touch — the
+  lock banks 0% at TP1). Rich cockpit (histogram/tick-delta/exec/net/panel) preserved as display context.
+- **Compiles 0/0; EA recompiles 0/0 (untouched — only the indicator + research docs changed).** ⚠ gotchas
+  baked in: pure-UTC SN funcs (no `SN_RefTime`); account-lock globals now from Inputs.mqh (deploy follow-up:
+  per-account Profiler bake must target the shared lock file). Uncommitted — commit when user OKs.
+- **⚡ PERF FIX (user reported severe lag / "calc takes too long" / can't scroll left):** the first cut
+  re-replayed ALL history every new bar (O(rt·masterLen)) + drew one stop-path trend object per bar.
+  Three fixes (still 0/0): (1) **bounded replay window** — replay only `lookStart-600 .. rt` (node decay
+  0.94 warms in ~600 bars; master VP is a fresh trailing slice so signals stay exact) → O(lookback), not
+  O(history); (2) **sparse staircase stop-path** — a vertex only when the SL actually moves (BE arm + each
+  ladder step), ~200 objects/trade → a handful; (3) **reused VP scratch buffers** (no per-bar allocation).
+  Scroll lag was dominated by the per-bar trend objects + the unbounded replay; both gone.
+- **▶ NEXT (USER, can't run headless): Step 4(ii) visual spot-check.** Recompiled `.ex5` deployed via the
+  `MQL5/Indicators/KK-MasterVP-Profiler` symlink. Attach on **XAU M5 with the EA lock `.set`**; confirm entry
+  markers land on the EA backtest's entry candles AND the WON/LOST/BE verdict + stop path match a sample of
+  realized trades. (Daily-DD is the one gate the indicator can't reproduce — needs live equity; documented.)
+  ▶ ME: commit on user OK; optional dialog-curation (Inputs.mqh adds ~51 EA inputs to the Profiler dialog).
+
+## 🟡 (prior, 2026-06-27 pm-3): BTC RECONCILED — NOT dead, REGIME-DEPENDENT edge (user's production was right)
 User reported BTC profitable in live deployment + emphasized BE-after-TP1. Both verified TRUE.
 - **Deployed config (`releases/1.07/KK-MasterVP-1.07-btcusd-m5.set`) = byte-identical key params to the
   engine lock I tested** → my arm A IS production. Period breakdown (`recent.py`): **2025H1 −3,986/PF0.76

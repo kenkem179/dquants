@@ -197,6 +197,47 @@ What remains genuinely open:
     write-ups in `research/` + memory as history (the lesson, not the code). **Confirm scope with the user
     before deleting reversion** (it's the one with a partial MT5 A/B history) — the rest are clean kills.
 
+- [~] **PF1 — Master-Volume-Profiler ↔ MasterVP EA: re-sync to 100% behavioral parity (user, 2026-06-27).**
+  > **STEPS 1–3 DONE 2026-06-27 (indicator-only, EA untouched, compiles 0/0).** Step-1 audit found the premise
+  > below was STALE: the single-source EA-twin was reverted at `32cea71`, so the released Profiler 1.01 was the
+  > loose standalone scout (no Decision.mqh; breakout-only; NO ProgTrail ladder) — BOTH entry & exit diverged.
+  > User chose "graft shared logic onto the rich shell": renamed clashing symbols → `Viz*`, included the EA
+  > stack, rewrote `RescanSetups` as the EA-exact replay (signal+gates+pure-UTC sessions) with a lock-faithful
+  > exit (TP1→BE→ATR-trail→**ProgTrail ladder 2.0/0.75/0.2**→runner cap) + realized-R verdict; rich cockpit kept.
+  > **▶ REMAINING = Step 4(ii) user MT5 visual spot-check.** Detail: `research/mastervp_parity/profiler_parity_2026-06-27/DELTA_AUDIT.md`, [[mastervp-profiler-indicator-parity]].
+  The Profiler indicator must show an entry/exit/verdict on the EXACT candle, with the EXACT outcome, that the
+  **current locked/released** KK-MasterVP EA executes. Non-negotiable: **the indicator may NEVER display one
+  thing while the EA does another.** The profiler was last aligned at Phase A/B on **2026-06-20**
+  ([[mastervp-profiler-indicator-parity]]) — but the lock gained material changes **after** that date, so it is
+  almost certainly stale now. **Do this STEP BY STEP, re-verifying after each step** (the lock has many
+  improvements; a big-bang rewrite risks silently re-breaking parity).
+  - **Architecture principle (do not violate):** parity by **single-source shared `.mqh`**, not a parallel
+    re-implementation in the indicator. Entries already route through shared `Decision.mqh`; the **exit/position
+    management** path is the gap. Where the EA's exit logic isn't already in a shared, chart-deterministic header,
+    **factor it into one** that BOTH the EA and the profiler call, so they cannot drift again. (Indicator can't
+    call CTrade/live-equity — keep those EA-only; everything chart-deterministic gets shared.)
+  - **Step 1 — DELTA AUDIT (no code).** Diff the EA's behavioral surface today vs the 2026-06-20 profiler build.
+    Enumerate every change to entries/quality-gates/sessions/exits since then. Known suspects to confirm against
+    current code: **(a) the ProgTrail late-arm ladder** (`InpPmProgTrail`/`TriggerR 2.0`/`Inc 0.75`/`Step 0.2`)
+    — ⚠️ **baked as HIDDEN compiled defaults in `Inputs.mqh`, the `.set` can't drive it** ([[mastervp-progtrail-ladder-lock]])
+    → the profiler's forward-exit replay (written pre-ladder as "TP1→BE→ATR trail + runner cap") almost certainly
+    does **not** simulate the ratchet → WON/LOST/BE verdict + stop-path drawing diverge; **(b)** RR4.0 / Trail
+    2.75 / BeBuf 0.02 lock values; **(c)** pure-UTC sessions + day-roll at UTC 00:00; **(d)** blocked hours
+    4,16,17; **(e)** any BE/partial/Pm* default that moved. Output = a checklist of concrete divergences.
+  - **Step 2 — fix entries/gates first** (smaller surface): confirm the shared `Decision.mqh` gate set still
+    matches the EA's `OnNewBar` exactly (signal + regime + session≠0 + ATR-ticks + max-trades/session +
+    blocked-hours + one-position); update the profiler's session/hour/UTC handling to match. Re-verify.
+  - **Step 3 — fix the EXIT replay** (the main gap): make the profiler reproduce the EA's full per-tick exit
+    sequence **including the ProgTrail ladder** and current BE/trail/RR geometry — ideally by calling the same
+    shared exit header rather than re-coding it. This is where "shows X, does Y" bites hardest.
+  - **Step 4 — VERIFY each step (mandatory):** (i) re-run the **locked XAU M5 EA** → numbers must stay
+    **byte-identical** to the lock (the profiler work must not touch EA behavior); (ii) attach the indicator on
+    XAU M5 with the lock `.set` → entry markers land on the EA's entry candles AND the WON/LOST/BE verdict +
+    stop path match the EA's realized trades on a sample. ⚠️ One residual the indicator legitimately **cannot**
+    reproduce from chart data = predictive daily-DD (`IsDailyDDHit`, needs live equity) — document it, don't chase.
+  - Both EA + indicator compile 0/0 (`scripts/compile_mql5.sh`); commit per step so any parity break is
+    attributable. Update [[mastervp-profiler-indicator-parity]] when done.
+
 ---
 
 ## 🛰️ DEPLOYMENT & OPS INFRASTRUCTURE (cross-EA, Layer 4 — live MT5 only)

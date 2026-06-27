@@ -71,16 +71,37 @@
 // per-account release script bakes the hidden globals below. See AccountLock.mqh.
 #include "../../experts/KK-Common/AccountLock.mqh"
 
+//=== EA decision code = the SINGLE SOURCE OF TRUTH for the trade markers =======
+// The setup markers (E/SL/TP1/TP2 + WON/LOST/BE verdict + stop path) are produced
+// by REPLAYING the EA's OWN logic, not a parallel re-implementation: the same
+// MVP_DetectSignal + MVP_DeterministicGatesPass + session/blocked-hour/max-trades
+// gates + TP1->BE->ATR-trail->ProgTrail-ladder exit the live KK-MasterVP EA runs.
+// So a marker lands on the EXACT candle the EA fires, with the EXACT outcome.
+// (The rich analytical cockpit below — histogram, hybrid tick-delta, exec health,
+// net telemetry — is display context, NOT an EA-behaviour claim, and is unchanged.)
+// NEVER include KK-MasterVP/Engine.mqh — it pulls CTrade/OnTick and would make
+// this a trader. The standalone's own VP/node display symbols were renamed Viz*/
+// InpViz* so the EA stack's VPResult/NodeState/Inp* are the authoritative ones.
+#include "../../experts/VP-Common/Types.mqh"
+#include "../../experts/VP-Common/VolumeProfile.mqh"
+#include "../../experts/VP-Common/Regime.mqh"
+#include "../../experts/VP-Common/NodeEngine.mqh"
+#include "../../experts/KK-MasterVP/Inputs.mqh"
+#include "../../experts/KK-MasterVP/Strategy.mqh"
+#include "../../experts/KK-MasterVP/Decision.mqh"
+#include "../../experts/KK-MasterVP/SessionNews.mqh"
+
 //+------------------------------------------------------------------+
 //| Inputs - defaults mirror KK-MasterVP-Monster.pine                |
 //+------------------------------------------------------------------+
-input group "Trade Setups (breakout)"
-input bool   InpSetShow        = true;  // Show past breakout setups (Entry/SL/TP1/TP2 + WON/LOST history)
-input int    InpSetLookback    = 1800;   // How many bars back to scan for past setups
+input group "Trade Setups (EA-exact replay)"
+input bool   InpSetShow        = true;  // Show the EA's trades (Entry/SL/TP1/TP2 + WON/LOST/BE) replayed exactly
+input int    InpSetLookback    = 1800;   // How many bars back to replay/draw setups
 input int    InpSetKeep        = 12;    // Max setups shown at once (oldest removed first)
-double InpSetEntryBufAtr = 0.85;  // LOCK: confirmed close must clear master VAH/VAL by this x ATR (EA InpBreakBufAtr=0.85)
+input bool   InpVizShowTrailPath = true; // Draw the realized stop path (SL->BE->ATR trail->ProgTrail ladder) per trade
+double InpSetEntryBufAtr = 0.85;  // LOCK: confirmed close must clear master VAH/VAL by this x ATR (EA InpVizBreakBufAtr=0.85)
 double InpSetNetMin      = 0.80;  // LOCK: min same-direction near-price net at the signal bar (the EA trades 0.80)
-double InpSetSlAtrMult   = 1.2;   // LOCK: SL = close -/+ this x ATR (EA InpSlAtrBrk=1.2)
+double InpSetSlAtrMult   = 1.2;   // LOCK: SL = close -/+ this x ATR (EA InpVizSlAtrBrk=1.2)
 input double InpSetTp1R        = 0.8;   // First target distance, in risk units (R). Reaching it before SL = WON
 input double InpSetTp2R        = 1.8;   // Second target distance, in risk units (R)
 input double InpSetRiskPct     = 1.0;   // Risk % used to show an example lot on the entry label (display only - places no trades)
@@ -88,24 +109,24 @@ input bool   InpSetShowRejects = false; // Also mark setups that were skipped, w
 input bool   InpSetBeRatchet   = false; // Illustrate the stop moving to break-even once a setup is in profit (OFF = plain TP1-vs-SL)
 input bool   InpSetEmaFilter     = false; // Only show setups that agree with the EMA trend
 //--- hidden (fixed): lock mirrors (anti-chase off, pure close-based SL) + BE/reject fine knobs ---
-double InpSetMaxDistAtr  = 0.0;   // Anti-chase cap (x ATR); 0 = off - matches the lock (EA InpBreakMaxAtr huge = no cap)
+double InpSetMaxDistAtr  = 0.0;   // Anti-chase cap (x ATR); 0 = off - matches the lock (EA InpVizBreakMaxAtr huge = no cap)
 double InpSetSlBufAtr    = 0.0;   // Edge-anchor SL term; 0 = pure close-based SL like the EA
 int    InpSetRejKeep     = 20;    // Max rejection markers kept on the chart (newest first)
 double InpSetBeTrigR     = 0.3;   // Profit (R) a setup must reach before the BE ratchet arms
 double InpSetBeBufAtr    = 0.05;  // BE stop offset (x ATR) in the profit direction
 
 //--- hidden (fixed): node-state internals ---
-double InpNodeTouchAtr    = 0.05;  // Node touch distance (x ATR): a bar "touches" a bin within this of its center
-double InpNodeDecay       = 0.94;  // Per-bar node memory decay (~11-bar half-life at 0.94)
-double InpNodeNeutralBand = 0.15;  // |net| at/below this = balanced (no buy/sell dominance)
-double InpNodeSaturation  = 4.0;   // Touch count at/over which a balanced node counts as DEAD (absorbed)
+double InpVizNodeTouchAtr    = 0.05;  // Node touch distance (x ATR): a bar "touches" a bin within this of its center
+double InpVizNodeDecay       = 0.94;  // Per-bar node memory decay (~11-bar half-life at 0.94)
+double InpVizNodeNeutralBand = 0.15;  // |net| at/below this = balanced (no buy/sell dominance)
+double InpVizNodeSaturation  = 4.0;   // Touch count at/over which a balanced node counts as DEAD (absorbed)
 
 //input group "Net Tick Volume (multi-TF)"
 double InpNetWinAtr     = 1.5;   // Near-price window half-width (x ATR) for the net reads
 bool   InpWeightedNet   = true;  // ON: chart-TF net weights each bin by HVN/MED/LVN tier; OFF: flat weights
 double InpVerdictAtr    = 1.2;   // CENTER "Net" verdict window half-width (x ATR) + near-vol HIGH/LOW magnitude window (MUST match the ring at RebuildAll)
 //--- hidden (fixed): tier weights, verdict reach + flicker, net lookbacks ---
-int    InpTfNetLook      = 50;    // Bars summed per timeframe for the near-price net read
+int    InpVizTfNetLook      = 50;    // Bars summed per timeframe for the near-price net read
 int    InpNearVolLook    = 100;   // Bars of near-volume history for the HIGH/med/LOW magnitude rank
 double InpWHvn           = 1.5;   // Tier weight for high-volume bins (> 66% of near-window max)
 double InpWMvn           = 1.0;   // Tier weight for mid-volume bins
@@ -115,7 +136,7 @@ double InpVerdictOuterAtr= 1.8;   // over/under FAR reach (x ATR) into its OWN z
 int    InpVerdictBalPct  = 15;    // |net| percent below which the verdict reads balanced
 int    InpVerdictHoldSec = 4;     // Seconds a flipped direction must HOLD before the headline arrow changes
 
-int    InpAtrLen          = 14;    // ATR period used for all ATR-scaled distances
+int    InpVizAtrLen          = 14;    // ATR period used for all ATR-scaled distances
 int    InpNearStrongPct = 70;    // Percentile at/over which near volume tags HIGH
 int    InpNearWeakPct   = 35;    // Percentile at/under which near volume tags LOW
 double InpHvnPct        = 70.0;  // Bin-volume percentile (vs occupied bins) at/over which a bin is an HVN
@@ -140,7 +161,7 @@ int    InpExecWarnPct    = 140;   // Ratio percent at/over which a reading color
 int    InpExecAlarmPct   = 250;   // Ratio percent at/over which a reading colors red (hostile fills likely)
 
 input group "Visuals"
-input int    InpVpLookback   = 100;   // Volume-profile window (bars); the master profile covers this x the multiplier
+input int    InpVizVpLookback   = 100;   // Volume-profile window (bars); the master profile covers this x the multiplier
 input bool   InpShowMasterLines = true;  // Show master profile levels: POC + value-area high/low (mPOC/mVAH/mVAL)
 input bool   InpShowLocalLines  = true;  // Show local (recent) profile levels (lPOC/lVAH/lVAL)
 input bool   InpShowHistogram   = true;  // Show the volume histogram (green/red = recent buy/sell lean)
@@ -156,8 +177,8 @@ int    InpVerdLabelGapBars = 6;   // Gap (bars) left of the histogram baseline f
 int    InpTrailBars      = 1500;  // How many recent bars get the POC/VAH/VAL trail plots (history cost cap)
 
 // input group "Master Volume Profile Core"
-int    InpVpBins       = 75;    // LOCK: node bins for POC/VAH/VAL + node-state math (EA InpVpBins=30)
-double InpMasterMult   = 4.0;   // Master window = round(local x this)
+int    InpVizVpBins       = 75;    // LOCK: node bins for POC/VAH/VAL + node-state math (EA InpVizVpBins=30)
+double InpVizMasterMult   = 4.0;   // Master window = round(local x this)
 bool   InpUseRealTicks = false; // OFF (default): bar tick_volume at hlc3 (bar-feed), no CopyTicksRange flicker. ON: real broker tick stream (higher-res but the large master window can fail to fetch and flip resolution)
 bool   InpHistTickDelta = true;  // HYBRID (when InpUseRealTicks=OFF): bar-feed structure (stable rows) + REAL tick-rule signed-delta tint on the recent window; bins beyond coverage fall back to bar-direction net
 bool   InpHistRecency  = true;  // ON: weight ticks by the node decay per bar of age (TV twin look - RECENT flow dominates); OFF: classic undecayed volume profile
@@ -167,7 +188,7 @@ int    InpHistBins       = 240;   // Display bins - resolution of the drawn hist
 int    InpHistTickBars   = 200;   // Hybrid tick-delta lookback cap (bars) - kept short so the fetch stays reliable
 int    InpDwellCapSec    = 120;   // Cap (seconds) on the per-tick dwell credit so session gaps cannot dominate time-at-price
 // hard coded params
-double InpVaPct        = 70.0;  // Value-area percent of total volume around the POC
+double InpVizVaPct        = 70.0;  // Value-area percent of total volume around the POC
 int    InpPredictBars  = 10;    // Predicted-POC age-out (bars): drop the oldest N bars to preview the next master POC/VAH/VAL; 0 = off
 
 input group "EMA Overlay"
@@ -184,11 +205,11 @@ input bool   InpApplyTheme = true;  // Apply a dark, easy-to-read chart theme on
 //+------------------------------------------------------------------+
 //| Types + globals                                                  |
 //+------------------------------------------------------------------+
-struct VPResult {
+struct VizVP {
    double poc, vah, val, hi, lo;
    bool   valid;
 };
-struct NodeState {
+struct VizNodeState {
    int    state;      // +1 buy-dominant, -1 sell-dominant, 0 balanced/absorbed
    double net;        // (buy-sell)/(buy+sell)
    double touch;      // decayed touch count
@@ -203,9 +224,14 @@ struct NodeState {
 // one login@server; ACCESS_EXPIRY ("YYYY.MM.DD 23:59:59") time-limits it. On a
 // wrong account OnInit aborts; on expiry OnCalculate/OnTimer stop ALL calculation
 // (clear levels/objects) and Alert "Expired Access". Enforced on broker server time.
-string ALLOWED_ACCOUNT_ID     = "";  // Internal: empty=any account
-string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server
-string ACCESS_EXPIRY          = "";  // Internal: empty=perpetual; baked per-account
+// NOTE: ALLOWED_ACCOUNT_ID / ALLOWED_ACCOUNT_SERVER / ACCESS_EXPIRY are now
+// provided by the included KK-MasterVP/Inputs.mqh (same names, "" defaults) — the
+// single-source EA stack owns them, so the indicator must NOT redeclare them
+// (double-definition). ⚠ DEPLOY FOLLOW-UP: the per-account Profiler bake
+// (make_account_releases.sh) discovers the lock file via grep under the artifact
+// dir; with the decl now in experts/KK-MasterVP/Inputs.mqh, point the Profiler
+// build's lock-file resolution there (it copies+restores the file, so baking the
+// shared Inputs.mqh during a Profiler build is isolated and safe).
 bool   g_blocked        = false;     // true once access is denied/expired -> no calculation
 bool   g_expiredAlerted = false;     // Alert("Expired Access") fired once
 
@@ -223,15 +249,28 @@ string g_tickFailWhy = "";  // why the last real-tick build fell back to the bar
 // new bar (an indicator owns no positions, so history = a stateless rescan,
 // exactly how the Pine strategy reproduces its trade list after reload).
 struct TradeSetup {
-   datetime t0;       // signal bar open time
+   datetime t0;       // signal bar open time (= the EA fill bar)
    datetime tEnd;     // resolution bar open time (0 while still open)
    int      dir;      // +1 long, -1 short
-   int      status;   // 0 open, 1 won (TP1 before SL), 2 lost, 3 break-even (ratchet stop-out)
+   int      status;   // 0 open, 1 WON (exit in profit), 2 LOST (exit below entry), 3 BE (exit ~flat)
    double   entry, sl, tp1, tp2;
    double   edge;     // master edge broken at the signal bar (VAH long / VAL short)
+   string   reason;   // EA signal tag (L-BRK / S-BRK / L-REV / S-REV ...)
 };
 TradeSetup g_setups[];
 int        g_nSetups = 0;
+
+//=== EA-replay runtime state (parity engine; separate from the display VP) =====
+// Dedicated indicator handles at the EA's OWN periods (InpAtrLen/InpRsiLen/
+// InpAdxLen/InpEmaFast/InpEmaSlow from the included Inputs.mqh) + a private node
+// engine, so the replayed signal/regime/node reads are byte-identical to the EA.
+CNodeEngine g_rNode;
+int    g_rhAtr=INVALID_HANDLE, g_rhRsi=INVALID_HANDLE, g_rhAdx=INVALID_HANDLE,
+       g_rhEmaF=INVALID_HANDLE, g_rhEmaS=INVALID_HANDLE;
+double g_rPip=0.01;            // EA pip convention (BTCUSD=1, else 10^-digits)
+int    g_rMasterLen=480;       // EA master window = InpVpLookback * InpMasterMult
+// Laddered stop-path store (flat arrays; one polyline per setup via g_rTrIdx).
+datetime g_rTrT[]; double g_rTrP[]; int g_rTrIdx[]; int g_rTrN=0;
 
 // Rejected triggers - the "decision was made, here is why NOT" telemetry
 // (the chart analog of the EA's EnterOrSkipTrade isEntering=false log line).
@@ -291,7 +330,7 @@ ulong   g_tkFrom = 0, g_tkTo = 0;
 bool    g_tkCached = false;
 bool    g_tickFeed = false;   // true when the current profile was built from real ticks
 
-VPResult g_master, g_local, g_pred;
+VizVP g_master, g_local, g_pred;
 
 // Near-volume magnitude history (newest at [0], strict-less percentrank)
 double g_nearRing[];
@@ -481,7 +520,7 @@ int PanelTextW(string &rows[], int cnt) {
 //| VP core - Pine f_vp value-area expansion (verbatim port)         |
 //+------------------------------------------------------------------+
 void BuildVAFromHist(const double &hist[], int bins, double lo, double step,
-                     double vaPct, VPResult &res) {
+                     double vaPct, VizVP &res) {
    double total = 0.0;
    int    pocIdx = 0;
    double pocVol = -1.0;
@@ -507,7 +546,7 @@ void BuildVAFromHist(const double &hist[], int bins, double lo, double step,
 
 // Bar-feed profile over completed bars [startShift .. startShift+len-1]
 // (whole-bar tick_volume into the hlc3 bin - exact Pine f_vp parity).
-bool ComputeVPBar(int startShift, int len, int bins, double vaPct, VPResult &res) {
+bool ComputeVPBar(int startShift, int len, int bins, double vaPct, VizVP &res) {
    res.valid = false;
    res.poc = 0.0; res.vah = 0.0; res.val = 0.0; res.hi = 0.0; res.lo = 0.0;
    if(len <= 0 || bins < 2) return false;
@@ -599,7 +638,7 @@ int TickSide(const MqlTick &tk, double px, double &prevMid, int &lastDir) {
 
 // Bin ticks at/after fromMs into buy/sell volume + dwell-time histograms
 // on the [lo, lo+bins*step] grid. When InpHistRecency is ON each tick's
-// volume is weighted by InpNodeDecay^(chart bars of age) - the same memory
+// volume is weighted by InpVizNodeDecay^(chart bars of age) - the same memory
 // the Pine node engine applies per bar - so RECENT one-sided flow shows as
 // a large green/red fraction instead of being averaged away by the whole
 // window (an undecayed 150-bar sum nets out near zero almost everywhere).
@@ -619,7 +658,7 @@ int BinTicksDelta(ulong fromMs, double lo, double step, int bins, datetime barOp
    double w[];
    ArrayResize(w, g_masterLen + 2);
    w[0] = 1.0; w[1] = 1.0;
-   for(int k = 2; k < g_masterLen + 2; k++) w[k] = w[k - 1] * InpNodeDecay;
+   for(int k = 2; k < g_masterLen + 2; k++) w[k] = w[k - 1] * InpVizNodeDecay;
    double prevMid = 0.0;
    int    lastDir = 0;
    double capMs   = (double)MathMax(InpDwellCapSec, 1) * 1000.0;
@@ -654,7 +693,7 @@ int BinTicksDelta(ulong fromMs, double lo, double step, int bins, datetime barOp
 // Real-tick master profile over completed bars [1 .. masterLen]: levels,
 // display histogram (buy/sell/dwell) and the value area, all from the
 // broker tick stream. Falls back to the bar feed when ticks are missing.
-bool ComputeMasterTick(VPResult &res) {
+bool ComputeMasterTick(VizVP &res) {
    res.valid = false;
    double highs[], lows[];
    if(CopyHigh(_Symbol, g_tf, 1, g_masterLen, highs) != g_masterLen) { g_tickFailWhy = "CopyHigh short read"; return false; }
@@ -684,7 +723,7 @@ bool ComputeMasterTick(VPResult &res) {
    double tot[];
    ArrayResize(tot, g_histBins);
    for(int b = 0; b < g_histBins; b++) tot[b] = g_binBuy[b] + g_binSell[b];
-   BuildVAFromHist(tot, g_histBins, lo, step, InpVaPct, res);
+   BuildVAFromHist(tot, g_histBins, lo, step, InpVizVaPct, res);
    res.valid = true;
    return true;
 }
@@ -693,11 +732,11 @@ bool ComputeMasterTick(VPResult &res) {
 // oldest InpPredictBars dropped (floored at vpBins bars) - previews where
 // POC/VAH/VAL migrate when the current oldest nodes expire. Uses the same
 // tick cache (filtered by time) on the tick feed, bar math otherwise.
-bool ComputePredicted(VPResult &res) {
+bool ComputePredicted(VizVP &res) {
    res.valid = false;
    if(InpPredictBars <= 0) return false;
    int agedLen = (int)MathMax(g_bins, g_masterLen - InpPredictBars);
-   if(!g_tickFeed) return ComputeVPBar(1, agedLen, g_bins, InpVaPct, res);
+   if(!g_tickFeed) return ComputeVPBar(1, agedLen, g_bins, InpVizVaPct, res);
    double highs[], lows[];
    if(CopyHigh(_Symbol, g_tf, 1, agedLen, highs) != agedLen) return false;
    if(CopyLow(_Symbol, g_tf, 1, agedLen, lows)   != agedLen) return false;
@@ -718,7 +757,7 @@ bool ComputePredicted(VPResult &res) {
    double tot[];
    ArrayResize(tot, g_histBins);
    for(int b = 0; b < g_histBins; b++) tot[b] = buy[b] + sell[b];
-   BuildVAFromHist(tot, g_histBins, lo, step, InpVaPct, res);
+   BuildVAFromHist(tot, g_histBins, lo, step, InpVizVaPct, res);
    res.valid = true;
    return true;
 }
@@ -754,7 +793,7 @@ bool ComputeDisplayBar(double lo, double step) {
          // histBuy/histSell) - an undecayed 150-bar proxy sum nets out near
          // zero in every bin, which renders as an all-gray histogram.
          // i=0 is the OLDEST bar (shift g_masterLen), i=len-1 is shift 1.
-         v *= MathPow(InpNodeDecay, (double)(g_masterLen - 1 - i));
+         v *= MathPow(InpVizNodeDecay, (double)(g_masterLen - 1 - i));
       }
       // Distribute the bar's volume/dwell evenly across the bins its
       // high->low range spans, so the rows reflect every price the bar
@@ -805,7 +844,7 @@ void InitNodeEngine() {
    g_nodeBarTime = 0;
 }
 
-void UpdateNodeEngine(const VPResult &master) {
+void UpdateNodeEngine(const VizVP &master) {
    if(!master.valid) return;
    datetime barT = iTime(_Symbol, g_tf, 1);
    if(barT <= 0 || barT == g_nodeBarTime) return;   // one update per closed bar
@@ -822,14 +861,14 @@ void UpdateNodeEngine(const VPResult &master) {
    double vol = (double)vraw[0];
    double atr = AtrAt(1);
    if(o <= 0.0 || h <= 0.0 || l <= 0.0 || c <= 0.0 || h < l) return;
-   double touchDist = MathMax(InpNodeTouchAtr * atr, 2.0 * g_mintick);
+   double touchDist = MathMax(InpVizNodeTouchAtr * atr, 2.0 * g_mintick);
    double dirProxy  = (c - o) / MathMax(h - l, g_mintick);
    double buyProxy  = vol * MathMax(dirProxy, 0.0);
    double sellProxy = vol * MathMax(-dirProxy, 0.0);
    for(int b = 0; b < g_bins; b++) {
-      g_nodeBuy[b]   *= InpNodeDecay;
-      g_nodeSell[b]  *= InpNodeDecay;
-      g_nodeTouch[b] *= InpNodeDecay;
+      g_nodeBuy[b]   *= InpVizNodeDecay;
+      g_nodeSell[b]  *= InpVizNodeDecay;
+      g_nodeTouch[b] *= InpVizNodeDecay;
    }
    int lowIdx  = ClampI((int)MathFloor((l - mLo) / mStep), 0, g_bins - 1);
    int highIdx = ClampI((int)MathFloor((h - mLo) / mStep), 0, g_bins - 1);
@@ -851,27 +890,27 @@ int NodePickIdx(double px) {
    return ClampI((int)MathFloor((px - g_mLo) / g_mStep), 0, g_bins - 1);
 }
 
-NodeState NodeStateAt(int idx) {
-   NodeState ns;
+VizNodeState NodeStateAt(int idx) {
+   VizNodeState ns;
    ns.state = 0; ns.net = 0.0; ns.touch = 0.0; ns.absorbed = false;
    if(idx < 0 || idx >= g_bins || ArraySize(g_nodeBuy) != g_bins) return ns;
    double b = g_nodeBuy[idx];
    double s = g_nodeSell[idx];
    double t = g_nodeTouch[idx];
    double net = (b - s) / MathMax(b + s, 1.0);
-   bool absorbed = (t >= InpNodeSaturation) && (MathAbs(net) <= InpNodeNeutralBand);
-   ns.state = absorbed ? 0 : (net > InpNodeNeutralBand ? 1 : (net < -InpNodeNeutralBand ? -1 : 0));
+   bool absorbed = (t >= InpVizNodeSaturation) && (MathAbs(net) <= InpVizNodeNeutralBand);
+   ns.state = absorbed ? 0 : (net > InpVizNodeNeutralBand ? 1 : (net < -InpVizNodeNeutralBand ? -1 : 0));
    ns.net = net; ns.touch = t; ns.absorbed = absorbed;
    return ns;
 }
 
-string TagText(const NodeState &ns) {
+string TagText(const VizNodeState &ns) {
    if(ns.absorbed)   return "~";
    if(ns.state > 0)  return SymUp();
    if(ns.state < 0)  return SymDn();
    return "flat";
 }
-color TagColor(const NodeState &ns) {
+color TagColor(const VizNodeState &ns) {
    if(ns.absorbed)  return clrSilver;
    if(ns.state > 0) return COL_UP_TXT;
    if(ns.state < 0) return COL_DN_TXT;
@@ -885,7 +924,7 @@ double TfNetNearAt(ENUM_TIMEFRAMES tf, int shift, bool &valid) {
    valid = false;
    if(shift < 0) return 0.0;
    MqlRates rates[];
-   int got = CopyRates(_Symbol, tf, shift, InpTfNetLook, rates);
+   int got = CopyRates(_Symbol, tf, shift, InpVizTfNetLook, rates);
    if(got <= 0) return 0.0;
    double px = rates[got - 1].close;
    if(px <= 0.0) return 0.0;
@@ -1163,20 +1202,36 @@ int OnInit() {
    if(g_mintick <= 0.0) g_mintick = 0.01;
    g_digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
 
-   g_bins      = ClampI(InpVpBins, 4, 200);
+   g_bins      = ClampI(InpVizVpBins, 4, 200);
    g_histBins  = ClampI(InpHistBins, 4, 600);
-   g_localLen  = ClampI(InpVpLookback, 10, 1000);
-   g_masterLen = (int)MathRound(g_localLen * MathMax(0.5, MathMin(10.0, InpMasterMult)));
+   g_localLen  = ClampI(InpVizVpLookback, 10, 1000);
+   g_masterLen = (int)MathRound(g_localLen * MathMax(0.5, MathMin(10.0, InpVizMasterMult)));
 
-   g_hAtrChart = iATR(_Symbol, g_tf, InpAtrLen);
-   g_hAtrM1    = (g_tf == PERIOD_M1)  ? g_hAtrChart : iATR(_Symbol, PERIOD_M1,  InpAtrLen);
-   g_hAtrM5    = (g_tf == PERIOD_M5)  ? g_hAtrChart : iATR(_Symbol, PERIOD_M5,  InpAtrLen);
-   g_hAtrM15   = (g_tf == PERIOD_M15) ? g_hAtrChart : iATR(_Symbol, PERIOD_M15, InpAtrLen);
+   g_hAtrChart = iATR(_Symbol, g_tf, InpVizAtrLen);
+   g_hAtrM1    = (g_tf == PERIOD_M1)  ? g_hAtrChart : iATR(_Symbol, PERIOD_M1,  InpVizAtrLen);
+   g_hAtrM5    = (g_tf == PERIOD_M5)  ? g_hAtrChart : iATR(_Symbol, PERIOD_M5,  InpVizAtrLen);
+   g_hAtrM15   = (g_tf == PERIOD_M15) ? g_hAtrChart : iATR(_Symbol, PERIOD_M15, InpVizAtrLen);
    if(g_hAtrChart == INVALID_HANDLE || g_hAtrM1 == INVALID_HANDLE ||
       g_hAtrM5 == INVALID_HANDLE    || g_hAtrM15 == INVALID_HANDLE) {
       Print("KK-MasterVP-Profiler: ATR handle creation failed");
       return INIT_FAILED;
    }
+
+   // ----- EA-replay (parity) setup: handles at the EA's OWN periods + node + SN -----
+   g_rhAtr  = iATR(_Symbol, g_tf, InpAtrLen);
+   g_rhRsi  = iRSI(_Symbol, g_tf, InpRsiLen, PRICE_CLOSE);
+   g_rhAdx  = iADX(_Symbol, g_tf, InpAdxLen);
+   g_rhEmaF = iMA(_Symbol, g_tf, InpEmaFast, 0, MODE_EMA, PRICE_CLOSE);
+   g_rhEmaS = iMA(_Symbol, g_tf, InpEmaSlow, 0, MODE_EMA, PRICE_CLOSE);
+   if(g_rhAtr==INVALID_HANDLE || g_rhRsi==INVALID_HANDLE || g_rhAdx==INVALID_HANDLE ||
+      g_rhEmaF==INVALID_HANDLE || g_rhEmaS==INVALID_HANDLE) {
+      Print("KK-MasterVP-Profiler: EA-replay handle creation failed");
+      return INIT_FAILED;
+   }
+   g_rMasterLen = (int)MathMax(2, InpVpLookback * (int)MathRound(InpMasterMult));
+   g_rNode.Init(InpVpBins);
+   SN_Init();
+   g_rPip = (StringFind(_Symbol,"BTCUSD") >= 0) ? 1.0 : MathPow(10.0, -g_digits);
 
    SetIndexBuffer(0, BufMPoc, INDICATOR_DATA);
    SetIndexBuffer(1, BufMVah, INDICATOR_DATA);
@@ -1285,6 +1340,13 @@ void OnDeinit(const int reason) {
    if(g_hAtrM1  != INVALID_HANDLE && g_hAtrM1  != g_hAtrChart) IndicatorRelease(g_hAtrM1);
    if(g_hAtrChart != INVALID_HANDLE) IndicatorRelease(g_hAtrChart);
    g_hAtrChart = g_hAtrM1 = g_hAtrM5 = g_hAtrM15 = INVALID_HANDLE;
+   // EA-replay handles
+   if(g_rhAtr  != INVALID_HANDLE) IndicatorRelease(g_rhAtr);
+   if(g_rhRsi  != INVALID_HANDLE) IndicatorRelease(g_rhRsi);
+   if(g_rhAdx  != INVALID_HANDLE) IndicatorRelease(g_rhAdx);
+   if(g_rhEmaF != INVALID_HANDLE) IndicatorRelease(g_rhEmaF);
+   if(g_rhEmaS != INVALID_HANDLE) IndicatorRelease(g_rhEmaS);
+   g_rhAtr = g_rhRsi = g_rhAdx = g_rhEmaF = g_rhEmaS = INVALID_HANDLE;
    for(int e = 0; e < 4; e++) {
       if(g_hEma[e] != INVALID_HANDLE) IndicatorRelease(g_hEma[e]);
       g_hEma[e] = INVALID_HANDLE;
@@ -1316,8 +1378,8 @@ void TrailAt(const double &high[], const double &low[], const double &close[],
       int    bi = ClampI((int)MathFloor((p - lo) / step), 0, g_bins - 1);
       hist[bi] += (double)tvol[i];
    }
-   VPResult r;
-   BuildVAFromHist(hist, g_bins, lo, step, InpVaPct, r);
+   VizVP r;
+   BuildVAFromHist(hist, g_bins, lo, step, InpVizVaPct, r);
    poc = r.poc; vah = r.vah; val = r.val;
 }
 
@@ -1335,7 +1397,7 @@ void RebuildAll() {
       if(ok) g_tickFeed = true;
    }
    if(!ok) {
-      ok = ComputeVPBar(1, g_masterLen, g_bins, InpVaPct, g_master);
+      ok = ComputeVPBar(1, g_masterLen, g_bins, InpVizVaPct, g_master);
       if(ok) {
          double step = (g_master.hi - g_master.lo) / g_histBins;
          ComputeDisplayBar(g_master.lo, step);
@@ -1366,7 +1428,7 @@ void RebuildAll() {
    ComputeExecBaseline();
 
    // --- local + predicted profiles ---
-   ComputeVPBar(1, g_localLen, g_bins, InpVaPct, g_local);
+   ComputeVPBar(1, g_localLen, g_bins, InpVizVaPct, g_local);
    ComputePredicted(g_pred);
 
    // --- node-state engine: one decayed update per closed bar ---
@@ -1486,9 +1548,9 @@ void DrawAll(double close1, double atr1) {
       Seg(OBJPFX "mPOC", tMstL, g_master.poc, tMstR, g_master.poc, COL_MASTER, 3, STYLE_SOLID);
       Seg(OBJPFX "mVAH", tMstL, g_master.vah, tMstR, g_master.vah, COL_MASTER, 1, STYLE_DASH);
       Seg(OBJPFX "mVAL", tMstL, g_master.val, tMstR, g_master.val, COL_MASTER, 1, STYLE_DASH);
-      NodeState np = NodeStateAt(NodePickIdx(g_master.poc));
-      NodeState nh = NodeStateAt(NodePickIdx(g_master.vah));
-      NodeState nl = NodeStateAt(NodePickIdx(g_master.val));
+      VizNodeState np = NodeStateAt(NodePickIdx(g_master.poc));
+      VizNodeState nh = NodeStateAt(NodePickIdx(g_master.vah));
+      VizNodeState nl = NodeStateAt(NodePickIdx(g_master.val));
       Txt(OBJPFX "mPOCt", tMstR, g_master.poc, "mPOC " + TagText(np), TagColor(np), 8, ANCHOR_LEFT);
       Txt(OBJPFX "mVAHt", tMstR, g_master.vah, "mVAH " + TagText(nh), TagColor(nh), 8, ANCHOR_LEFT);
       Txt(OBJPFX "mVALt", tMstR, g_master.val, "mVAL " + TagText(nl), TagColor(nl), 8, ANCHOR_LEFT);
@@ -1500,9 +1562,9 @@ void DrawAll(double close1, double atr1) {
       Seg(OBJPFX "lPOC", tLocL, g_local.poc, tLocR, g_local.poc, COL_LOCAL, 2, STYLE_SOLID);
       Seg(OBJPFX "lVAH", tLocL, g_local.vah, tLocR, g_local.vah, COL_LOCAL, 1, STYLE_DASH);
       Seg(OBJPFX "lVAL", tLocL, g_local.val, tLocR, g_local.val, COL_LOCAL, 1, STYLE_DASH);
-      NodeState np = NodeStateAt(NodePickIdx(g_local.poc));
-      NodeState nh = NodeStateAt(NodePickIdx(g_local.vah));
-      NodeState nl = NodeStateAt(NodePickIdx(g_local.val));
+      VizNodeState np = NodeStateAt(NodePickIdx(g_local.poc));
+      VizNodeState nh = NodeStateAt(NodePickIdx(g_local.vah));
+      VizNodeState nl = NodeStateAt(NodePickIdx(g_local.val));
       Txt(OBJPFX "lPOCt", tLocR, g_local.poc, "POC " + TagText(np), TagColor(np), 8, ANCHOR_LEFT);
       Txt(OBJPFX "lVAHt", tLocR, g_local.vah, "VAH " + TagText(nh), TagColor(nh), 8, ANCHOR_LEFT);
       Txt(OBJPFX "lVALt", tLocR, g_local.val, "VAL " + TagText(nl), TagColor(nl), 8, ANCHOR_LEFT);
@@ -1889,7 +1951,7 @@ double SetupNetAt(int i, double atr, const double &open[], const double &high[],
    if(atr <= 0.0) return 0.0;
    double win = InpNetWinAtr * atr, px = close[i];
    double tB = 0.0, tS = 0.0;
-   int j0 = (int)MathMax(0, i - InpTfNetLook + 1);
+   int j0 = (int)MathMax(0, i - InpVizTfNetLook + 1);
    for(int j = j0; j <= i; j++) {
       if(close[j] <= 0.0 || high[j] < low[j]) continue;
       double rng = MathMax(high[j] - low[j], g_mintick);
@@ -1905,122 +1967,220 @@ double SetupNetAt(int i, double atr, const double &open[], const double &high[],
    return (tot > 0.0) ? (tB - tS) / tot : 0.0;
 }
 
-// Stateless rescan: walk the confirmed bars, detect breakout signals against
-// the master-VP trail (BufMVah/BufMVal - levels INCLUDE the signal bar, same
-// as the EA's shift-1 window), resolve each setup forward with bar extremes.
-// Single-position rule: no new signal while one is unresolved (EA v1).
-// Same-bar SL+TP1 touch counts as LOST (conservative - intrabar order unknown).
+// Bulk-copy a handle buffer into a NON-series array (index 0 = oldest), aligned
+// 1:1 to the price arrays. False if the indicator isn't ready (short copy).
+bool RpCopyAligned(int handle, int bufNum, int count, double &dst[]) {
+   ArraySetAsSeries(dst, false);
+   if(handle == INVALID_HANDLE) return false;
+   return (CopyBuffer(handle, bufNum, 0, count, dst) == count);
+}
+
+// Reused scratch buffers for RpVPSlice — sized once, refilled in place, so the
+// per-bar VP slices in the replay don't churn the allocator (was a fresh
+// 4x480-element allocation per bar; now zero allocations in steady state).
+double g_rpH[], g_rpL[], g_rpC[]; long g_rpV[];
+
+// Master/local VP over `count` bars ending at index endIdx (inclusive), using
+// the EA's OWN InpVpBins / InpVaPct (the authoritative ones from Inputs.mqh).
+bool RpVPSlice(const double &H[], const double &L[], const double &C[], const long &V[],
+               int endIdx, int count, VPResult &out) {
+   int startI = endIdx - count + 1;
+   if(startI < 0) { out.valid = false; return false; }
+   if(ArraySize(g_rpH) < count) {
+      ArrayResize(g_rpH, count); ArrayResize(g_rpL, count);
+      ArrayResize(g_rpC, count); ArrayResize(g_rpV, count);
+   }
+   for(int k = 0; k < count; k++) { int idx = startI + k;
+      g_rpH[k]=H[idx]; g_rpL[k]=L[idx]; g_rpC[k]=C[idx]; g_rpV[k]=V[idx]; }
+   out = VP_ComputeBars(g_rpH, g_rpL, g_rpC, g_rpV, count, InpVpBins, InpVaPct);
+   return out.valid;
+}
+
+// EA-EXACT replay (the parity engine — keeps the RescanSetups name so the
+// OnCalculate call site is unchanged). Mirrors Engine.mqh::OnNewBar bar-for-bar:
+// forming bar = b, shift1 = b-1, shift2 = b-2; master VP ends at b-1; signal bar
+// OHLC = b-2; fill at the open of bar b (entry = close[b-1] = sig.entry). Each
+// bar runs master+local VP -> node Update (stateful decay) -> SN_UpdateSession ->
+// regime -> MVP_DetectSignal -> MVP_DeterministicGatesPass -> one-position +
+// SN_MaxTradesOk, then a forward OHLC exit replay = TP1 -> BE -> ATR chandelier
+// trail -> ProgTrail late-arm ladder -> runner cap, with the verdict decided by
+// the REALIZED exit R (not a TP1 touch — the lock banks 0% at TP1). The ONLY EA
+// gate ignored is the predictive daily-DD cap (needs live equity; rarely binds).
 void RescanSetups(int rates_total, const datetime &time[], const double &open[],
                   const double &high[], const double &low[], const double &close[],
                   const long &tvol[]) {
    g_nSetups  = 0;
-   g_nRejects = 0;
+   g_nRejects = 0;          // (rejection telemetry retired with the standalone scout)
+   g_rTrN     = 0;
    if(!InpSetShow) return;
-   int last = rates_total - 2;                       // newest confirmed bar
-   int lb   = ClampI(InpSetLookback, 50, 5000);
-   int i0   = (int)MathMax(g_masterLen + 1, rates_total - lb);
-   if(last < i0 + 2) return;
-   // ATR aligned to bar index: arr[0] = bar i0-1 (oldest), arr[k] = bar i0-1+k.
-   int nAtr = last - (i0 - 1) + 1;
-   double atrArr[];
-   if(CopyBuffer(g_hAtrChart, 0, rates_total - 1 - last, nAtr, atrArr) != nAtr) return;
-   int activeEnd = -1;        // bar index where the open setup resolves (last+1 = still open)
-   for(int i = i0; i <= last; i++) {
-      double vah  = BufMVah[i],     val  = BufMVal[i];
-      double vahP = BufMVah[i - 1], valP = BufMVal[i - 1];
-      double atr  = atrArr[i - (i0 - 1)];
-      double atrP = atrArr[i - 1 - (i0 - 1)];
-      if(vah == EMPTY_VALUE || vahP == EMPTY_VALUE || atr <= 0.0 || atrP <= 0.0) continue;
-      double dL  = close[i] - vah,      dS  = val - close[i];
-      double dLP = close[i - 1] - vahP, dSP = valP - close[i - 1];
-      // RAW trigger = fresh edge clear only; the gates below decide its fate
-      // (so every decision - taken or skipped - is visible on the chart).
-      bool rawLong  = dL > InpSetEntryBufAtr * atr && dLP <= InpSetEntryBufAtr * atrP;
-      bool rawShort = dS > InpSetEntryBufAtr * atr && dSP <= InpSetEntryBufAtr * atrP;
-      if(!rawLong && !rawShort) continue;
-      int    dir  = rawLong ? 1 : -1;
-      double edge = rawLong ? vah : val;
-      double dist = rawLong ? dL : dS;
-      double mpy  = (dir > 0) ? high[i] + 0.4 * atr : low[i] - 0.4 * atr;
-      if(i <= activeEnd) {
-         AddReject(time[i], dir, mpy, "pos open");
+   int rt = rates_total;
+
+   double atr[], rsi[], adxM[], adxP[], adxN[], emaF[], emaS[];
+   if(!RpCopyAligned(g_rhAtr, 0, rt, atr))  return;
+   if(!RpCopyAligned(g_rhRsi, 0, rt, rsi))  return;
+   if(!RpCopyAligned(g_rhAdx, 0, rt, adxM)) return;   // MAIN
+   if(!RpCopyAligned(g_rhAdx, 1, rt, adxP)) return;   // +DI
+   if(!RpCopyAligned(g_rhAdx, 2, rt, adxN)) return;   // -DI
+   if(!RpCopyAligned(g_rhEmaF, 0, rt, emaF)) return;
+   if(!RpCopyAligned(g_rhEmaS, 0, rt, emaS)) return;
+
+   g_rNode.Init(InpVpBins);
+   g_curSessionId = -1; g_tradesThisSession = 0;     // reset SN per-session counter
+   int b0        = (int)MathMax(g_rMasterLen + 2, 2);
+   int lb        = ClampI(InpSetLookback, 50, 100000);
+   int lookStart = (int)MathMax(b0, rt - lb);         // first bar whose setups are KEPT/drawn
+   // PERF: replay only a BOUNDED window, not all of history. The earlier loop ran
+   // from b0 over the whole chart (O(rt * masterLen) every new bar) -> the "calc
+   // takes too long" warning + scroll lag. Only the node engine (decay 0.94,
+   // ~11-bar half-life) and the SN session counter are stateful, so a short warmup
+   // before the draw window reproduces them to floating-point noise; the master/
+   // local VP at each bar is a fresh trailing slice (independent of the loop start),
+   // so signals/gates stay EXACT. Cost is now O(lookback), independent of history.
+   const int RP_WARMUP = 600;
+   int replayStart = (int)MathMax(b0, lookStart - RP_WARMUP);
+   int occUntil  = -1;                               // one-position-at-a-time bookkeeping
+
+   for(int b = replayStart; b < rt; b++) {
+      double a1 = atr[b-1], a2 = atr[b-2];
+      if(a1 <= 0.0 || a2 <= 0.0 || close[b-1] <= 0.0) continue;
+
+      // master + local VP through the just-closed bar (b-1)
+      VPResult masterCur; if(!RpVPSlice(high, low, close, tvol, b-1, g_rMasterLen, masterCur)) continue;
+      VPResult localCur;  RpVPSlice(high, low, close, tvol, b-1, InpVpLookback, localCur);
+
+      // node engine: update once per closed bar (decay is stateful -> every bar)
+      g_rNode.Update(masterCur, open[b-1], high[b-1], low[b-1], close[b-1], tvol[b-1], a1,
+                     g_rPip, g_mintick, InpNodeTouchAtr, InpNodeDecay);
+
+      // session/day context in pure UTC, exactly as Engine.mqh OnNewBar (the
+      // session migration made everything UTC: utc = serverBarTime - brokerOffset)
+      datetime utc = SN_UtcTime(time[b-1]);
+      int sessionId = SN_UpdateSession(utc);
+
+      // regime + signal (shift map identical to the EA caller)
+      RegimeState regime = VP_ComputeRegime(a1, emaF[b-1], emaS[b-1], adxM[b-1], adxP[b-1], adxN[b-1],
+                                            InpAdxTrendMin, InpDiSpreadMin, InpEmaSepAtr);
+      SignalBar s; s.o=open[b-2]; s.h=high[b-2]; s.l=low[b-2]; s.c=close[b-2];
+      s.atr2=a2; s.atr1=a1; s.entry_close=close[b-1];
+      NodeState nsVah = g_rNode.StateAtPrice(masterCur.vah, InpNodeSaturation, InpNodeNeutralBand);
+      NodeState nsVal = g_rNode.StateAtPrice(masterCur.val, InpNodeSaturation, InpNodeNeutralBand);
+      NodeState nsPx  = g_rNode.StateAtPrice(s.c,            InpNodeSaturation, InpNodeNeutralBand);
+      Signal sig = MVP_DetectSignal(masterCur, masterCur, localCur, regime, s, nsVah, nsVal, nsPx,
+                                    g_rPip, g_mintick, 1.0);
+      if(!sig.valid) continue;
+
+      // chart-deterministic gates (shared verbatim with the EA via Decision.mqh)
+      double atrPct = a1 / close[b-1] * 100.0;
+      if(!MVP_DeterministicGatesPass(sig, sessionId, atrPct, a1, g_mintick,
+                                     SN_IsBlockedHour(utc), SN_InNewsWindow(utc), 0.0, 0.0, rsi[b-1]))
          continue;
+
+      // replay-reproducible stateful gates: one-position + max-trades/session
+      if(b <= occUntil) continue;
+      if(!SN_MaxTradesOk()) continue;
+
+      // FIRE — fill at the open of bar b (entry = close[b-1] = sig.entry)
+      SN_OnFill();
+      int    dir   = sig.is_long ? 1 : -1;
+      double entry = sig.entry, sl = sig.sl, risk = sig.risk;
+      if(risk <= 0.0) continue;
+      double tp1   = sig.tp1;
+      // EA broker-TP: runner cap (entry +/- risk*RunnerRr) when trailing, else sig.tp2
+      // (Engine.mqh:382). Per-entry trail overrides are -1 in the lock -> effTrail = InpTrailRunner.
+      bool   effTrail = InpTrailRunner;
+      double tpRun = effTrail ? (dir > 0 ? entry + risk*InpRunnerRr : entry - risk*InpRunnerRr)
+                              : sig.tp2;
+
+      // forward exit replay: TP1 -> BE -> ATR trail -> ProgTrail ladder -> runner cap
+      double best = entry, slEff = sl, beLvl = 0.0;
+      bool   tp1done = false, beArmed = false;
+      int    exitBar = rt - 1; double exitPrice = 0.0; bool exited = false;
+      bool   keep = (b >= lookStart);
+      int    sIdx = g_nSetups;     // index this setup WILL occupy if kept
+      // PERF: the stop path is a STEP function — record a vertex only when slEff
+      // actually moves (BE arm + each ladder step), not once per bar. A ~200-bar
+      // trade collapses from ~200 trend objects to a handful, killing the scroll lag.
+      double rLastSL = slEff;
+      bool   rPathOn = (keep && InpVizShowTrailPath);
+      if(rPathOn) {
+         ArrayResize(g_rTrT, g_rTrN+1); ArrayResize(g_rTrP, g_rTrN+1); ArrayResize(g_rTrIdx, g_rTrN+1);
+         g_rTrT[g_rTrN]=time[b]; g_rTrP[g_rTrN]=slEff; g_rTrIdx[g_rTrN]=sIdx; g_rTrN++;
       }
-      if(InpSetMaxDistAtr > 0.0 && dist > InpSetMaxDistAtr * atr) {
-         AddReject(time[i], dir, mpy, StringFormat("chase %.1fATR", dist / atr));
-         continue;
-      }
-      double net = SetupNetAt(i, atr, open, high, low, close, tvol);
-      if((dir > 0 && net < InpSetNetMin) || (dir < 0 && net > -InpSetNetMin)) {
-         // Direction language instead of signed-percent algebra: a long needs
-         // BUY flow, a short needs SELL flow. Same-side-but-weak reads as
-         // "buy 33% < 50%" (had < required); WRONG side reads as "opp buy 79%".
-         int pct  = (int)MathRound(MathAbs(net) * 100.0);
-         int need = (int)MathRound(InpSetNetMin * 100.0);
-         bool sameSide = (dir > 0) ? (net >= 0.0) : (net <= 0.0);
-         string whyTxt;
-         if(sameSide)
-            whyTxt = StringFormat("%s %d%% < %d%%", dir > 0 ? "buy" : "sell", pct, need);
-         else
-            whyTxt = StringFormat("opp %s %d%%", dir > 0 ? "sell" : "buy", pct);
-         AddReject(time[i], dir, mpy, whyTxt);
-         continue;
-      }
-      // Regime veto (opt-in): a FULL EMA stack aligned AGAINST the trade
-      // blocks the entry even with volume confirmation. Checked after the
-      // net gate so the marker means "volume said yes, EMA regime said no".
-      if(InpSetEmaFilter && g_emaSynced) {
-         double e1 = BufEma1[i], e2 = BufEma2[i], e3 = BufEma3[i], e4 = BufEma4[i];
-         bool emaOk = (e1 > 0.0 && e2 > 0.0 && e3 > 0.0 && e4 > 0.0 &&
-                       e1 != EMPTY_VALUE && e2 != EMPTY_VALUE &&
-                       e3 != EMPTY_VALUE && e4 != EMPTY_VALUE);
-         bool oppAligned = emaOk &&
-            ((dir > 0) ? (e1 < e2 && e2 < e3 && e3 < e4)
-                       : (e1 > e2 && e2 > e3 && e3 > e4));
-         if(oppAligned) {
-            AddReject(time[i], dir, mpy, "EMA opp");
-            continue;
+      for(int j = b; j < rt; j++) {
+         double jatr = (j >= 1 ? atr[j-1] : a1); if(jatr <= 0.0) jatr = a1;
+         // 1) SL hit first (conservative: carried slEff from the prior bar)
+         bool hitSL = (dir > 0) ? (low[j] <= slEff) : (high[j] >= slEff);
+         if(hitSL) { exited=true; exitBar=j; exitPrice=slEff; break; }
+         // 2) TP1 touch -> arm BE (no realize; lock banks 0% at TP1)
+         if(!tp1done) {
+            bool hitTP1 = (dir > 0) ? (high[j] >= tp1) : (low[j] <= tp1);
+            if(hitTP1) {
+               tp1done = true;
+               if(InpBeAfterTp1) { beArmed=true; beLvl=(dir>0)?entry+InpBeBufAtr*jatr:entry-InpBeBufAtr*jatr;
+                  slEff=(dir>0)?MathMax(slEff,beLvl):MathMin(slEff,beLvl); }
+            }
+         }
+         // 3) update MFE high-water
+         if(dir > 0) { if(high[j] > best) best = high[j]; } else { if(low[j] < best) best = low[j]; }
+         // 4) ATR chandelier trail (after TP1, tighten-only)
+         if(tp1done && effTrail) {
+            double trail = (dir>0) ? best - InpTrailAtrMult*jatr : best + InpTrailAtrMult*jatr;
+            slEff = (dir>0) ? MathMax(slEff,trail) : MathMin(slEff,trail);
+         }
+         // 5) ProgTrail late-arm ladder (every bar vs ORIGINAL risk; peak_r = bar-level
+         //    equivalent of the EA's per-tick cur_r since the SL is tighten-only)
+         if(InpPmProgTrail && InpPmProgTriggerR >= 0.0 && InpPmProgIncrementR > 0.0) {
+            double peak_r = (best - entry) * dir / risk;
+            if(peak_r >= InpPmProgTriggerR) {
+               double steps   = MathFloor((peak_r - InpPmProgTriggerR) / InpPmProgIncrementR);
+               double shift_r = MathMax(0.0, steps) * InpPmProgStepR;
+               double cand    = entry + dir*shift_r*risk;
+               slEff = (dir>0) ? MathMax(slEff,cand) : MathMin(slEff,cand);
+            }
+         }
+         // 6) runner cap (the broker TP) -> WON
+         bool hitRun = (dir > 0) ? (high[j] >= tpRun) : (low[j] <= tpRun);
+         if(hitRun) { exited=true; exitBar=j; exitPrice=tpRun; break; }
+         // record a stop-path STEP only when the stop moved this bar: a vertex at
+         // (j, oldSL) closes the flat run, then (j, newSL) is the riser -> a true
+         // staircase from a handful of vertices instead of one per bar.
+         if(rPathOn && MathAbs(slEff - rLastSL) > 1e-9) {
+            ArrayResize(g_rTrT, g_rTrN+2); ArrayResize(g_rTrP, g_rTrN+2); ArrayResize(g_rTrIdx, g_rTrN+2);
+            g_rTrT[g_rTrN]=time[j]; g_rTrP[g_rTrN]=rLastSL; g_rTrIdx[g_rTrN]=sIdx; g_rTrN++;
+            g_rTrT[g_rTrN]=time[j]; g_rTrP[g_rTrN]=slEff;   g_rTrIdx[g_rTrN]=sIdx; g_rTrN++;
+            rLastSL = slEff;
          }
       }
-      double entry = close[i];
-      double sl = (dir > 0) ? MathMin(edge - InpSetSlBufAtr * atr, entry - InpSetSlAtrMult * atr)
-                            : MathMax(edge + InpSetSlBufAtr * atr, entry + InpSetSlAtrMult * atr);
-      double risk = MathAbs(entry - sl);
-      if(risk <= g_mintick) continue;
-      double tp1 = entry + dir * InpSetTp1R * risk;
-      double tp2 = entry + dir * InpSetTp2R * risk;
-      int status = 0, jEnd = -1;
-      // BE ratchet (opt-in): once a bar's extreme reaches the trigger profit,
-      // the working stop jumps to entry +/- the BE buffer. The lift applies
-      // from the NEXT bar - the intrabar arm-then-stop order is unknowable
-      // from OHLC, so a same-bar trigger+retrace stays a LOST (conservative).
-      double slEff  = sl;
-      bool   beDone = false;
-      double beTrig = entry + dir * InpSetBeTrigR * risk;
-      double beLvl  = entry + dir * InpSetBeBufAtr * atr;
-      for(int j = i + 1; j <= last; j++) {
-         bool hitSl = (dir > 0) ? (low[j]  <= slEff) : (high[j] >= slEff);
-         bool hitTp = (dir > 0) ? (high[j] >= tp1)   : (low[j]  <= tp1);
-         if(hitSl) { status = beDone ? 3 : 2; jEnd = j; break; }
-         if(hitTp) { status = 1; jEnd = j; break; }
-         if(InpSetBeRatchet && !beDone &&
-            ((dir > 0) ? (high[j] >= beTrig) : (low[j] <= beTrig))) {
-            beDone = true;
-            slEff  = (dir > 0) ? MathMax(slEff, beLvl) : MathMin(slEff, beLvl);
-         }
+      // terminate the stop path at the exit bar (horizontal to the close) so the
+      // last leg is drawn without a per-bar vertex for every bar in between.
+      if(rPathOn && exited && time[exitBar] > g_rTrT[g_rTrN-1]) {
+         ArrayResize(g_rTrT, g_rTrN+1); ArrayResize(g_rTrP, g_rTrN+1); ArrayResize(g_rTrIdx, g_rTrN+1);
+         g_rTrT[g_rTrN]=time[exitBar]; g_rTrP[g_rTrN]=rLastSL; g_rTrIdx[g_rTrN]=sIdx; g_rTrN++;
       }
-      if(g_nSetups >= ArraySize(g_setups)) ArrayResize(g_setups, g_nSetups + 32);
-      g_setups[g_nSetups].t0     = time[i];
-      g_setups[g_nSetups].tEnd   = (jEnd > 0) ? time[jEnd] : 0;
-      g_setups[g_nSetups].dir    = dir;
-      g_setups[g_nSetups].status = status;
-      g_setups[g_nSetups].entry  = entry;
-      g_setups[g_nSetups].sl     = sl;
-      g_setups[g_nSetups].tp1    = tp1;
-      g_setups[g_nSetups].tp2    = tp2;
-      g_setups[g_nSetups].edge   = edge;
-      g_nSetups++;
-      activeEnd = (jEnd > 0) ? jEnd : last + 1;    // single open setup at a time
+      occUntil = exitBar;
+
+      // verdict by realized R: WON (>+0.03R), LOST (<-0.03R), BE (~flat), OPEN (no exit)
+      int status;
+      if(!exited)        status = 0;
+      else {
+         double realR = (exitPrice - entry) * dir / risk;
+         status = (realR > 0.03) ? 1 : (realR < -0.03) ? 2 : 3;
+      }
+
+      if(keep) {
+         if(g_nSetups >= ArraySize(g_setups)) ArrayResize(g_setups, g_nSetups + 32);
+         g_setups[g_nSetups].t0     = time[b];
+         g_setups[g_nSetups].tEnd   = exited ? time[exitBar] : 0;
+         g_setups[g_nSetups].dir    = dir;
+         g_setups[g_nSetups].status = status;
+         g_setups[g_nSetups].entry  = entry;
+         g_setups[g_nSetups].sl     = sl;
+         g_setups[g_nSetups].tp1    = tp1;
+         g_setups[g_nSetups].tp2    = sig.tp2;
+         g_setups[g_nSetups].edge   = (dir > 0) ? masterCur.vah : masterCur.val;
+         g_setups[g_nSetups].reason = sig.reason;
+         g_nSetups++;
+      }
    }
 }
 
@@ -2069,9 +2229,10 @@ void DrawSetups(int rates_total, const datetime &time[]) {
       Seg(idp + "t1", g_setups[k].t0, g_setups[k].tp1,   tR, g_setups[k].tp1,   COL_BUY,   1, STYLE_SOLID);
       Seg(idp + "t2", g_setups[k].t0, g_setups[k].tp2,   tR, g_setups[k].tp2,   colTp2,    1, STYLE_DOT);
       double lot = SetupLot(MathAbs(g_setups[k].entry - g_setups[k].sl));
+      string rTag = (StringLen(g_setups[k].reason) > 0) ? g_setups[k].reason + " " : "";
       Txt(idp + "eT",  g_setups[k].t0, g_setups[k].entry,
-          "E - " + DoubleToString(lot, 2) + " - " + DoubleToString(g_setups[k].entry, g_digits),
-          clrSilver, 8, ANCHOR_LEFT_LOWER);
+          rTag + "E " + DoubleToString(lot, 2) + " @ " + DoubleToString(g_setups[k].entry, g_digits),
+          (g_setups[k].dir > 0 ? COL_BUY : COL_SELL), 8, ANCHOR_LEFT_LOWER);
       Txt(idp + "slT", g_setups[k].t0, g_setups[k].sl,  "SL "  + DoubleToString(g_setups[k].sl,  g_digits), COL_DN_TXT, 8, ANCHOR_LEFT_LOWER);
       Txt(idp + "t1T", g_setups[k].t0, g_setups[k].tp1, "TP1 " + DoubleToString(g_setups[k].tp1, g_digits), COL_UP_TXT, 8, ANCHOR_LEFT_LOWER);
       Txt(idp + "t2T", g_setups[k].t0, g_setups[k].tp2, "TP2 " + DoubleToString(g_setups[k].tp2, g_digits), colTp2,     8, ANCHOR_LEFT_LOWER);
@@ -2083,6 +2244,17 @@ void DrawSetups(int rates_total, const datetime &time[]) {
       // Verdict sits to the LEFT of (in front of) the entry label: anchored on its
       // right edge one bar before the entry bar so the two never overlap.
       Txt(idp + "o", g_setups[k].t0 - (datetime)ps, g_setups[k].entry, oc + " ", occ, 9, ANCHOR_RIGHT_LOWER);
+   }
+   // Realized stop path (SL -> BE -> ATR trail -> ProgTrail ladder): connect the
+   // recorded per-bar stop levels within each kept setup. Orange, dotted, on top
+   // of the flat initial-SL line so the actual stop journey is visible.
+   if(InpVizShowTrailPath) {
+      for(int i = 1; i < g_rTrN; i++) {
+         if(g_rTrIdx[i] != g_rTrIdx[i-1]) continue;   // different setup -> no connector
+         if(g_rTrIdx[i] < first) continue;            // outside the drawn window
+         string tid = OBJPFX "sttr" + IntegerToString(i);
+         Seg(tid, g_rTrT[i-1], g_rTrP[i-1], g_rTrT[i], g_rTrP[i], C'255,167,38', 1, STYLE_DOT);
+      }
    }
    // Rejected triggers: a small x + reason at the trigger bar (above the
    // high for long triggers, below the low for shorts).
@@ -2133,7 +2305,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
    if(g_blocked) return rates_total;
    if(KK_AccessExpired(ACCESS_EXPIRY)) { VizBlock(); return rates_total; }
    g_rt = rates_total;
-   if(rates_total < g_masterLen + InpAtrLen + 5) return rates_total;
+   if(rates_total < g_masterLen + InpVizAtrLen + 5) return rates_total;
 
    // --- trail buffers (bar feed, capped to the most recent InpTrailBars) ---
    int start = (prev_calculated > 0) ? prev_calculated - 1 : 0;

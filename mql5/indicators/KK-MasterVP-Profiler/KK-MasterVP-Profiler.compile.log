@@ -2,6 +2,15 @@
 
 Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: compiling Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5
 Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\AccountLock.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\Types.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\VolumeProfile.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\Regime.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\NodeEngine.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Inputs.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Strategy.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Decision.mqh
+Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler/KK-MasterVP-Profiler.mq5 : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh
+Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\SessionNews.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\NewsCalendarEmbedded.mqh
  : information: generating code
  : information: generating code 3%
  : information: generating code 6%
@@ -37,4 +46,4 @@ Z:/Users/tokyotechies/Workspace/KEM/dquants/mql5/indicators/KK-MasterVP-Profiler
  : information: generating code 95%
  : information: generating code 100%
  : information: code generated
-Result: 0 errors, 0 warnings, 1481 ms elapsed, cpu='X64 Regular'
+Result: 0 errors, 0 warnings, 2478 ms elapsed, cpu='X64 Regular'
