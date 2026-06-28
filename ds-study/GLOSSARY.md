@@ -133,6 +133,24 @@ learning links are at the bottom.
 | **The three editions** | **MasterVP** (VP breakout) · **Monster** (VP+net-volume) · **KenKem** (trend menu). | The real optimization targets; each maps to a discovery finding. | 10 |
 | **Promotion gauntlet** | costs → sensitivity → walk-forward → MC → C++ tests → MQL5 parity → demo. | A strategy is production-eligible only after *every* gate passes (`KENKEM_QUANT_OS.md` §7). | 10 |
 
+## K. Institutional R&D and portfolio production
+
+| Term | What it means | Why it matters here | Where |
+|---|---|---|---|
+| **Experiment registry** | Immutable record of hypothesis, data, commit, config, trials, costs, metrics, and decision. | Prevents repeating dead ideas and makes every lock auditable. | 13 |
+| **Unified trade schema** | One canonical format for C++, MT5, and research trade streams. | Lets MasterVP, KenKem, XAU, BTC, and portfolio tools share the same diagnostics. | 13 |
+| **Anchored Volume Profile** | VP built from a structural anchor such as session open, swing, or event. | MasterVP should test auction structure, not only rolling lookback windows. | 13 |
+| **Meta-labeling** | A second model that accepts/sizes a primary signal rather than choosing direction. | Candidate for MasterVP breakout quality after the rule-based edge is proven. | 13 |
+| **CPCV / PBO** | Combinatorial purged cross-validation / probability of backtest overfitting. | A stronger anti-overfit gate than one hand-picked OOS path. | 12, 13 |
+| **Purging / Embargo** | Remove training samples that overlap or sit too near the test window. | Avoids leakage in serially correlated trade and label data. | 12, 13 |
+| **DSR / MinTRL** | Deflated Sharpe Ratio / minimum track record length. | A searched lock is only credible if it pays the multiple-testing penalty with enough trades. | 12, 13 |
+| **Flow toxicity** | Market state where aggressive/informed flow creates adverse selection. | Useful lens for failed breakouts and why raw flow filters can backfire. | 13 |
+| **Tail correlation** | Correlation measured during the worst return days, not average days. | MasterVP and KenKem may look diversified until XAU chop hits both together. | 13 |
+| **Component risk contribution** | Each stream's share of portfolio volatility or drawdown risk. | Prevents one EA/timeframe from secretly dominating the account. | 13 |
+| **HRP** | Hierarchical Risk Parity allocation. | More stable than mean-variance for small, correlated EA trade streams. | 13 |
+| **Book-level risk governor** | Account-level cap across all running EAs/charts. | Per-EA DD limits do not protect a shared account from correlated losses. | 13 |
+| **Drift monitor** | Live expected-vs-realized scorecard for fills, PF, count, spread, regimes, and exits. | Defines when a released edge should be paused or reviewed. | 13 |
+
 ---
 
 ## 🔗 Free learning sources (curated, reputable)

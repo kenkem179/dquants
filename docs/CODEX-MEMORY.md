@@ -24,6 +24,10 @@ on Claude Code private memory. Read after `HANDOFF.md` and before doing strategy
   `sr_trial_std`, DSR/PSR/MinTRL where possible.
 - Use the tick engine for P&L/parity claims, not the bar engine.
 - For exit-side MasterVP behavior, MT5 is the judge because the C++ exit model has known runner/trail optimism.
+- Treat MT5 `tick_volume`/tick count as quote activity, not exchange traded volume. Any MasterVP volume-profile
+  claim must be labeled as quote-activity VP unless validated against real-volume/cross-feed evidence.
+- Treat EMA/RSI/DMI/ADX as lagging state descriptors unless they prove incremental OOS value. They can gate
+  regime, but should not be trusted as standalone predictive alpha.
 
 ## Current Product Truth
 - **KK-MasterVP XAU M5 1.07** is the main validated/released MasterVP edge.
@@ -32,6 +36,9 @@ on Claude Code private memory. Read after `HANDOFF.md` and before doing strategy
 - BTC is not production-grade. Recent work showed BTC can be regime-dependent, but no robust BTC lock is
   currently accepted.
 - Monster is retired unless explicitly reopened.
+- Top priority is making durable, profitable production EAs for volatile XAU/BTC markets using the current
+  pipelines and algorithms. Jupyter notebooks are secondary: useful for learning and documentation, not the main
+  deliverable.
 
 ## Current Baton
 - Active blocker: user MT5 visual spot-check for `KK-MasterVP-Profiler` parity on XAU M5.
@@ -51,6 +58,8 @@ on Claude Code private memory. Read after `HANDOFF.md` and before doing strategy
   node-net/absorption requires parity proof first.
 - BTC pip scaling is dangerous. Any BTC KenKem work needs pip-denominated decision params converted to
   ATR-relative before trusting sweeps.
+- The next build-plan priority is **Phase 1 reliability infrastructure**, starting with data evidence tiers,
+  tick-profile proxy validation, and lag-indicator redundancy/delay audits before any fresh alpha sweep.
 
 ## Handoff Rules For Codex
 - Start every session by reading `AGENTS.md`, `HANDOFF.md`, `docs/CODEX-MEMORY.md`, and

@@ -58,6 +58,7 @@ lucky window). Both run on the project's **real** parity + walk-forward artifact
 |---|----------|-----------|----------------|----|
 | **11** | `parity_ground_truth` | 7 · MQL5 parity | **Diff config before logic**, the Wilder-vs-SMA ATR bug, trade-for-trade **PASS/FAIL** matching | 30m |
 | **12** | `overfitting_and_drawdown_honesty` | 8–9 · WF/MC | **Peak vs plateau**, walk-forward & Monte-Carlo on the real locked stream, **drawdown honesty** | 35m |
+| **13** | `institutional_scalping_rd_playbook` | program design | MasterVP/KenKem R&D gates, glossary, regime/cost/portfolio thinking, release scorecard | 45m |
 
 > 📖 Keep **`GLOSSARY.md`** open in a tab — every term above is defined there with *why it matters here*.
 
