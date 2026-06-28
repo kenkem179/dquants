@@ -1,0 +1,104 @@
+{
+  "symbol": "xauusd",
+  "tf": "M1",
+  "n_rows": 849963,
+  "horizon": 5,
+  "redundant_pairs": [
+    {
+      "a": "ema_200_dist",
+      "b": "ema_200_slope",
+      "corr": 0.9941
+    },
+    {
+      "a": "rsi_14",
+      "b": "rsi_21",
+      "corr": 0.9778
+    },
+    {
+      "a": "ema_50_dist",
+      "b": "ema_50_slope",
+      "corr": 0.9776
+    },
+    {
+      "a": "rsi_7_slope",
+      "b": "rsi_14_slope",
+      "corr": 0.9753
+    },
+    {
+      "a": "ema_25_dist",
+      "b": "ema_50_dist",
+      "corr": 0.9428
+    },
+    {
+      "a": "ema_12_dist",
+      "b": "ema_25_dist",
+      "corr": 0.9363
+    },
+    {
+      "a": "rsi_14",
+      "b": "di_spread",
+      "corr": 0.9353
+    },
+    {
+      "a": "rsi_7",
+      "b": "rsi_14",
+      "corr": 0.935
+    },
+    {
+      "a": "rsi_21",
+      "b": "di_spread",
+      "corr": 0.935
+    },
+    {
+      "a": "ema_25_dist",
+      "b": "ema_12_slope",
+      "corr": 0.9281
+    },
+    {
+      "a": "di_minus",
+      "b": "di_spread",
+      "corr": -0.9279
+    },
+    {
+      "a": "di_plus",
+      "b": "di_spread",
+      "corr": 0.9273
+    },
+    {
+      "a": "ema_12_dist",
+      "b": "ema_12_slope",
+      "corr": 0.9143
+    }
+  ],
+  "named_redundancy": {
+    "adx_vs_abs_di_spread": 0.5931,
+    "rsi14_vs_ema12_dist": 0.7134,
+    "rsi7_vs_rsi14": 0.935,
+    "adx_vs_signed_di_spread": 0.0009,
+    "ema50_dist_vs_dist_kijun": 0.8723
+  },
+  "nested_oos": {
+    "base_oos_r2": -0.000116,
+    "horizon": 5,
+    "base_features": [
+      "ret_1",
+      "ret_5",
+      "atr",
+      "atr_pct",
+      "atr_slope",
+      "dist_poc",
+      "dist_vah",
+      "dist_val"
+    ],
+    "base+EMA_oos_r2": -0.000176,
+    "incremental_EMA": -6e-05,
+    "base+RSI_oos_r2": -0.000197,
+    "incremental_RSI": -8.1e-05,
+    "base+DMI_oos_r2": -7.2e-05,
+    "incremental_DMI": 4.4e-05,
+    "base+ADX_oos_r2": -0.000163,
+    "incremental_ADX": -4.7e-05,
+    "base+ALL_oos_r2": -0.000347,
+    "incremental_ALL": -0.000231
+  }
+}
