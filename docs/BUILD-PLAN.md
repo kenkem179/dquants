@@ -49,6 +49,17 @@ Legend: `[~]` in progress, `[ ]` todo, `[B]` blocked on user/MT5/external data.
 8. **Lagging indicators are state variables, not alpha by themselves.** EMA/RSI/DMI/ADX can describe trend,
    compression and regime, but entries, stops and targets must be validated through path behavior, structure,
    cost stress and forward evidence.
+9. **Size by empirical Kelly, capped for fat tails (Chan Ch.6).** Long-run growth ∝ Sharpe², and variance directly
+   destroys compounding (`g = m − s²/2`). Compute the *empirical* Kelly fraction from the realized R-multiple
+   distribution (NOT Gaussian `m/s²`, which over-bets XAU/BTC tails) via `research/risk/kelly_sizing.py`. Never size
+   above the drawdown-capped fraction `min(half-Kelly, maxTolDD/worstLoss)`, and given fat tails never above
+   quarter-Kelly. Delever a degrading model automatically (trailing mean R→0 ⇒ f→0); never average down. Measured:
+   KenKem XAU M1 half-Kelly 0.087 still has 44% risk-of-ruin(50% DD) → KenKem belongs at ~1–2%/trade.
+10. **Exits are regime-conditioned (Chan Ch.6).** A stop-loss is rational only in a momentum/trending regime; in a
+   mean-reverting regime it realizes the loss at the worst time. News/fundamental moves trend (stops help); price
+   moves with no news = liquidity events that revert (hold). Prefer exiting on an opposite entry signal over an
+   arbitrary stop price (no data-snooped param). For reversion logic use the OU half-life (`research/stats/half_life.py`)
+   as the time-stop and `μ` as the target. Full digest: `docs/QUANT-LITERATURE-SYNTHESIS-2026-06-29.md`.
 
 ---
 
@@ -188,6 +199,15 @@ cross-checks and validation gates, not faith in any indicator.
   Build a matrix of coverage, spread realism, gaps, flat-spread years, and MT5-vs-export bar parity for XAUUSD
   and BTCUSD. Decide whether to add an independent broker/feed or exchange-traded proxy data for validation.
 
+- [ ] **R9 - Sweep objective = worst-fold robustness, optionally via Bayesian optimization (Liu Ch.9).**
+  Change the sweep objective from pooled costed-PF to the **best _worst-fold_ costed-PF/Sharpe across multiple
+  backtesting periods** — score a config by its weakest representative fold, not its pooled peak (directly attacks
+  peak-vs-plateau). Optionally replace grid/Optuna-TPE with **Gaussian-process Bayesian optimization** for
+  sample-efficiency when each backtest is expensive; the acquisition function balances explore/exploit. BO changes
+  search efficiency only — every lock still records `n_trials`/`sr_trial_std` and passes DSR/PSR/MinTRL + CPCV/PBO.
+
+  **Done when:** the sweep harness reports per-fold (not just pooled) objective and selects on the worst-fold metric.
+
 ---
 
 ## Phase 2 - MasterVP: Breakout Book
@@ -242,6 +262,11 @@ attention proxy**, not real traded volume.
   **Constraints:** purged CV, embargo, probability calibration, monotonic sanity checks, no more than a small
   feature set, and a hard fallback to rule-based lock if OOS calibration drifts.
 
+  **Technique (Chan Ch.2/3, Liu Ch.7):** this is **metalabeling** — predict the probability *your own* breakout
+  signal is profitable (a private, non-reflexive target nobody else arbitrages), then size/filter with it; feed
+  the probability into the P3 Kelly sizer (`Kelly × P(profit)`). Most overfit-prone technique in the literature —
+  mandatory purged/embargoed CV + PBO, build default-OFF, must beat the static lock in MT5 or stay research-only.
+
 - [ ] **M5 - True discrete profit-rung ladder.**
   Build default-OFF `pm_ladder`: e.g. bank x% at 1R, y% at 2R, trail remainder, with C++ and MQL parity.
   Current ProgTrail is a continuous ratchet, not a discrete liquidation ladder.
@@ -256,6 +281,11 @@ attention proxy**, not real traded volume.
 
   **Decision rule:** reversion book must have positive standalone expectancy, low correlation to breakout book,
   and improve portfolio DD. If it only lowers DD by deleting breakout winners, reject.
+
+  **Timing (Chan Ch.7):** set the reversion holding-period / time-stop from the **OU half-life**
+  (`research/stats/half_life.py`, estimated per-quarter from the whole series, not the few trades) and the reversion
+  target from the OU mean `μ` — not a data-snooped fixed bar count. A positive/insignificant β = not reverting on that
+  horizon → no reversion trade.
 
 - [ ] **M7 - BTC MasterVP revisit only after R0/R1/R5/M2.**
   BTC can be revisited only with BTC-specific sessions/weekend costs, evidence-tier labeling, tick-profile
@@ -345,6 +375,11 @@ dynamic targets.
   **Gate:** compare by entry family; preserve or improve `maeR`, tail loss, and PF under realistic costs. MT5
   confirms final exit geometry.
 
+  **Regime-condition the stop (Operating Doctrine #10):** a hard stop is only rational when the entry is in a
+  momentum/trending regime; in a reversion regime a tight stop exits at the worst time. Test stops *conditioned on the
+  P1 regime label*, not globally — this reframes the prior "don't give it back" falsifications (they tested giveback
+  stops against momentum breakouts). Prefer opposite-signal exit over an arbitrary stop price where possible.
+
 - [ ] **K5 - Dynamic RR / target policy.**
   Replace fixed RR with target families:
   nearest VP node, prior session value edge, ATR-scaled target capped by expected MFE, trend-strength-conditioned
@@ -359,6 +394,12 @@ dynamic targets.
 
   **Guardrail:** do not cut trade count below MinTRL. Use per-quarter OOS; 2025Q3 chop and 2026Q2 softness are
   the explicit stress cases.
+
+  **Advanced option — Conditional Parameter Optimization (Chan Ch.7 Ex.7.1):** once the rule-based regime matrix is
+  stable, train a model to predict *the strategy's own next-period return* given (candidate params + market-condition
+  features) and pick the best-predicted params per period — instead of static on/off. Predict the strategy's return,
+  not the market's (non-reflexive). Same hard discipline as M4: purged/embargoed CV, PBO, small feature set,
+  rule-based fallback, default-OFF, MT5-confirmed before any lock.
 
 - [ ] **K7 - E5 reopen only if it adds independent sample safely.**
   E5 has a known latch/onset trap and currently stays off. Reopen only if the goal is to add sample while
@@ -384,6 +425,9 @@ and how much risk it receives.
   Build a compact regime classifier:
   volatility percentile, trend persistence/Hurst proxy, VP balance/imbalance, spread/cost regime, session, and
   recent realized drawdown state. Start unsupervised for diagnostics, then hard-code simple deployable states.
+  **Add the OU half-life** (`research/stats/half_life.py`, per-quarter) as the mean-reverting-vs-trending
+  discriminator: significantly-negative β with short half-life = reversion regime (stops harmful), insignificant/positive
+  β = trending regime (stops help). This feeds the regime-conditioned exit law (Operating Doctrine #10).
 
   **Output:** per-trade regime id in normalized trade schema.
 
@@ -394,11 +438,18 @@ and how much risk it receives.
   **Decision rule:** a stream trades only in regimes where conditional expectancy is positive and sample size is
   sufficient, or it is explicitly marked "exploratory/demo only".
 
-- [ ] **P3 - Portfolio allocation.**
+- [ ] **P3 - Portfolio allocation + per-stream Kelly sizing.**
   Use HRP/risk parity as default because small samples make mean-variance unstable. Compare equal risk, inverse
-  variance, HRP, and capped fractional Kelly under purged CV.
+  variance, HRP, and capped fractional Kelly under purged CV. Per-stream, use **empirical Kelly**
+  (`research/risk/kelly_sizing.py`) on the realized R-multiple distribution — NOT Gaussian `m/s²` (over-bets the
+  tails). Report full-Kelly, half-Kelly, the drawdown-capped fraction `min(half-Kelly, maxTolDD/worstLoss)`, and the
+  Monte-Carlo risk-of-ruin at the chosen size. Optionally scale by a metalabel P(profit) (M4) → `Kelly × P(profit)`.
 
-  **Done when:** output is lot multipliers per stream plus component-risk contribution and tail-correlation report.
+  **Decision rule:** ship the **drawdown-capped fraction, never above quarter-Kelly** given fat tails. (Measured:
+  KenKem XAU M1 half-Kelly 0.087 already carries 44% risk-of-ruin(50% DD) → live size ~1–2%/trade.)
+
+  **Done when:** output is lot multipliers per stream plus component-risk contribution, tail-correlation report, and a
+  per-stream Kelly/RoR sizing table.
 
 - [ ] **P4 - Account-level risk governor.**
   Build live MT5 Layer-4 risk controls:
@@ -432,6 +483,9 @@ No strategy or portfolio is "production" until every gate passes.
 
 - [ ] **G4 - Validation gate.**
   Costs -> sensitivity plateau -> WF/CPCV -> MC -> PSR/DSR/PBO/MinTRL -> final MT5 confirmation.
+  Report **Calmar (CAGR/maxDD)** alongside PF/Sharpe, and **weight the most recent months heaviest** when judging
+  fitness (financial series are nonstationary; recent regime is what you'll trade — Chan Ch.3, and the BTC
+  regime-dependent finding). A config that needs old data to look good fails.
 
 - [ ] **G5 - Portfolio gate.**
   Stream-level edge plus book-level allocation and account risk cap. No single EA release without book-risk
