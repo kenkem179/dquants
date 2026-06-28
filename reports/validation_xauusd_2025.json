@@ -1,0 +1,120 @@
+{
+  "symbol": "xauusd",
+  "year": 2025,
+  "src": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_xauusd_2025.parquet",
+  "clean_dst": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_xauusd_2025_clean.parquet",
+  "total_in": 76283473,
+  "total_kept": 76215156,
+  "dropped": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 68317,
+    "spike": 0
+  },
+  "flagged": {
+    "ts_collision": 158115,
+    "zero_spread": 0,
+    "wide_spread": 4030
+  },
+  "spread": {
+    "mean": 0.1124,
+    "median": 0.112,
+    "p95": 0.112,
+    "p99": 0.112,
+    "min": 0.111,
+    "max": 2.8
+  },
+  "gaps": {
+    "gt_1s": 9219790,
+    "gt_10s": 3176,
+    "gt_60s": 326,
+    "gt_300s": 263,
+    "gt_3600s": 258,
+    "max_gap_s": 263222.0,
+    "top": [
+      {
+        "start": "2025-04-17 20:57:58.076",
+        "end": "2025-04-20 22:05:00.1",
+        "gap_s": 263222.0
+      },
+      {
+        "start": "2025-07-04 16:44:58.612",
+        "end": "2025-07-06 22:05:00.07",
+        "gap_s": 192001.5
+      },
+      {
+        "start": "2025-11-28 19:44:58.942",
+        "end": "2025-12-01 00:00:30.014",
+        "gap_s": 188131.1
+      },
+      {
+        "start": "2025-10-31 20:57:56.706",
+        "end": "2025-11-02 23:01:30.015",
+        "gap_s": 180213.3
+      },
+      {
+        "start": "2025-04-04 20:57:58.43",
+        "end": "2025-04-06 22:13:54.873",
+        "gap_s": 177356.4
+      }
+    ]
+  },
+  "coverage": {
+    "n_days": 311,
+    "min_day": 2181,
+    "med_day": 232600.0,
+    "max_day": 1005517,
+    "first_day": "2025-01-01",
+    "last_day": "2025-12-31",
+    "low_days": [
+      {
+        "day": "2025-12-07",
+        "ticks": 2181
+      },
+      {
+        "day": "2025-01-01",
+        "ticks": 3060
+      },
+      {
+        "day": "2025-01-05",
+        "ticks": 3243
+      },
+      {
+        "day": "2025-01-19",
+        "ticks": 4789
+      },
+      {
+        "day": "2025-01-12",
+        "ticks": 5110
+      },
+      {
+        "day": "2025-02-23",
+        "ticks": 6067
+      },
+      {
+        "day": "2025-03-23",
+        "ticks": 6790
+      },
+      {
+        "day": "2025-09-14",
+        "ticks": 7105
+      },
+      {
+        "day": "2025-08-24",
+        "ticks": 7181
+      },
+      {
+        "day": "2025-07-20",
+        "ticks": 7790
+      }
+    ],
+    "missing_hours": []
+  },
+  "residual": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 0
+  },
+  "passed": true,
+  "elapsed_s": 23.9
+}

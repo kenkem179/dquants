@@ -1,0 +1,120 @@
+{
+  "symbol": "xauusd",
+  "year": 2026,
+  "src": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_xauusd_2026.parquet",
+  "clean_dst": "/Users/tokyotechies/Workspace/KEM/dquants/data/processed/ticks_xauusd_2026_clean.parquet",
+  "total_in": 46686241,
+  "total_kept": 46578880,
+  "dropped": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 107361,
+    "spike": 0
+  },
+  "flagged": {
+    "ts_collision": 461997,
+    "zero_spread": 0,
+    "wide_spread": 1084
+  },
+  "spread": {
+    "mean": 0.1847,
+    "median": 0.196,
+    "p95": 0.255,
+    "p99": 0.35,
+    "min": 0.112,
+    "max": 1.4
+  },
+  "gaps": {
+    "gt_1s": 3180815,
+    "gt_10s": 415,
+    "gt_60s": 118,
+    "gt_300s": 107,
+    "gt_3600s": 104,
+    "max_gap_s": 263027.1,
+    "top": [
+      {
+        "start": "2026-04-02 20:57:58.668",
+        "end": "2026-04-05 22:01:45.815",
+        "gap_s": 263027.1
+      },
+      {
+        "start": "2026-01-16 21:57:58.238",
+        "end": "2026-01-18 23:09:53.405",
+        "gap_s": 177115.2
+      },
+      {
+        "start": "2026-01-02 21:57:58.775",
+        "end": "2026-01-04 23:07:09.821",
+        "gap_s": 176951.0
+      },
+      {
+        "start": "2026-04-10 20:57:59.202",
+        "end": "2026-04-12 22:06:02.528",
+        "gap_s": 176883.3
+      },
+      {
+        "start": "2026-03-27 20:57:57.974",
+        "end": "2026-03-29 22:04:32.25",
+        "gap_s": 176794.3
+      }
+    ]
+  },
+  "coverage": {
+    "n_days": 127,
+    "min_day": 8071,
+    "med_day": 300328.0,
+    "max_day": 2315498,
+    "first_day": "2026-01-01",
+    "last_day": "2026-05-29",
+    "low_days": [
+      {
+        "day": "2026-01-01",
+        "ticks": 8071
+      },
+      {
+        "day": "2026-02-15",
+        "ticks": 10072
+      },
+      {
+        "day": "2026-02-22",
+        "ticks": 11035
+      },
+      {
+        "day": "2026-05-03",
+        "ticks": 11882
+      },
+      {
+        "day": "2026-04-26",
+        "ticks": 12031
+      },
+      {
+        "day": "2026-05-10",
+        "ticks": 13182
+      },
+      {
+        "day": "2026-01-11",
+        "ticks": 13264
+      },
+      {
+        "day": "2026-02-08",
+        "ticks": 14015
+      },
+      {
+        "day": "2026-01-04",
+        "ticks": 15697
+      },
+      {
+        "day": "2026-05-24",
+        "ticks": 15864
+      }
+    ],
+    "missing_hours": []
+  },
+  "residual": {
+    "bad_px": 0,
+    "neg_spread": 0,
+    "exact_dup": 0
+  },
+  "passed": true,
+  "elapsed_s": 17.5
+}
