@@ -15,3 +15,4 @@
 - [ds-study learning track](ds-study-track.md) — user learns DS via ds-study/ notebooks; keep them in sync with development
 - [KenKem distilled result](kenkem-distilled-result.md) — distilled to E4-only Ichimoku; BTC OOS PF 1.24 / XAU 1.08, MC 100% profitable
 - [MQL5 compile workflow](mql5-compile-workflow.md) — compile MQL5 here via scripts/compile_mql5.sh (wine64+MetaEditor); do it freely
+- [Codex big-picture snapshot 2026-06-28](codex-big-picture-2026-06-28.md) — architecture, validated edges, current blockers, and risk posture

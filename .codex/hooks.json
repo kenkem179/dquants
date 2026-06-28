@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/tokyotechies/Workspace/KEM/dquants/.codex/hooks/sync-presets-on-set.sh'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/tokyotechies/Workspace/KEM/dquants/.codex/hooks/autopilot-compact-continue.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

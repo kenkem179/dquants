@@ -5,6 +5,43 @@ levers don't get re-chased. Newest first.
 
 ---
 
+## Recent closures moved from active plan (2026-06-26 to 2026-06-28)
+
+### MasterVP / BTC / Profiler
+- **H7 - BTC M3 dedicated sweep: REJECTED.** Dedicated BTC M3 sweep over master length, ADX, trail and SL
+  overfit train and collapsed OOS; no BTC-M3 lock.
+- **BTC revisit: CLOSED for production.** BTC M5 can be regime-dependent and recent-live-positive, but full
+  robustness/MT5-confirm bar is not met. Treat BTC as research-only until a fresh lock clears all gates.
+- **H12c nodeNet absorption veto: REJECTED.** MT5 A/B was catastrophic and exposed a node-net value parity gap
+  between MQL and C++; do not consume node-net VALUE without proving parity first.
+- **MasterVP EA 1.07 recut: DONE.** Re-cut without bump, with compliance disclaimer appended to broadcast trade
+  messages. User upload remains an ops action, not research.
+- **Profiler market dialog curation: BUILT.** `scripts/make_profiler_market.sh` hides leaked EA inputs for the
+  market build while preserving the richer Profiler shell. Final Profiler release is still gated on user visual
+  parity check.
+
+### MasterVP giveback / flow controls
+- **H10a anti-chase `InpBreakMaxAtr`: REJECTED.** Current exit lock still favors keeping the distance cap OFF.
+- **H10b trade-count/streak cap: REJECTED.** Model-free `mfeR` shows no entry edge decay by intraday count or
+  streak; caps clip the fat right tail.
+- **H10c session giveback stop: BUILT + MT5-REJECTED.** MT5 optimizer showed every giveback value slashed net
+  and worsened drawdown versus OFF; infra remains default-OFF.
+- **H11 conservative risk preset: DONE.** 0.5% risk preset shipped as linear de-risk with no edge change.
+- **H12 near-price flow veto and H12b fading-volume veto: REJECTED.** Model-free autopsies did not validate
+  either direction or magnitude flow-veto hypothesis.
+
+### KenKem
+- **K1 KenKem M3 extension: REJECTED.** M3 proxy had enough sample size, but RR lift overfit and OOS was
+  negative across every tested RR. Accept KenKem XAU M1-only unless a new hypothesis appears.
+- **E5 latch instrumentation round: DONE/DECODED.** MT5 showed B-1 read plus ADX-gated stateful latch freeze;
+  naive shifts regress. E5 remains OFF unless explicitly reopened.
+
+### Deployment tooling
+- **D-tooling market allowlist: DONE.** MasterVP market surface is pinned by explicit allowlist so debug inputs
+  can be exposed for MT5 optimization without leaking into market builds.
+
+---
+
 ## 🛰️ DEPLOYMENT & OPS — D1/D2/D3 BUILT + compile 0/0 (2026-06-25) — awaiting user demo validation
 
 Cross-EA Layer-4 (live MT5) infra. Pure additions — all default OFF/empty so KK-MasterVP stays

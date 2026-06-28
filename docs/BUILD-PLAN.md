@@ -1,305 +1,100 @@
-# KenKem Quant OS — Build Plan & Progress Tracker
+# KenKem Quant OS - Active Build Plan
 
-Executable work only — the things that get *checked off*. Standing doctrine (optimization objective,
-hard gates, tick-engine-only, costs, ATR-filter) lives in `CLAUDE.md`; engine/parity traps live in memory
-([[engine-port-traps]], [[kenkem-parity-traps]]); completed/rejected items live in
-`docs/BUILD-PLAN-ARCHIVED.md` — read it before re-opening any lever.
+Executable open work only. Completed/rejected items live in `docs/BUILD-PLAN-ARCHIVED.md`.
 
-Each step: build → `make -C cpp_core test` → commit → push → tick this file. Update `HANDOFF.md` last.
-Legend: `[x]` done · `[~]` in progress · `[ ]` todo · 🔒 = hard gate (cannot proceed past until met).
+Standing doctrine is summarized in `docs/CODEX-MEMORY.md`; the full architecture/SOP is in
+`docs/KENKEM_QUANT_OS.md`. Update `HANDOFF.md` last after every meaningful session.
 
----
-
-## 🔓 OPEN research levers (the only MasterVP/Monster work left)
-
-MasterVP's deployed locks stand; every exit/reversion/gate lever has been tested→rejected (see archive).
-What remains genuinely open:
-
-> ⚠️ **USER SKEPTICISM ON THE C++ ENGINE EXIT MODEL (2026-06-25) — read before trusting any sweep verdict.**
-> The user is **more skeptical than ever** about the recent sweeps. The proof: the **runner-RR / trail lock**
-> was wrong, and the user found it **themselves via the MT5 Strategy-Tester optimizer**, NOT the C++ engine —
-> the finer-step MT5 opt revealed Trail 2.75 > 2.5 and RR~4.0, which the engine's step-1.0 view and
-> directionally-unreliable exit accounting had missed (see [[engine-exit-model-untrusted-use-mt5]] — the
-> engine over-credits the trailed runner). **CONSEQUENCE — any EXIT-side lever (laddered/partial TP,
-> profit-lock ladder, BE/trail geometry, giveback) must be (re)validated on the MT5 optimizer, NOT the C++
-> engine.** The engine is a fast RANKING proxy for ENTRY/detection only; for exits, MT5 is the judge. When an
-> exit study's MT5 result disagrees with the engine, **MT5 wins** and the engine verdict is discarded.
-
-- [ ] **H6 — FVG-anchored stop-loss** (structural SL, replaces/augments pure ATR-multiple). Current SL is a
-  blind ATR multiple (`strategy.hpp`: long `sl = entry − max(sl_atr_brk·atr1, 8·pip)`). Anchor it just
-  **beyond the most significant Fair Value Gap** instead — long → most significant FVG **below VAH**; short
-  → FVG **above VAL**. Goal: stopped only when real structure breaks, fewer ATR-noise whipsaws. Expected to
-  matter for both M3 and M5, XAU and BTC.
-  - **Build:** new `cpp_core/include/kk/mastervp/fvg.hpp` — bullish FVG when `low[i] > high[i−2]`, bearish
-    when `high[i] < low[i−2]`; "significant" = largest gap; constrain to value-area side, lookback window,
-    no-lookahead. New params `InpUseFvgSl` (default **false** → byte-identical lock), `InpFvgLookback`,
-    `InpFvgBufAtr`, `InpFvgMinGapAtr`, fallback to ATR-SL. Golden parity: OFF == current trades exactly.
-  - ⚠️ **Confirm geometry with user at impl time** — "FVG below VAH (long) / above VAL (short)" needs one
-    worked example to pin the exact side & which FVG edge the SL sits beyond.
-  - **Validate:** A/B across all 4 cases → 6-fold WF (`wf_mastervp.py`) → MC → overfitting gate
-    (`research/stats/gate.py`, record n_trials + sr_trial_std) before any lock. Port to MQL5 only after DSR-PASS.
-
-- [x] **H7 — BTC M3 dedicated sweep. DONE 2026-06-27 → NO ROBUST EDGE (overfit, OOS-catastrophic).** The real
-  sweep (master length, ADX, trail, SL all swept on actual M3 bars — not the old M5-params-on-M3 mistake).
-  Train (Aug–Nov 2025) tunes to PF 1.090 (master6/ADX30/trail8/SL1.5) but that **collapses OOS (Jan–Jun 2026)
-  to PF 0.668 / −$7,980 / 81% DD**; train↑⇒OOS↓ anti-correlated = pure overfit. OOS-direct broad scan (12
-  combos): ZERO PF>1 → not a wrong-region pick, the whole OOS surface is sub-1. **REJECT — do NOT ship a BTC-M3
-  lock.** BTC's only non-dead MasterVP TF is M5 (breakeven-marginal); XAU M5 is the sole validated edge. Results
-  `research/mastervp_parity/btc_m3_sweep_2026-06-27/`. (Sweep only, no code change.) [[mastervp-btc-sweep]]
-
-- [ ] **H8 — Drop session windows, trade 24h-minus-blocked (BTC-first).** Hypothesis (user): ignore the
-  Asia/London/NY session gating entirely and let entries fire **any hour except `InpBlockedHoursStr`**. Rationale:
-  BTCUSD has no session character and runs 24/7, so the session windows may be needlessly throwing away trades.
-  - **Build:** mostly a **config ablation** (no code expected) — set session windows to full-day (24h) while
-    keeping the blocked-hours list, on a candidate `.set`. ⚠️ **Impl check first:** confirm whether the
-    engine/EA currently excludes **weekends** and whether a `weekend-enable` toggle exists; "BTC 24/7" only
-    holds if weekend bars are actually tradable in both engine and EA (add a minimal flag if not).
-  - **Blocked hours are ALREADY per-symbol** — `InpBlockedHoursStr` is a per-EA-instance input (each chart =
-    one symbol = its own `.set`), so there is no shared/global list. The validated `4,16,17` UTC hours are
-    **XAU-specific** microstructure (Asian-lunch lull + late-London chop on gold) and must **NOT** be inherited
-    by BTC. H8 must **derive BTC's own blocked hours empirically** (per-hour ATR/PF decomp via `hour_atr_decomp.py`;
-    candidate causes: low-liquidity windows, the Exness daily break ~UTC 21–22) — independent of gold's.
-  - ⚠️ **Cost realism is load-bearing here** — weekend BTC on the Exness feed has wider spreads / thinner
-    liquidity / gaps ([[btcusd-data-quirks]]). Test with **realistic weekend spread+commission** (pairs with
-    **T5**), else the 24/7 result reads optimistic. An uncosted 24/7 win is not a real win.
-  - **Expect XAU to REJECT (control, not target).** XAU's session/hour structure is a *measured* edge — T2
-    hour-block lock improved pooled PF ([[mastervp-m5-t2-hour-block-lock]]) and the UTC-21 study showed adding
-    blocks helped/widening hurt. Run XAU as a control; the real candidate is BTC (M5 + M3).
-  - **Validate:** per-symbol/TF A/B (session-gated vs 24h-minus-blocked) → **per-fold** 6-fold WF
-    (decompose, do NOT pool — pooled gains hid recent harm in the T1 gate-sweep [[mastervp-m5-gate-sweep-lock]])
-    → MC → overfitting gate. BTC locks MT5-confirm before trust ([[mastervp-t3-reversion-lock]]). Combine with
-    **H7** (BTC-M3 re-sweep) — hours are part of that config space.
-
-- [~] **H9 — Re-validate the EXIT cluster on the MT5 optimizer (laddered/partial TP first).** Directly from the
-  > **PREPPED 2026-06-26 (autopilot):** internal sweep EA `KK-MasterVP-Debug.mq5` ships (KK_IN macro exposes
-  > ALL params; curated EA byte-identical, compiles 0/0). 3 optimizer `.set` ready in `mql5/experts/KK-MasterVP/`
-  > (A=partial-TP InpTp1ClosePct×InpTp1R; B=BeBuf×Trail×RR plateau; C=prog-trail ladder, Debug-only) + plan
-  > `research/mastervp_parity/H9_MT5_OPTIMIZER_PLAN.md`. ▶ user runs them (A→C→B). True discrete multi-rung TP
-  > ladder still needs a default-OFF `pm_ladder` code build (greenlight → Grid D).
-  skepticism note above: the prior engine-side rejections of partial/laddered TP ([[mastervp-profit-lock-ladder]],
-  TP1-bank, conviction-protect — all "REJECTED" in the archive) were judged by the **C++ exit model the runner-RR
-  miss just proved unreliable**. Re-open them, but this time sweep on the **MT5 Strategy-Tester optimizer**, not
-  the engine.
-  - **Priority:** (1) **laddered TP** — bank fractions at a sequence of R/VP levels and let the rest trail
-    (the user's specific call-out); (2) `InpTp1ClosePct` partial-bank revisit; (3) profit-lock ladder
-    (`InpPm*` — `ProfitManager.mqh` is built + engine-mirrored but only ever MT5-tested as Ladder on BTC); (4)
-    BE buffer × trail interactions around the new RR4.0/Trail2.75 lock.
-  - **Method:** these are all **existing EA inputs / built default-OFF infra → `.set`-only, zero parity risk,
-    no recompile.** Build the candidate `.set` grids, run MT5 `Every tick based on real ticks` optimizer over
-    XAU M5 2025.06.01–2026.05.29 dep 10k, rank by **PF/robustness not peak net** (the RR3.2 trap). Confirm any
-    winner beats the **+87,836 / PF 1.413** lock on every quality axis, then overfitting-gate it before locking.
-  - ⚠️ Engine WF may still be run as a CHEAP pre-filter to prune the grid, but **its sign is not trusted on
-    exits** — no exit lever is locked on an engine number alone. MT5 optimizer result is the verdict.
-
-- [ ] **H10 — Giveback / over-trading control (the user's "don't return profit to the market" thrust).**
-  Born from the 2026-06-26 discussion. The goal is a SAFER-yet-profitable EA without clipping the fat right
-  tail (every per-trade-outcome clip — 7 profit-locks, TP1-bank, anti-chase ATR cap — has lost on XAU because
-  the edge IS the tail). The legitimate levers attack *intra-session giveback* and *regime loss-clusters*, not
-  individual winners. Four sub-tasks, ordered:
-  - [x] **H10a — Re-run the `InpBreakMaxAtr` (anti-chase) sweep under the CURRENT exit lock. DONE 2026-06-26 →
-    CAPPING CONFIRMED TO HURT (keep OFF).** Re-swept brkMax ∈ {1.5,2,2.5,3,3.5,4,5,OFF} on the current XAU-M5
-    lock `.set` (RunnerRr 4.0 / Trail 2.75 / BeBuf 0.02), train ticks. **OFF (1e6) dominates monotonically on
-    every axis: PF 1.366, net 30,172, maxDD 11.6%, Calmar 6.37** vs e.g. cap-3.0 (PF 1.194 / net 4,751 / dd
-    13.6% / Calmar 2.16). The far-traveled breakouts both ADD net AND LOWER maxDD% (955 vs 474 trades → smoother
-    curve; runners cushion DD). The original "capping hurts" verdict survives the new exit — the Q2 stale-ness
-    worry did NOT change the conclusion. Distance-cap is genuinely settled OFF. (Engine exit-model still suspect,
-    but this is a *relative* ranking holding exit fixed + monotonic + matches Q2 → high confidence; H9 MT5 runs
-    stress it implicitly.) ⚠️ This only kills the ENTRY-DISTANCE cap — the user's TRADE-COUNT / giveback idea is
-    a different mechanism, still open in H10b/H10c. Log: scratchpad `h10a_brkmax.log`.
-  - [x] **H10b — Within-episode edge-decay autopsy. DONE 2026-06-26 → TRADE-COUNT/STREAK CAP REJECTED; the
-    giveback is an EXIT phenomenon, not an entry one.** Autopsy of the 955 lock trades using **`mfeR` (max
-    favorable excursion in R) — model-independent** (path geometry, not the suspect exit rule). Findings:
-    (1) `mfeR` is FLAT across intra-day trade index (1.43/1.30/1.46/1.18/1.19/1.34 for trades 1..6+) — no
-    edge decay as the day adds trades; (2) FLAT across prior win/loss streak (after ≥2W 1.32, after ≥2L 1.24)
-    — no autocorrelation; (3) quartile-4 FAR breakouts have the BEST edge (`mfeR` 1.46, win 61.9%) — confirms
-    H10a model-free. **⇒ a ≤3W/≤2L or any entry-side trade-count cap forfeits ~1.3R of live edge per skipped
-    trade → REJECT** (it's fat-tail clipping in disguise, exactly the failure mode of the 7 profit-locks).
-    BUT the user's giveback instinct is REAL and now *localized*: when the day is already GREEN, realized
-    USD/trade collapses to 10.7 (vs 60.8 first-trade, 45.6 when red) **while `mfeR` stays 1.24** — i.e. the
-    setups are still good, the EXIT converts them poorly once green. The fix is **exit/management (H10c session
-    giveback stop, H10d trail/RR), NOT entry frequency.** ⚠️ Caveat: realized-USD is exit-model-dependent
-    (suspect) and a prior study found clipping per-trade round-trip giveback loses net (runner-truncation cost
-    > rescue, [[mastervp-flow-exit-rejected]]) — so H10c must be a SESSION-level new-entry stop (does not
-    truncate the live runner) and MT5-judged. Tools: scratchpad `h10b_autopsy.py`, `h10b_lock_trades.csv`.
-  - [x] **H10c — Session trailing-giveback stop (default-OFF). BUILT + MT5-TESTED 2026-06-26 → REJECT.**
-    MT5 optimizer (XAU M5, 2025.06–2026.05, dep 10k, rank PF), `InpGivebackPct ∈ {0…90}`, 0=OFF control:
-    **OFF wins on EVERY axis** (Net 90,781 / PF 1.448 / DD 14.5%); every giveback value collapses net ~92%
-    (stands the EA down → 1425→322–510 trades, removing the fat-tail days) AND *raises* maxDD to 22–26%.
-    4th independent falsification of "don't give it back" on XAU (after 7 profit-locks, flow-exit, H10b
-    entry-cap) — a giving-back day is indistinguishable in advance from a pausing-then-running day. ONLY
-    ProgTrail late-arm ladder works on XAU. Infra stays default-OFF/inert (byte-identical). Results
-    `research/mastervp_parity/H10c_results/`. The original spec: The
-    surgical form of "don't give it back": *give back at most X% of the day's peak GAIN, then stand down* —
-    halts only when you're ACTUALLY giving back, not while still winning (strictly better than a hard win
-    count). **Implemented** as `InpGivebackPct` (C++ `giveback_pct`): halt formula `(dayPeak-equity) >=
-    X% * (dayPeak-dayStart)`, arms only on a green day, evaluated FLAT at the entry gate so it never truncates
-    the open runner; resets each trading day. `RiskManager::is_giveback_halt` + `day_peak_equity_` (C++) mirror
-    1:1 to `IsGivebackHalt`/`g_dayPeakEquity` (EA). Default 0 = OFF → **base byte-identical (trade-diff empty
-    vs HEAD), `make test` 37+240 green incl. `test_giveback_halt`, both EAs compile 0/0, market surface
-    unchanged (KK_IN hidden, Debug-exposed).** Optimizer grid `KK-MasterVP-XAUUSD-M5-H10c-OPT-Giveback.set`
-    (InpGivebackPct 0→90 step 10, 0=OFF control). **▶ Validate on the MT5 optimizer** (giveback is
-    exit-path-dependent → MT5 is judge, engine is at most a cheap pre-filter); accept only if PF/maxDD improves
-    on BOTH year sub-folds (a stopped clock trivially lowers maxDD — decompose per-fold, never pool), then gate.
-  - **H10d — RR / trail revisit (= H9 Grid B).** The user's "I trailed too far at RR 3.2–4.0" instinct is the
-    H9 BeBuf×Trail×RR plateau — the untrusted-on-engine exit cluster, so it is **NOT settled**. Tightening the
-    trail may shrink giveback more cleanly than any trade-count cap. Run as part of H9 on MT5.
-  - **Gate:** any H10 lock → 6-fold WF (per-fold, not pooled) → MC → `research/stats/gate.py` (record
-    n_trials + sr_trial_std) before locking; exit-side levers are MT5-verdict, not engine.
-
-- [x] **H11 — Honest linear de-risk: "Conservative" 0.5%-risk preset. DONE 2026-06-26.** Shipped
-  `KK-MasterVP-XAUUSD-M5-Conservative.set` = the exact M5 lock with `InpRiskAccPct` 1.0→0.5 (only diff). ~Halves
-  true full-year maxDD (27.7%→~14%) at ~half return, same Sharpe/edge — the only zero-edge-cost safety dial.
-  The release `xauusd-m5-prop` variant (0.5% + firm DD limits) already covers the prop case; this is the plain
-  retail conservative dial. The original H11 rationale:
-  ZERO edge cost: halve `InpRiskAccPct` 1.0→0.5 → ~halve the true full-year maxDD (27.7%→~14%) at ~half the
-  return, same Sharpe/edge. No sweep, no gate needed (pure linear scaling of the locked config). Ship as a
-  documented preset variant alongside the 1.0% lock so users can pick their drawdown tolerance.
-
-- [x] **H12 — Entry-flow exhaustion veto (near-price net delta). BUILT default-OFF + AUTOPSY-REJECTED 2026-06-27.**
-  User's idea: after enough breakouts beyond mVAH/mVAL, flow exhausts → veto a geometrically-valid entry when
-  the near-price net tick-vol delta within ±2.4×ATR is AGAINST it. Built the EXACT measure (`near_price_net_at`
-  in tf_net.hpp; `enable_entry_flow_veto`/`entry_flow_veto_atr=2.4`/`_min`/`entry_flow_look=50`), journaled
-  `entryFlowNear` per trade. **Model-free autopsy (2117 lock entries, mfeR/reach1R — exit model NOT trusted):
-  the veto does NOT validate.** Near-price flow is ~always WITH the breakout (median +0.28); the ~10% against-flow
-  entries are EQUAL-or-BETTER (mfeR 1.306 vs 1.272, reach1R 46.2% vs 41.8%, smaller maeR) — they mark favorable
-  PULLBACK entries, not traps. Holds even on EXTENDED (top-Q brkDist) breakouts. Per CLAUDE.md the autopsy gates
-  the sweep → NO sweep spent. Infra stays default-OFF/inert (byte-identical, trade-diff vs HEAD empty).
-  Results `research/mastervp_parity/entry_flow_veto_2026-06-27/`.
-  - [x] **H12b — FADING-VOLUME (magnitude) veto. AUTOPSY-REJECTED 2026-06-27** (pure-Python, no engine change).
-    The literal "volume dies out" = skip a breakout with low/declining participation. 3 measures (breakout-bar
-    rel volume, participation slope, near-price partic frac) quartiled: LOW/dying-volume breakouts are
-    EQUAL-or-BETTER (model-free mfeR/reach1R), NOT traps. Faint INVERSE hint (surging volume = climactic = weaker)
-    but weak + exit-model-tinged, not the hypothesis. ⇒ both DIRECTION (H12) and MAGNITUDE (H12b) vetoes reject.
-  - **Remaining refinement (NOT pursued):** `nodeNet` VP-node structural absorption — the only proxy that
-    flickered (mild-against −26/tr, weak + non-monotone). Separate hypothesis; needs its own autopsy + MT5.
-
-- [ ] **T4 — Monster impulse sub-optimization** (impulse ≈ 21% of net) + **cross-symbol coverage** (Monster
-  on XAU; re-confirm MasterVP M5 XAU edge).
-
-- [ ] **T5 — Cost realism** (add commission + slippage; current BTC commission=0) before any deploy.
-
-- [ ] **C1 — Dead-code cleanup: prune research features never toggled on in the last ~4 locked versions.**
-  Years of exploratory research left default-OFF features wired into the engine + EAs that **no shipped lock has
-  ever enabled** — they add surface area, slow comprehension, and (worse) are untrustworthy now that the engine
-  exit model is suspect. Audit what the last ~4 locks actually use, then remove the rest.
-  - **Candidates (verify each is OFF in ALL recent locked `.set` before removing):** node-engine gate
-    (`InpNodeGateEnabled`/`InpBrkRequireFlow`/`InpSfpFlowMin`/`InpUsePriorBarVP`), impulse-thrust path
-    (`InpEnableImpulse` + all `InpImpulse*`/`InpTfNet*`/`NetVolume.mqh` — the retired Monster delta), extreme
-    reversion (`InpEnableExtremeReversion` + `InpXRev*`/`ExtremeReversion.mqh`), base reversion if still unused
-    (`InpEnableReversion`/`InpRev*`/`InpRetestAtr`/`InpBodyPctMin`), per-entry-type trail overrides
-    (`InpTrailBrk/Rev/Imp/XRev` if always -1), MTF/momentum quality gates (`InpUseMtfAgree`/`InpUseMomVeto`),
-    FVG-SL (`fvg_sl.hpp`, already WF-rejected, never ported), Kaufman-ER (KenKem `E1_ER_*`, engine-only),
-    and any other default-OFF lab feature.
-  - ⚠️ **Method = safety-net deletion:** the C++ side is the source of truth and is **fully tick-tested** —
-    delete a feature, `make -C cpp_core test` must stay green AND the golden-parity / locked-`.set` runs must
-    stay **byte-identical** (a diff = the feature wasn't truly dead). Mirror the removal in the EA, recompile
-    0/0. Do it **one feature per commit** so any parity break is unambiguously attributable. Keep the research
-    write-ups in `research/` + memory as history (the lesson, not the code). **Confirm scope with the user
-    before deleting reversion** (it's the one with a partial MT5 A/B history) — the rest are clean kills.
-
-- [~] **PF1 — Master-Volume-Profiler ↔ MasterVP EA: re-sync to 100% behavioral parity (user, 2026-06-27).**
-  > **STEPS 1–3 DONE 2026-06-27 (indicator-only, EA untouched, compiles 0/0).** Step-1 audit found the premise
-  > below was STALE: the single-source EA-twin was reverted at `32cea71`, so the released Profiler 1.01 was the
-  > loose standalone scout (no Decision.mqh; breakout-only; NO ProgTrail ladder) — BOTH entry & exit diverged.
-  > User chose "graft shared logic onto the rich shell": renamed clashing symbols → `Viz*`, included the EA
-  > stack, rewrote `RescanSetups` as the EA-exact replay (signal+gates+pure-UTC sessions) with a lock-faithful
-  > exit (TP1→BE→ATR-trail→**ProgTrail ladder 2.0/0.75/0.2**→runner cap) + realized-R verdict; rich cockpit kept.
-  > **▶ REMAINING = Step 4(ii) user MT5 visual spot-check.** Detail: `research/mastervp_parity/profiler_parity_2026-06-27/DELTA_AUDIT.md`, [[mastervp-profiler-indicator-parity]].
-  The Profiler indicator must show an entry/exit/verdict on the EXACT candle, with the EXACT outcome, that the
-  **current locked/released** KK-MasterVP EA executes. Non-negotiable: **the indicator may NEVER display one
-  thing while the EA does another.** The profiler was last aligned at Phase A/B on **2026-06-20**
-  ([[mastervp-profiler-indicator-parity]]) — but the lock gained material changes **after** that date, so it is
-  almost certainly stale now. **Do this STEP BY STEP, re-verifying after each step** (the lock has many
-  improvements; a big-bang rewrite risks silently re-breaking parity).
-  - **Architecture principle (do not violate):** parity by **single-source shared `.mqh`**, not a parallel
-    re-implementation in the indicator. Entries already route through shared `Decision.mqh`; the **exit/position
-    management** path is the gap. Where the EA's exit logic isn't already in a shared, chart-deterministic header,
-    **factor it into one** that BOTH the EA and the profiler call, so they cannot drift again. (Indicator can't
-    call CTrade/live-equity — keep those EA-only; everything chart-deterministic gets shared.)
-  - **Step 1 — DELTA AUDIT (no code).** Diff the EA's behavioral surface today vs the 2026-06-20 profiler build.
-    Enumerate every change to entries/quality-gates/sessions/exits since then. Known suspects to confirm against
-    current code: **(a) the ProgTrail late-arm ladder** (`InpPmProgTrail`/`TriggerR 2.0`/`Inc 0.75`/`Step 0.2`)
-    — ⚠️ **baked as HIDDEN compiled defaults in `Inputs.mqh`, the `.set` can't drive it** ([[mastervp-progtrail-ladder-lock]])
-    → the profiler's forward-exit replay (written pre-ladder as "TP1→BE→ATR trail + runner cap") almost certainly
-    does **not** simulate the ratchet → WON/LOST/BE verdict + stop-path drawing diverge; **(b)** RR4.0 / Trail
-    2.75 / BeBuf 0.02 lock values; **(c)** pure-UTC sessions + day-roll at UTC 00:00; **(d)** blocked hours
-    4,16,17; **(e)** any BE/partial/Pm* default that moved. Output = a checklist of concrete divergences.
-  - **Step 2 — fix entries/gates first** (smaller surface): confirm the shared `Decision.mqh` gate set still
-    matches the EA's `OnNewBar` exactly (signal + regime + session≠0 + ATR-ticks + max-trades/session +
-    blocked-hours + one-position); update the profiler's session/hour/UTC handling to match. Re-verify.
-  - **Step 3 — fix the EXIT replay** (the main gap): make the profiler reproduce the EA's full per-tick exit
-    sequence **including the ProgTrail ladder** and current BE/trail/RR geometry — ideally by calling the same
-    shared exit header rather than re-coding it. This is where "shows X, does Y" bites hardest.
-  - **Step 4 — VERIFY each step (mandatory):** (i) re-run the **locked XAU M5 EA** → numbers must stay
-    **byte-identical** to the lock (the profiler work must not touch EA behavior); (ii) attach the indicator on
-    XAU M5 with the lock `.set` → entry markers land on the EA's entry candles AND the WON/LOST/BE verdict +
-    stop path match the EA's realized trades on a sample. ⚠️ One residual the indicator legitimately **cannot**
-    reproduce from chart data = predictive daily-DD (`IsDailyDDHit`, needs live equity) — document it, don't chase.
-  - Both EA + indicator compile 0/0 (`scripts/compile_mql5.sh`); commit per step so any parity break is
-    attributable. Update [[mastervp-profiler-indicator-parity]] when done.
+Legend: `[~]` in progress, `[ ]` todo, blocked = needs user/MT5/external action.
 
 ---
 
-## 🛰️ DEPLOYMENT & OPS INFRASTRUCTURE (cross-EA, Layer 4 — live MT5 only)
+## Priority 0 - Current Baton
 
-These are **not** strategy-research levers. They live entirely in **Layer 4 (MQL5)** — they touch `AccountInfo*`,
-`GlobalVariable*`, `WebRequest`, `FileWrite`, broker equity — none of which exist in the C++ engine. They are
-**out of scope for parity/backtest** (the tick engine models one isolated equity stream per run; account-pooling,
-notifications and CSV cadence have no engine analog). Build + verify on a **demo account with multiple charts**,
-not via `make test`. The *pure math* (day-anchor / floor / breach) should still be factored into a small
-header-only helper so it can be unit-tested headlessly.
+- [~] **PF1 - KK-MasterVP Profiler <-> KK-MasterVP EA parity.**
+  Steps 1-3 are done in code and compile 0/0: the Profiler now uses the EA stack for signal/gates, pure-UTC
+  session gates, one-position/max-trades gates, and lock-faithful exit replay including TP1->BE->ATR trail,
+  ProgTrail ladder 2.0R/0.75/0.2, and runner cap. Performance was bounded by replaying only the lookback window
+  and drawing sparse stop-path segments.
 
-**Decided context (2026-06-25):** one MT5 terminal per prop account → cross-EA state via **terminal
-GlobalVariables**; defaults tuned **generic/conservative (equity-based)** with per-firm settings documented;
-trade CSV is **append-immediately on close** (not hourly-batched).
+  **Blocked on user:** attach the Profiler on XAU M5 with the lock `.set` and visually compare entries, verdicts,
+  and stop paths against sampled EA backtest trades. Daily-DD is the only expected non-reproducible gate.
 
-- [x] **D1 — Account Risk Guardian** — DONE 2026-06-25 (`KK-Common/AccountGuardian.mqh`, wired into KK-MasterVP,
-  compiles 0/0). Cross-EA via terminal GlobalVariables keyed by login; pure breach/anchor math in unit-testable
-  free functions; server-time day boundary; equity-based flatten-before-the-line; deal-history cold-start anchor.
-  Inputs `InpGuard*`. Simplified vs this spec (no Equity/Balance-at-reset split, no `InpDayResetHourServer`, no
-  `InpDailyLimitBase`) — refine per-firm if the demo needs it. Full record + ▶ user demo-validation step in
-  `BUILD-PLAN-ARCHIVED.md`.
-- [x] **D2 — Per-EA trade CSV** — DONE 2026-06-25 (`KK-Common/TradeLogger.mqh`). Append-on-close, FileFlush/row,
-  live-only, OnDeinit close. Input `InpLiveTradeCsv`. Archived.
-- [x] **D3 — Notifications (Discord/Telegram/Email)** — DONE 2026-06-25 (`KK-Common/Notifier.mqh`, standalone,
-  ASCII-only). Inputs `InpNotifyChannel{0..7}/InpNotifyMode/InpDiscord*/InpTelegram*`. Plus drag-drop validator
-  `KK-Common-Tests/TestDeployOps.mq5` + guide §5 update. Archived.
+  **Next after user OK:** commit any remaining worktree changes, run the Profiler market builder, package a
+  versioned Profiler release, and update this plan + handoff.
 
-- [x] **D-tooling — MasterVP marketplace surface pinned to an explicit allowlist (2026-06-26).** Switched
-  KK-MasterVP from fragile approach-A (the literal `input` keyword = market visibility) to approach-B
-  `release.market.whitelist` (the 40 current user-facing keys; `InpNotifyMode` listed-but-force-hidden→2). Now
-  ANY param can be exposed as `input` in the dev/Debug build for MT5 sweeping **without leaking to the market
-  dialog** — the release build strips everything not on the allowlist. Fixed two latent bugs in
-  `scripts/lib/market_edition.sh` (name-extraction for `name= val` with no space before `=`; force-hide
-  subtraction in the whitelist branch). Verified market binary stays **dialog-identical** to today (40 visible,
-  same group set, `InpSoftBlockLotMult` visible, `InpNotifyMode` hidden+baked=2) — only dialog-neutral group-
-  header repositioning differs. Picked up automatically on the next market re-cut.
+- [ ] **MasterVP 1.07 upload follow-through.**
+  EA 1.07 was re-cut without a version bump and includes the broadcast compliance disclaimer. User action:
+  upload `releases/1.07/market/KK-MasterVP-Market-1.07.ex5`.
 
-- [ ] **D5 — Account-level concurrent-risk cap (portfolio drawdown, not per-strategy).** The 27.7% true maxDD
-  is *per strategy*; with breakout+reversion and/or XAU+BTC running concurrently the account DD is the
-  *correlated sum* and can compound well past it. No total-open-risk ceiling exists across EAs today. Add a
-  cross-EA cap (terminal GlobalVariables, like D1): sum open risk across all KK EAs on the account and block
-  new entries once total simultaneous risk exceeds a ceiling (e.g. 2–3%). Highest-value un-built *safety* item
-  — gives drawdown protection that no per-strategy tuning can. Layer-4 only; pure cap math in a unit-testable
-  helper.
+---
 
-- [ ] **D4 — Trial-expiry deadline on account-locked marketplace builds.** Every per-account MARKET edition
-  ([[ea-marketplace-and-account-builds]] — the hidden `ALLOWED_ACCOUNT_ID`/`ALLOWED_ACCOUNT_SERVER` bake)
-  also gets a **free-trial deadline, default 15 days from build time**. After it passes, the EA stops trading
-  and shows the alert: **`Free Trial Access Expired. Please purchase the bot from https://kenkem.biz`**.
-  - **Mechanism:** the per-account release script bakes a **hidden compile-time constant** (NOT a user input —
-    same rationale as the account lock; an input would let the user just extend it), e.g.
-    `datetime TRIAL_EXPIRY_TS = <build_time + 15 days>;` next to `ALLOWED_ACCOUNT_ID`. Empty/0 sentinel = **no
-    deadline** (the normal, non-trial paid build). The 15-day window is a build-script parameter so a longer/
-    shorter trial can be issued per customer without touching code.
-  - **Check:** in `OnInit` and once per new bar, `if(TRIAL_EXPIRY_TS>0 && TimeCurrent() > TRIAL_EXPIRY_TS)` →
-    fire `Alert(...)` once (de-dupe so it doesn't spam every tick) + **stop opening new trades**. Use
-    **`TimeCurrent()` (broker server time)**, not `TimeLocal()` — the broker clock is far harder to spoof by
-    rolling back the PC clock. Pairs naturally with the D3 notifier (also DM the expiry once).
-  - ⚠️ **Confirm with user at impl time:** behaviour for **already-open positions** at expiry — recommended
-    **let existing trades manage out to their own SL/TP, only block new entries** (flattening someone's live
-    position on a trial boundary is hostile and can realise a loss); the alert + new-entry block is the lock.
-    Also confirm whether expiry should also hard-disable on the *next* `OnInit` (so a restart after expiry won't
-    trade at all).
-  - **Live-only / safety:** skip the whole check under `MQL_TESTER|MQL_OPTIMIZATION` (don't let a trial deadline
-    break the user's own backtests); the deadline only governs the live marketplace build.
+## Priority 1 - MT5-Judged Exit Work
+
+> Exit-side levers must be validated in MT5, not locked from C++ engine numbers. The engine over-credits trailed
+> runners and missed the final RR/trail plateau.
+
+- [~] **H9 - Re-validate the exit cluster on the MT5 optimizer.**
+  Prepared: internal `KK-MasterVP-Debug.mq5` exposes all optimizer params; curated market EA remains
+  byte-identical. Optimizer `.set` grids exist for partial TP, BE/trail/RR, and ProgTrail ladder; plan:
+  `research/mastervp_parity/H9_MT5_OPTIMIZER_PLAN.md`.
+
+  **Blocked on user MT5 optimizer runs:** run grids A -> C -> B on XAU M5, every tick based on real ticks,
+  2025.06.01-2026.05.29, dep 10k, rank by PF/robustness not peak net. A true multi-rung TP ladder still needs
+  a default-OFF code build if the user greenlights Grid D.
+
+---
+
+## Priority 2 - KenKem Research
+
+- [ ] **KenKem M1 lock maintenance.**
+  Current practical decision: accept **KenKem XAU M1-only**. The M3/K1 lever was tested and rejected; E5 stays
+  off unless a future latch/parity pass is explicitly requested. Preserve `KK-KenKem XAU M1 D5-E4Long` as the
+  validated KenKem edge unless fresh MT5 evidence supersedes it.
+
+- [ ] **K2 - BTCUSD KenKem sweeps across M1/M3/M5.**
+  High prior of rejection. Hard prerequisites before trusting any BTC number:
+  pip-denominated decision params converted to ATR-relative, BTC parity reference per timeframe, realistic BTC
+  spread/commission/weekend costs, per-quarter + WF/MC, overfitting gate with sweep context, and final MT5
+  confirm. Do not inherit XAU blocked hours or XAU pip thresholds.
+
+- [ ] **K3 - Add a Volume Profile dimension to KenKem.**
+  Reuse existing MasterVP VP code rather than inventing a new VP engine. Start with distance-based VP features
+  (VAH/VAL/POC) and run edge autopsy before sweeps. Any node-net/absorption feature is blocked by the known
+  MQL<->C++ node-net value parity gap.
+
+---
+
+## Priority 3 - MasterVP Research Levers
+
+- [ ] **H6 - FVG-anchored stop-loss.**
+  Default-OFF structural SL candidate. Needs user-confirmed geometry before implementation: for long entries,
+  which bullish FVG below VAH and which edge/buffer should anchor SL; mirror for shorts above VAL. Validate by
+  A/B, 6-fold WF, MC, overfitting gate, then MQL only after DSR-pass.
+
+- [ ] **H8 - BTC 24h-minus-blocked session ablation.**
+  Config-first study. Confirm weekend handling first; derive BTC-specific blocked hours empirically; include
+  realistic BTC costs. XAU is only a control. BTC locks require MT5 confirm.
+
+- [ ] **T4 - Monster impulse sub-optimization and cross-symbol coverage.**
+  Low priority; Monster is retired unless the user explicitly reopens it.
+
+- [ ] **T5 - Cost realism.**
+  Add commission + slippage assumptions before any new BTC deploy claim.
+
+- [ ] **C1 - Dead-code cleanup.**
+  Audit default-OFF research features unused by recent locks, then remove one feature per commit with tests and
+  locked-run byte-diff safety. Confirm scope before deleting reversion history.
+
+---
+
+## Deployment/Ops
+
+- [ ] **D5 - Account-level concurrent-risk cap.**
+  Layer-4 live MT5 only. Sum open risk across KK EAs via terminal GlobalVariables and block new entries when
+  account-level simultaneous risk exceeds a cap, e.g. 2-3%. Keep pure cap math unit-testable.
+
+- [ ] **D4 - Trial-expiry deadline on account-locked marketplace builds.**
+  Bake hidden compile-time expiry into per-account market builds. Use broker `TimeCurrent()`, alert once, block
+  new entries after expiry, skip in tester/optimization. Confirm behavior for already-open positions before
+  implementation; recommended behavior is to let existing trades manage out.

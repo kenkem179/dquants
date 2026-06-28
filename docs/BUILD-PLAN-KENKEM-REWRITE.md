@@ -1,5 +1,11 @@
 # BUILD PLAN — KK-KenKem clean rewrite (faithful transcription of KenKemExpert)
 
+> Codex continuity note, 2026-06-28: this file is historical/background for the KenKem rewrite. For the active
+> queue, read `HANDOFF.md`, `docs/CODEX-MEMORY.md`, and `docs/BUILD-PLAN.md` first. Current operational decision:
+> KenKem XAU M1 D5-E4Long is the validated KenKem edge; K1/M3 was tested and rejected; E5 stays off unless
+> explicitly reopened. Treat any older "blocked P4" or duplicate K1 text below as superseded unless git/code
+> proves otherwise.
+
 _Created 2026-06-21. Branch `reliableBaseline`. Supersedes the dead distillation EA (killed this session)._
 
 ## Goal
@@ -157,6 +163,75 @@ The new EA exports trades via its own `Parity.mqh` (toggle `InpExportParity`/Tra
     the failing arm is logged tested→rejected. ⚠️ **Reality check on BTC:** every BTCUSD edge across MasterVP
     has just been closed for no robust edge on any TF — KenKem-on-BTC starts from that prior; the bar to ship
     BTC is correspondingly high.
+
+- [ ] **K2 — Sweep KenKem (E1/E2/E5) on BTCUSD across M1, M3, M5 (user request, 2026-06-27).** KenKem has only
+  ever been run on XAU M1; test whether its EMA-alignment trend entries find any edge on BTC at the three
+  scalping timeframes. Per-TF, per-symbol — three independent sweeps (BTC-M1, BTC-M3, BTC-M5), each judged on
+  its own merits; success on one TF does not imply the others.
+  - 🔒 **PIP-HARDCODE PURGE IS A HARD PREREQUISITE (same gate as K1-BTC).** This is the BTC arm, so the
+    pip→ATR conversion ([[goal-pip-to-atr-relative]], `docs/PIP_TO_ATR_INVENTORY.md`) MUST land first — at
+    BTC `pip_size=1.0` the XAU-tuned pip params (esp. `EMA_ALIGNMENT_TOLERANCE_PIPS=23`, the alignment
+    strictness knob) are meaningless and would silently mis-scale every threshold ([[kenkem-parity-traps]]:
+    "BTC pip=1 std×2"). No BTC sweep number is trustworthy until decision params are ATR-relative.
+  - 🔒 **PARITY FIRST (Gate 0).** Need one **MT5 BTC reference run per TF** (E1+E2 first; E5 separate) to
+    confirm the engine reproduces MT5 on BTC bars before trusting any sweep — same doctrine as [[parity-is-gate-0]].
+    BTC engine wins are historically fictional ([[mastervp-t3-reversion-lock]]) → **MT5-confirm or it doesn't count.**
+  - 🔒 **MinTRL / sample size.** Report n + MinTRL on every candidate; M3/M5 thin the bar count vs M1 — a
+    high-PF config below MinTRL is not lockable ([[overfitting-gate-mandatory]]).
+  - **BUILD:** generate **BTC M1/M3/M5 bars** from the proven-exact imported BTC ticks
+    ([[tick-source-parity-proven-exact]], [[btcusd-data-quirks]] — flat-spread years, weekend gaps); derive
+    BTC's **own** session/blocked-hours and quality-gate thresholds empirically (do NOT inherit XAU's). Sweep
+    surgically: EMA-alignment strictness, trend-quality/sideways gate, RR/dynamic-RR (the K1 levers) — **not** a
+    40-knob grid. **Model realistic BTC costs** (spread + commission + weekend microstructure, pairs with T5).
+  - **VALIDATE:** per-quarter + 6-fold WF (no pooling across TFs) → MC → overfitting gate (record n_trials +
+    sr_trial_std) → DSR-PASS + n≥MinTRL → **single MT5 confirmation run on the winning TF/config** before any lock.
+  - **DECISION RULE / PRIOR:** BTC has **no validated KenKem baseline**, and every MasterVP BTC edge across all
+    TFs was just **CLOSED for no robust edge** ([[btc-no-robust-edge-closed]] — M3 dead/overfit, M5 full-window
+    loser + MT5-disconfirm) — and KenKem's own **XAU M3** extension already **REJECTED** (RR-rescale overfit,
+    K1 above / [[kenkem-m3-sweep-rejected]]). So the prior is strongly negative; the bar to ship any BTC TF is
+    correspondingly high. Adopt a TF only if it clears standalone PF + per-fold/per-quarter robustness +
+    DSR-PASS + n≥MinTRL + **MT5-confirms**; otherwise log tested→rejected per TF and keep KenKem XAU-M1-only.
+
+- [ ] **K3 — Give KenKem a Volume-Profile dimension (reuse MasterVP's VP), A/B vs the M1 lock (user, 2026-06-27).**
+  KenKem is pure EMA/ADX/RSI today; leverage MasterVP's tick-count VP (VAH/VAL/POC, value-area, node structure)
+  to sharpen KenKem's entries/stops. User is open to a deeper rebuild if VP earns it.
+  - **WHY THIS IS WELL-GROUNDED (not a fishing trip).** Phase-5 discovery (SHAP) found the playbook thesis
+    **"Volume Profile > RSI"** — VP distances are the **dominant** forward-return drivers (`dist_val` #1,
+    `dist_poc` #3, `dist_vah` #4), **strongest on M3** ([[discovery-findings]]). KenKem exploits **none** of it,
+    so this is real unexploited signal AND qualifies as the **NEW entry geometry** the re-open rule requires.
+    (Note: VP-on-M3 is a *different* lever than the rejected K1 EMA-RR-rescale — discovery actively favors VP on M3.)
+  - ⚠️ **TERMINOLOGY — "tick volume" here = per-bar TICK COUNT, not traded volume.** This feed reports
+    `VOLUME`/`LAST` = 0 (CLAUDE.md, [[btcusd-data-quirks]]); MasterVP's VP bins are built from tick count.
+    KenKem must use the **same** measure for parity — do NOT introduce `iVolume` (see the node-net gap below).
+  - **REUSE, don't reinvent:** the VP engine is already shared — C++ `cpp_core/include/kk/mastervp/
+    {volume_profile,node_engine,regime}.hpp` + MQL `mql5/experts/VP-Common/{VolumeProfile,NodeEngine,
+    Regime,Types}.mqh`. Wire these into the KenKem C++ engine (`cpp_core/include/kk/kenkem/`, no VP today) and
+    the KK-KenKem EA, keeping the EA↔engine field mapping 1:1 so parity holds by construction.
+  - **APPROACH = ADDITIVE + A/B, not a blind ground-up rebuild.** Keep the **MT5-confirmed M1 lock
+    (D5-E4Long)** as the control. Add VP as **optional, default-OFF** modules and A/B each against the lock:
+    1. **VP-anchored stops/targets** — SL just beyond the nearest VP node / TP at POC/VAH/VAL (structural, cf.
+       the H6 FVG-SL idea but VP-based);
+    2. **VP entry filter** — only take an EMA-aligned E1/E2/E5 entry that breaks/respects a significant VP level;
+    3. **VP-conditioned RR / sizing**. Only if a module decisively beats the lock does it graduate; only if VP
+       becomes the *core* thesis do we discuss a distinct VP-native EA (don't discard a validated baseline on spec).
+  - 🔒 **NODE-NET MQL↔C++ PARITY GAP IS A HARD PREREQUISITE if any module uses the node-net VALUE.** H12c
+    exposed that the EA feeds `iVolume` (MT5 tick-vol) to node bins while the engine uses imported `tick_count`
+    → node-net values diverge systematically MQL↔C++ ([[mastervp-h12-entry-flow-veto-rejected]]). VAH/VAL/POC
+    *distances* are likely safe; **node-net/absorption is NOT** until per-entry MQL↔C++ node-net parity is proven.
+    Pick distance-based VP features first; gate any node-net feature behind that parity proof.
+  - 🔒 **DISCOVERY/EDGE-AUTOPSY FIRST, then sweep.** Each VP module is a new entry/exit rule → run
+    `/quant-6b-edge-autopsy` (prove conditional edge model-free) BEFORE spending sweep cycles, per
+    [[engine-pregate-signal-export]] / CLAUDE.md. The model-free autopsy is the trustworthy gate (the engine
+    exit model is suspect [[bar-engine-systemic-defect]]).
+  - 🔒 **PARITY (Gate 0) + MinTRL + costs** as for K1/K2: VP changes the trade set → need an MT5 reference run
+    to confirm the engine reproduces it; report n + MinTRL on every candidate (KenKem is already near MinTRL —
+    a VP filter that thins the count can break the gate); model real spread/commission. BTC arm inherits the
+    K2 **pip→ATR purge** prerequisite.
+  - **VALIDATE / DECISION RULE:** per-quarter + 6-fold WF (no pooling) → MC → overfitting gate (n_trials +
+    sr_trial_std) → DSR-PASS + n≥MinTRL → **single MT5 confirmation run** before any lock. Adopt a VP module
+    only if it **beats the D5-E4Long M1 lock on PF AND per-fold/per-quarter robustness AND MT5-confirms**;
+    otherwise log tested→rejected and keep the lock. Sequencing: post-P4 research track (parallel to K1/K2),
+    does NOT block the existing lock.
 
 ## Status
 - **P0: ✅** (old killed; plan written; committed `9de0342`).
