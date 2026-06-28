@@ -23,6 +23,15 @@ edition was touched this session — all work is research-only under `research/*
   (+ built the missing XAU M1 feature/label stack, 849,963 bars). Nested WF OOS R² increment flat-to-negative for
   EVERY family → EMA/RSI/DMI/ADX are state variables, not standalone alpha. ADX = no directional value.
 - BUILD-PLAN ticked: R2 [x], R3 [x], K2 [x], R6 [~].
+- **Quant-literature digest (Chan 2nd ed + Peng Liu) → plan + tooling upgrade** (commits 7d4ef03, b1209d2):
+  - Digest: `docs/QUANT-LITERATURE-SYNTHESIS-2026-06-29.md` (technique-by-technique, skeptical; dquants already ahead
+    on overfitting stats so mined for what we lacked).
+  - New research tools (self-tested, no EA touch): `research/risk/kelly_sizing.py` (empirical fat-tail-safe Kelly +
+    risk-of-ruin) and `research/stats/half_life.py` (OU half-life for mean-reversion timing).
+  - Live sizing finding: KenKem XAU M1 half-Kelly 0.087 carries **44% risk-of-ruin(50% DD)** → size ~1–2%/trade.
+  - BUILD-PLAN: +Operating Doctrine #9 (Kelly sizing) & #10 (regime-conditioned exits); P1 OU half-life regime;
+    P3 empirical Kelly; M4 metalabeling; K6 CPO; K4/M6 regime-conditioned stop + half-life timing; R9 (new) worst-fold
+    BO sweep objective; G4 Calmar + recent-weighting. All gated; nothing locks without DSR/PSR/MinTRL + MT5.
 
 ## Current Blocker (what stops the next step, and on whom)
 - **maeR is unmeasured.** The C++ trade export populates `maeR` as 0.00, so K2's lateness call is favorable-side
@@ -38,6 +47,9 @@ edition was touched this session — all work is research-only under `research/*
    require-aligned on E2 with a price-structural reject/reclaim fire on the EMA75 touch bar. Then gate + per-quarter
    before it can ever be a candidate. NOT yet scaffolded this session (held pending maeR + user sign-off; see below).
 3. **MT5 ask for the user:** the R6 full-window export above.
+4. **From the quant-lit digest (highest-value, gated):** (a) compute per-stream empirical Kelly/RoR and set live size
+   at the drawdown-capped fraction (P3); (b) build the P1 regime label (OU half-life) and re-test exits *conditioned
+   on regime* (K4/M6) — this is the most promising reframe of the MasterVP giveback-stop rejections.
 
 ## Decisions To Preserve
 - All four overnight items are research-only; released `.ex5`/`.set` are byte-identical (verified each commit).
