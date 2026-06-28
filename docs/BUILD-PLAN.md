@@ -106,7 +106,7 @@ cross-checks and validation gates, not faith in any indicator.
   PASS-WARN. BTC M3 tick-count POC is usually stable under deterministic perturbation, but remains
   quote-activity only and still needs cross-feed/real-volume validation before any traded-volume claim.
 
-- [ ] **R2 - Indicator lag and redundancy audit.**
+- [x] **R2 - Indicator lag and redundancy audit. DONE 2026-06-29.**
   For EMA/RSI/DMI/ADX features, measure:
   signal delay versus price impulse, correlation/redundancy, half-life of predictive information, feature
   importance stability across folds, and whether each feature adds incremental value after price/volatility/VP
@@ -115,12 +115,25 @@ cross-checks and validation gates, not faith in any indicator.
   **Decision rule:** lagging indicators can stay as regime/state filters only if they improve OOS robustness or
   conditional MFE/MAE. They cannot be the sole reason for an entry, SL, or target.
 
-- [ ] **R3 - Experiment registry and immutable result ledger.**
+  **Output:** `research/data_quality/INDICATOR_LAG_REDUNDANCY_AUDIT.md` + `indicator_lag_redundancy.py`
+  (built the missing XAU M1 feature/label stack, 849,963 bars). Verdict: nested walk-forward OOS R² increment is
+  flat-to-negative for EVERY family (EMA/RSI/ADX/DMI, h=5 and h=20) → all are state variables, not standalone
+  alpha; decision rule satisfied (none may be sole basis for entry/SL/target). ADX level = NO directional value
+  (regime gate only). Drop redundant EMA slopes / extra RSI periods / di_plus / di_minus (ema_dist≈ema_slope 0.994;
+  rsi_14≈di_spread 0.935).
+
+- [x] **R3 - Experiment registry and immutable result ledger. DONE 2026-06-29.**
   Build `research/registry/` with one JSON/YAML row per experiment:
   hypothesis id, strategy, symbol, timeframe, train/OOS dates, commit hash, data hashes, `.set` hash, cost model,
   `n_trials`, `sr_trial_std`, metrics, gate verdict, artifact paths, final decision.
 
   **Done when:** every new sweep/backtest/MT5 run writes a registry row and `research/registry/index.csv`.
+
+  **Output:** `research/registry/` — `registry.py` (make/append/rebuild/validate + CLI), `SCHEMA.md`, `README.md`,
+  `experiments/*.yaml` (15 back-filled: 5 LOCK / 4 REJECT / 4 STOP / 2 RESEARCH-ONLY), generated `index.csv`.
+  Gate fields mirror `research/stats/gate.py`; IDs content-derived (idempotent); validate 15/15, rebuild md5-stable.
+  data/.set sha256 null on back-fill by design; `sha256_file()` wired for future rows. **Every future sweep/backtest/
+  MT5 run must call `append_row()`.**
 
 - [x] **Codex-Step-6 / R4 - Unified trade-stream schema. DONE 2026-06-28.**
   Normalize C++ and MT5 trade CSVs into one canonical schema:
@@ -152,12 +165,18 @@ cross-checks and validation gates, not faith in any indicator.
   mean PnL/trade 14.097; +10 USD/trade leaves PF 1.13, while +20 USD/trade flips net negative. Higher-precision
   cost modeling is blocked until trade exports include lot, commission, slippage, and richer exit fields.
 
-- [ ] **R6 - Exit-model calibration audit.**
+- [~] **R6 - Exit-model calibration audit. PARTIAL 2026-06-29.**
   Quantify where the C++ engine disagrees with MT5 for MasterVP exits:
   runner credit, trail path, BE/prog-trail sequencing, same-bar hit ambiguity, fill price, and tick-delay.
 
-  **Output:** `research/mastervp_parity/EXIT_MODEL_CALIBRATION.md` with a correction/haircut policy.
-  Until this is done, C++ exit-side wins are research leads only.
+  **Output:** `research/mastervp_parity/EXIT_MODEL_CALIBRATION.md` + `exit_model_calibration.py` with a correction/
+  haircut policy. Measured on the 2026 OOS half (~470 matched XAU M5 trades): engine over-credits runner/TP P&L
+  27–32%, winner gross 13.6%, exit-only net +31%. Matched mfeR is ~identical (same price path) → gap is in
+  exit-FILL placement, not data/entry. **Haircut policy:** discount engine runner P&L 30% / winner gross 15%;
+  treat engine-only exit gains ≤0.015 PF (~10% net) as noise; exit-geometry RANKING needs MT5 (documented
+  trail-2.5-vs-3.5 sign-flip). **[~] not [x]:** haircuts are a lower bound until a full-window (2025.06–2026.05)
+  per-trade MT5 export exists (KK-MasterVP XAU M5, lock `.set`, `InpExportParity=true`). Until then, C++ exit-side
+  wins remain research leads, now quantitatively discounted.
 
 - [ ] **R7 - CPCV/PBO gate for all searched locks.**
   Wire `research/stats/cpcv.py` into the lock process. Use purged/embargoed folds whenever labels or trades
@@ -291,16 +310,25 @@ dynamic targets.
   overlay falls to net 1847.38 and PF 1.483, while the stronger `EntryVP_diagnostic` result is in-sample only.
   VP may remain a research feature, but current evidence does not justify an EA change.
 
-- [ ] **K2 - Lag-aware entry redefinition.**
+- [x] **K2 - Lag-aware entry redefinition. DONE 2026-06-29.**
   For each E1/E2/E4/E5 entry, separate:
   (a) the **trigger** that acts near the turn/expansion, (b) the **state filter** that confirms regime, and
   (c) the **risk geometry** that defines invalidation. EMA/RSI/DMI should mostly live in (b), not pretend to be
   fast predictive triggers.
 
-  **Output:** `research/kenkem_parity/KENKEM_ENTRY_ROLE_AUDIT.md`.
+  **Output:** `research/kenkem_parity/KENKEM_ENTRY_ROLE_AUDIT.md` + `kenkem_entry_role_audit.py`.
 
   **Decision rule:** if an entry only works because a lagging indicator crosses after the move is already
   mature, it must be redesigned, downweighted, or rejected.
+
+  **Verdict:** E1 KEEP (PF1.60), E4 KEEP (PF1.30; lever is exit/economics not trigger), **E2 DOWNWEIGHT** — the
+  only late-trigger family (mfeR 0.59, 30% stillborn, 43% EA-bail): an inherently early EMA75 touch gated by the
+  slowest HTF confirmations, so it enters after continuation matured. Lateness hypothesis did NOT generalize —
+  E1/E4 lagging crosses leave the MOST room (honest partial-negative). Per-family n < whole-strategy MinTRL (~122)
+  → cross-family diagnostics, not standalone locks. **Lead (default-OFF scratch only): `E2_REQUIRE_REJECTION`** —
+  replace one lagging HTF require-aligned with a price-structural reject/reclaim fire on the touch bar.
+  **Prerequisite for a full verdict:** C++ trade export must populate `maeR` (currently all 0.00) — lateness call
+  is favorable-side-only until then. (E4's `E4_ATR_SL_*` keys are dead — hygiene, not lateness.)
 
 - [ ] **K3 - ATR-relative parameter purge for cross-symbol work.**
   Convert decision thresholds currently expressed in pips/points into ATR-relative or spread-relative units:
