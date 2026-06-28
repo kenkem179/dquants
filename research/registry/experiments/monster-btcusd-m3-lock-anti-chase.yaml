@@ -1,0 +1,50 @@
+schema_version: 1
+experiment_id: monster-btcusd-m3-lock-anti-chase
+date: '2026-06-20'
+hypothesis_id: Monster/anti-chase
+strategy: monster
+symbol: BTCUSD
+timeframe: M3
+train_start: null
+train_end: null
+oos_start: null
+oos_end: null
+commit_hash: null
+data_source: BTCUSD M3 (Exness MT5 feed, full 2026)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-MasterVP-Monster/KK-MasterVP-Monster-BTCUSD.set
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. 6-fold WF +
+  MC(20k). MT5 NOT confirmed (engine-only lock).'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: 5444
+  pf: 1.199
+  max_dd_pct: 10.6
+  sharpe: null
+  n_trades: 375
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/monster_parity/wf_monster.py
+decision: LOCK
+supersedes: null
+superseded_by: null
+notes: 'Engine WF lock: InpBreakMaxAtr 5->3 + InpBreakBufAtr 0.25->0.1. Pooled PF
+  1.140->1.199, net +31%, maxDD 13.7->10.6%, worst-fold 1.099, 6/6 folds. MC P(profit)
+  97.1%, PF5th 1.035; 99th-pctile DD 30.5% (size for 30-40% peak). NOT MT5-confirmed:
+  MT5 had it marginal ~PF1.03; Monster edition RETIRED 2026-06-22 (impulse delta folded
+  into KK-MasterVP InpEnableImpulse, default OFF). Engine param-opt ceiling ~PF1.20;
+  user''s TV ''crazily profitable'' gap is structural (feed).'
+source_refs:
+- memory:monster-anti-chase-opt-locked
+- memory:best-experts-release-table

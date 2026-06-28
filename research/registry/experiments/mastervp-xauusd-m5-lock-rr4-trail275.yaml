@@ -1,0 +1,46 @@
+schema_version: 1
+experiment_id: mastervp-xauusd-m5-lock-rr4-trail275
+date: '2026-06-25'
+hypothesis_id: M5/runner-RR4
+strategy: mastervp
+symbol: XAUUSD
+timeframe: M5
+train_start: 2025-06
+train_end: 2026-05
+oos_start: 2026-01
+oos_end: 2026-05
+commit_hash: null
+data_source: XAU M5 ticks 2025.06-2026.05 ($10k every-tick)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-MasterVP/KK-MasterVP-XAUUSD-M5.set
+set_sha256: null
+cost_model: MT5 Strategy Tester every-tick, real broker spread; commission/swap per
+  tester account. Final exit judge.
+n_trials: 336
+sr_trial_std: null
+metrics:
+  net_usd: 83227
+  pf: 1.413
+  max_dd_pct: 21.1
+  sharpe: 0.108
+  n_trades: 1423
+  win_pct: 52.6
+gate:
+  psr: 1.0
+  dsr: 1.0
+  mintrl: 198
+  mintrl_sufficient: true
+  pbo: null
+  verdict: PASS
+mt5_confirmed: true
+artifacts:
+- research/mastervp_parity/mt5_runs/2026-06-25_xau_m5_RR4_T2.75_confirm/
+decision: LOCK
+supersedes: null
+superseded_by: mastervp-xauusd-m5-lock-progtrail-ladder
+notes: 'RunnerRr 4.0 / TrailAtrMult 2.75 / BeBufAtr 0.02 (no ladder). net flat-risk
+  83,227 (compounded +87,836) / PF 1.413 / maxDD 21.1%. Decisive: 231-pass fine trail
+  sweep showed Trail 2.75>>2.5 (invisible to step-1.0 grid). GATE DSR 1.000 (n_trials=336).
+  Superseded by ProgTrail ladder.'
+source_refs:
+- memory:mastervp-runner5-bebuf-lock

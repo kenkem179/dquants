@@ -1,0 +1,48 @@
+schema_version: 1
+experiment_id: mastervp-xauusd-m5-lock-progtrail-ladder
+date: '2026-06-26'
+hypothesis_id: M5/H9-ProgTrail
+strategy: mastervp
+symbol: XAUUSD
+timeframe: M5
+train_start: 2025-06
+train_end: 2026-05
+oos_start: 2026-01
+oos_end: 2026-05
+commit_hash: c64a34e
+data_source: XAU M5 ticks 2025.06-2026.05 ($10k every-tick)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-MasterVP/KK-MasterVP-XAUUSD-M5.set
+set_sha256: null
+cost_model: MT5 Strategy Tester every-tick, real broker spread; commission/swap per
+  tester account. Final exit judge.
+n_trials: 36
+sr_trial_std: 0.0135
+metrics:
+  net_usd: 86034
+  pf: 1.4246
+  max_dd_pct: null
+  sharpe: 0.109
+  n_trades: 1423
+  win_pct: null
+gate:
+  psr: 1.0
+  dsr: 1.0
+  mintrl: 192
+  mintrl_sufficient: true
+  pbo: null
+  verdict: PASS
+mt5_confirmed: true
+artifacts:
+- research/mastervp_parity/H9_results/
+decision: LOCK
+supersedes: mastervp-xauusd-m5-lock-rr4-trail275
+superseded_by: null
+notes: 'CURRENT MasterVP lock. Adds ProgTrail late-arm ladder Trigger 2.0R/Inc 0.75/Step
+  0.2 on RR4/Trail2.75 base. net flat-risk +86,034 vs prior 83,228 (+3.4%), gain concentrated
+  in 2026 (1.4372->1.4581). GATE DSR 1.000 PASS. WARN: InpPmProg* are HIDDEN globals
+  -> baked as compiled defaults, .set can''t drive prod EA. Pending 1 production-EA
+  confirmation run.'
+source_refs:
+- memory:mastervp-progtrail-ladder-lock
+- memory:best-experts-release-table

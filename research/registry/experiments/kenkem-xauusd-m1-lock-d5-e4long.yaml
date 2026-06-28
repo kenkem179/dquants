@@ -1,0 +1,46 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m1-lock-d5-e4long
+date: '2026-06-22'
+hypothesis_id: K1/D5-E4Long
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M1
+train_start: 2025-03
+train_end: 2026-05
+oos_start: 2026-01
+oos_end: 2026-05
+commit_hash: null
+data_source: ticks_xau_full.csv (XAU M1, 2025-03..2026-05)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-KenKem/KK-KenKem-XAUUSD-M1-D5-E4Long.set
+set_sha256: null
+cost_model: MT5 Strategy Tester every-tick, real broker spread; commission/swap per
+  tester account. Final exit judge.
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: 1427
+  pf: 1.428
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 126
+  win_pct: null
+gate:
+  psr: 0.953
+  dsr: null
+  mintrl: 122
+  mintrl_sufficient: true
+  pbo: null
+  verdict: PASS
+mt5_confirmed: true
+artifacts:
+- research/kenkem_parity/KK-KenKem-XAUUSD-M1-D5-E4Long.set
+decision: LOCK
+supersedes: kenkem-xauusd-m1-lock-d3-noe4
+superseded_by: null
+notes: CURRENT KenKem lock (released 1.03). E1+E2+E4-long (E4_LONG_ONLY=true). OOS
+  2026 +497/PF1.523; MC P(profit) 94.9%, netP5 -7. GATE PASS PSR 0.953, MinTRL 122<126.
+  E4 engine exits fictional -> E1 carries the book.
+source_refs:
+- memory:best-experts-release-table
+- memory:kenkem-e1-efficiency-ratio-weak

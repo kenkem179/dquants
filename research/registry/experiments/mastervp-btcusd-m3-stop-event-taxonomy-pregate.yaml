@@ -1,0 +1,47 @@
+schema_version: 1
+experiment_id: mastervp-btcusd-m3-stop-event-taxonomy-pregate
+date: '2026-06-28'
+hypothesis_id: M1a/Codex-Step-5
+strategy: mastervp
+symbol: BTCUSD
+timeframe: M3
+train_start: null
+train_end: null
+oos_start: null
+oos_end: null
+commit_hash: 78187ba
+data_source: canonical BTC M3 trade stream (478 trades)
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. model-free
+  mfeR + realized usd autopsy.'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: -75.3
+  pf: 0.995
+  max_dd_pct: -19.5
+  sharpe: null
+  n_trades: 478
+  win_pct: 57.3
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/mastervp_parity/btc_m3_event_taxonomy_2026-06-28/BTC_M3_EVENT_TAXONOMY.md
+decision: STOP
+supersedes: null
+superseded_by: null
+notes: STOP. Pre-gate before any new BTC M3 sweep. Stream breakeven/negative (478
+  tr, PF 0.995). brkDistAtr/adx/diSpread/runwayAtr/nodeNet/spreadAtr all non-monotone
+  -> no structural pre-entry variable earns a sweep. No new BTC M3 alpha build justified.
+source_refs:
+- docs:BTC_M3_EVENT_TAXONOMY
+- HANDOFF:Codex-Step-5

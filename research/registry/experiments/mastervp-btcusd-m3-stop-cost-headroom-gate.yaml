@@ -1,0 +1,46 @@
+schema_version: 1
+experiment_id: mastervp-btcusd-m3-stop-cost-headroom-gate
+date: '2026-06-28'
+hypothesis_id: R5a/Codex-Step-8
+strategy: mastervp
+symbol: BTCUSD
+timeframe: M3
+train_start: null
+train_end: null
+oos_start: null
+oos_end: null
+commit_hash: 78187ba
+data_source: trades_cpp_btcusd_2025_M3.csv (478 trades)
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: Offline fixed-USD cost stress (research/execution/cost_model.py); +1..50
+  USD/trade.
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: -75.3
+  pf: 0.995
+  max_dd_pct: -19.5
+  sharpe: -0.0016
+  n_trades: 478
+  win_pct: 57.3
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/execution/COST_HEADROOM_GATE_2026-06-28.md
+decision: STOP
+supersedes: null
+superseded_by: null
+notes: 'STOP for BTC. No cost headroom: mean PnL/trade -0.158; +1 USD/trade -> net
+  -553.30 / PF 0.97. Higher-precision cost work BLOCKED: exports lack lot/commission/slippage/exit_ts.
+  Do not spend search budget on BTC M3 params.'
+source_refs:
+- docs:COST_HEADROOM_GATE_2026-06-28
+- HANDOFF:Codex-Step-8

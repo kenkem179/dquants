@@ -1,0 +1,48 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m3-reject-rr-rescale-overfit
+date: '2026-06-27'
+hypothesis_id: K1/M3-extension
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M3
+train_start: 2025-03
+train_end: 2026-05
+oos_start: 2025-Q4
+oos_end: '2026'
+commit_hash: null
+data_source: XAU M3 bars on 3x-clock proxy (M9/M15/M45 HTF)
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. M1-base engine
+  resampled x3 (research proxy).'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: 1600
+  pf: 1.22
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 217
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: 122
+  mintrl_sufficient: true
+  pbo: null
+  verdict: FAIL
+mt5_confirmed: false
+artifacts:
+- research/kenkem_parity/m3_sweep/M3_SWEEP_FINDINGS_2026-06-27.md
+decision: REJECT
+supersedes: null
+superseded_by: null
+notes: 'REJECT. Sample not the blocker (217 tr > MinTRL 122). M3 E1-dominant; only
+  RR moves train PF but RR lift OVERFITS: OOS (2025Q4+2026) PF 0.81-0.88, net-negative
+  at every RR. Worse than M1 lock on full window too (best PF 1.22/net 1.6k/maxDD
+  1391 vs M1 PF 1.33/net 3.5k/maxDD 512). Strict-alignment+gate hypothesis did not
+  pan out. Accept KenKem M1-only. (PF/net shown = best M3 config, still rejected.)'
+source_refs:
+- memory:kenkem-m3-sweep-rejected

@@ -1,0 +1,49 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m1-reject-e1-efficiency-ratio
+date: '2026-06-22'
+hypothesis_id: K1/E1-ER-filter
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M1
+train_start: 2025-03
+train_end: 2026-05
+oos_start: 2026-01
+oos_end: 2026-05
+commit_hash: 6bca71b
+data_source: ticks_xau_full.csv (XAU M1)
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. (E1 book only
+  is trustworthy).'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: null
+  pf: null
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 21
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: false
+  pbo: null
+  verdict: FAIL
+mt5_confirmed: false
+artifacts:
+- research/optimization/KENKEM-E1-EFFICIENCY-RATIO-2026-06-22.md
+decision: REJECT
+supersedes: null
+superseded_by: null
+notes: WEAK, NOT locked -> default-OFF infra. Kaufman Efficiency-Ratio chop filter
+  on E1. Full D5-E4Long book pooled net NEGATIVE at every ER_MIN. 2026-OOS gain real
+  in the trustworthy E1 book but a NARROW small-n spike (gain only 0.20-0.25, gone
+  at 0.15/0.30, n=21 OOS-E1) not a plateau; per-trade Sharpe +2.6% only. D6-E1ER.set
+  is ENGINE-ONLY (EA lacks the filter). Revisit only if a wider re-sweep makes it
+  a plateau.
+source_refs:
+- memory:kenkem-e1-efficiency-ratio-weak

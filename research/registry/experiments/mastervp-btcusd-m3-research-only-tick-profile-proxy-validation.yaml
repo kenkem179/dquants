@@ -1,0 +1,47 @@
+schema_version: 1
+experiment_id: mastervp-btcusd-m3-research-only-tick-profile-proxy-validation
+date: '2026-06-28'
+hypothesis_id: R1/Codex-Step-2
+strategy: mastervp
+symbol: BTCUSD
+timeframe: M3
+train_start: null
+train_end: null
+oos_start: null
+oos_end: null
+commit_hash: 78187ba
+data_source: BTCUSD M3 tick-count VP under deterministic perturbation
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: N/A (data-quality validation, not a P&L experiment).
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: null
+  pf: null
+  max_dd_pct: null
+  sharpe: null
+  n_trades: null
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/data_quality/BTCUSD_M3_MASTERVP_TICK_PROFILE_PROXY_VALIDATION.md
+- research/data_quality/EVIDENCE_TIERS.md
+decision: RESEARCH-ONLY
+supersedes: null
+superseded_by: null
+notes: PASS-WARN. BTC M3 tick-count POC usually stable under perturbation, but remains
+  QUOTE-ACTIVITY VP only (local MT5 feed LAST/VOLUME are 100% zero) and needs cross-feed/real-volume
+  validation before any traded-volume claim.
+source_refs:
+- docs:BTCUSD_M3_MASTERVP_TICK_PROFILE_PROXY_VALIDATION
+- HANDOFF:Codex-Step-2
+- memory:btcusd-data-quirks

@@ -1,0 +1,50 @@
+schema_version: 1
+experiment_id: mastervp-btcusd-m5-reject-no-robust-edge
+date: '2026-06-27'
+hypothesis_id: M7/BTC-M5
+strategy: mastervp
+symbol: BTCUSD
+timeframe: M5
+train_start: 2025-01
+train_end: 2026-06
+oos_start: 2026-04
+oos_end: 2026-06
+commit_hash: null
+data_source: BTCUSD M5 (Exness MT5 feed, Jan25-Jun26)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-MasterVP/KK-MasterVP-BTCUSD-M5.set
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. + MT5 disconfirm
+  run.'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: -1892
+  pf: 1.058
+  max_dd_pct: null
+  sharpe: null
+  n_trades: null
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: FAIL
+mt5_confirmed: true
+artifacts:
+- research/mastervp_parity/btc_revisit_2026-06-27/
+- research/mastervp_parity/btc_exit_resweep_2026-06-27/
+decision: REJECT
+supersedes: null
+superseded_by: null
+notes: 'CLOSED. Full window (Jan25-Jun26) net -1,892 LOSER; engine OOS PF 1.214 but
+  MT5 disconfirms PF 1.058. WF 3/6 folds+, recent fold negative. Regime-dependent
+  (only 2025H1 loses) but not release-grade; no regime lever rescues it. Per-trade
+  autopsy: ADX/diSpread/brkDistAtr/spreadAtr all non-monotone. PF/net are MT5-disconfirm
+  numbers.'
+source_refs:
+- memory:btc-no-robust-edge-closed
+- memory:best-experts-release-table

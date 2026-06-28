@@ -1,0 +1,47 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m1-stop-vp-candidate-rules
+date: '2026-06-28'
+hypothesis_id: K1b/Codex-Step-4
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M1
+train_start: 2025-03
+train_end: 2026-05
+oos_start: null
+oos_end: null
+commit_hash: 78187ba
+data_source: D5-E4Long autopsy stream + causal rolling/session tick-activity VP
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. VP entry-location
+  cells; MinTRL + quarter robustness.'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: null
+  pf: null
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 141
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: false
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/kenkem_parity/vp_entry_audit/KENKEM_M1_VP_CANDIDATE_RULES.md
+decision: STOP
+supersedes: null
+superseded_by: null
+notes: STOP. Do not change KenKem EA. VP-location hard filters either fail MinTRL
+  or remain quarter-sensitive. VP may be useful as unified event schema or sizing/state
+  variable, NOT an entry filter.
+source_refs:
+- docs:KENKEM_M1_VP_CANDIDATE_RULES
+- HANDOFF:Codex-Step-4

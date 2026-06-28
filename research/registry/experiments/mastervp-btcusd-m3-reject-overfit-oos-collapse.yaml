@@ -1,0 +1,46 @@
+schema_version: 1
+experiment_id: mastervp-btcusd-m3-reject-overfit-oos-collapse
+date: '2026-06-27'
+hypothesis_id: M7/BTC-M3
+strategy: mastervp
+symbol: BTCUSD
+timeframe: M3
+train_start: 2025-01
+train_end: 2026-06
+oos_start: 2026-01
+oos_end: 2026-06
+commit_hash: null
+data_source: BTCUSD M3 (Exness MT5 feed)
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth.'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: null
+  pf: 0.668
+  max_dd_pct: 81.0
+  sharpe: null
+  n_trades: null
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: FAIL
+mt5_confirmed: false
+artifacts:
+- research/mastervp_parity/btc_revisit_2026-06-27/
+decision: REJECT
+supersedes: null
+superseded_by: null
+notes: DEAD. Train-fittable to PF 1.09 but OOS-catastrophic PF 0.668, 81% DD; train-up
+  => OOS-down anti-correlated; broad scan ZERO PF>1 OOS at any master/ADX/SL/trail.
+  Pure overfit. Do not re-sweep VP-length/ADX/SL/trail/reversion.
+source_refs:
+- memory:btc-no-robust-edge-closed
+- archive:H7-BTC-M3

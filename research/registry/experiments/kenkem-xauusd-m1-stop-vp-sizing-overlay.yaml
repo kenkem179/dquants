@@ -1,0 +1,47 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m1-stop-vp-sizing-overlay
+date: '2026-06-28'
+hypothesis_id: K1c/Codex-Step-7
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M1
+train_start: 2025-03
+train_end: 2026-05
+oos_start: null
+oos_end: null
+commit_hash: 78187ba
+data_source: D5-E4Long base stream (141 trades) + walk-forward VP cell sizing
+data_sha256: null
+set_path: null
+set_sha256: null
+cost_model: 'C++ tick engine: modeled spread from feed; NO commission/slippage/swap.
+  Engine over-credits runner/E4 exits -> ranking proxy, not P&L truth. walk-forward-by-quarter
+  VP risk-weighting overlay.'
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: 1847.38
+  pf: 1.483
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 141
+  win_pct: null
+gate:
+  psr: null
+  dsr: null
+  mintrl: null
+  mintrl_sufficient: null
+  pbo: null
+  verdict: null
+mt5_confirmed: false
+artifacts:
+- research/kenkem_parity/vp_sizing_overlay/KENKEM_M1_VP_SIZING_OVERLAY.md
+decision: STOP
+supersedes: null
+superseded_by: null
+notes: STOP. Do not implement KenKem VP sizing. Base 141 tr net 1987.64 / PF 1.517;
+  walk-forward cell-sizing overlay FALLS to net 1847.38 / PF 1.483. The stronger EntryVP_diagnostic
+  result is IN-SAMPLE only. (net/pf shown = the rejected overlay.)
+source_refs:
+- docs:KENKEM_M1_VP_SIZING_OVERLAY
+- HANDOFF:Codex-Step-7

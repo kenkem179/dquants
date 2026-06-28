@@ -1,0 +1,46 @@
+schema_version: 1
+experiment_id: kenkem-xauusd-m1-lock-d3-noe4
+date: '2026-06-20'
+hypothesis_id: K1/D3-noE4
+strategy: kenkem
+symbol: XAUUSD
+timeframe: M1
+train_start: 2025-03
+train_end: 2026-05
+oos_start: 2026-01
+oos_end: 2026-05
+commit_hash: fc448b1
+data_source: ticks_xau_full.csv (XAU M1, 2025-03..2026-05)
+data_sha256: null
+set_path: mql5/experts/Presets/KK-KenKem/KK-KenKem-XAUUSD-M1-D3-noE4.set
+set_sha256: null
+cost_model: MT5 Strategy Tester every-tick, real broker spread; commission/swap per
+  tester account. Final exit judge.
+n_trials: null
+sr_trial_std: null
+metrics:
+  net_usd: 1049
+  pf: 1.39
+  max_dd_pct: null
+  sharpe: null
+  n_trades: 102
+  win_pct: null
+gate:
+  psr: 0.92
+  dsr: null
+  mintrl: 139
+  mintrl_sufficient: false
+  pbo: null
+  verdict: WARN
+mt5_confirmed: true
+artifacts:
+- research/kenkem_parity/mt5_runs/2026-06-20_D3-noE4/
+decision: LOCK
+supersedes: null
+superseded_by: kenkem-xauusd-m1-lock-d5-e4long
+notes: 'Prior KenKem lock, MT5-confirmed +1049/PF1.39. E4 OFF (engine E4 exits fictional).
+  OOS 2026 +327/PF1.47; profitable quarters 4/6. Gate WARN: MinTRL 139>102 (sample
+  too short). Superseded by D5-E4Long. .set must be flush-left for MT5 Load.'
+source_refs:
+- memory:kenkem-xau-d3-opt-lock
+- memory:best-experts-release-table
