@@ -3,6 +3,15 @@
 This is repo-scoped memory for Codex local, Codex Cloud, and mobile handoff. It intentionally avoids depending
 on Claude Code private memory. Read after `HANDOFF.md` and before doing strategy work.
 
+## Operator & Trust Contract (read `SOUL.md` at repo root)
+- The operator is an analytical, security-minded CS/DS quant trader (20 yrs secure dev, teaching, IT
+  consulting, discretionary trading) who is done with emotional manual trading and wants only systematic,
+  mathematically-proven edges that survive over time.
+- **Mutual skepticism:** he will not blindly trust the AI — bring reproducible evidence, not assertions; and
+  he does NOT want agents to blindly trust him — test his ideas honestly and report pass *or* fail.
+- Honesty over optimism. Nothing locks without the overfitting gate. Borrowing elite quant/risk/psychology
+  practice and operationalizing it here is explicitly encouraged. Full character + do's/don'ts in `SOUL.md`.
+
 ## Core Architecture
 - Layer 1: Python research in `pipeline/` and `research/` using DuckDB/Parquet.
 - Layer 2: C++ strategy core in `cpp_core/`, pure deterministic logic, no MT5 APIs.

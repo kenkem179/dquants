@@ -77,7 +77,7 @@ This phase exists because the current data/feature stack has two structural weak
 lack real exchange volume, and EMA/RSI/DMI are lagging transforms. Reliability must come from measurement,
 cross-checks and validation gates, not faith in any indicator.
 
-- [ ] **R0 - Data truth and evidence-tier ledger.**
+- [x] **Codex-Step-1 / R0 - Data truth and evidence-tier ledger. DONE 2026-06-28.**
   Build a symbol/data-source evidence matrix:
   MT5 Exness ticks, MT5 bars, broker live logs, optional second broker feed, and optional exchange proxy
   (`GC`/`MGC` for gold, BTC futures or spot exchange data for BTC). For each source record:
@@ -90,7 +90,10 @@ cross-checks and validation gates, not faith in any indicator.
   replicates on an independent traded-volume or cross-feed proxy. If quote-activity and real-volume evidence
   disagree, the feature is not release-grade until explained.
 
-- [ ] **R1 - Tick-profile proxy validation.**
+  **Output:** `research/data_quality/EVIDENCE_TIERS.md`. Local MT5 BTC/XAU samples show LAST and VOLUME are
+  100% zero; local pipeline is Tier A for quote timing/fill replay and Tier C for traded-volume claims.
+
+- [x] **Codex-Step-2 / R1 - Tick-profile proxy validation, MasterVP BTC M3 first. DONE 2026-06-28.**
   Quantify whether tick-count/quote-activity profiles are stable enough to support MasterVP:
   compare profile levels across years, sessions, spread regimes, and if available second feed/exchange proxy.
   Measure whether VAH/VAL/POC distances and node-density ranks are preserved under:
@@ -98,6 +101,10 @@ cross-checks and validation gates, not faith in any indicator.
 
   **Decision rule:** MasterVP may use tick-count VP only for structures whose level/rank stability survives
   perturbation. Unstable node-net/absorption values are research-only until parity/cross-feed proof.
+
+  **Output:** `research/data_quality/BTCUSD_M3_MASTERVP_TICK_PROFILE_PROXY_VALIDATION.md`. Verdict:
+  PASS-WARN. BTC M3 tick-count POC is usually stable under deterministic perturbation, but remains
+  quote-activity only and still needs cross-feed/real-volume validation before any traded-volume claim.
 
 - [ ] **R2 - Indicator lag and redundancy audit.**
   For EMA/RSI/DMI/ADX features, measure:
@@ -115,13 +122,18 @@ cross-checks and validation gates, not faith in any indicator.
 
   **Done when:** every new sweep/backtest/MT5 run writes a registry row and `research/registry/index.csv`.
 
-- [ ] **R4 - Unified trade-stream schema.**
+- [x] **Codex-Step-6 / R4 - Unified trade-stream schema. DONE 2026-06-28.**
   Normalize C++ and MT5 trade CSVs into one canonical schema:
   `strategy,symbol,tf,entry_type,side,entry_ts,exit_ts,entry,exit,sl,tp,lot,spread,commission,slippage,
   pnl_usd,r_multiple,mfe_r,mae_r,exit_tag,regime_id,session_id,config_id`.
 
   **Done when:** `research/tools/normalize_trades.py` consumes current MasterVP/KenKem exports and validates
   required columns.
+
+  **Output:** `research/tools/normalize_trades.py` and
+  `research/trade_streams/TRADE_STREAM_NORMALIZATION_REPORT.md`. Current primary exports normalize to canonical
+  streams: MasterVP BTC M3 (478 trades), KenKem XAU M1 lock autopsy (141 trades), and KenKem XAU M1 with causal
+  VP context (141 trades). Broker fields not present in C++ exports are explicit blanks, not assumed zeros.
 
 - [ ] **R5 - Realistic cost and latency model.**
   Add a symbol-specific cost surface:
@@ -130,6 +142,15 @@ cross-checks and validation gates, not faith in any indicator.
 
   **Decision rule:** any edge whose PF falls below 1.15, DSR below 0.95, or MinTRL fails under plausible costs
   is not release-grade.
+
+- [x] **Codex-Step-8 / R5a - Cost headroom gate for MasterVP BTC M3 and KenKem XAU M1. DONE 2026-06-28 -> STOP for BTC.**
+  Run the existing offline cost stress tool against the current MasterVP BTC M3 and KenKem XAU M1 trade streams.
+
+  **Output:** `research/execution/COST_HEADROOM_GATE_2026-06-28.md`. Verdict: stop MasterVP BTC M3 alpha/search
+  work from current local evidence. BTC M3 has 478 trades, net -75.30, PF 0.995, and mean PnL/trade -0.158;
+  +1 USD/trade stress drops to net -553.30 and PF 0.97. KenKem XAU M1 has positive but limited cost headroom:
+  mean PnL/trade 14.097; +10 USD/trade leaves PF 1.13, while +20 USD/trade flips net negative. Higher-precision
+  cost modeling is blocked until trade exports include lot, commission, slippage, and richer exit fields.
 
 - [ ] **R6 - Exit-model calibration audit.**
   Quantify where the C++ engine disagrees with MT5 for MasterVP exits:
@@ -166,6 +187,16 @@ attention proxy**, not real traded volume.
 
   **Decision rule:** no new breakout gate can be swept until an edge autopsy shows monotone or economically
   explainable conditional expectancy using `mfeR/reach1R`, not only realized P&L.
+
+- [x] **Codex-Step-5 / M1a - MasterVP BTC M3 event taxonomy pre-gate. DONE 2026-06-28 -> STOP.**
+  Use the existing BTC M3 trade stream to test whether any pre-entry VP/trend/session variables show monotone,
+  economically coherent conditional edge. This is a pre-gate only: no new BTC M3 sweep unless a structural
+  variable earns it.
+
+  **Output:** `research/mastervp_parity/btc_m3_event_taxonomy_2026-06-28/BTC_M3_EVENT_TAXONOMY.md`. Verdict:
+  STOP. Existing BTC M3 stream is breakeven/negative (478 trades, PF 0.995), and `brkDistAtr`, `adx`,
+  `diSpread`, `runwayAtr`, `nodeNet`, and `spreadAtr` are all non-monotone. No new BTC M3 alpha build is
+  justified from current local evidence.
 
 - [ ] **M2 - Anchored/session VP engine.**
   Add default-OFF VP contexts:
@@ -228,6 +259,37 @@ dynamic targets.
 
   **Decision rule:** no entry filter is swept until it shows a conditional `mfeR/reach1R/maeR` edge and keeps
   `n >= MinTRL`.
+
+- [x] **Codex-Step-3 / K1a - KenKem XAU M1 with tick-activity VP entry audit. DONE 2026-06-28.**
+  Before adding VP logic to KenKem, join the validated D5-E4Long trade stream to causal rolling/session
+  tick-activity VP levels. Measure whether E1/E2/E4 trade quality changes by distance to POC, value-area
+  location, node/runway context, and VP source stability. This is an audit only; no KenKem entry logic changes
+  until the path metrics justify it.
+
+  **Decision rule:** proceed to VP-based KenKem rules only if VP context explains MFE/MAE or reduces chop losses
+  without cutting sample below MinTRL.
+
+  **Output:** `research/kenkem_parity/vp_entry_audit/KENKEM_M1_VP_ENTRY_AUDIT.md`. First-pass causal rolling
+  VP audit suggests VP location may differentiate entry-family quality, but any filter must pass MinTRL and
+  quarter robustness before code changes.
+
+- [x] **Codex-Step-4 / K1b - KenKem VP candidate-rule pre-gate. DONE 2026-06-28.**
+  Evaluate only obvious rules suggested by Codex-Step-3, such as avoiding weak entry-family x VP-location
+  cells, and reject any candidate that improves PF by cutting sample below MinTRL or concentrating gains in one
+  quarter.
+
+  **Output:** `research/kenkem_parity/vp_entry_audit/KENKEM_M1_VP_CANDIDATE_RULES.md`. Verdict: do not change
+  KenKem EA yet. VP context may be useful, but hard filters either fail MinTRL or remain quarter-sensitive.
+  Next KenKem path is unified event schema or VP as sizing/state variable, not an entry filter.
+
+- [x] **Codex-Step-7 / K1c - KenKem VP sizing/state overlay pre-gate. DONE 2026-06-28 -> STOP.**
+  Test tick-activity VP as a risk-weighting overlay without deleting trades. Any learned sizing must be
+  walk-forward by quarter; in-sample cell maps are diagnostic only.
+
+  **Output:** `research/kenkem_parity/vp_sizing_overlay/KENKEM_M1_VP_SIZING_OVERLAY.md`. Verdict: do not
+  implement KenKem VP sizing yet. Base is 141 trades, net 1987.64, PF 1.517. The walk-forward cell-sizing
+  overlay falls to net 1847.38 and PF 1.483, while the stronger `EntryVP_diagnostic` result is in-sample only.
+  VP may remain a research feature, but current evidence does not justify an EA change.
 
 - [ ] **K2 - Lag-aware entry redefinition.**
   For each E1/E2/E4/E5 entry, separate:

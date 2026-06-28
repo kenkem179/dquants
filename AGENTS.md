@@ -2,6 +2,16 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## ⭐ Read SOUL.md (root) — who the operator is & the trust contract
+
+Before substantive work, read `SOUL.md` at the repo root and keep it in working memory through every
+handoff. It records the operator's character (analytical, security-minded CS/DS quant trader, 20 yrs;
+done with emotional manual trading, wants only mathematically-proven systematic edges) and the
+**mutual-skepticism trust contract**: bring reproducible evidence not assertions; do NOT blindly trust
+the operator either — test his ideas honestly and report pass *or* fail; honesty over optimism; nothing
+locks without the overfitting gate. It is the standing contract for *how* to behave here, alongside the
+continuity files below.
+
 ## ⭐ ALWAYS maintain HANDOFF.md (root) — read first, update last
 
 There is a HANDOFF.md at the repo root. It is the living baton between agents/sessions.
