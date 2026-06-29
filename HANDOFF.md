@@ -1,63 +1,54 @@
 # HANDOFF - read first, update last
 
-Last updated: 2026-06-29 by Claude (overnight autopilot). Branch: `3-codex-handoff`.
+Last updated: 2026-06-29 by Claude. Branch: `kenkem-rr-atr-sweep` (scratch, off `3-codex-handoff`).
 
 ## Current Goal
-Harden the research/measurement spine so future locks are auditable, and find the next real lever on the two
-live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock). No released EA
-edition was touched this session — all work is research-only under `research/**` + `docs/**`.
+Push the half-optimized KenKem entries (E1/E2/E4/E5) all the way through a PROPER, gated SL+RR optimization
+(user's standing request), fix the E4 profit-giveback, and give MasterVP a precise hands-off protocol. All EA
+changes stay DEFAULT-OFF on this scratch branch; the live KenKem (D5-E4Long) and MasterVP (ProgTrail 9X/1%)
+locks stay byte-identical until MT5 proves a change wins.
 
-## What Just Changed (overnight autopilot, 4 parallel research-only agents)
-- **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
-- **R6 / exit-model calibration — PARTIAL** (`ab614d9`): `research/mastervp_parity/EXIT_MODEL_CALIBRATION.md` +
-  `exit_model_calibration.py`. Engine over-credits MasterVP XAU M5 exits ~30% on matched 2026-OOS trades
-  (runner/TP 27–32%, winner gross 13.6%, exit-only net +31%). Matched mfeR ~identical → gap is exit-FILL
-  placement, not data/entry. Policy: haircut runner P&L 30% / winner gross 15%; engine exit gains ≤0.015 PF = noise;
-  exit-geometry ranking still needs MT5.
-- **K2 / KenKem entry-role audit — DONE** (`c65d099`): `research/kenkem_parity/KENKEM_ENTRY_ROLE_AUDIT.md` +
-  `kenkem_entry_role_audit.py`. Only **E2** is a late trigger (mfeR 0.59, 30% stillborn, 43% EA-bail). E1/E4
-  lagging crosses leave the MOST room (lateness hypothesis did NOT generalize — honest partial-negative).
-- **R3 / experiment registry — DONE** (`c6a95f8`): `research/registry/` (registry.py + SCHEMA + README +
-  15 back-filled experiments + index.csv). validate 15/15, idempotent. Future runs MUST `append_row()`.
-- **R2 / indicator lag & redundancy — DONE** (`0faa63c`): `research/data_quality/INDICATOR_LAG_REDUNDANCY_AUDIT.md`
-  (+ built the missing XAU M1 feature/label stack, 849,963 bars). Nested WF OOS R² increment flat-to-negative for
-  EVERY family → EMA/RSI/DMI/ADX are state variables, not standalone alpha. ADX = no directional value.
-- BUILD-PLAN ticked: R2 [x], R3 [x], K2 [x], R6 [~].
-- **Quant-literature digest (Chan 2nd ed + Peng Liu) → plan + tooling upgrade** (commits 7d4ef03, b1209d2):
-  - Digest: `docs/QUANT-LITERATURE-SYNTHESIS-2026-06-29.md` (technique-by-technique, skeptical; dquants already ahead
-    on overfitting stats so mined for what we lacked).
-  - New research tools (self-tested, no EA touch): `research/risk/kelly_sizing.py` (empirical fat-tail-safe Kelly +
-    risk-of-ruin) and `research/stats/half_life.py` (OU half-life for mean-reversion timing).
-  - Live sizing finding: KenKem XAU M1 half-Kelly 0.087 carries **44% risk-of-ruin(50% DD)** → size ~1–2%/trade.
-  - BUILD-PLAN: +Operating Doctrine #9 (Kelly sizing) & #10 (regime-conditioned exits); P1 OU half-life regime;
-    P3 empirical Kelly; M4 metalabeling; K6 CPO; K4/M6 regime-conditioned stop + half-life timing; R9 (new) worst-fold
-    BO sweep objective; G4 Calmar + recent-weighting. All gated; nothing locks without DSR/PSR/MinTRL + MT5.
+## What Just Changed (this session)
+- **maeR fix — DONE & committed (`4e820b1`).** The KenKem tick trade export hardcoded maeR=0.00; added a
+  mirrored `worstPrice` tracker (analytics-only, drives no behavior) → maeR now populated. Verified: clean
+  winners maeR≈0, stops show real 0.55–0.80R adverse. Unblocks all SL/exit work.
+- **MasterVP protocol — DONE & committed (`bf823be`).** `research/mastervp_parity/MASTERVP_PROTOCOL.md`:
+  9X-on-1% is REAL (came from MT5, not engine) & FROZEN; engine over-credits exits ~30% so it may NEVER pick a
+  MasterVP exit change again — exits are MT5-only; 4 giveback families stay closed; one open lever =
+  regime-conditioned exit (OU half-life), still MT5-gated. One MT5 ask = full-window `InpExportParity` export.
+- **Exit-giveback + SL analysis — DONE & committed (`bf823be`).**
+  `research/kenkem_parity/EXIT_GIVEBACK_AND_SL_ANALYSIS.md` (+ `exit_giveback_analysis.py`). HONEST finding:
+  the "E4 bleeds all its profit" story is a **~4% effect** (~$67 genuinely round-tripped vs +$1,827 net). E4
+  *already has* laddered+partial TP, armed at 1.68R but trades peak ~0.79R. **The real lever is SL geometry**:
+  losers stop at 0.55–0.80R adverse while winners rarely dip past 0.75R → per-entry SL tightening is the
+  measurable edge.
+- **Tick-engine SL/RR sensitivity sweep — RUNNING.** `research/optimization/sweep_kenkem_sl_rr_tick.py`
+  (NEW). Sweeps 15 live, EA-honorable SL/RR/exit knobs one-at-a-time around the lock on the TICK engine
+  (the prior harness `optimize_kenkem.py` used the BAR engine = P&L-sign defect = why these were mis-tuned),
+  full window, 2025-train/2026-test split. Output → `sweep_kenkem_sl_rr_tick.{csv,out}`. ~65 runs @18s.
 
-## Current Blocker (what stops the next step, and on whom)
-- **maeR is unmeasured.** The C++ trade export populates `maeR` as 0.00, so K2's lateness call is favorable-side
-  only, and R6's haircut can't be tightened on the adverse side. This is the single highest-leverage infra fix.
-- **R6 full close needs a full-window MT5 per-trade export** (KK-MasterVP XAU M5, 2025.06.01→2026.05.29, lock
-  `.set`, `InpExportParity=true`) — a *user MT5 run*. Until then haircuts are a documented lower bound.
-- Product release blocker remains user MT5 visual spot-check for `KK-MasterVP-Profiler` on XAU M5 (P0.1).
+## Key facts established
+- Per-entry (lock, full window, 198 trades): E1 +1019/PF~ (mfeR .74, maeR .46), E2 +368 (mfeR .56), E4
+  +808 (mfeR .91). Capture 12–19% but that's dominated by losers, not surrendered winners.
+- **E4 borrows E2's ATR-SL cap/floor** by design (entries.hpp:62, MT5 parity) → `E4_ATR_SL_*` is DEAD; sweep
+  E2's cap to move E4's stop. `SL_EMA_DISTANCE=27` and `E5_MIN_SL_PIPS=50` are fixed-pip → ATR-relative targets.
+- 450 EA inputs; only 3 truly dead (E4 ATR-SL trio, parity-clutter). Real overfit surface = per-entry ladder
+  magic-multipliers, never swept.
 
 ## Exact Next Action
-1. **Infra (no EA risk):** populate `maeR` (and richer exit fields) in the C++ engine trade export, regenerate the
-   canonical streams via `research/tools/normalize_trades.py`, then re-run K2's adverse-side check. Unblocks K2 + R6.
-2. **EA lead (default-OFF scratch branch only):** scaffold `E2_REQUIRE_REJECTION` — replace one lagging HTF
-   require-aligned on E2 with a price-structural reject/reclaim fire on the EMA75 touch bar. Then gate + per-quarter
-   before it can ever be a candidate. NOT yet scaffolded this session (held pending maeR + user sign-off; see below).
-3. **MT5 ask for the user:** the R6 full-window export above.
-4. **From the quant-lit digest (highest-value, gated):** (a) compute per-stream empirical Kelly/RoR and set live size
-   at the drawdown-capped fraction (P3); (b) build the P1 regime label (OU half-life) and re-test exits *conditioned
-   on regime* (K4/M6) — this is the most promising reframe of the MasterVP giveback-stop rejections.
+1. **When the sensitivity sweep finishes:** read `sweep_kenkem_sl_rr_tick.out`, identify PLATEAUS (not peaks)
+   where train>0 AND test>0, per knob. Write findings doc. Then a focused JOINT refine around the plateaus
+   (small grid / coordinate) and run the winner through `research/stats/gate.py` (DSR/PSR/MinTRL, with
+   n_trials + sr_trial_std from the sweep). Only a DSR-PASS config becomes a candidate `.set`.
+2. **E4 anti-bleed:** fold into the sweep — the `E4_PARTIAL_TP_TRIGGER` curve shows whether arming the bank
+   earlier (0.5–0.7) helps; respect the fat-tail caution (early-bank has been 0%-optimum elsewhere).
+3. **Then:** E2 rejection scaffold (#4, default-OFF, now unblocked by maeR — re-check E2 adverse side first),
+   and prune dead params (#5, after the sweep shows which knobs matter).
+4. **MT5 confirm** any gated candidate before it can ever be a lock (engine ranks, MT5 judges).
 
 ## Decisions To Preserve
-- All four overnight items are research-only; released `.ex5`/`.set` are byte-identical (verified each commit).
-- Engine MasterVP exit-side wins are now quantitatively discounted (~30%), not just caveated — apply the R6 haircut
-  to any future engine exit claim before believing it.
-- KenKem E1/E4 triggers are sound; E2 is the only redesign candidate, and only on provisional (favorable-side)
-  evidence until maeR exists. Do NOT touch the KenKem EA from current evidence.
-- EMA/RSI/DMI/ADX may stay as state/regime filters only; none may be the sole basis for an entry/SL/target (R2).
-- Every future sweep/backtest/MT5 run writes a `research/registry/` row (R3).
-- Per user (this session): if a finding warrants an EA change, scaffold it DEFAULT-OFF on a scratch branch, never
-  the lock, never merged.
+- Released `.ex5`/`.set` byte-identical; all work on scratch branch `kenkem-rr-atr-sweep`.
+- Sweeps run on the TICK engine only (bar engine has the P&L-sign defect). MT5 is the final judge of any lock.
+- MasterVP exits are MT5-only forever (engine over-credits ~30%); its 9X/1% lock is frozen.
+- E4's dead ATR-SL keys are parity-faithful — do NOT "fix" them blindly; give E4 its own SL only as a
+  default-OFF change if the sweep justifies it.
