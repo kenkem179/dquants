@@ -73,6 +73,9 @@ struct KKGuardConfig
    double bufferPct;        // act this many % BEFORE each line (e.g. 0.5)
    int    ddAnchorMode;     // KKG_DDAnchorMode
    double manualDayAnchor;  // >0 overrides the reconstructed day-start anchor
+   double staticAnchorOverride; // >0 pins the static-DD anchor to this value (e.g. prop INITIAL balance);
+                                // authoritative across restarts/EAs so the floor stays the firm line
+                                // regardless of the balance at attach. 0 = auto-detect at first attach.
    bool   flattenOnBreach;  // true=close all positions; false=block new entries only
 };
 
@@ -155,7 +158,11 @@ public:
       double bal=AccountInfoDouble(ACCOUNT_BALANCE);
       datetime now=TimeTradeServer(); if(now<=0) now=TimeCurrent();
 
-      if(!GlobalVariableCheck(m_kStatic)) GlobalVariableSet(m_kStatic,bal);  // static-DD anchor (once)
+      // static-DD anchor. With an override (prop initial balance) we ASSERT it every
+      // attach so it is authoritative across restarts and never drifts to the attach
+      // balance; without one we seed once to current balance and persist.
+      if(m_cfg.staticAnchorOverride>0.0)        GlobalVariableSet(m_kStatic,m_cfg.staticAnchorOverride);
+      else if(!GlobalVariableCheck(m_kStatic))  GlobalVariableSet(m_kStatic,bal);
       if(!GlobalVariableCheck(m_kPeak))   GlobalVariableSet(m_kPeak,eq);     // peak seed
       RollDayIfNeeded(KKG_DayKey(now),bal);
       GlobalVariablesFlush();

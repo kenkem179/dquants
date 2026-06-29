@@ -44,3 +44,31 @@ A validated strategy whose logic lives in `cpp_core/` (Layer 2, pure C++20).
 - MT5 Strategy Tester used only as a final sanity check, never as the source of truth.
 
 See `docs/KENKEM_QUANT_OS.md` §1, §5, §7 (Phase 10).
+
+## Prop-account hardening (MANDATORY when the deploy target is a prop account)
+
+When producing a `.set` (or a multi-chart portfolio bundle) for a prop firm (FundedNext etc.), the
+locked edge `.set` is NOT safe to ship as-is — locks carry prop-HOSTILE risk defaults. Confirm the
+firm's **daily DD %, overall DD %, static-vs-trailing, account size, and current DD** first (these
+change the math; never guess them), then bake protection in. Reference recipe + a worked example live
+in memory `[[fundednext-stella2-portfolio]]`.
+
+- **Shared Guardian (now in BOTH `KK-MasterVP` and `KK-KenKem`):** arm it in every `.set` —
+  `InpGuardEnable=true`, `InpGuardDDAnchor=1` (static), `InpGuardInitialBalance=<firm initial, e.g.
+  100000>` (**pins** the anchor to the firm line so the floor is correct at any attach balance and you
+  need NOT clear GVs), `InpGuardOverallDDPct`/`InpGuardDailyLossPct` so `anchor×(pct−buffer)` halts
+  **above** the firm floor with margin, `InpGuardFlatten=true`. It shares anchors across all KK EAs via
+  login-keyed GlobalVariables (VPS-persistent); any breach latches all → each EA flattens only its OWN
+  positions (MVP by magic `InpMVPMagic`; KenKem by comment `"KenKemST"`). Set the SAME guardian values
+  in every chart's `.set`.
+- **KenKem second layer (still arm it):** `MADE_FOR_PROP_TRADING=true` and
+  **`ENABLE_PEAK_BALANCE_DECAY=false`** (decay drifts the DD anchor down and loosens the block — load-
+  bearing), plus `ACCOUNT_DD_RATIO_TO_SOFT_BLOCK` / `…_TO_SLOWDOWN` / `MAX_DAILY_LOSS_RATIO` inside the
+  firm lines and small `COMMON_MAX_RISK_PER_TRADE` × `MAX_CONCURRENT_POSITIONS_ALLOWED`.
+- **Same-symbol portfolios** (e.g. MVP XAU M5 + KenKem XAU M1): safe — KenKem only manages `"KenKemST"`
+  trades, MVP filters by magic; but KenKem risk-counting is symbol-only so it self-throttles when the
+  other holds the symbol (conservative).
+- **Allocation:** most risk to the MT5-proven money-makers, humble the thin/unconfirmed ones; size to
+  *survive first* while in DD. Per-trade % = risk-if-SL-hit, NOT a per-EA DD cap — account DD is capped
+  only by the shared Guardian. Keep budget DETERMINISTIC per EA (don't auto-split across EAs).
+  **Op step:** have the user reload the recompiled `.ex5` (re-attach / restart MT5).

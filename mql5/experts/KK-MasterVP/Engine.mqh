@@ -143,6 +143,7 @@ int OnInit()
    gc.bufferPct      =InpGuardBufferPct;
    gc.ddAnchorMode   =InpGuardDDAnchor;
    gc.manualDayAnchor=InpGuardManualDayAnchor;
+   gc.staticAnchorOverride=InpGuardInitialBalance;
    gc.flattenOnBreach=InpGuardFlatten;
    g_guard.Init(gc);
    g_tradeLog.Init(InpLiveTradeCsv,KKMVP_EA_TAG);

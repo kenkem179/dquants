@@ -232,6 +232,7 @@ input double InpGuardOverallDDPct    = 8.0;   // Max overall drawdown limit (%)
 input double InpGuardBufferPct       = 0.5;   // Act this many % BEFORE each line (safety margin)
 input int    InpGuardDDAnchor        = 0;     // Max-DD anchor: 0=trailing peak, 1=initial balance
 input double InpGuardManualDayAnchor = 0.0;   // Manual day-start equity anchor (0 = auto/reconstruct)
+input double InpGuardInitialBalance  = 0.0;   // Pin overall-DD anchor to this balance (0=auto at attach). Set to prop INITIAL, e.g. 100000
 input bool   InpGuardFlatten         = true;  // On breach: true=close all positions, false=block new only
 
 input group "===== Live trade CSV log (D2; live only) ====="

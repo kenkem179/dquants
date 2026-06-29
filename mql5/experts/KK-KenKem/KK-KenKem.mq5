@@ -10,6 +10,8 @@
 
 // Shared account-lock guard (common to all KK EAs)
 #include "../KK-Common/AccountLock.mqh"
+// Shared cross-EA prop Account Risk Guardian (same persistent GVs as KK-MasterVP)
+#include "../KK-Common/AccountGuardian.mqh"
 
 // Include modular configuration files
 #include "Config/InputParams.mqh"
@@ -53,6 +55,20 @@ CTrade trade;
 
 // Magic number base (timestamp format: yyyyddhhmm)
 long MAGIC_BASE = 0;
+
+// Cross-EA prop Account Risk Guardian (shares anchors with KK-MasterVP via login-keyed GVs)
+KKAccountGuardian g_kkGuard;
+
+// Flatten ONLY KenKem's own positions (comment-tagged "KenKemST"); never touches other EAs.
+void KkGuardFlattenOwn() {
+   for(int i = PositionsTotal() - 1; i >= 0; i--) {
+      ulong tk = PositionGetTicket(i);
+      if(tk == 0) continue;
+      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      if(StringFind(PositionGetString(POSITION_COMMENT), "KenKemST") < 0) continue;
+      trade.PositionClose(tk);
+   }
+}
 
 // Phase 1.5: OOP class instances (initialized in OnInit, not yet used)
 Entry1* entry1 = NULL;
@@ -113,6 +129,20 @@ int OnInit() {
     trade.SetExpertMagicNumber(MAGIC_BASE);
     
     Print("KenKem Strategy initialized with MAGIC_BASE: ", MAGIC_BASE);
+
+    // Cross-EA prop Account Risk Guardian — shares persistent anchors with KK-MasterVP
+    // (login-keyed terminal GlobalVariables). InitialBalance pins the static floor to the
+    // firm line regardless of attach balance.
+    KKGuardConfig kkgc;
+    kkgc.enabled             = InpGuardEnable;
+    kkgc.dailyLossPct        = InpGuardDailyLossPct;
+    kkgc.overallDDPct        = InpGuardOverallDDPct;
+    kkgc.bufferPct           = InpGuardBufferPct;
+    kkgc.ddAnchorMode        = InpGuardDDAnchor;
+    kkgc.manualDayAnchor     = InpGuardManualDayAnchor;
+    kkgc.staticAnchorOverride= InpGuardInitialBalance;
+    kkgc.flattenOnBreach     = InpGuardFlatten;
+    g_kkGuard.Init(kkgc);
     
     // DIAGNOSTIC: Verify parameters are loaded correctly
     // Print("=== PARAMETER VERIFICATION ===");
@@ -2451,6 +2481,14 @@ void OnTick() {
     // Initialize EA start time on first tick
     if(eaStartTime == 0) {
         eaStartTime = TimeCurrent();
+    }
+
+    // Cross-EA account guardian (shared with KK-MasterVP). On account breach: flatten
+    // KenKem's own positions (if configured) and block all new entries this tick. Open
+    // positions left in place still carry their broker-side SL.
+    if(g_kkGuard.Enabled() && g_kkGuard.Update()) {
+        if(g_kkGuard.ShouldFlatten()) KkGuardFlattenOwn();
+        return;
     }
 
     // Access expiry (server-time): once past the baked date, stop opening new

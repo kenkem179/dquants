@@ -581,6 +581,16 @@ enum NOTIFICATION_MODE {
 };
 input NOTIFICATION_MODE NotificationMode = NOTIFY_DISABLED;
 input bool MADE_FOR_PROP_TRADING = false;     // Simplified alerts, hard block near maximum balance drawdown
+
+input group "===== Account Risk Guardian (cross-EA prop, live only) ====="
+input bool   InpGuardEnable          = false; // Enable the shared cross-EA prop account guardian
+input double InpGuardDailyLossPct    = 4.0;   // Daily loss limit (% of day-start equity)
+input double InpGuardOverallDDPct    = 8.0;   // Max overall drawdown limit (%)
+input double InpGuardBufferPct       = 0.5;   // Act this many % BEFORE each line (safety margin)
+input int    InpGuardDDAnchor        = 1;     // Max-DD anchor: 0=trailing peak, 1=static
+input double InpGuardManualDayAnchor = 0.0;   // Manual day-start equity anchor (0 = auto/reconstruct)
+input double InpGuardInitialBalance  = 0.0;   // Pin overall-DD anchor to this balance (0=auto). Set to prop INITIAL, e.g. 100000
+input bool   InpGuardFlatten         = true;  // On breach: true=close KenKem's own positions, false=block new only
 string ALLOWED_ACCOUNT_ID = "";      // Internal: empty=any account, baked per-account by the release script to lock the EA to one login
 string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server, baked alongside ALLOWED_ACCOUNT_ID (login is only unique within a server)
 string ACCESS_EXPIRY = "";           // Internal: empty=perpetual; release script bakes "YYYY.MM.DD 23:59:59" to time-limit a build (server-time enforced; stops new trades + Alert "Expired Access" on expiry)
