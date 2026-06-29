@@ -474,6 +474,8 @@ private:
         tr.risk = o.p.risk; tr.exit_price = o.exit_price; tr.exit_tag = o.exit_tag;
         tr.mfe_r = (o.p.risk > 0.0)
                  ? (o.p.is_long ? (o.p.best - o.p.entry) : (o.p.entry - o.p.best)) / o.p.risk : 0.0;
+        tr.mae_r = (o.p.risk > 0.0)
+                 ? (o.p.is_long ? (o.p.entry - o.p.worst) : (o.p.worst - o.p.entry)) / o.p.risk : 0.0;
         tr.is_high_risk = o.p.is_high_risk; tr.tp_ext = o.p.tp_ext; tr.ladder_stage = o.p.ladder_stage;
         tr.partial_done = o.p.partial_done; tr.orig_tp = o.p.orig_tp; tr.final_tp = o.p.tp;
         tr.final_sl = o.p.sl; tr.best = o.p.best;

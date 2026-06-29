@@ -25,6 +25,7 @@ struct Trade {
     double risk = 0;                        // |entry - SL| at fill (price)
     double exit_price = 0;                  // price of the closing fill
     double mfe_r = 0;                       // max favorable excursion in R (from Position.best)
+    double mae_r = 0;                       // max adverse excursion in R (from Position.worst)
     char   exit_tag = '?';                  // 'S' stop/trail/BE, 'T' take-profit, 'E' end-of-test
     // Diagnostic-only (KK_TRADE_DIAG): trail/HR state at close, for over-trail parity investigation.
     bool   is_high_risk = false;            // HandleHighRiskEntry routed this trade (TP×mult, 0.55 partial)

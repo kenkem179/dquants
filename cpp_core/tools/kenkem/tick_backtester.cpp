@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
         FILE* f = std::fopen(out_path.c_str(), "w");
         if (f) {
             // Parity schema — column-aligned with KenKem EA Parity/TradeJournal.mqh so the two
-            // ledgers diff 1:1 (entryTimeUTC is the join key). maeR is not tracked here (emit 0).
+            // ledgers diff 1:1 (entryTimeUTC is the join key). maeR = bar-frozen adverse excursion in R.
             const bool diag = std::getenv("KK_TRADE_DIAG") != nullptr;
             if (diag)
                 std::fprintf(f, "entryTimeUTC,dir,kind,entry,riskPrice,exitPrice,realizedUsd,mfeR,maeR,exitTag,"
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
                                 : "NA";
                 std::fprintf(f, "%s,%s,E%d,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%s",
                              utc(t.t_in).c_str(), t.is_long?"L":"S", t.kind,
-                             t.entry, t.risk, t.exit_price, t.pnl, t.mfe_r, 0.0, tag);
+                             t.entry, t.risk, t.exit_price, t.pnl, t.mfe_r, t.mae_r, tag);
                 if (diag)
                     std::fprintf(f, ",%d,%d,%d,%d,%.3f,%.3f,%.3f,%.3f",
                                  t.is_high_risk?1:0, t.tp_ext, t.ladder_stage, t.partial_done?1:0,

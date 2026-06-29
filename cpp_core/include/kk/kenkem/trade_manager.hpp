@@ -73,6 +73,7 @@ struct Position {
     double orig_tp = 0;                             // original TP (for origTPDist; survives TP-extension)
     double init_lot = 0, lot = 0;                   // lot = remaining
     double best = 0;                                // bestPrice — high-water of the BAR-FROZEN price
+    double worst = 0;                               // worstPrice — adverse extreme of BAR-FROZEN price (maeR analytics only)
     int    entry_bar = 0;                           // forming-bar index at fill (entryBar; gates management)
     // smart-partial (F)
     bool   partial_eligible = false;               // partialTPEligible (latched at trigger)
@@ -90,7 +91,7 @@ struct Position {
 inline Position open_position(bool is_long, int kind, double entry, double sl, double tp,
                               double lot, const KenKemConfig&) {
     Position p; p.is_long = is_long; p.kind = kind; p.entry = entry; p.sl = sl; p.tp = tp;
-    p.risk = std::fabs(entry - sl); p.orig_tp = tp; p.init_lot = lot; p.lot = lot; p.best = entry; p.open = true;
+    p.risk = std::fabs(entry - sl); p.orig_tp = tp; p.init_lot = lot; p.lot = lot; p.best = entry; p.worst = entry; p.open = true;
     return p;
 }
 
@@ -146,6 +147,8 @@ inline void manage_tick(Position& p, double live_px, double bar_px, const KenKem
 
     // bestPrice tracks the bar-frozen high-water (EA: MathMax(bestPrice, cache.high)).
     if (p.is_long ? (bar_px > p.best) : (bar_px < p.best)) p.best = bar_px;
+    // worstPrice mirrors bestPrice on the adverse side — analytics only (maeR), drives NO behavior.
+    if (p.is_long ? (bar_px < p.worst) : (bar_px > p.worst)) p.worst = bar_px;
 
     // (D) R-multiple SL -> BE (independent of partial). Improve-only; flags latch only on a real move.
     if (c.r_mult_be_trigger > 0.0 && !p.rmult_be_applied && !p.sl_moved_to_be && origRisk > 0.0) {
