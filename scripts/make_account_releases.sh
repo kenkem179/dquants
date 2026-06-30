@@ -206,14 +206,29 @@ VERSION="$(grep -E '^[[:space:]]*#property[[:space:]]+version' "$MQ5_FILE" \
 [ -n "$VERSION" ] || die "no '#property version \"x.y\"' in $MQ5_FILE"
 info "version $VERSION"
 
-# the dev-compiled file holding the hidden globals (exclude the swapped-in
-# market inputs file and the releases/ tree)
-LOCK_FILE="$(cd "$EA_DIR" && grep -rlE '^[[:space:]]*string[[:space:]]+ALLOWED_ACCOUNT_ID[[:space:]]*=' \
+# The dev-compiled file holding the hidden lock globals. It lives EITHER in the
+# artifact dir (classic EAs) OR — for single-source indicators like the Profiler —
+# in an EA header the .mq5 #includes (the lock decl now lives in
+# experts/KK-MasterVP/Inputs.mqh, which the Profiler pulls in). Search the artifact
+# dir first (exclude the swapped-in market inputs file and the releases/ tree); if
+# empty, follow the .mq5's #include directives out to the EA stack.
+LOCK_RE='^[[:space:]]*string[[:space:]]+ALLOWED_ACCOUNT_ID[[:space:]]*='
+LOCK_REL="$(cd "$EA_DIR" && grep -rlE "$LOCK_RE" \
               --include='*.mqh' --include='*.mq5' \
               --exclude='*.release.mqh' --exclude-dir=releases . 2>/dev/null \
               | sed 's|^\./||' | head -1 || true)"
-[ -n "$LOCK_FILE" ] || die "no file declares 'string ALLOWED_ACCOUNT_ID =' under $EA_DIR"
-LOCK_FILE="$EA_DIR/$LOCK_FILE"
+if [ -n "$LOCK_REL" ]; then
+  LOCK_FILE="$EA_DIR/$LOCK_REL"
+else
+  LOCK_FILE=""
+  while IFS= read -r inc; do
+    cand="$(cd "$EA_DIR" && cd "$(dirname "$inc")" 2>/dev/null && pwd)/$(basename "$inc")"
+    [ -f "$cand" ] || continue
+    grep -qE "$LOCK_RE" "$cand" || continue
+    LOCK_FILE="$cand"; break
+  done < <(grep -oE '#include[[:space:]]+"[^"]+"' "$MQ5_FILE" | sed -E 's/.*"([^"]+)".*/\1/')
+fi
+[ -n "$LOCK_FILE" ] || die "no file declares 'string ALLOWED_ACCOUNT_ID =' under $EA_DIR or its #includes"
 grep -qE '^[[:space:]]*string[[:space:]]+ALLOWED_ACCOUNT_SERVER[[:space:]]*=' "$LOCK_FILE" \
   || die "$LOCK_FILE declares ALLOWED_ACCOUNT_ID but not ALLOWED_ACCOUNT_SERVER"
 grep -qE '^[[:space:]]*string[[:space:]]+ACCESS_EXPIRY[[:space:]]*=' "$LOCK_FILE" \
