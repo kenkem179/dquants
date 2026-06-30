@@ -2003,9 +2003,10 @@ bool RpVPSlice(const double &H[], const double &L[], const double &C[], const lo
 // bar runs master+local VP -> node Update (stateful decay) -> SN_UpdateSession ->
 // regime -> MVP_DetectSignal -> MVP_DeterministicGatesPass -> one-position +
 // SN_MaxTradesOk, then a forward OHLC exit replay = TP1 -> BE -> ATR chandelier
-// trail -> ProgTrail late-arm ladder -> runner cap, with the verdict decided by
-// the REALIZED exit R (not a TP1 touch — the lock banks 0% at TP1). The ONLY EA
-// gate ignored is the predictive daily-DD cap (needs live equity; rarely binds).
+// trail -> ProgTrail late-arm ladder -> runner cap. Verdict: tagging TP1 before SL
+// = WON (the EA banks the TP1 partial / locks the trade green, so TP1 -> BE is a
+// win, not a scratch); trades that never reach TP1 are graded by realized exit R.
+// The ONLY EA gate ignored is the predictive daily-DD cap (live equity; rarely binds).
 void RescanSetups(int rates_total, const datetime &time[], const double &open[],
                   const double &high[], const double &low[], const double &close[],
                   const long &tvol[]) {
@@ -2159,12 +2160,17 @@ void RescanSetups(int rates_total, const datetime &time[], const double &open[],
       }
       occUntil = exitBar;
 
-      // verdict by realized R: WON (>+0.03R), LOST (<-0.03R), BE (~flat), OPEN (no exit)
+      // verdict: literal "reached TP1 before SL = WON" (matches the InpSetTp1R
+      // tooltip and the EA's TP1-bank-then-BE economics). A trade that tags TP1
+      // first is WON regardless of where the runner finally exits (TP1->BE->BE is
+      // still a win because the EA banked the partial / locked the trade green).
+      // Only trades that NEVER reached TP1 are graded by realized exit R.
       int status;
-      if(!exited)        status = 0;
+      if(!exited)        status = 0;                 // OPEN (no exit in window)
+      else if(tp1done)   status = 1;                 // tagged TP1 first -> WON
       else {
          double realR = (exitPrice - entry) * dir / risk;
-         status = (realR > 0.03) ? 1 : (realR < -0.03) ? 2 : 3;
+         status = (realR > 0.03) ? 1 : (realR < -0.03) ? 2 : 3;  // WON / LOST / BE
       }
 
       if(keep) {
