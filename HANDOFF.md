@@ -40,8 +40,8 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
 
 ## Open next steps (operator-chosen)
 1. ✅ MT5 re-run DONE — 0.43%/8.0/9.5 CLEARS the full window (1541 trades, final $29,874, max bal DD 8.75% < 9.5%). Thin margin (~0.75%) noted.
-2. **KenKem full equity re-base** of `IsWithinDrawdownLimit` (currentBalance→equity, peak from shared HWM) + the
-   dependent drawdownRoomLeft / peak-decay uses — ship WITH a before/after backtest (operator: "after a backtest").
+2. ✅ **KenKem gated equity re-base DONE** (commit b1b05ae) — input `USE_EQUITY_DD_BASIS` (default OFF = unchanged).
+   NEXT = user A/B MT5 backtest (KenKem XAU M1, flag OFF vs ON), then flip ON in the KenKem prop .set if good.
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
