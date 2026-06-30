@@ -1,30 +1,50 @@
-# Mixed Prop Portfolio — v1.0
+# Prop Release Bundle — v1.0
 
-One FundedNext Stellar-2 $100K account running three legs together.
+Self-contained folder for the VPS: two EA binaries + BOTH deployment profiles.
+Copy the whole folder over, then deploy **case by case** —
 
-| component | version | EA file | symbol · TF | mixed .set | risk/trade |
-|-----------|---------|---------|-------------|------------|-----------|
-| MasterVP XAU | 1.08 | `KK-MasterVP-1.08.ex5` | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5-mixed-fn.set` | 0.43% |
-| MasterVP BTC | 1.08 | `KK-MasterVP-1.08.ex5` | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5-mixed-fn.set` | 0.15% |
-| KenKem XAU   | 1.04 | `KK-KenKem-1.04.ex5` | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1-mixed-fn.set` | 0.10% |
+- **Mode A — Mixed portfolio:** all three legs on ONE shared FN-Stella2 account.
+- **Mode B — Individual prop accounts:** one strategy per its own prop account.
 
-**Joint DD caps (both EAs, measured on the SHARED equity HWM):** daily 4.2% ·
-soft-derisk 7.8% · hard-halt 9.2%.
+Same `.ex5` for both modes; only the `.set` differs.
 
-## Overall-DD anchor (no manual seeding needed)
-Both mixed sets bake the contract-baseline anchor (`InpPropBaselineEquity` /
+Components: MasterVP `1.08` · KenKem `1.04` · portfolio `1.0`.
+
+## Mode A — Mixed (one shared account)
+| leg | symbol · TF | .set | risk/trade |
+|-----|-------------|------|-----------|
+| MasterVP XAU | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5-mixed-fn.set` | 0.43% |
+| MasterVP BTC | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5-mixed-fn.set` | 0.15% |
+| KenKem XAU   | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1-mixed-fn.set` | 0.10% |
+
+**Joint DD caps (all legs share ONE equity HWM):** daily 4.2% · soft-derisk 7.8% ·
+hard-halt 9.2%. Attach all three on the SAME account so the shared-file HWM is joint.
+
+## Mode B — Individual prop accounts (one strategy each)
+| strategy | symbol · TF | .set | DD caps (daily / soft / hard) |
+|----------|-------------|------|-------------------------------|
+| MasterVP XAU | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5-prop.set` | 4.4% / 8.0%→0.5x / 9.5% |
+| MasterVP BTC | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5-prop.set` | 4.4% / 8.0%→0.5x / 9.5% |
+| KenKem XAU   | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1-prop.set`   | 4.4% / slowdown 7% / soft-block 9% |
+
+Run each on its OWN account (don't share the equity HWM across unrelated accounts).
+Note: KenKem prop keeps `MADE_FOR_PROP_TRADING=false` (soft-block = micro-lots, no
+hard halt) — its 9% soft-block is the de-risk floor, not a kill switch.
+
+## Overall-DD anchor (no manual seeding needed — both modes)
+Every prop + mixed set bakes the contract-baseline anchor (`InpPropBaselineEquity` /
 `PROP_BASELINE_EQUITY` = **100000**). On a fresh attach the overall-DD high-water
-mark is seeded at the contract size, so a drawn-down account is read at its TRUE
-drawdown (not 0%). Change this to your contract size for a $50K/$200K account.
-The HWM trails UP from the baseline as new equity peaks print, and persists to
-the shared file `Common/Files/KK_PropState_<login>.txt` (RESET = delete that file).
+mark is seeded at the contract size, so a drawn-down account reads its TRUE drawdown
+(not 0%). **Change this to your contract size for a $50K/$200K account.** The HWM
+trails UP from the baseline as new equity peaks print, and persists to the shared
+file `Common/Files/KK_PropState_<login>.txt` (RESET = delete that file).
 
 ## Deploy
 1. Copy both `.ex5` into `MQL5/Experts/` (or the symlinked `Experts/dquants/` path).
-2. Attach 3 charts on the SAME account: XAUUSD M5, BTCUSD M5, XAUUSD M1.
-3. Load the matching mixed `.set` on each (Inputs -> Load).
-4. KenKem only: clear any stale `KKG.*` global variables before attach.
-5. Confirm in the log: MasterVP prints `prop baseline floor applied: peakEquity=100000.00`.
+2. Pick a mode and attach the chart(s); load the matching `.set` (Inputs -> Load).
+3. KenKem only: clear any stale `KKG.*` global variables before attach.
+4. Set the baseline input to your account's contract size if not $100K.
+5. Confirm in the log: MasterVP prints `prop baseline floor applied: peakEquity=...`.
 
 > Bundle assembled by `scripts/make_prop_portfolio.sh 1.0`. Bump the portfolio
 > version whenever a component EA is re-released.
