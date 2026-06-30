@@ -2234,14 +2234,22 @@ void DrawSetups(int rates_total, const datetime &time[]) {
       Seg(idp + "sl", g_setups[k].t0, g_setups[k].sl,    tR, g_setups[k].sl,    COL_SELL,  1, STYLE_SOLID);
       Seg(idp + "t1", g_setups[k].t0, g_setups[k].tp1,   tR, g_setups[k].tp1,   COL_BUY,   1, STYLE_SOLID);
       Seg(idp + "t2", g_setups[k].t0, g_setups[k].tp2,   tR, g_setups[k].tp2,   colTp2,    1, STYLE_DOT);
-      double lot = SetupLot(MathAbs(g_setups[k].entry - g_setups[k].sl));
-      string rTag = (StringLen(g_setups[k].reason) > 0) ? g_setups[k].reason + " " : "";
-      Txt(idp + "eT",  g_setups[k].t0, g_setups[k].entry,
-          rTag + "E " + DoubleToString(lot, 2) + " @ " + DoubleToString(g_setups[k].entry, g_digits),
-          (g_setups[k].dir > 0 ? COL_BUY : COL_SELL), 8, ANCHOR_LEFT_LOWER);
-      Txt(idp + "slT", g_setups[k].t0, g_setups[k].sl,  "SL "  + DoubleToString(g_setups[k].sl,  g_digits), COL_DN_TXT, 8, ANCHOR_LEFT_LOWER);
-      Txt(idp + "t1T", g_setups[k].t0, g_setups[k].tp1, "TP1 " + DoubleToString(g_setups[k].tp1, g_digits), COL_UP_TXT, 8, ANCHOR_LEFT_LOWER);
-      Txt(idp + "t2T", g_setups[k].t0, g_setups[k].tp2, "TP2 " + DoubleToString(g_setups[k].tp2, g_digits), colTp2,     8, ANCHOR_LEFT_LOWER);
+      // Price text (E/SL/TP1/TP2 with numbers) is drawn ONLY for a trade that is
+      // currently OPEN/active: the newest setup AND still un-exited (status==0).
+      // Once that trade closes (WON/LOST/BE) its prices disappear too. Past/closed
+      // positions keep their level lines + verdict but carry no price labels, to
+      // keep the historical chart clean and uncluttered.
+      bool isActive = (k == g_nSetups - 1 && g_setups[k].status == 0);
+      if(isActive) {
+         double lot = SetupLot(MathAbs(g_setups[k].entry - g_setups[k].sl));
+         string rTag = (StringLen(g_setups[k].reason) > 0) ? g_setups[k].reason + " " : "";
+         Txt(idp + "eT",  g_setups[k].t0, g_setups[k].entry,
+             rTag + "E " + DoubleToString(lot, 2) + " @ " + DoubleToString(g_setups[k].entry, g_digits),
+             (g_setups[k].dir > 0 ? COL_BUY : COL_SELL), 8, ANCHOR_LEFT_LOWER);
+         Txt(idp + "slT", g_setups[k].t0, g_setups[k].sl,  "SL "  + DoubleToString(g_setups[k].sl,  g_digits), COL_DN_TXT, 8, ANCHOR_LEFT_LOWER);
+         Txt(idp + "t1T", g_setups[k].t0, g_setups[k].tp1, "TP1 " + DoubleToString(g_setups[k].tp1, g_digits), COL_UP_TXT, 8, ANCHOR_LEFT_LOWER);
+         Txt(idp + "t2T", g_setups[k].t0, g_setups[k].tp2, "TP2 " + DoubleToString(g_setups[k].tp2, g_digits), colTp2,     8, ANCHOR_LEFT_LOWER);
+      }
       string oc  = (g_setups[k].status == 1) ? "WON"
                    : (g_setups[k].status == 2) ? "LOST"
                    : (g_setups[k].status == 3) ? "BE" : "OPEN";
