@@ -1,11 +1,14 @@
 #!/bin/bash
-# dquants Mixed Prop-Portfolio Bundler
+# dquants Prop-Release Bundler
 # ----------------------------------------------------------------------------
-# Assembles ONE deployable bundle for the FundedNext mixed prop account
-# (MasterVP XAU M5 + MasterVP BTC M5 + KenKem XAU M1 on a single account) by
-# collecting the LATEST released component EAs + their MIXED-profile .set files
+# Assembles ONE deployable VPS folder holding the LATEST released MasterVP +
+# KenKem EAs and ALL THREE deployment profiles of their .set files —
+#   PERSONAL (as-swept lock, one strategy alone),
+#   PROP     (one strategy per individual prop account, tightened DD caps),
+#   MIXED    (all legs on one shared FN-Stella2 account) —
 # into:
 #       mql5/experts/prop-releases/<portfolio-version>/
+# Copy the whole folder to the VPS and deploy any mode case by case.
 #
 # The portfolio version is INDEPENDENT of the component EA versions: bump it
 # whenever any component (MasterVP / KenKem) is re-released. Each copied file
@@ -56,21 +59,26 @@ DEST="$EXPERTS/prop-releases/$PVER"
 step "[1/3] Prop release bundle v$PVER  (MasterVP $MVP_VER + KenKem $KEN_VER · mixed + prop profiles)"
 rm -rf "$DEST"; mkdir -p "$DEST"
 
-# Files in the bundle: the shared EA binaries + BOTH deployment profiles —
-# MIXED (one shared account) and PROP (one strategy per individual account) — so
-# the whole folder copies to the VPS and either mode deploys case by case.
+# Files in the bundle: the shared EA binaries + ALL THREE deployment profiles —
+# PERSONAL (as-swept lock, one strategy alone), PROP (one strategy per individual
+# prop account, tightened DD caps), and MIXED (all legs on one shared account) —
+# so the whole folder copies to the VPS and any mode deploys case by case.
 COMPONENTS=(
-  # --- EA binaries (shared by both modes) ---
+  # --- EA binaries (shared by all profiles) ---
   "$MVP_REL|KK-MasterVP-$MVP_VER.ex5"
   "$KEN_REL|KK-KenKem-$KEN_VER.ex5"
-  # --- Mixed profile (one shared FN-Stella2 account) ---
-  "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-mixed-fn.set"
-  "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-mixed-fn.set"
-  "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1-mixed-fn.set"
-  # --- Prop profile (one strategy per individual account) ---
+  # --- Personal profile (as-swept lock, single strategy, no prop DD caps) ---
+  "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5.set"
+  "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5.set"
+  "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1.set"
+  # --- Prop profile (one strategy per individual prop account) ---
   "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-prop.set"
   "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-prop.set"
   "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1-prop.set"
+  # --- Mixed profile (all legs on one shared FN-Stella2 account) ---
+  "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-mixed-fn.set"
+  "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-mixed-fn.set"
+  "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1-mixed-fn.set"
 )
 
 step "[2/3] Collecting components..."
@@ -87,25 +95,26 @@ step "[3/3] Writing PORTFOLIO.md..."
 cat > "$DEST/PORTFOLIO.md" <<EOF
 # Prop Release Bundle — v$PVER
 
-Self-contained folder for the VPS: two EA binaries + BOTH deployment profiles.
-Copy the whole folder over, then deploy **case by case** —
+Self-contained folder for the VPS: two EA binaries + ALL THREE deployment
+profiles. Copy the whole folder over, then deploy **case by case** —
 
-- **Mode A — Mixed portfolio:** all three legs on ONE shared FN-Stella2 account.
+- **Mode A — Personal:** one strategy alone on a personal account (as-swept lock).
 - **Mode B — Individual prop accounts:** one strategy per its own prop account.
+- **Mode C — Mixed portfolio:** all three legs on ONE shared FN-Stella2 account.
 
-Same \`.ex5\` for both modes; only the \`.set\` differs.
+Same \`.ex5\` for every mode; only the \`.set\` differs.
 
 Components: MasterVP \`$MVP_VER\` · KenKem \`$KEN_VER\` · portfolio \`$PVER\`.
 
-## Mode A — Mixed (one shared account)
-| leg | symbol · TF | .set | risk/trade |
-|-----|-------------|------|-----------|
-| MasterVP XAU | XAUUSD · M5 | \`KK-MasterVP-$MVP_VER-xauusd-m5-mixed-fn.set\` | 0.43% |
-| MasterVP BTC | BTCUSD · M5 | \`KK-MasterVP-$MVP_VER-btcusd-m5-mixed-fn.set\` | 0.15% |
-| KenKem XAU   | XAUUSD · M1 | \`KK-KenKem-$KEN_VER-xauusd-m1-mixed-fn.set\` | 0.10% |
+## Mode A — Personal (one strategy alone, as-swept lock)
+| strategy | symbol · TF | .set |
+|----------|-------------|------|
+| MasterVP XAU | XAUUSD · M5 | \`KK-MasterVP-$MVP_VER-xauusd-m5.set\` |
+| MasterVP BTC | BTCUSD · M5 | \`KK-MasterVP-$MVP_VER-btcusd-m5.set\` |
+| KenKem XAU   | XAUUSD · M1 | \`KK-KenKem-$KEN_VER-xauusd-m1.set\` |
 
-**Joint DD caps (all legs share ONE equity HWM):** daily 4.2% · soft-derisk 7.8% ·
-hard-halt 9.2%. Attach all three on the SAME account so the shared-file HWM is joint.
+No prop DD caps and no contract-baseline anchor (runs the locked params as swept).
+Use these for personal/non-funded accounts where firm drawdown rules don't apply.
 
 ## Mode B — Individual prop accounts (one strategy each)
 | strategy | symbol · TF | .set | DD caps (daily / soft / hard) |
@@ -118,7 +127,17 @@ Run each on its OWN account (don't share the equity HWM across unrelated account
 Note: KenKem prop keeps \`MADE_FOR_PROP_TRADING=false\` (soft-block = micro-lots, no
 hard halt) — its 9% soft-block is the de-risk floor, not a kill switch.
 
-## Overall-DD anchor (no manual seeding needed — both modes)
+## Mode C — Mixed (all legs on one shared account)
+| leg | symbol · TF | .set | risk/trade |
+|-----|-------------|------|-----------|
+| MasterVP XAU | XAUUSD · M5 | \`KK-MasterVP-$MVP_VER-xauusd-m5-mixed-fn.set\` | 0.43% |
+| MasterVP BTC | BTCUSD · M5 | \`KK-MasterVP-$MVP_VER-btcusd-m5-mixed-fn.set\` | 0.15% |
+| KenKem XAU   | XAUUSD · M1 | \`KK-KenKem-$KEN_VER-xauusd-m1-mixed-fn.set\` | 0.10% |
+
+**Joint DD caps (all legs share ONE equity HWM):** daily 4.2% · soft-derisk 7.8% ·
+hard-halt 9.2%. Attach all three on the SAME account so the shared-file HWM is joint.
+
+## Overall-DD anchor (no manual seeding needed — prop + mixed)
 Every prop + mixed set bakes the contract-baseline anchor (\`InpPropBaselineEquity\` /
 \`PROP_BASELINE_EQUITY\` = **100000**). On a fresh attach the overall-DD high-water
 mark is seeded at the contract size, so a drawn-down account reads its TRUE drawdown
@@ -139,5 +158,5 @@ EOF
 info "PORTFOLIO.md"
 
 echo ""
-echo -e "${GREEN}✓ Mixed prop-portfolio v$PVER packaged${NC}  ->  ${BLUE}$DEST${NC}"
+echo -e "${GREEN}✓ Prop release bundle v$PVER packaged${NC}  ->  ${BLUE}$DEST${NC}"
 echo -e "${YELLOW}note:${NC} *.ex5 is gitignored (build artifact); the .set files + PORTFOLIO.md commit normally."

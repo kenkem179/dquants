@@ -1,24 +1,25 @@
 # Prop Release Bundle — v1.0
 
-Self-contained folder for the VPS: two EA binaries + BOTH deployment profiles.
-Copy the whole folder over, then deploy **case by case** —
+Self-contained folder for the VPS: two EA binaries + ALL THREE deployment
+profiles. Copy the whole folder over, then deploy **case by case** —
 
-- **Mode A — Mixed portfolio:** all three legs on ONE shared FN-Stella2 account.
+- **Mode A — Personal:** one strategy alone on a personal account (as-swept lock).
 - **Mode B — Individual prop accounts:** one strategy per its own prop account.
+- **Mode C — Mixed portfolio:** all three legs on ONE shared FN-Stella2 account.
 
-Same `.ex5` for both modes; only the `.set` differs.
+Same `.ex5` for every mode; only the `.set` differs.
 
 Components: MasterVP `1.08` · KenKem `1.04` · portfolio `1.0`.
 
-## Mode A — Mixed (one shared account)
-| leg | symbol · TF | .set | risk/trade |
-|-----|-------------|------|-----------|
-| MasterVP XAU | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5-mixed-fn.set` | 0.43% |
-| MasterVP BTC | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5-mixed-fn.set` | 0.15% |
-| KenKem XAU   | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1-mixed-fn.set` | 0.10% |
+## Mode A — Personal (one strategy alone, as-swept lock)
+| strategy | symbol · TF | .set |
+|----------|-------------|------|
+| MasterVP XAU | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5.set` |
+| MasterVP BTC | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5.set` |
+| KenKem XAU   | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1.set` |
 
-**Joint DD caps (all legs share ONE equity HWM):** daily 4.2% · soft-derisk 7.8% ·
-hard-halt 9.2%. Attach all three on the SAME account so the shared-file HWM is joint.
+No prop DD caps and no contract-baseline anchor (runs the locked params as swept).
+Use these for personal/non-funded accounts where firm drawdown rules don't apply.
 
 ## Mode B — Individual prop accounts (one strategy each)
 | strategy | symbol · TF | .set | DD caps (daily / soft / hard) |
@@ -31,7 +32,17 @@ Run each on its OWN account (don't share the equity HWM across unrelated account
 Note: KenKem prop keeps `MADE_FOR_PROP_TRADING=false` (soft-block = micro-lots, no
 hard halt) — its 9% soft-block is the de-risk floor, not a kill switch.
 
-## Overall-DD anchor (no manual seeding needed — both modes)
+## Mode C — Mixed (all legs on one shared account)
+| leg | symbol · TF | .set | risk/trade |
+|-----|-------------|------|-----------|
+| MasterVP XAU | XAUUSD · M5 | `KK-MasterVP-1.08-xauusd-m5-mixed-fn.set` | 0.43% |
+| MasterVP BTC | BTCUSD · M5 | `KK-MasterVP-1.08-btcusd-m5-mixed-fn.set` | 0.15% |
+| KenKem XAU   | XAUUSD · M1 | `KK-KenKem-1.04-xauusd-m1-mixed-fn.set` | 0.10% |
+
+**Joint DD caps (all legs share ONE equity HWM):** daily 4.2% · soft-derisk 7.8% ·
+hard-halt 9.2%. Attach all three on the SAME account so the shared-file HWM is joint.
+
+## Overall-DD anchor (no manual seeding needed — prop + mixed)
 Every prop + mixed set bakes the contract-baseline anchor (`InpPropBaselineEquity` /
 `PROP_BASELINE_EQUITY` = **100000**). On a fresh attach the overall-DD high-water
 mark is seeded at the contract size, so a drawn-down account reads its TRUE drawdown
