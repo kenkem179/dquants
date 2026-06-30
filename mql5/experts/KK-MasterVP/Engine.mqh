@@ -22,6 +22,7 @@
 #include "../KK-Common/Sizing.mqh"
 #include "../KK-Common/AccountLock.mqh"
 #include "../KK-Common/AccountGuardian.mqh"   // D1 cross-EA prop guardian
+#include "../KK-Common/PropState.mqh"         // account-level HWM persistence (shared, restart-safe)
 #include "../KK-Common/TradeLogger.mqh"       // D2 live per-EA trade CSV
 #include "../KK-Common/Notifier.mqh"          // D3 Discord/Telegram/Email
 #include "../VP-Common/Types.mqh"
@@ -128,8 +129,25 @@ int OnInit()
    double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE), ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
    g_vppl=(ts>0)?tv/ts:SymbolInfoDouble(_Symbol,SYMBOL_TRADE_CONTRACT_SIZE);
 
-   g_peakEquity=AccountInfoDouble(ACCOUNT_EQUITY);
-   g_dayStartEquity=g_peakEquity; g_dayPeakEquity=g_peakEquity; g_lastDayKey=-1; g_cooldownUntil=0;
+   // Account-level prop state. LIVE: adopt the persisted equity high-water mark
+   // (+ day anchors) from the shared COMMON file so the trailing-DD halt/soft-block
+   // survive reloads/restarts and are shared across legs on this account. A reload
+   // therefore does NOT reset the guard -- only deleting the file does. In the
+   // Tester KKPropStateLoad() returns false, so we seed from current equity exactly
+   // as before (backtests unchanged). See KK-Common/PropState.mqh.
+   double curEq=AccountInfoDouble(ACCOUNT_EQUITY);
+   KKPropState g_ps;
+   if(KKPropStateLoad(g_ps)){
+      g_peakEquity    =MathMax(g_ps.peakEquity,curEq);          // never below the persisted HWM
+      g_dayStartEquity=(g_ps.dayStartEquity>0.0?g_ps.dayStartEquity:curEq);
+      g_dayPeakEquity =MathMax(g_ps.dayPeakEquity,curEq);
+      g_lastDayKey    =(int)g_ps.dayKey;                        // same-day restart keeps the day anchor; OnNewBar resets on a new day
+      PrintFormat("[KK-MasterVP] prop state loaded: peakEquity=%.2f dayStart=%.2f (curEq=%.2f)",
+                  g_peakEquity,g_dayStartEquity,curEq);
+   } else {
+      g_peakEquity=curEq; g_dayStartEquity=curEq; g_dayPeakEquity=curEq; g_lastDayKey=-1;
+   }
+   g_cooldownUntil=0;
 
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);
    mvpTrade.SetTypeFillingBySymbol(_Symbol);
@@ -156,6 +174,7 @@ int OnInit()
    return INIT_SUCCEEDED;
 }
 void OnDeinit(const int r){
+   MvpSavePropState();    // persist final account HWM before unload (live only)
    IndicatorRelease(hAtr);IndicatorRelease(hRsi);IndicatorRelease(hAdx);IndicatorRelease(hEmaF);IndicatorRelease(hEmaS);
    IndicatorRelease(hHtfEmaF);IndicatorRelease(hHtfEmaS);IndicatorRelease(hAtrM1);
    g_tradeLog.Deinit();   // D2: flush + close the live trade CSV
@@ -219,6 +238,18 @@ double RiskBudgetUsd(){
    }
 }
 double PeakDDPct(double eq){ if(g_peakEquity<=0) return 0.0; double dd=(g_peakEquity-eq)/g_peakEquity*100.0; return dd>0?dd:0.0; }
+
+// Persist the account-level HWM + day anchors to the shared COMMON file. No-op in
+// the Tester. Called once per closed bar (cheap) + on deinit, so a restart loses
+// at most the current bar's peak movement (the HWM is monotonic and re-establishes
+// immediately). KKPropStateSave merges MAX(peak) across legs so it never regresses.
+void MvpSavePropState()
+{
+   KKPropState st;
+   st.peakEquity=g_peakEquity; st.dayStartEquity=g_dayStartEquity;
+   st.dayPeakEquity=g_dayPeakEquity; st.dayKey=g_lastDayKey;
+   KKPropStateSave(st);
+}
 bool IsPeakDDHalt(double eq){ return InpMaxPeakDDPct>0.0 && PeakDDPct(eq)>=InpMaxPeakDDPct; }
 double PeakDDLotMult(double eq){ if(InpSoftBlockDDPct<=0.0) return 1.0; return PeakDDPct(eq)>=InpSoftBlockDDPct?InpSoftBlockLotMult:1.0; }
 // Predictive daily-DD: adds the next trade's worst-case loss so one trade can't open through the cap.
@@ -588,6 +619,7 @@ void OnTick()
    if(t==g_mvpLastBar) return;
    g_mvpLastBar=t;
    OnNewBar();
+   MvpSavePropState();   // persist account HWM + day anchors once per closed bar (live only)
 }
 
 #endif // KKMVP_ENGINE_MQH
