@@ -6,6 +6,25 @@ Last updated: 2026-06-30 by Claude. Branch: `3-codex-handoff`.
 Harden the research/measurement spine so future locks are auditable, and find the next real lever on the two
 live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock).
 
+## What Just Changed (2026-06-30 — MIXED PROP PORTFOLIO release, code-touching)
+- **Mixed FN-Stella2 portfolio shipped: MasterVP 1.08 + KenKem 1.04 + portfolio bundle v1.0.**
+  One $100K account = MasterVP XAU M5 (0.43%) + MasterVP BTC M5 (0.15%, NEW `btcusd-m5-mixed-fn`
+  leg) + KenKem XAU M1 (0.1%). Joint DD caps (both EAs, shared equity HWM): daily 4.2% /
+  soft-derisk 7.8% / hard-halt 9.2%. KenKem mixed: `MADE_FOR_PROP_TRADING=true` (its soft-block
+  threshold = hard halt, so `ACCOUNT_DD_RATIO_TO_SOFT_BLOCK=0.092` IS the 9.2% halt; slowdown
+  0.078 = 7.8% de-risk), `ENABLE_PEAK_BALANCE_DECAY=false`, `USE_EQUITY_DD_BASIS=true`.
+- **NEW contract-baseline DD anchor (commit 7bfd8de)** — `InpPropBaselineEquity` (MasterVP) /
+  `PROP_BASELINE_EQUITY` (KenKem), LIVE-only, baked **100000** into all prop+mixed .sets. Fixes the
+  fresh-attach trap: both EAs used to seed the overall-DD HWM to CURRENT equity, so a drawn-down
+  prop account read as 0% DD and got a fresh allowance → breach risk. Now DD measures from the
+  contract baseline with NO manual file-seeding. Tester-skipped → backtests byte-unchanged.
+- **KenKem equity-basis A/B DONE + flipped ON** (commits eddb66a/6153e9e): A(balance) +8.01% vs
+  B(equity) +7.63%; −0.38%/yr buys firm-rule-aligned DD measure. Equity basis ON in prop+mixed.
+- **Portfolio bundler** `scripts/make_prop_portfolio.sh <ver>` → `mql5/experts/prop-releases/<ver>/`
+  (latest MasterVP+KenKem mixed .ex5 + mixed .sets + PORTFOLIO.md). Ran for **v1.0**. Bump the
+  portfolio version whenever a component bumps. Commits: 7bfd8de (anchor), + portfolio commit.
+- Memory: `prop-account-state-persistence` (baseline anchor + A/B + portfolio).
+
 ## What Just Changed (2026-06-30 — MasterVP prod fix, code-touching)
 - **FIXED the MasterVP XAU M5 equity/deposit-load spike** ("equity went up like crazy then crashed").
   Root cause from 2 user MT5 runs + the EA's own `trades_*.csv`: 6 trades on the **20:55 daily-rollover bar**
