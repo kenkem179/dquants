@@ -2,10 +2,10 @@
 
 ## 1.04 — 2026-06-30
 
-- Built `2026-06-30T12:30:43Z` · commit `6153e9e` on `3-codex-handoff`
+- Built `2026-06-30T15:59:43Z` · commit `942fdee` on `3-codex-handoff`
 - EA: `KK-KenKem-1.04.ex5` (locked build of `KK-KenKem.mq5`)
-- Mixed FN-Stella2 portfolio: retune mixed leg (risk 0.1%, joint DD daily 4.2% / soft-derisk 7.8% / hard-halt 9.2%, MADE_FOR_PROP_TRADING=true, decay=false, equity basis). NEW PROP_BASELINE_EQUITY (LIVE-only, baked 100000 in prop+mixed) anchors overall-DD at contract size on fresh attach. Rebuild carries USE_EQUITY_DD_BASIS + PROP_BASELINE_EQUITY into the binary.
-- Variants: `xauusd-m1` `xauusd-m1-prop` `xauusd-m1-mixed-fn`
+- Add standalone risk-tiered sets: xauusd-m1-{conservative,balanced} (DD-cap-tiered personal variants; fixed lot kept)
+- Variants: `xauusd-m1` `xauusd-m1-conservative` `xauusd-m1-balanced` `xauusd-m1-prop` `xauusd-m1-mixed-fn`
 
 ## 1.03 — 2026-06-23
 

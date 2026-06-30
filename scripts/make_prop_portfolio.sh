@@ -71,6 +71,13 @@ COMPONENTS=(
   "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5.set"
   "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5.set"
   "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1.set"
+  # --- Personal risk-tiered (standalone, tamed drawdown — NO prop baseline) ---
+  "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-conservative.set"
+  "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-balanced.set"
+  "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-conservative.set"
+  "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-balanced.set"
+  "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1-conservative.set"
+  "$KEN_REL|KK-KenKem-$KEN_VER-xauusd-m1-balanced.set"
   # --- Prop profile (one strategy per individual prop account) ---
   "$MVP_REL|KK-MasterVP-$MVP_VER-xauusd-m5-prop.set"
   "$MVP_REL|KK-MasterVP-$MVP_VER-btcusd-m5-prop.set"
@@ -115,6 +122,28 @@ Components: MasterVP \`$MVP_VER\` · KenKem \`$KEN_VER\` · portfolio \`$PVER\`.
 
 No prop DD caps and no contract-baseline anchor (runs the locked params as swept).
 Use these for personal/non-funded accounts where firm drawdown rules don't apply.
+
+## Mode A-Tiered — Personal, risk-tiered (tamed drawdown, standalone)
+Same locked edge as Mode A, but with lower per-trade risk + tighter daily DD + an
+ACTIVE soft-block (de-risk to half-lots before any hard cap) — for personal accounts
+that find the as-swept 1% RPT / 10% daily / soft-block-off profile too aggressive.
+Still standalone: **no** contract-baseline anchor, **no** shared HWM.
+
+| strategy | symbol · TF | Conservative .set | Balanced .set |
+|----------|-------------|-------------------|---------------|
+| MasterVP XAU | XAUUSD · M5 | \`KK-MasterVP-$MVP_VER-xauusd-m5-conservative.set\` | \`KK-MasterVP-$MVP_VER-xauusd-m5-balanced.set\` |
+| MasterVP BTC | BTCUSD · M5 | \`KK-MasterVP-$MVP_VER-btcusd-m5-conservative.set\` | \`KK-MasterVP-$MVP_VER-btcusd-m5-balanced.set\` |
+| KenKem XAU   | XAUUSD · M1 | \`KK-KenKem-$KEN_VER-xauusd-m1-conservative.set\`   | \`KK-KenKem-$KEN_VER-xauusd-m1-balanced.set\`   |
+
+DD tiers (MasterVP is true %-risk; KenKem keeps its fixed base lot and tiers DD caps only):
+
+| tier | MasterVP RPT | daily DD | soft-block → lot | hard halt | KenKem daily / slowdown / soft-block |
+|------|-------------|----------|------------------|-----------|--------------------------------------|
+| Conservative | 0.5%  | 4% | 5% → 0.5x | 8%  | 4% / 5% / 8% → 0.5x (no hard halt; soft-block de-risks) |
+| Balanced     | 0.75% | 5% | 6% → 0.5x | 10% | 5% / 6% / 10% → 0.5x (no hard halt; soft-block de-risks) |
+
+Compounding trade-off vs the ~11X as-swept XAU run (geometric, edge fixed): Conservative
+≈ ~3.3X, Balanced ≈ ~6X — roughly half / three-quarters the drawdown. Test before trusting.
 
 ## Mode B — Individual prop accounts (one strategy each)
 | strategy | symbol · TF | .set | DD caps (daily / soft / hard) |

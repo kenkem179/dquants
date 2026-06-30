@@ -1,0 +1,82 @@
+; KK-MasterVP — BTCUSD M5 preset, NO SESSION (trade 24/7). Dedicated BTC sweep 2026-06-20.
+; Master VP=720 bars (60h)=VpLookback24 x MasterMult30 · adx30 · break_buf1.0 · sl2.2 · trail6.0.
+; Robust plateau both train+OOS: OOS PF 1.214 / dd 14.2% / win 57.4%. ⚠ tail-skewed (top10=219% of net).
+; Attach EA to a BTCUSD M5 chart. 3 sessions cover full 24h so inAnySession always true (offset 0).
+; T3-REVERSION REVERTED 2026-06-20: MT5-DISCONFIRMED (engine revNet +5,414 vs MT5 -76 over the same window).
+; BTC M5 is NOT live-deployable: MT5 PF 1.058 / net +1,761 vs engine PF 1.293 / +10,129 (engine over-wins +8pts
+; on the BTC/Exness round-trip feed). See research/mastervp_parity/mt5_runs/RUN_2026-06-20_btc_m5_locked_reversion/FINDINGS.md.
+; T3-EXIT LOCKED 2026-06-20: InpTp1ClosePct 20->0 (6-fold WF: pooled PF 1.308->1.339, net +11.4%, 6/6 folds; trail 6.0 confirmed optimal).
+
+InpAdxLen=14
+InpAdxTrendMin=30.0
+InpAsiaSess=00:00-08:00
+InpAtrLen=14
+InpAtrMt5Mode=false
+InpAvoidNews=false
+InpBeAfterTp1=true
+InpBeBufAtr=0.05
+InpBlockedHoursStr=
+InpBodyPctMin=0.4
+InpBreakBufAtr=1.0
+InpBreakMaxAtr=1000000
+InpBrkRequireFlow=false
+InpBrkVetoSfp=false
+InpDailyDDCooldownHrs=12.0
+InpDeviationPoints=200
+InpDiSpreadMin=8.0
+InpEmaFast=24
+InpEmaSepAtr=0.25
+InpEmaSlow=194
+InpEnableBreakout=true
+InpEnableReversion=false
+InpForceCloseSessNews=false
+InpLdnSess=08:00-16:00
+InpLossStreakCooldownHrs=4.0
+InpLossStreakCount=0
+InpMVPMagic=5252510
+InpMasterMult=30
+InpMaxAtrPct=0.0
+InpMaxDailyDDPct=5.0
+InpMaxLot=0.0
+InpMaxPeakDDPct=10.0
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+InpMaxTradesPerSession=4
+InpMinAtrPct=0.0
+InpMinAtrTicks=40
+InpMtfHardVeto=true
+InpNewsMinsAfter=15
+InpNewsMinsBefore=15
+InpNodeDecay=0.94
+InpNodeGateEnabled=false
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpNodeTouchAtr=0.05
+InpNySess=16:00-24:00
+InpRetestAtr=0.1
+InpRiskAccPct=0.75
+InpRiskUnit=0
+InpRiskUsd=180.0
+InpRrBrk=1.8
+InpRrRev=1.2
+InpRsiLen=14
+InpRsiMidline=50.0
+InpRunnerRr=10.0
+InpSfpFlowMin=0.15
+InpSkipIfMinLotOverRisk=false
+InpSlAtrBrk=2.2
+InpSlAtrRev=1.2
+InpSoftBlockDDPct=6.0
+InpSoftBlockLotMult=0.5
+InpTp1ClosePct=0.0
+InpTp1R=0.8
+InpTrailAtrMult=6.0
+InpTrailRunner=true
+InpUseEmbeddedNews=true
+InpUseMomVeto=false
+InpUseMtfAgree=false
+InpUsePriorBarVP=false
+InpVaPct=70.0
+InpVpBins=30
+InpVpLookback=24
+InpExportParity=true

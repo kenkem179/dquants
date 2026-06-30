@@ -1,10 +1,29 @@
 # HANDOFF - read first, update last
 
-Last updated: 2026-06-30 by Claude. Branch: `3-codex-handoff`.
+Last updated: 2026-07-01 by Claude. Branch: `3-codex-handoff`.
 
 ## Current Goal
 Harden the research/measurement spine so future locks are auditable, and find the next real lever on the two
 live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock).
+
+## What Just Changed (2026-07-01 — STANDALONE RISK-TIERED .sets, release-config only)
+- **New retail risk tiers shipped for BOTH EAs: `-conservative` + `-balanced` standalone (no prop / no
+  mix) .sets.** Motivation: operator's as-swept MasterVP XAU personal lock (1% RPT / 10% daily DD /
+  soft-block OFF) gave ~11X/yr but swings 10% intraday. These tiers tame drawdown for personal accounts.
+  - **MasterVP (XAU+BTC M5, true %-risk):** Conservative = `InpRiskAccPct=0.5 InpMaxDailyDDPct=4.0
+    InpSoftBlockDDPct=5.0 InpSoftBlockLotMult=0.5 InpMaxPeakDDPct=8.0`; Balanced = `0.75 / 5.0 / 6.0 /
+    0.5 / 10.0`. Deliberately NO `InpPropBaselineEquity` (standalone, not a prop anchor).
+  - **KenKem (XAU M1, FIXED-lot ~0.06%/trade):** DD-caps ONLY, base lot `MY_STANDARD_LOT_SIZE=0.15`
+    UNCHANGED. Conservative = `MAX_DAILY_LOSS_RATIO=0.04 ACCOUNT_DRAWDOWN_RATIO_TO_SLOWDOWN=0.05
+    ACCOUNT_DD_RATIO_TO_SOFT_BLOCK=0.08 SOFT_BLOCK_LOT_MULTIPLIER=0.5`; Balanced = `0.05 / 0.06 / 0.10
+    / 0.5`. `MADE_FOR_PROP_TRADING=false` kept → soft-block DE-RISKS (no hard halt). NO prop baseline.
+  - Mechanism: added variants to each `release.conf`; re-cut releases IN PLACE (`--no-compile
+    --set-version 1.08 / 1.04`, no bump → curated **market editions untouched**); added the 6 files to
+    `make_prop_portfolio.sh` COMPONENTS + a "Mode A-Tiered" table in PORTFOLIO.md; rebuilt bundle v1.0.
+  - VERIFIED every generated value by grep; as-swept personal sets uncontaminated (still 1%/10%/off).
+  - Est. compounding vs 11X (edge fixed, geometric): Conservative ~3.3X, Balanced ~6X, ~½/¾ the DD.
+    **UNTESTED in MT5** — operator should backtest before trusting (per release-ask-version-bump rule).
+  - Files: `mql5/experts/{KK-MasterVP/releases/1.08, KK-KenKem/releases/1.04, prop-releases/1.0}/…`.
 
 ## What Just Changed (2026-06-30 — MIXED PROP PORTFOLIO release, code-touching)
 - **Mixed FN-Stella2 portfolio shipped: MasterVP 1.08 + KenKem 1.04 + portfolio bundle v1.0.**
