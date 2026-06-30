@@ -18,7 +18,15 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
     sites) — **guaranteed no-op** (min engine slAtr=0.7>0.6); all C++ tests pass, deterministic.
   - Impact: only those 6 trades change (losses −547→~−177, book +21,650→~+22,020); 1,541 healthy trades
     byte-identical; spikes gone. Memory: `mastervp-sizing-risk-floor-fix`.
-  - **NEXT ACTION = user MT5 re-run** (below) to confirm spikes gone before any release repackage.
+  - User MT5 re-run CONFIRMED spikes gone.
+- **Prop "flat tail" diagnosed + RECOVERY MODE wired (.set only).** After the sizing fix the XAU M5 **prop**
+  run stopped trading 2025-08-26 (flat ~9 mo). Cause: `IsPeakDDHalt` (`InpMaxPeakDDPct=9.0`) is a one-way trap
+  (monotonic `g_peakEquity`; halted → no trades → can't recover). It fired on a ~9% equity DD from the 2025-08-13
+  peak (real winners, not a sizing artifact) — a NORMAL DD (full-year natural ~27.7%) that exceeds the FundedNext
+  9% limit at 0.5% risk. NOT a sizing bug. Fix (user's choice): SoftBlock recovery — `InpSoftBlockDDPct=5.0`
+  `InpSoftBlockLotMult=0.4` (auto-resets when DD<5%) + `InpMaxPeakDDPct→8.5` + explicit `InpMinRiskAtrMult=0.6`,
+  on both `releases/1.07/*-prop.set` + `release.conf`. **NEXT = user MT5 re-run of the XAU M5 prop set** to confirm
+  it survives the Aug-2025 stretch; fallback = deeper softblock / lower base risk.
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
