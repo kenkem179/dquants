@@ -1,7 +1,7 @@
 # KK-MasterVP (MQL5-Market edition) — release 1.07
 
-- Built: `2026-06-27T12:21:05Z` (UTC)
-- Source commit: `1ac0db1` on `2-stabilization`
+- Built: `2026-06-30T11:01:49Z` (UTC)
+- Source commit: `dee4d46` on `3-codex-handoff`
 - EA: `KK-MasterVP-Market-1.07.ex5` — strategy internals are HIDDEN (fixed);
   only the user-facing inputs (risk, profit-taking, trading hours, news, basic
   execution safety) appear in the dialog.
@@ -14,4 +14,4 @@
 | variant | .set file | base preset | overrides |
 |---------|-----------|-------------|-----------|
 | xauusd-m5 | `KK-MasterVP-Market-1.07-xauusd-m5.set` | `KK-MasterVP-XAUUSD-M5.set` | — |
-| xauusd-m5-prop | `KK-MasterVP-Market-1.07-xauusd-m5-prop.set` | `KK-MasterVP-XAUUSD-M5.set` | InpRiskAccPct=0.5 InpMaxDailyDDPct=4.4 InpMaxPeakDDPct=9.0 |
+| xauusd-m5-prop | `KK-MasterVP-Market-1.07-xauusd-m5-prop.set` | `KK-MasterVP-XAUUSD-M5.set` | InpRiskAccPct=0.5 InpMaxDailyDDPct=4.4 InpSoftBlockDDPct=8.3 InpSoftBlockLotMult=0.5 InpMaxPeakDDPct=9.5 |

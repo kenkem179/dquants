@@ -48,6 +48,7 @@ InpNewsMinsAfter
 #
 # --- Execution quality / throttle --------------------------------------------
 InpMaxSpreadPips
+InpMinRiskAtrMult
 InpMaxTradesPerSession
 #
 # --- Strategy toggle (user-facing) -------------------------------------------

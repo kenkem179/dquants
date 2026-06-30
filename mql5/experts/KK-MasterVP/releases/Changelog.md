@@ -1,10 +1,10 @@
 # KK-MasterVP — Changelog
 
-## 1.07 — 2026-06-27
+## 1.07 — 2026-06-30
 
-- Built `2026-06-27T12:21:05Z` · commit `1ac0db1` on `2-stabilization`
+- Built `2026-06-30T11:01:49Z` · commit `dee4d46` on `3-codex-handoff`
 - EA: `KK-MasterVP-1.07.ex5` (locked build of `KK-MasterVP.mq5`)
-- Release packaged via make_release.sh (no --notes given).
+- Sizing-risk floor (InpMinRiskAtrMult=0.6) kills the rollover-spread lot blow-up; prop sets get SoftBlock recovery (8.3% DD -> 0.5x lots) + hard halt 9.5%.
 - Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn`
 
 ## 1.06 — 2026-06-25
