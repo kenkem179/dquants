@@ -23,10 +23,11 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
   run stopped trading 2025-08-26 (flat ~9 mo). Cause: `IsPeakDDHalt` (`InpMaxPeakDDPct=9.0`) is a one-way trap
   (monotonic `g_peakEquity`; halted → no trades → can't recover). It fired on a ~9% equity DD from the 2025-08-13
   peak (real winners, not a sizing artifact) — a NORMAL DD (full-year natural ~27.7%) that exceeds the FundedNext
-  9% limit at 0.5% risk. NOT a sizing bug. Fix (user's choice): SoftBlock recovery — `InpSoftBlockDDPct=5.0`
-  `InpSoftBlockLotMult=0.4` (auto-resets when DD<5%) + `InpMaxPeakDDPct→8.5` + explicit `InpMinRiskAtrMult=0.6`,
-  on both `releases/1.07/*-prop.set` + `release.conf`. **NEXT = user MT5 re-run of the XAU M5 prop set** to confirm
-  it survives the Aug-2025 stretch; fallback = deeper softblock / lower base risk.
+  9% limit at 0.5% risk. NOT a sizing bug. Fix (operator-set, FN ~10% firm limit): `InpSoftBlockDDPct=8.3`
+  `InpSoftBlockLotMult=0.5` (HALF risk at the cliff, auto-resets when DD<8.3%) + `InpMaxPeakDDPct→9.5` + explicit
+  `InpMinRiskAtrMult=0.6`, on both `releases/1.07/*-prop.set` + `release.conf` (commit 832e9f0). **NEXT = user MT5
+  re-run of the XAU M5 prop set.** Flagged concern: 8.3→9.5 is a narrow 1.2% band (soft-block only de-risks the
+  final approach); Aug-2025 reached ~9.5% DD so it may still halt — fallback = lower the trigger / trim base risk.
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
