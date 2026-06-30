@@ -31,10 +31,17 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
   → DECISION PENDING: engage soft-block earlier (~5-6%) or trim base risk 0.5→0.3%.
 - **Release 1.07 rebuilt in place** (commit f04443d) — all modes (personal/prop/mixed) + Market edition; .ex5 has
   the sizing floor. Fixed a market hide-pass bug that stripped `InpMinRiskAtrMult`'s `input` (added it to whitelist).
-- **Account-level HWM persistence BUILT** (commit 4d82d44) — `KK-Common/PropState.mqh` writes the account equity
-  HWM to shared COMMON `KK_PropState_<acct>.txt`; MasterVP wired (reload no longer resets the DD guard; RESET =
-  delete the file; Tester-skipped so backtests unchanged). **KenKem NOT wired** — it anchors on peak BALANCE vs
-  MasterVP's peak EQUITY; unifying needs a basis decision (DECISION PENDING).
+- **Account-level HWM persistence BUILT** (commits 4d82d44, 68fb428) — `KK-Common/PropState.mqh` writes the account
+  equity HWM to shared COMMON `KK_PropState_<acct>.txt`; RESET = delete the file; Tester-skipped so backtests
+  unchanged. MasterVP fully wired (reload no longer resets the DD guard). KenKem ADDITIVELY wired (basis=EQUITY) —
+  both legs now maintain the joint HWM, but KenKem's own DD enforcement still runs on peak BALANCE.
+- **Prop params retuned (operator):** risk 0.43%, soft-block 8.0%→0.5×, halt 9.5% — 1.07 rebuilt (commit cbb35cb).
+  NEEDS a user MT5 re-run to confirm it now clears Aug-2025.
+
+## Open next steps (operator-chosen)
+1. **User MT5 re-run** XAU M5 prop set (0.43%/8.0/9.5) — does it clear the Aug-2025 halt?
+2. **KenKem full equity re-base** of `IsWithinDrawdownLimit` (currentBalance→equity, peak from shared HWM) + the
+   dependent drawdownRoomLeft / peak-decay uses — ship WITH a before/after backtest (operator: "after a backtest").
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
