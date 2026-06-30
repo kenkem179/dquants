@@ -205,6 +205,10 @@ KK_IN double InpMaxSpreadTp1Frac = 0.0;     // TP1 cost-clearance OFF
 input group "===== Safety / volatility ====="
 input int    InpMaxTradesPerSession = 4; // Max trades per session
 input double InpMaxSpreadPips    = 0.0;     // Max spread (pips) allowed to enter (0 = off)
+input double InpMinRiskAtrMult   = 0.6;     // Sizing-risk floor (x ATR): lot is sized as if the stop were
+                                            // >= this*ATR, so a spread-collapsed stop can't explode the lot
+                                            // (the REAL SL/TP are unchanged). 0 = off. Engine sizes on the
+                                            // clean signal risk (~1.2*ATR), so this only bites pathological bars.
 
 
 //input group "===== Quality gates (Pine has NEITHER) ====="

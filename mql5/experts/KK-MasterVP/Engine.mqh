@@ -384,9 +384,19 @@ void OnNewBar()
              : sig.tp2;
    KKClampStops(sig.is_long,entry,minDist,sl,tp);
    risk=MathAbs(entry-sl); if(risk<=0) return;
+   // Sizing-risk floor: at the daily rollover the broker spread blows out (112-420 pips vs ~25
+   // normal), which collapses the post-clamp `risk` (== minDist == ~one spread) to a tiny fraction
+   // of a sane stop. KKPositionSize divides by it -> the lot explodes ~12x (capped only by the
+   // broker volume limit), producing the equity/deposit-load spike. Floor the distance used for
+   // SIZING at InpMinRiskAtrMult*ATR (the strategy's nominal stop is ~1.2*ATR, so this never bites
+   // a healthy trade). The REAL sl/tp below are untouched -> a genuinely tight stop just takes a
+   // smaller-than-budget loss instead of a catastrophic position. Mirrors the C++ engine, which
+   // already sizes on the clean signal risk (sig.risk ~1.2*ATR) and so never blows up.
+   double sizeRisk=risk;
+   if(InpMinRiskAtrMult>0.0){ double rFloor=InpMinRiskAtrMult*AtrAt(1); if(sizeRisk<rFloor) sizeRisk=rFloor; }
    // lot from risk budget (port of RiskManager::compute_lot; risk_unit honored via RiskBudgetUsd).
    double budget=nextBudget*PeakDDLotMult(eq);
-   double lot=KKPositionSize(budget,1.0,risk,g_vppl,
+   double lot=KKPositionSize(budget,1.0,sizeRisk,g_vppl,
                              SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN),
                              (InpMaxLot>0?InpMaxLot:SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MAX)),
                              SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_STEP),

@@ -220,6 +220,11 @@ struct Params {
     int    max_trades_per_session = 4;
     double max_spread_pips    = 40.0;
     double max_spread_tp1_frac = 0.25;
+    // Sizing-risk floor (x ATR). Mirrors KK-MasterVP InpMinRiskAtrMult: the lot is sized as if the
+    // stop were >= this*ATR so a spread-collapsed stop can't explode the lot. The engine already
+    // sizes on the clean signal risk (~1.2*ATR), so for healthy signals this is a no-op; it exists
+    // to keep the C++ and MQL sizing contracts 1:1. 0 = off.
+    double min_risk_atr_mult  = 0.6;
     // ---- volatility RR (off) ----
     bool   enable_vol_rr      = false;
     double rr_asia_mul        = 0.85;

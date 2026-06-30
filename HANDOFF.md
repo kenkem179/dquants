@@ -1,11 +1,24 @@
 # HANDOFF - read first, update last
 
-Last updated: 2026-06-29 by Claude (overnight autopilot). Branch: `3-codex-handoff`.
+Last updated: 2026-06-30 by Claude. Branch: `3-codex-handoff`.
 
 ## Current Goal
 Harden the research/measurement spine so future locks are auditable, and find the next real lever on the two
-live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock). No released EA
-edition was touched this session — all work is research-only under `research/**` + `docs/**`.
+live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock).
+
+## What Just Changed (2026-06-30 — MasterVP prod fix, code-touching)
+- **FIXED the MasterVP XAU M5 equity/deposit-load spike** ("equity went up like crazy then crashed").
+  Root cause from 2 user MT5 runs + the EA's own `trades_*.csv`: 6 trades on the **20:55 daily-rollover bar**
+  (spread blown to 112–420 pips vs ~25 normal) had `riskPrice ≈ one spread`, collapsing the EA's post-clamp
+  sizing `risk` → `KKPositionSize` exploded the lot ~12× (capped only by broker VOLUME_LIMIT). The C++ engine
+  never showed it because it sizes on the clean `sig.risk` (~1.2×ATR).
+  - Fix: `Inputs.mqh` +`InpMinRiskAtrMult=0.6`; `Engine.mqh` floors the SIZING distance at 0.6×ATR
+    (`sizeRisk=max(risk,0.6*AtrAt(1))`) — **real sl/tp unchanged**, only the lot. EA recompiled 0/0.
+  - Mirrored 1:1 into C++ (`config.hpp min_risk_atr_mult=0.6` + both `mastervp/tick_engine.hpp` compute_lot
+    sites) — **guaranteed no-op** (min engine slAtr=0.7>0.6); all C++ tests pass, deterministic.
+  - Impact: only those 6 trades change (losses −547→~−177, book +21,650→~+22,020); 1,541 healthy trades
+    byte-identical; spikes gone. Memory: `mastervp-sizing-risk-floor-fix`.
+  - **NEXT ACTION = user MT5 re-run** (below) to confirm spikes gone before any release repackage.
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.

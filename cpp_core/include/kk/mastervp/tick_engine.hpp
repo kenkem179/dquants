@@ -544,7 +544,11 @@ private:
         }
 
         // Size + market fill at this tick (long->ask, short->bid).
-        const double lot = rm_.compute_lot(sig.risk, equity_);
+        // Floor the sizing distance at min_risk_atr_mult*ATR (mirror of KK-MasterVP InpMinRiskAtrMult):
+        // a no-op for clean signals (sig.risk ~1.2*ATR) but a guard against a spread-collapsed stop.
+        const double sizeRisk = (p_.min_risk_atr_mult > 0.0)
+                              ? std::max(sig.risk, p_.min_risk_atr_mult * ev.atr1) : sig.risk;
+        const double lot = rm_.compute_lot(sizeRisk, equity_);
         if (lot <= 0.0) { blk("lot<=0 (min-lot-over-risk)"); return; }   // no fill, no counter
         const double fill = ExecutionSimulator::fill_price(sig.is_long, t);
         const double entry_spread = ExecutionSimulator::entry_spread(t);
@@ -577,7 +581,9 @@ private:
         const double limit = ds.entry;
         const bool touched = ds.is_long ? (t.ask <= limit) : (t.bid >= limit);
         if (!touched) return;
-        const double lot = rm_.compute_lot(ds.risk, equity_);
+        const double sizeRisk = (p_.min_risk_atr_mult > 0.0)
+                              ? std::max(ds.risk, p_.min_risk_atr_mult * defer_.atr1) : ds.risk;
+        const double lot = rm_.compute_lot(sizeRisk, equity_);
         if (lot <= 0.0) { defer_.active = false; return; }   // unsized -> drop the intent
         const double entry_spread = ExecutionSimulator::entry_spread(t);
         if (pos_.open_position(p_, ds, limit, lot, defer_.arm_ts_ms, defer_.session, entry_spread,
