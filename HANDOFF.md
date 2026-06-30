@@ -6,6 +6,20 @@ Last updated: 2026-07-01 by Claude. Branch: `3-codex-handoff`.
 Harden the research/measurement spine so future locks are auditable, and find the next real lever on the two
 live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail-ladder lock).
 
+## What Just Changed (2026-07-01 — FundedNext daily-DD fact correction, docs only)
+- **Canonicalized FN Stellar-2 daily-DD = 5% (NOT 3%); EA single-prop cap = 4.4% (deliberate ~0.6%
+  margin).** The "3%" scattered through CLAUDE.md + risk skills was a stale internal-buffer number
+  mis-stated as the FIRM limit; the FN plan doc (`kenkem/notes/PropTrade_FundedNext_Stellar2_Plan.md`)
+  itself confirms "Daily Max Loss 5%". Corrected across 3 repos:
+  - **dquants:** `docs/BUSINESS-PLAN.md` (blocker → resolved); memory `fundednext-stella2-portfolio.md`
+    (added canonical 5%-firm / 4.4%-EA fact).
+  - **kenkem:** `pineScript/CLAUDE.md`, `notes/{PropTrade_FundedNext_Stellar2_Plan, kenkem-plan-sl-management-pf25,
+    KK-MasterVP-Top1Percent-Profitability-Plan, KK-MasterVP-Monster-EA-Port-Plan}.md` (firm 3%→5%, EA cap 0.03→0.044).
+  - **kenkem-pine:** `CLAUDE.md` (×2) + skills `risk-audit` / `bt-data-science` / `pine-quant-review` (firm 3%→5%).
+  - DELIBERATELY LEFT: two `kenkem-pine/baselines/*tune-2026-05-09*.md` (frozen historical tuning records).
+  - Mixed-portfolio per-leg caps (≈4.2%) untouched — they're intentionally tighter (legs share the 5% budget).
+  - Verified: no operational "FundedNext 3%" reference remains. No code/.set changed (the prop .sets already use 4.4%).
+
 ## What Just Changed (2026-07-01 — STANDALONE RISK-TIERED .sets, release-config only)
 - **New retail risk tiers shipped for BOTH EAs: `-conservative` + `-balanced` standalone (no prop / no
   mix) .sets.** Motivation: operator's as-swept MasterVP XAU personal lock (1% RPT / 10% daily DD /

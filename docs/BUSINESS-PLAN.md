@@ -171,7 +171,7 @@ the customer's responsibility.
 
 - Migrate terminal + `.ex5` + `.set` to the VPS; confirm 24/5 uptime; clear stale `KKG.*` globals on each KenKem attach; set `InpPropBaselineEquity` / `PROP_BASELINE_EQUITY` to the real contract size.
 - Attach **MyFXBook / FXBlue read-only verified** to every account → those URLs ARE the sales proof (framed "developer's own results, not a recommendation; past performance ≠ future results").
-- ⚠️ **BLOCKER before the prop deploy:** our docs disagree on FundedNext Stellar-2's daily-DD limit (3% in `kenkem-pine` vs 5% in the prop release notes). The prop `.set` caps daily loss at **4.4%** — if FN's true limit is **3%, that breaches on day one.** Confirm the exact account-type daily-DD + consistency rule, then re-cut the prop `.set` to sit safely below it. Do not deploy prop money until this is settled.
+- ✅ **FundedNext Stellar-2 daily-DD = 5%** (confirmed 2026-07-01; the old "3%" in some docs was a stale internal-buffer number, now corrected). The prop `.set` caps the EA's daily loss at **4.4%** — a deliberate ~0.6% safety margin below the 5% firm line. Still verify the account-type **consistency rule** before scaling (a scalper's occasional big day can trip it).
 
 ### B. Marketing-automation flywheel (Week 1; runs daily thereafter)
 Both engines already exist — wire them to the proof:
