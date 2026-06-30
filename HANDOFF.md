@@ -21,9 +21,26 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
 - **KenKem equity-basis A/B DONE + flipped ON** (commits eddb66a/6153e9e): A(balance) +8.01% vs
   B(equity) +7.63%; −0.38%/yr buys firm-rule-aligned DD measure. Equity basis ON in prop+mixed.
 - **Portfolio bundler** `scripts/make_prop_portfolio.sh <ver>` → `mql5/experts/prop-releases/<ver>/`
-  (latest MasterVP+KenKem mixed .ex5 + mixed .sets + PORTFOLIO.md). Ran for **v1.0**. Bump the
-  portfolio version whenever a component bumps. Commits: 7bfd8de (anchor), + portfolio commit.
-- Memory: `prop-account-state-persistence` (baseline anchor + A/B + portfolio).
+  now bundles ALL THREE profiles (personal / individual-prop / mixed) for both EAs + PORTFOLIO.md.
+  Ran for **v1.0** (12 files). Bump the portfolio version whenever a component bumps. Commits
+  7bfd8de (anchor) → c6ae9a5 (3-profile bundle). Memory: `prop-account-state-persistence`.
+
+## Sizing reality + DAILY-anchor gap (verified from code, 2026-06-30 — answered user, NOT yet fixed)
+- **KenKem sizes off a FIXED base lot, not %-risk.** `KK-KenKem.mq5:1639` lot = `min(getScaledLotSize()
+  [base=MY_STANDARD_LOT_SIZE=0.15 × growth/recovery mults], GetMaxLotSize() [Helpers.mqh:122 = a loose
+  MARGIN ceiling ~90+ lots, NOT an SL-distance risk cap])`. So on a large ($94K) account 0.15 wins →
+  ~$45–75 risk ≈ **0.05–0.08%/trade** (BELOW the 0.1% target; `COMMON_MAX_RISK_PER_TRADE` barely binds
+  at this account size — `MY_STANDARD_LOT_SIZE` is the real lever). Safe/conservative, just light.
+  Contrast: **MasterVP IS true %-risk** (`KKPositionSize`, 0.43% XAU / 0.15% BTC). `INITIAL_ACCOUNT_BALANCE`
+  auto-detects (KK-KenKem.mq5:101-103) so KenKem risk scales to the live account.
+- **OVERALL DD is protected** by the baseline anchor (halt 9.2% = $90,800 > FN $90K floor). **DAILY DD is the
+  open gap:** on a fresh/mid-day attach both EAs anchor "day start" to ATTACH TIME (no persisted daily
+  start), so they can't see FN's midnight reset — a mid-day start after intraday losses can allow more
+  daily loss than FN permits. Backstopped by the overall halt UNLESS FN's daily floor today sits above
+  $90,800. Told user: don't trade the rest of a bad day, start fresh tomorrow (anchors align).
+- **PROPOSED FIX (user asked, awaiting go):** persist/restore the true daily-start equity (and/or an input
+  for FN's day-start) so a mid-day attach measures daily DD from FN's reset, not attach time. PropState
+  already has `dayStartEquity`/`dayKey` fields — wire OnInit to adopt them when same FN-day, else reseed.
 
 ## What Just Changed (2026-06-30 — MasterVP prod fix, code-touching)
 - **FIXED the MasterVP XAU M5 equity/deposit-load spike** ("equity went up like crazy then crashed").
