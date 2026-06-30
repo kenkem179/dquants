@@ -343,11 +343,22 @@ bool CanCreateNewEntry() {
     return GetEntryBlockReason() == "";
 }
 
+// Account-DD reference value. The account-level trailing-DD guard (peak, ddPct,
+// hard/soft-block, recovery, profit-floor) measures against THIS. Default = account
+// BALANCE (unchanged behavior). When USE_EQUITY_DD_BASIS is ON it switches to
+// account EQUITY (includes open positions) so KenKem's prop DD matches the MasterVP
+// leg and the shared joint HWM. Per-trade RISK sizing (CalculateTotalRiskExposure)
+// is deliberately NOT re-based -- that stays balance-relative.
+double AccountDDValue() {
+    return USE_EQUITY_DD_BASIS ? AccountInfoDouble(ACCOUNT_EQUITY)
+                               : AccountInfoDouble(ACCOUNT_BALANCE);
+}
+
 // Profit Protection (High Water Mark) - Protect gains by reducing risk when giving back profits
 void CheckProfitProtection() {
     if (!ENABLE_PROFIT_PROTECTION) return;
-    
-    double currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+
+    double currentBalance = AccountDDValue();   // equity-based when USE_EQUITY_DD_BASIS
     double profitFromInitial = peakAccountBalance - INITIAL_ACCOUNT_BALANCE;
     double minProfitToProtect = INITIAL_ACCOUNT_BALANCE * MIN_PROFIT_TO_PROTECT_RATIO;
     
@@ -438,23 +449,31 @@ void ApplyPeakBalanceDecay(double currentBalance) {
 
 // Emergency drawdown protection - Track from account peak balance
 bool IsWithinDrawdownLimit() {
-    double currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-
     // --- Joint account-level equity HWM (shared with the MasterVP leg) ----------
-    // ADDITIVE participation only: maintain the account EQUITY high-water mark in
-    // the shared COMMON file (KK_PropState_<account>.txt) so it survives restarts
-    // and BOTH legs contribute to / read the same joint HWM. This does NOT change
-    // any KenKem decision below (those stay balance-based until the backtested
-    // equity re-base). KKPropStateSave MAX-merges, so it never regresses the HWM;
-    // file I/O is skipped in the Tester. See KK-Common/PropState.mqh.
-    {
-        double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);
-        KKPropState ps;
-        double jointPeak = (KKPropStateLoad(ps) ? MathMax(ps.peakEquity, eqNow) : eqNow);
-        KKPropState w;
-        w.peakEquity = jointPeak; w.dayStartEquity = eqNow; w.dayPeakEquity = eqNow; w.dayKey = -1;
-        KKPropStateSave(w);
+    // Maintain the account EQUITY high-water mark in the shared COMMON file
+    // (KK_PropState_<account>.txt) so it survives restarts and BOTH legs contribute
+    // to / read the same joint HWM. KKPropStateSave MAX-merges (never regresses);
+    // file I/O is Tester-skipped. See KK-Common/PropState.mqh.
+    double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);
+    KKPropState ps;
+    double sharedPeak = (KKPropStateLoad(ps) ? ps.peakEquity : 0.0);
+    double jointEquityPeak = MathMax(sharedPeak, eqNow);
+    if (USE_EQUITY_DD_BASIS) {
+        // Equity basis ON: KenKem's DD anchor IS the joint equity HWM (adopt the
+        // higher of the shared HWM and KenKem's own tracked peak). Everything below
+        // (ddPct, hard/soft-block, recovery, decay, profit-floor) then runs on
+        // equity automatically because they derive from peakAccountBalance + the
+        // AccountDDValue() reference.
+        peakAccountBalance = MathMax(peakAccountBalance, jointEquityPeak);
+        jointEquityPeak = peakAccountBalance;
     }
+    // Write the joint HWM back (both legs maintain it; MAX-merged in Save).
+    KKPropState w;
+    w.peakEquity = jointEquityPeak; w.dayStartEquity = eqNow; w.dayPeakEquity = eqNow; w.dayKey = -1;
+    KKPropStateSave(w);
+
+    // DD reference value: BALANCE (default) or EQUITY (when USE_EQUITY_DD_BASIS).
+    double currentBalance = AccountDDValue();
 
     // Check profit protection (runs every tick, lightweight)
     CheckProfitProtection();
