@@ -1,5 +1,12 @@
 # KK-KenKem — Changelog
 
+## 1.04 — 2026-06-30
+
+- Built `2026-06-30T12:19:31Z` · commit `b70c7d8` on `3-codex-handoff`
+- EA: `KK-KenKem-1.04.ex5` (locked build of `KK-KenKem.mq5`)
+- Mixed FN-Stella2 portfolio: retune mixed leg (risk 0.1%, joint DD daily 4.2% / soft-derisk 7.8% / hard-halt 9.2%) with MADE_FOR_PROP_TRADING=true (soft-block threshold = hard halt), ENABLE_PEAK_BALANCE_DECAY=false, USE_EQUITY_DD_BASIS=true. Rebuild required so USE_EQUITY_DD_BASIS (added post-1.03) is compiled into the binary; prop set also gains equity basis.
+- Variants: `xauusd-m1` `xauusd-m1-prop` `xauusd-m1-mixed-fn`
+
 ## 1.03 — 2026-06-23
 
 - Built `2026-06-23T10:16:18Z` · commit `51b63e6` on `reliableBaseline`

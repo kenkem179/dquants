@@ -1,0 +1,121 @@
+; KK-MasterVP XAUUSD M5 — DEPLOYED LOCK (reversion ON, parity ON, self-contained).
+; LOCK = RunnerRr 4.0 / TrailAtrMult 2.75 / BeBufAtr 0.02 + PROGRESSIVE-TRAIL LADDER (late-arm).
+; UPDATE 2026-06-26 (H9 exit-cluster MT5 optimizer, 36-pass): added ProgTrail ON @ Trigger 2.0R /
+;   Increment 0.75 / Step 0.2 — a profit-banking ratchet that arms LATE (only on >2.0R runners).
+;   MT5 full-run head-to-head vs prior no-ladder lock (every-tick real ticks, 2025.06.01-2026.05.29, $10k):
+;     FULL   PF 1.4127->1.4246 (+0.0118), net 83,228->86,034 (+3.4%);
+;     2026   PF 1.4372->1.4581 (+0.0209) <- gain concentrated in most-recent year;
+;     2025H2 PF 1.3671->1.3617 (-0.0054, -$359) <- negligible, ladder near-inert that half.
+;   Gate (n_trials=36, sr_trial_std=0.0135): per-trade SR 0.109, PSR 1.000, MinTRL 192<1423, DSR 1.000 PASS.
+; PRIOR LOCK (2026-06-25, no ladder): RunnerRr 4.0/Trail 2.75/BeBuf 0.02 = flat-risk 83,227/PF 1.413.
+; HOW CHOSEN: two fine MT5 optimizations -> (1) RR x BeBuf 105-pass: BeBuf 0.02-0.03 plateau, 0.05 worst;
+;   (2) RR x TrailAtrMult 231-pass (step 0.25): Trail 2.75 ROBUSTLY beats 2.5 (marginal +12% net/+0.023
+;   PF/-4.3pp DD) - the old step-1.0 grid (2.5 vs 3.5) was blind to it. At Trail 2.75, RR4.0 = study-best
+;   PF (1.413 stream / 1.44 MT5) and beats the prior RR5/T2.5 lock on net (+7.8%) AND PF AND tail-reliance
+;   (top-20 = 74% vs 88%). Rejected RR3.2/T2.75 (higher raw net 92k but PF 1.357 + weakening 2026 1.321).
+; RunnerRr/TrailAtrMult/BeBuf are EXPOSED inputs (Exit group) -> these .set values drive the EA, AND the
+;   compiled defaults now match (no drift). NOTE: MT5 equity-DD shows ~14.5% but it's a path-dependent
+;   knife-edge; size for ~22-25% (MC true full-yr 27.7%). (PmProg ladder below is now ACTIVE — see UPDATE.)
+;
+InpAdxLen=14
+InpAdxTrendMin=22.0
+InpAsiaSess=21:00-03:00
+InpAtrLen=14
+InpAtrMt5Mode=false
+InpAvoidNews=false
+InpBeAfterTp1=true
+InpBeBufAtr=0.02
+InpBlockedHoursStr=4,16,17
+InpBodyPctMin=0.6
+InpBreakBufAtr=0.85
+InpBreakMaxAtr=1000000
+InpBrkRequireFlow=false
+InpBrkVetoSfp=false
+InpDailyDDCooldownHrs=12.0
+InpDeviationPoints=200
+InpDiSpreadMin=8.0
+InpEmaFast=24
+InpEmaSepAtr=0.25
+InpEmaSlow=194
+InpEnableBreakout=true
+InpForceCloseSessNews=false
+InpLdnSess=03:00-11:00
+InpLossStreakCooldownHrs=4.0
+InpLossStreakCount=0
+InpMVPMagic=5252510
+InpMasterMult=4
+InpMaxAtrPct=0.0
+InpMaxDailyDDPct=4.4
+InpMaxLot=0.0
+InpMaxPeakDDPct=9.5
+InpMaxSpreadPips=0.0
+InpMaxSpreadTp1Frac=0.0
+InpMaxTradesPerSession=4
+InpMinAtrPct=0.0
+InpMinAtrTicks=40
+InpMtfHardVeto=true
+InpNewsMinsAfter=15
+InpNewsMinsBefore=15
+InpNodeDecay=0.94
+InpNodeGateEnabled=false
+InpNodeNeutralBand=0.15
+InpNodeSaturation=4.0
+InpNodeTouchAtr=0.05
+InpNySess=14:00-21:00
+InpRetestAtr=0.1
+InpRiskAccPct=0.43
+InpRiskUnit=0
+InpRiskUsd=180.0
+InpRrBrk=1.8
+InpRrRev=1.2
+InpRsiLen=14
+InpRsiMidline=50.0
+InpRunnerRr=4.0
+InpSfpFlowMin=0.15
+InpSkipIfMinLotOverRisk=false
+InpSlAtrBrk=1.2
+InpSlAtrRev=1.5
+InpSoftBlockDDPct=8.0
+InpSoftBlockLotMult=0.5
+InpTp1ClosePct=0.0
+InpTp1R=0.8
+InpTrailAtrMult=2.75
+InpTrailRunner=true
+InpUseEmbeddedNews=true
+InpUseMomVeto=false
+InpUseMtfAgree=false
+InpUsePriorBarVP=false
+InpVaPct=70.0
+InpVpBins=30
+InpVpLookback=108
+InpEnableReversion=true
+InpRevTpMpoc=false
+InpTrailRev=-1
+InpTrailBrk=-1
+InpTrailImp=-1
+InpTrailXRev=-1
+InpEnableExtremeReversion=false
+InpXRevTpMpoc=false
+InpExportParity=true
+
+; ===== PROFIT-LOCK block (all OFF by default; A/B variants flip one group) =====
+InpPmBeProtect=false
+InpPmBeTriggerR=1.0
+InpPmBeBufferR=0.0
+InpPmProgTrail=true
+InpPmProgTriggerR=2.0
+InpPmProgIncrementR=0.75
+InpPmProgStepR=0.2
+InpPmGiveback=false
+InpPmGivebackArmR=2.0
+InpPmGivebackCapFrac=0.3
+InpPmTpExtension=false
+InpPmTpExtProgress=0.9
+InpPmTpExtAtrMult=1.0
+InpPmTpExtMax=5
+InpPmPreBeStructure=false
+InpPmPreBeTriggerR=0.5
+InpPmPreBeBuffer=0.0
+InpPmPartialTp=false
+InpPmPartialTriggerR=1.0
+InpPmPartialFrac=0.5

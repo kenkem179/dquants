@@ -1,0 +1,31 @@
+; KK-MasterVP 1.08 preset. Strategy internals are fixed inside the EA;
+; only the user-adjustable inputs below are present.
+InpAvoidNews=false
+InpBeAfterTp1=true
+InpBeBufAtr=0.02
+InpBlockedHoursStr=4,16,17
+InpDailyDDCooldownHrs=12.0
+InpForceCloseSessNews=false
+InpLossStreakCooldownHrs=4.0
+InpLossStreakCount=0
+InpMaxDailyDDPct=4.4
+InpMaxLot=0.0
+InpMaxPeakDDPct=9.5
+InpMaxSpreadPips=0.0
+InpMaxTradesPerSession=4
+InpNewsMinsAfter=15
+InpNewsMinsBefore=15
+InpRiskAccPct=0.43
+InpRiskUnit=0
+InpRiskUsd=180.0
+InpRunnerRr=4.0
+InpSkipIfMinLotOverRisk=false
+InpSoftBlockDDPct=8.0
+InpSoftBlockLotMult=0.5
+InpTp1ClosePct=0.0
+InpTp1R=0.8
+InpTrailAtrMult=2.75
+InpTrailRunner=true
+InpEnableReversion=true
+InpExportParity=true
+InpPmProgTrail=true

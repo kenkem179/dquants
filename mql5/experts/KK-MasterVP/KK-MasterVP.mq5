@@ -7,7 +7,7 @@
 //+------------------------------------------------------------------+
 #property copyright "KenKem / dquants"
 #property link      "https://kenkem.biz"
-#property version   "1.07"
+#property version   "1.08"
 #property strict
 #property description "KK-MasterVP - volume-profile breakout expert for XAUUSD & BTCUSD."
 #property description "Trades confirmed breaks of the master value area with ATR-based"
