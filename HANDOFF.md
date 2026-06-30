@@ -25,9 +25,16 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
   peak (real winners, not a sizing artifact) — a NORMAL DD (full-year natural ~27.7%) that exceeds the FundedNext
   9% limit at 0.5% risk. NOT a sizing bug. Fix (operator-set, FN ~10% firm limit): `InpSoftBlockDDPct=8.3`
   `InpSoftBlockLotMult=0.5` (HALF risk at the cliff, auto-resets when DD<8.3%) + `InpMaxPeakDDPct→9.5` + explicit
-  `InpMinRiskAtrMult=0.6`, on both `releases/1.07/*-prop.set` + `release.conf` (commit 832e9f0). **NEXT = user MT5
-  re-run of the XAU M5 prop set.** Flagged concern: 8.3→9.5 is a narrow 1.2% band (soft-block only de-risks the
-  final approach); Aug-2025 reached ~9.5% DD so it may still halt — fallback = lower the trigger / trim base risk.
+  `InpMinRiskAtrMult=0.6`, on both `releases/1.07/*-prop.set` + `release.conf` (commit 832e9f0).
+- **MT5 validation (8.3/9.5): STILL HALTS Aug-2025.** Soft-block works (tail losses halved ~−63→−31) but the 1.2%
+  band is too narrow; even at 0.5× ~6 more losses cross to 9.5%. At 0.5% risk the strategy's natural DD exceeds 9.5%.
+  → DECISION PENDING: engage soft-block earlier (~5-6%) or trim base risk 0.5→0.3%.
+- **Release 1.07 rebuilt in place** (commit f04443d) — all modes (personal/prop/mixed) + Market edition; .ex5 has
+  the sizing floor. Fixed a market hide-pass bug that stripped `InpMinRiskAtrMult`'s `input` (added it to whitelist).
+- **Account-level HWM persistence BUILT** (commit 4d82d44) — `KK-Common/PropState.mqh` writes the account equity
+  HWM to shared COMMON `KK_PropState_<acct>.txt`; MasterVP wired (reload no longer resets the DD guard; RESET =
+  delete the file; Tester-skipped so backtests unchanged). **KenKem NOT wired** — it anchors on peak BALANCE vs
+  MasterVP's peak EQUITY; unifying needs a basis decision (DECISION PENDING).
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
