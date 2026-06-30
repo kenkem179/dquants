@@ -149,6 +149,52 @@ the customer's responsibility.
 - [ ] Build & market prop-firm preset (Phase-A-clean, money-in-hand audience)
 - [ ] Use the verified track record + testimonials as the public sales page for MasterVP/Monster license pre-launch
 
+## Short-term action plan — prove the EA on VPS + sell ASAP (proposed 2026-07-01)
+
+> Slots **inside Days 1–30** of the 90-day plan. Goal: stand up always-on proof accounts, start the
+> marketing-automation flywheel, and open Phase-A-clean sales NOW while EA live-proof accrues. Stays
+> strictly tool-vendor — no advice, no managed money, no guaranteed returns.
+
+**The 3 documentation presets are READY (shipped 2026-07-01).** They map cleanly to the plan's
+"conservative / balanced / aggressive" requirement:
+- **Aggressive** = as-swept personal lock — `…-xauusd-m5.set` / `…-btcusd-m5.set` (1% RPT, 10% daily, soft-block off; the ~11X-but-swingy profile)
+- **Balanced** = `…-{xauusd,btcusd}-m5-balanced.set` (0.75% RPT / 5% daily / soft-block 6%→0.5x / hard-halt 10%)
+- **Conservative** = `…-{xauusd,btcusd}-m5-conservative.set` (0.5% / 4% / soft 5%→0.5x / halt 8%)
+- KenKem XAU M1 mirrors with fixed-lot sizing + DD-cap tiers (`…-xauusd-m1-{conservative,balanced}.set`).
+
+### A. Proof infrastructure (Week 1) — always-on accounts on VPS
+| Account | Purpose / audience | EA + preset | VPS |
+|---|---|---|---|
+| **FundedNext** (challenge→funded→payout) | prop-buyer proof | prop-bundle v1.0 `…-prop.set` — **VERIFY FN daily-DD FIRST** | MetaQuotes VPS (broker-co-located, ~$15/mo) |
+| **Exness small live ECN** | retail "does it make money LIVE" proof | `…-conservative.set` (real money, lowest risk) | **Exness FREE VPS** (qualify via deposit/volume) |
+| **Demo #1 + #2** | A/B the tiers + daily screenshots | balanced vs aggressive, run in parallel | MetaQuotes VPS / free demo VPS |
+
+- Migrate terminal + `.ex5` + `.set` to the VPS; confirm 24/5 uptime; clear stale `KKG.*` globals on each KenKem attach; set `InpPropBaselineEquity` / `PROP_BASELINE_EQUITY` to the real contract size.
+- Attach **MyFXBook / FXBlue read-only verified** to every account → those URLs ARE the sales proof (framed "developer's own results, not a recommendation; past performance ≠ future results").
+- ⚠️ **BLOCKER before the prop deploy:** our docs disagree on FundedNext Stellar-2's daily-DD limit (3% in `kenkem-pine` vs 5% in the prop release notes). The prop `.set` caps daily loss at **4.4%** — if FN's true limit is **3%, that breaches on day one.** Confirm the exact account-type daily-DD + consistency rule, then re-cut the prop `.set` to sit safely below it. Do not deploy prop money until this is settled.
+
+### B. Marketing-automation flywheel (Week 1; runs daily thereafter)
+Both engines already exist — wire them to the proof:
+- **`../kenkem-pine` daily-bias** (`.claude/skills/daily-bias` + `daily-bias-scheduled.sh`): auto-generates a daily XAU/BTC market-bias AI insight. Use it as (a) free funnel content and (b) the recurring *tool output* that justifies a Pine-Premium / Whop subscription. **Keep it GENERIC and non-personalized** ("regime = trend, ATR percentile 62, London bias up") — never "buy now" — to stay on the tool side of the FIEA line.
+- **`../dquants-sns`** (220–300 prepared posts + `generate_sns_images.py` AI images + publisher → FB/IG/X/Threads/Whop, driven by `STATE.json`): schedule the prepared series + AI images for hands-off multi-channel posting. Inject two LIVE feeds: (1) daily-bias output → the daily post slot; (2) a weekly **build-in-public** post = equity screenshot from the verified links above. Every published number must trace to `../dquants` (the repo's standing rule) — no invented stats.
+
+### C. Sell ASAP — Phase-A-clean, sequenced by what's already proven (Days 1–30)
+Sell what is proven NOW; pre-sell the EA behind the accruing track record.
+1. **Now:** Pine indicators + **daily-bias subscription** (Whop, invite/account-locked) — already a live, converting line; the daily insight is the recurring deliverable.
+2. **Now:** open EA-license **waitlist / pre-orders** (account-locked monthly, defaults-OFF, 3 presets shipped as docs) on the sales page — list price + limited spots, fulfilled when the EA clears its go-live gate (D).
+3. **Funnel:** free Basic indicator + daily-bias teasers → list build → dquants-sns nurtures to the waitlist.
+
+### D. EA "cleared to sell" gate (do NOT fulfil EA licenses before ALL hold)
+Honest-proof gate, mirrors the engineering deploy gate:
+- ≥ **30 days continuous live** on Exness ECN (conservative) with **live-vs-backtest delta within tolerance**,
+- FundedNext challenge **passed** on the prop preset (or a documented honest fail + fix — publish either),
+- **expectations doc** shipped (drawdown, losing streaks, broker/VPS/min-account requirements — kills chargebacks),
+- recommended low-spread broker + VPS setup kit finalized.
+
+### Metrics from day one
+MRR (Pine + daily-bias subs) · EA waitlist size + pre-order conversion · refund/chargeback rate ·
+**live-vs-backtest delta per broker** · daily-bias post → click → trial conversion.
+
 ## Phase B backlog (do NOT start until licensed hire + FSA registration)
 - [ ] Hire FSA-required person in charge; complete registration
 - [ ] Copy-trade / signal subscription for the hands-off / wealthy segment (master account → copiers)
