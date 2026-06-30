@@ -39,7 +39,7 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
   NEEDS a user MT5 re-run to confirm it now clears Aug-2025.
 
 ## Open next steps (operator-chosen)
-1. **User MT5 re-run** XAU M5 prop set (0.43%/8.0/9.5) — does it clear the Aug-2025 halt?
+1. ✅ MT5 re-run DONE — 0.43%/8.0/9.5 CLEARS the full window (1541 trades, final $29,874, max bal DD 8.75% < 9.5%). Thin margin (~0.75%) noted.
 2. **KenKem full equity re-base** of `IsWithinDrawdownLimit` (currentBalance→equity, peak from shared HWM) + the
    dependent drawdownRoomLeft / peak-decay uses — ship WITH a before/after backtest (operator: "after a backtest").
 
