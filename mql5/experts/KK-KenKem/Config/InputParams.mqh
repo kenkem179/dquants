@@ -582,6 +582,7 @@ enum NOTIFICATION_MODE {
 input NOTIFICATION_MODE NotificationMode = NOTIFY_DISABLED;
 input bool MADE_FOR_PROP_TRADING = false;     // Simplified alerts, hard block near maximum balance drawdown
 input bool USE_EQUITY_DD_BASIS    = false;    // Account drawdown basis: false=BALANCE (default, unchanged), true=EQUITY (incl. open positions) + the shared joint HWM (KK_PropState file) so both legs agree. A/B-backtest before flipping ON for a funded account.
+input double PROP_BASELINE_EQUITY  = 0.0;     // Prop contract/start balance for the overall-DD anchor (0=use current at attach). LIVE-only; set e.g. 100000 so a fresh attach measures DD from the contract size, not a drawn-down current balance. Ignored in Tester (backtests unchanged).
 string ALLOWED_ACCOUNT_ID = "";      // Internal: empty=any account, baked per-account by the release script to lock the EA to one login
 string ALLOWED_ACCOUNT_SERVER = "";  // Internal: empty=any server, baked alongside ALLOWED_ACCOUNT_ID (login is only unique within a server)
 string ACCESS_EXPIRY = "";           // Internal: empty=perpetual; release script bakes "YYYY.MM.DD 23:59:59" to time-limit a build (server-time enforced; stops new trades + Alert "Expired Access" on expiry)

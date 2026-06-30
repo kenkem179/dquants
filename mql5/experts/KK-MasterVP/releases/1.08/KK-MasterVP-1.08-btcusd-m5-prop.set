@@ -79,4 +79,5 @@ InpUsePriorBarVP=false
 InpVaPct=70.0
 InpVpBins=30
 InpVpLookback=24
+InpPropBaselineEquity=100000
 InpExportParity=true

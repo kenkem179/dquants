@@ -35,6 +35,7 @@ input double InpMaxDailyDDPct   = 10.0;     // Daily drawdown % that pauses trad
 input double InpDailyDDCooldownHrs = 12.0;  // Pause length (hours) after a daily-DD hit
 input double InpSoftBlockDDPct  = 0.0;      // Account DD % to start trading smaller (0 = off)
 input double InpMaxPeakDDPct    = 0.0;      // Account DD % that halts trading (0 = off)
+input double InpPropBaselineEquity = 0.0;   // Prop contract/start balance for the overall-DD anchor (0=use current equity at attach). LIVE-only; set e.g. 100000 so a fresh attach measures DD from the contract size, not a drawn-down current balance. Ignored in Tester.
 input double InpSoftBlockLotMult= 0.55;     // Lot multiplier while trading smaller (e.g. 0.55 = 55%)
 input int    InpLossStreakCount = 0;        // Consecutive losses that pause trading (0 = off)
 input double InpLossStreakCooldownHrs = 4.0;// Pause length (hours) after a loss streak

@@ -14,6 +14,7 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\Sizing.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\AccountLock.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\AccountGuardian.mqh
+Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\PropState.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\TradeLogger.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-Common\Notifier.mqh
 Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh : information: including Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\VP-Common\Types.mqh
@@ -63,4 +64,4 @@ Z:\Users\tokyotechies\Workspace\KEM\dquants\mql5\experts\KK-MasterVP\Engine.mqh 
  : information: generating code 95%
  : information: generating code 100%
  : information: code generated
-Result: 0 errors, 0 warnings, 2384 ms elapsed, cpu='X64 Regular'
+Result: 0 errors, 0 warnings, 2394 ms elapsed, cpu='X64 Regular'

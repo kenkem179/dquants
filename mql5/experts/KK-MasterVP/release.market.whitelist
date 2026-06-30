@@ -35,6 +35,7 @@ InpMaxDailyDDPct
 InpDailyDDCooldownHrs
 InpSoftBlockDDPct
 InpMaxPeakDDPct
+InpPropBaselineEquity
 InpSoftBlockLotMult
 InpLossStreakCount
 InpLossStreakCooldownHrs

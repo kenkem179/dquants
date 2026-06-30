@@ -119,3 +119,4 @@ InpPmPreBeBuffer=0.0
 InpPmPartialTp=false
 InpPmPartialTriggerR=1.0
 InpPmPartialFrac=0.5
+InpPropBaselineEquity=100000

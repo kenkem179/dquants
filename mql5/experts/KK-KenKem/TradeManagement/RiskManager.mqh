@@ -457,7 +457,14 @@ bool IsWithinDrawdownLimit() {
     double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);
     KKPropState ps;
     double sharedPeak = (KKPropStateLoad(ps) ? ps.peakEquity : 0.0);
-    double jointEquityPeak = MathMax(sharedPeak, eqNow);
+    // Prop contract-baseline floor (LIVE only): anchor the overall-DD peak at the
+    // contract size (e.g. 100000) so a fresh attach on a drawn-down account measures
+    // DD from the baseline, not from current equity. Tester-skipped so backtests are
+    // unchanged. The HWM still trails UP from here as new peaks print.
+    double baselineFloor = (!MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_OPTIMIZATION)
+                            && PROP_BASELINE_EQUITY > 0.0) ? PROP_BASELINE_EQUITY : 0.0;
+    double jointEquityPeak = MathMax(MathMax(sharedPeak, eqNow), baselineFloor);
+    if (baselineFloor > 0.0) peakAccountBalance = MathMax(peakAccountBalance, baselineFloor);
     if (USE_EQUITY_DD_BASIS) {
         // Equity basis ON: KenKem's DD anchor IS the joint equity HWM (adopt the
         // higher of the shared HWM and KenKem's own tracked peak). Everything below

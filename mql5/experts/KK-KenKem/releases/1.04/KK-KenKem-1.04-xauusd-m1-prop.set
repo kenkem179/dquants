@@ -412,3 +412,4 @@ INPUT_EMA4_PERIOD=192
 InpExportBarTrace=false
 InpExportTradeJournal=true
 USE_EQUITY_DD_BASIS=true
+PROP_BASELINE_EQUITY=100000

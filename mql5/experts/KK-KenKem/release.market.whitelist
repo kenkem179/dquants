@@ -45,4 +45,6 @@ MAX_SPREAD_PIPS
 #
 # --- Prop-firm mode + basic visual ------------------------------------------
 MADE_FOR_PROP_TRADING
+USE_EQUITY_DD_BASIS
+PROP_BASELINE_EQUITY
 showDebug

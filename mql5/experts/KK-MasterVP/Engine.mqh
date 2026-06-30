@@ -147,6 +147,15 @@ int OnInit()
    } else {
       g_peakEquity=curEq; g_dayStartEquity=curEq; g_dayPeakEquity=curEq; g_lastDayKey=-1;
    }
+   // Prop contract-baseline floor (LIVE only): anchor the overall-DD peak at the
+   // contract size so a fresh attach on a drawn-down account measures DD from the
+   // baseline (e.g. 100000), not from current equity. Tester-skipped so backtests
+   // are unchanged. The persisted HWM still trails UP from here as new peaks print.
+   if(!MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_OPTIMIZATION) && InpPropBaselineEquity>0.0){
+      g_peakEquity=MathMax(g_peakEquity,InpPropBaselineEquity);
+      PrintFormat("[KK-MasterVP] prop baseline floor applied: peakEquity=%.2f (baseline=%.2f, curEq=%.2f)",
+                  g_peakEquity,InpPropBaselineEquity,curEq);
+   }
    g_cooldownUntil=0;
 
    mvpTrade.SetExpertMagicNumber(InpMVPMagic);

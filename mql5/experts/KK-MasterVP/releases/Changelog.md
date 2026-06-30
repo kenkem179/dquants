@@ -2,9 +2,9 @@
 
 ## 1.08 — 2026-06-30
 
-- Built `2026-06-30T12:18:59Z` · commit `b70c7d8` on `3-codex-handoff`
+- Built `2026-06-30T12:30:24Z` · commit `6153e9e` on `3-codex-handoff`
 - EA: `KK-MasterVP-1.08.ex5` (locked build of `KK-MasterVP.mq5`)
-- Mixed FN-Stella2 portfolio: add btcusd-m5-mixed-fn leg + retune mixed risk (XAU 0.43% / BTC 0.15%, joint DD daily 4.2% / soft 7.8%->0.4x / hard 9.2%). Sizing floor (InpMinRiskAtrMult) carried from 1.07.
+- Mixed FN-Stella2 portfolio: add btcusd-m5-mixed-fn leg + retune mixed risk (XAU 0.43% / BTC 0.15%, joint DD daily 4.2% / soft 7.8%->0.4x / hard 9.2%). NEW InpPropBaselineEquity (LIVE-only prop contract-balance anchor, baked 100000 in prop+mixed sets) so a fresh attach measures DD from contract size, not drawn-down equity. Sizing floor carried from 1.07.
 - Variants: `xauusd-m5` `btcusd-m5` `xauusd-m5-prop` `btcusd-m5-prop` `xauusd-m5-mixed-fn` `btcusd-m5-mixed-fn`
 
 ## 1.07 — 2026-06-30
