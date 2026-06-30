@@ -10,6 +10,11 @@
 
 // Shared account-lock guard (common to all KK EAs)
 #include "../KK-Common/AccountLock.mqh"
+// Shared account-level prop state (joint equity HWM, restart-safe, common file).
+// KenKem participates ADDITIVELY for now: it maintains the joint equity HWM that
+// the MasterVP leg also reads/writes, but its own DD decisions stay balance-based
+// (full equity re-base is a separate, backtested pass).
+#include "../KK-Common/PropState.mqh"
 
 // Include modular configuration files
 #include "Config/InputParams.mqh"

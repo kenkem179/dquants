@@ -439,7 +439,23 @@ void ApplyPeakBalanceDecay(double currentBalance) {
 // Emergency drawdown protection - Track from account peak balance
 bool IsWithinDrawdownLimit() {
     double currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-    
+
+    // --- Joint account-level equity HWM (shared with the MasterVP leg) ----------
+    // ADDITIVE participation only: maintain the account EQUITY high-water mark in
+    // the shared COMMON file (KK_PropState_<account>.txt) so it survives restarts
+    // and BOTH legs contribute to / read the same joint HWM. This does NOT change
+    // any KenKem decision below (those stay balance-based until the backtested
+    // equity re-base). KKPropStateSave MAX-merges, so it never regresses the HWM;
+    // file I/O is skipped in the Tester. See KK-Common/PropState.mqh.
+    {
+        double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);
+        KKPropState ps;
+        double jointPeak = (KKPropStateLoad(ps) ? MathMax(ps.peakEquity, eqNow) : eqNow);
+        KKPropState w;
+        w.peakEquity = jointPeak; w.dayStartEquity = eqNow; w.dayPeakEquity = eqNow; w.dayKey = -1;
+        KKPropStateSave(w);
+    }
+
     // Check profit protection (runs every tick, lightweight)
     CheckProfitProtection();
     
