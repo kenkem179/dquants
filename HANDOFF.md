@@ -40,8 +40,12 @@ live-profitable EAs (KenKem XAU M1 = D5-E4Long lock; MasterVP XAU M5 = ProgTrail
 
 ## Open next steps (operator-chosen)
 1. ✅ MT5 re-run DONE — 0.43%/8.0/9.5 CLEARS the full window (1541 trades, final $29,874, max bal DD 8.75% < 9.5%). Thin margin (~0.75%) noted.
-2. ✅ **KenKem gated equity re-base DONE** (commit b1b05ae) — input `USE_EQUITY_DD_BASIS` (default OFF = unchanged).
-   NEXT = user A/B MT5 backtest (KenKem XAU M1, flag OFF vs ON), then flip ON in the KenKem prop .set if good.
+2. ✅ **KenKem gated equity re-base DONE + A/B RUN + FLIPPED ON** (commits b1b05ae, eddb66a). MT5 XAU M1 2025.05.01→
+   2026.05.29 same prop .set: A(balance) $10801 (+8.01%) recovery×2; B(equity) $10763 (+7.63%) recovery×4. −0.38%/yr
+   cost (extra throttling on open-position DD) but matches FundedNext's equity-measured DD rule → `USE_EQUITY_DD_BASIS=true`
+   now in the prop .set (personal stays balance). ⚠️ NOTE: that prop .set still has `MADE_FOR_PROP_TRADING=false` +
+   `ENABLE_PEAK_BALANCE_DECAY=true`, OPPOSITE of the FundedNext deployment requirement — prop-hard-block stays inert
+   until those are set true/false. Operator decision before funded deploy.
 
 ## What Just Changed (overnight autopilot, 4 parallel research-only agents)
 - **Snapshot of Codex's 8-step handoff committed** (`78187ba`) — was previously uncommitted.
